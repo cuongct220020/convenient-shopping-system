@@ -26,19 +26,54 @@ title: "Python OOP Conventions"
 
 ## 1. Naming Conventions
 
-| Component | Convention | Example |
-|-----------|-----------|---------|
-| Class | PascalCase | `ShoppingList`, `FoodItem` |
-| Method/Function | snake_case | `add_item()`, `check_expiry()` |
-| Attribute | snake_case | `expiry_date`, `total_items` |
-| Protected | `_prefix` | `_validate_input()` |
-| Private | `__prefix` | `__password_hash` |
-| Constant | UPPER_CASE | `MAX_ITEMS = 100` |
-| Type Alias | PascalCase | `UserId`, `JsonDict` |
-| Module/Package | snake_case | `food_storage.py`, `shopping_system/` |
+<table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Convention</th>
+            <th>Example</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Class</td>
+            <td>PascalCase</td>
+            <td><code>ShoppingList</code>, <code>FoodItem</code></td>
+        </tr>
+        <tr>
+            <td>Method/Function</td>
+            <td>snake_case</td>
+            <td><code>add_item()</code>, <code>check_expiry()</code></td>
+        </tr>
+        <tr>
+            <td>Attribute</td>
+            <td>snake_case</td>
+            <td><code>expiry_date</code>, <code>total_items</code></td>
+        </tr>
+        <tr>
+            <td>Private</td>
+            <td><code>_prefix</code></td>
+            <td><code>_password_hash</code></td>
+        </tr>
+        <tr>
+            <td>Constant</td>
+            <td>UPPER_CASE</td>
+            <td><code>MAX_ITEMS = 100</code></td>
+        </tr>
+        <tr>
+            <td>Type Alias</td>
+            <td>PascalCase</td>
+            <td><code>UserId</code>, <code>JsonDict</code></td>
+        </tr>
+        <tr>
+            <td>Module/Package</td>
+            <td>snake_case</td>
+            <td><code>food_storage.py</code>, <code>shopping_system/</code></td>
+        </tr>
+    </tbody>
+</table>
 
 **Rules**: Class names are nouns, method names are verbs. Avoid vague names (`Manager`, `Helper`) and unclear abbreviations (`fd` → `food`).
-
 
 ## 2. Modern Type Hints (Python 3.11+)
 
@@ -251,7 +286,7 @@ class FoodItem:
         """Calculate shelf life in days."""
         return (end - start).days
     
-    # 8. Protected methods
+    # 8. Private methods
     def _validate(self) -> bool:
         """Internal validation."""
         return self._quantity >= 0
@@ -293,9 +328,9 @@ class Refrigerator:
 ```python
 class UserAccount:
     def __init__(self, username: str) -> None:
-        self.username = username              # Public
-        self._password_hash = "..."           # Protected
-        self.__pin_code = "0000"              # Private (name mangling)
+        self.username = username             # Public
+        self._password_hash = "..."          # Private
+        self._pin_code = "0000"              # Private
 ```
 
 ## 5. Docstrings (Google Style)
@@ -355,8 +390,7 @@ from .config import MAX_ITEMS
 5. Public methods
 6. Class methods (`@classmethod`)
 7. Static methods (`@staticmethod`)
-8. Protected methods (`_method`)
-9. Private methods (`__method`)
+8. Private methods (`_method`)
 
 
 ## 7. Inheritance & Composition
