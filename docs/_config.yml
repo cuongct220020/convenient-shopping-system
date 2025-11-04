@@ -1,0 +1,9 @@
+title: "Convenient Shopping System"
+description: "Technical documentation about system desgin"
+baseurl: "/IT4990-Convenient-Shopping-System" # repo GitHub name
+url: "https://cuongct220020.github.io"        # domain GitHub Pages
+
+theme: just-the-docs
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
