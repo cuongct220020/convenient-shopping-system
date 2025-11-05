@@ -7,7 +7,7 @@ from models.recipe import Recipe, RecipeCountableIngredient, RecipeUncountableIn
 app = FastAPI(
     title="Recipe Service",
     description="API for managing recipes and meals",
-    version="0.0.1"
+    version="0.1.0"
 )
 
 app.add_middleware(
