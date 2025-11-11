@@ -3,9 +3,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apis.v2.ingredient_api import ingredient_router
 from apis.v2.recipe_api import recipe_router
-from models.recipe_component import (
-    RecipeComponent, Ingredient, CountableIngredient, UncountableIngredient, BulkIngredient, Recipe, ComponentList
-)
 
 app = FastAPI(
     title="Recipe Service",
@@ -21,7 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Base.metadata.create_all(bind=engine)
 app.include_router(ingredient_router)
 app.include_router(recipe_router)
 
