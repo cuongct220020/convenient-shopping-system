@@ -1,6 +1,9 @@
-# 📝 Contributing Guidelines
-
 ---
+layout: default
+title: "GitHub Conventions"
+---
+
+# 📝 Contributing Guidelines
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -17,8 +20,6 @@
         - [4.1 Feature Branches](#41-feature-branches)
         - [4.2 Issue Branches](#42-issue-branches)
         - [4.3 Hotfix Branches](#43-hotfix-branches)
-
----
 
 ## Introduction
 
@@ -129,15 +130,11 @@ Follow these best practices:
     - It uses Redis for fast in-memory lookups.
     ```
 
----
-
 ## Branch Conventions
 
 This project follows the [**Git Flow branching model**](https://nvie.com/posts/a-successful-git-branching-model/#hotfix-branches) to maintain stability and streamline collaboration.
 
-![git_flow_model.png](images/git_flow_model.png)
-
----
+![git_flow_model.png](../assets/images/git_flow_model/git_flow_model.png)
 
 ### 1. Summary
 
@@ -173,8 +170,6 @@ This project follows the [**Git Flow branching model**](https://nvie.com/posts/a
   </tbody>
 </table>
 
----
-
 ### 2. Naming Convention
 ```
 <type>/<short-description>
@@ -199,8 +194,6 @@ feature/user-profile-management
 bugfix/responsive-layout-mobile
 ```
 
----
-
 ## 3. Main Branches
 
 A repository must always include the following permanent branches:
@@ -208,7 +201,7 @@ A repository must always include the following permanent branches:
 - **`main`** — represents the production-ready code.
 - **`develop`** — represents the latest development changes for the upcoming release.
 
-![main_branches.png](images/main_branches.png)
+![main_branches.png](../assets/images/git_flow_model/main_branches.png)
 
 ### Description
 
@@ -218,8 +211,6 @@ A repository must always include the following permanent branches:
 - `main` (or `origin/main`) contains the production-ready code currently deployed.
 
 When the `develop` branch reaches a stable state and passes testing, it is merged back into `main`, followed by tagging a new release version.
-
----
 
 ## 4. Supporting Branches
 
@@ -233,14 +224,12 @@ The following types are commonly used:
 
 Each type serves a specific purpose and follows strict branching and merging rules.
 
----
-
 ### 4.1. Feature Branches
 
 Feature branches are used to develop new features or major enhancements that may span multiple release cycles.  
 Regardless of their lifecycle, **feature branches must always merge back into `develop`.**
 
-![feature_branches.png](images/feature_branches.png)
+![feature_branches.png](../assets/images/git_flow_model/feature_branches.png)
 
 #### Rules:
 - Must branch from: `develop`
@@ -267,7 +256,6 @@ Regardless of their lifecycle, **feature branches must always merge back into `d
     ```
 If you don’t have write access to develop, push your branch to GitHub and open a pull request.
 
----
 
 ### 4.2. Issue Branches
 
@@ -301,14 +289,13 @@ git push origin issue/<id>
 
 For contributors without write access, submit your changes through a pull request.
 
----
 
 ### 4.3. Hotfix Branches
 
 Hotfix branches are used for urgent fixes on production when something critical fails.
 They always branch from main and must be merged into both main and develop after completion.
 
-![hotfix_branches.png](images/hotfix_branches.png)
+![hotfix_branches.png](../assets/images/git_flow_model/hotfix_branches.png)
 
 #### Rules:
 - Must branch from: main
