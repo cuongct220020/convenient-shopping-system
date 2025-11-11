@@ -9,7 +9,7 @@ class RecipeComponent(Base):
 
     component_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     component_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    type: Mapped[str] = mapped_column(String, nullable=False)
+    type: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
     __mapper_args__ = {
         "polymorphic_on": type,
@@ -88,7 +88,11 @@ class Recipe(RecipeComponent):
     __tablename__ = "recipes"
 
     component_id: Mapped[int] = mapped_column(ForeignKey("recipe_components.component_id"),primary_key=True)
+    image_url: Mapped[str] = mapped_column(String, nullable=True)
+    prep_time: Mapped[int] = mapped_column(Integer, nullable=True)
+    cook_time: Mapped[int] = mapped_column(Integer, nullable=True)
     default_servings: Mapped[int] = mapped_column(Integer, default=1)
+    description: Mapped[str] = mapped_column(String, nullable=True)
     instructions: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     component_list: Mapped[list["ComponentList"]] = relationship(
         back_populates="recipe",

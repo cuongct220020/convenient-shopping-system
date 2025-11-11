@@ -7,10 +7,15 @@ class ComponentBase(BaseModel):
     component_id: int
     quantity: float
 
+class RecipeBase(BaseModel):
+    image_url: Optional[str] = None
+    prep_time: Optional[int] = None
+    cook_time: Optional[int] = None
+    description: Optional[str] = None
+
 # === Create ===
-class RecipeCreate(BaseModel):
+class RecipeCreate(RecipeBase):
     component_name: str
-    type: Literal["recipe"]
     default_servings: int = 1
     instructions: list[str]
     component_list: list[ComponentBase]
@@ -18,7 +23,7 @@ class RecipeCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 # === Update ===
-class RecipeUpdate(BaseModel):
+class RecipeUpdate(RecipeBase):
     component_name: Optional[str] = None
     default_servings: Optional[int] = None
     instructions: Optional[list[str]] = None
@@ -27,7 +32,7 @@ class RecipeUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 # === Response ===
-class RecipeResponse(BaseModel):
+class RecipeResponse(RecipeBase):
     component_id: int
     component_name: str
     default_servings: int
@@ -49,7 +54,7 @@ class ComponentDetailedBase(BaseModel):
     quantity: float
     component: ComponentDetail
 
-class RecipeDetailedResponse(BaseModel):
+class RecipeDetailedResponse(RecipeBase):
     component_id: int
     component_name: str
     type: Literal["recipe"]
