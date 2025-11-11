@@ -1,17 +1,16 @@
 {
-  "name": "reactjs-vite-tailwindcss-boilerplate",
-  "description": "This is a boilerplate build with Vite, React 18, TypeScript, Vitest, Testing Library, TailwindCSS 3, Eslint and Prettier.",
+  "name": "convenient-shopping-system-webapp",
+  "description": "Web application for the Convenient Shopping System.",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "author": {
-    "name": "João Paulo Moraes",
-    "email": "joaopaulomoraes@outlook.com",
-    "url": "https://github.com/joaopaulomoraes"
+    "name": "Cường CT",
+    "email": "cuongct0902@gmail.com",
+    "url": "https://github.com/cuongct220020"
   },
   "bugs": {
-    "url": "https://github.com/joaopaulomoraes/reactjs-vite-tailwindcss-boilerplate/issues",
-    "email": "joaopaulomoraes@outlook.com"
+    "url": "https://github.com/cuongct220020/convenient-shopping-system/issues"
   },
   "scripts": {
     "dev": "vite",

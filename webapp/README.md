@@ -24,13 +24,13 @@ This project uses many tools like:
 Create the project.
 
 ```bash
-pnpm dlx degit joaopaulomoraes/reactjs-vite-tailwindcss-boilerplate frontend
+pnpm dlx degit joaopaulomoraes/reactjs-vite-tailwindcss-boilerplate webapp
 ```
 
 Access the project directory.
 
 ```bash
-cd frontend
+cd webapp
 ```
 
 Install dependencies.
