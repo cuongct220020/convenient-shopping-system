@@ -4,7 +4,7 @@ from pydantic import ValidationError
 
 from app.schemas.response_schema import GenericResponse
 from app.exceptions import AppException, TooManyRequests
-from app.utils.logger_utils import get_logger
+from common.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 

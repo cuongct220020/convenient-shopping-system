@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from app.models.base import Base
 from app.exceptions import ServerError
-from common.utils.logger_utils import get_logger
+from app.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 

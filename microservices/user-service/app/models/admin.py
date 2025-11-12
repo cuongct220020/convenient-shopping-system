@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class Admin(Base):
     __tablename__ = "admins"
 
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.user_id'), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, ForeignKey('users.user_id'), primary_key=True)
 
     # --- Relationships ---
     user: Mapped["User"] = relationship(back_populates="admin_profile")

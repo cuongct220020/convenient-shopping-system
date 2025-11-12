@@ -5,7 +5,7 @@ from typing import Callable, Any, Type
 from pydantic import BaseModel
 
 from app.databases.redis_manager import redis_manager
-from app.utils.logger_utils import get_logger
+from common.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 

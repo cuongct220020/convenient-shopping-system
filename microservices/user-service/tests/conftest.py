@@ -1,4 +1,4 @@
 pytest_plugins = [
-    "tests.fixtures.app_fixtures",
-    "tests.fixtures.db_fixtures",
+    "unit.fixtures.app_fixtures",
+    "unit.fixtures.db_fixtures",
 ]
