@@ -8,4 +8,4 @@ class RecipeIngredientFlattened(Base):
 
     recipe_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     recipe_name: Mapped[str] = mapped_column(String, nullable=False)
-    all_ingredients: Mapped[dict] = mapped_column(JSON, nullable=False)
+    all_ingredients: Mapped[list[dict]] = mapped_column(JSON, nullable=False)

@@ -64,3 +64,11 @@ class RecipeDetailedResponse(RecipeBase):
 
 RecipeDetailedResponse.model_rebuild()
 ComponentDetailedBase.model_rebuild()
+
+
+class RecipeFlattenedResponse(BaseModel):
+    recipe_id: int
+    recipe_name: str
+    all_ingredients: list[dict]
+
+    model_config = ConfigDict(from_attributes=True)

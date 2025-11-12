@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session, selectinload
 from .crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
+from models.recipe_ingredient_flattened import RecipeIngredientFlattened
 from schemas.recipe import RecipeCreate, RecipeUpdate
 
 """
@@ -18,3 +19,6 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
             .filter(Recipe.component_id == id)
             .first()
         )
+
+    def get_flattened(self, db: Session, id: int):
+        return db.get(RecipeIngredientFlattened, id)
