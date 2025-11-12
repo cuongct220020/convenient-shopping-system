@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal, Annotated
 from typing_extensions import TypeAlias
 from .ingredient import IngredientResponse

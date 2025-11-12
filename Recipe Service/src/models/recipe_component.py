@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Float, Enum, ForeignKey, JSON
+from sqlalchemy import Integer, String, Float, Enum, ForeignKey, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from enums.c_measurement_unit import CMeasurementUnit
 from enums.uc_measurement_unit import UCMeasurementUnit
@@ -8,7 +8,6 @@ class RecipeComponent(Base):
     __tablename__ = "recipe_components"
 
     component_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    component_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     type: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
     __mapper_args__ = {
@@ -40,6 +39,7 @@ class CountableIngredient(Ingredient):
     __tablename__ = "countable_ingredients"
 
     component_id: Mapped[int] = mapped_column(ForeignKey("ingredients.component_id"), primary_key=True)
+    component_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     c_measurement_unit: Mapped[CMeasurementUnit] = mapped_column(Enum(CMeasurementUnit))
 
     __mapper_args__ = {
@@ -51,7 +51,12 @@ class UncountableIngredient(Ingredient):
     __tablename__ = "uncountable_ingredients"
 
     component_id: Mapped[int] = mapped_column(ForeignKey("ingredients.component_id"), primary_key=True)
+    component_name: Mapped[str] = mapped_column(String, nullable=False)
     uc_measurement_unit: Mapped[UCMeasurementUnit] = mapped_column(Enum(UCMeasurementUnit))
+
+    __table_args__ = (
+        UniqueConstraint("component_name", "uc_measurement_unit", name="unique_uncountable_ingredient"),
+    )
 
     __mapper_args__ = {
         "polymorphic_identity": "uncountable_ingredient",
@@ -88,6 +93,7 @@ class Recipe(RecipeComponent):
     __tablename__ = "recipes"
 
     component_id: Mapped[int] = mapped_column(ForeignKey("recipe_components.component_id"),primary_key=True)
+    component_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     image_url: Mapped[str] = mapped_column(String, nullable=True)
     prep_time: Mapped[int] = mapped_column(Integer, nullable=True)
     cook_time: Mapped[int] = mapped_column(Integer, nullable=True)

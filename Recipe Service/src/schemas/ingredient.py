@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, Literal, Annotated
 from typing_extensions import TypeAlias
 from enums.c_measurement_unit import CMeasurementUnit
@@ -45,12 +45,10 @@ IngredientCreate: TypeAlias = Annotated[
 class CountableIngredientUpdate(IngredientBase):
     type: Literal["countable_ingredient"]
     component_name: Optional[str] = None
-    c_measurement_unit: Optional[CMeasurementUnit] = None
 
 class UncountableIngredientUpdate(IngredientBase):
     type: Literal["uncountable_ingredient"]
     component_name: Optional[str] = None
-    uc_measurement_unit: Optional[UCMeasurementUnit] = None
 
 class BulkIngredientUpdate(UncountableIngredientUpdate):
     type: Literal["bulk_ingredient"]

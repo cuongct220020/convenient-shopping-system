@@ -22,5 +22,6 @@ app.include_router(ingredient_router)
 app.include_router(recipe_router)
 
 if __name__ == "__main__":
+    print("Hello world")
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=False, log_level="debug")
