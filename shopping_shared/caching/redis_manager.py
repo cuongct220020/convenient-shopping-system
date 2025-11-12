@@ -1,9 +1,9 @@
 from redis.asyncio import Redis, ConnectionPool
-from app.exceptions import ServerError
+from shopping_shared.exceptions import CacheError
 
 
 class RedisManager:
-    """A manager for the Redis connection pool."""
+    """A manager for the Redis connection pool, designed for common use."""
 
     def __init__(self):
         self.pool: ConnectionPool | None = None
@@ -27,7 +27,7 @@ class RedisManager:
         The connection pool handles the underlying connection management.
         """
         if not self.pool:
-            raise ServerError("Redis connection pool not initialized. Call setup() first.")
+            raise CacheError("Redis connection pool not initialized. Call setup() first.")
         if not self._client:
             self._client = Redis(connection_pool=self.pool)
         return self._client
