@@ -11,3 +11,5 @@ __pycache__/
 
 # VSCode
 .vscode/
+
+shopping_shared.egg-info
