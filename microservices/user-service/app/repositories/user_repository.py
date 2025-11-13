@@ -8,11 +8,11 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.models.user import User
 from app.models.address import Address
-from app.repositories import BaseRepository
-from app.schemas.users.user_schema import ProfileUpdateSchema, AddressUpdateSchema
+from shopping_shared.databases.base_repository import BaseRepository
+from app.schemas.users.user_schema import ProfileUpdateSchema, AddressUpdateSchema, UserCreate, UserUpdate
 
 
-class UserRepository(BaseRepository[User]):
+class UserRepository(BaseRepository[User, UserCreate, UserUpdate]):
     """
     Repository for User model-specific database operations.
     Inherits all common CRUD, pagination, and soft-delete logic from BaseRepository.

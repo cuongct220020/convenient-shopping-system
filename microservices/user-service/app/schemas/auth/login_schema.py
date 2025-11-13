@@ -1,5 +1,5 @@
 # app/schemas/login_schema.py
-from app.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 from app.schemas.custom_types import UsernameStr, PasswordStr
 
 class LoginRequest(BaseSchema):

@@ -2,8 +2,8 @@
 from sanic import Sanic, Request
 from sanic.exceptions import SanicException
 
-from app.databases.redis_manager import redis_manager
-from app.utils.logger_utils import get_logger
+from shopping_shared.caching.redis_manager import redis_manager
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 

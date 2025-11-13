@@ -2,8 +2,8 @@
 from functools import wraps
 from sanic.request import Request
 
-from app.databases.redis_manager import redis_manager
-from app.exceptions import TooManyRequests
+from shopping_shared.caching.redis_manager import redis_manager
+from shopping_shared.exceptions import TooManyRequests
 
 def rate_limit_by_ip(limit: int, period: int):
     """

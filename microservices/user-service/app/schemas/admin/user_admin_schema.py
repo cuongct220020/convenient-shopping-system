@@ -4,7 +4,7 @@ from typing import Optional
 from datetime import datetime
 
 from app.constants.user_role_constants import UserRole
-from app.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 from app.schemas.custom_types import PasswordStr
 
 

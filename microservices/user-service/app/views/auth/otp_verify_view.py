@@ -7,7 +7,7 @@ from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth.otp_schema import OTPVerifyRequest
 from app.services.auth_service import AuthService
-from app.schemas.response_schema import GenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 
 
 class OTPVerifyView(HTTPMethodView):

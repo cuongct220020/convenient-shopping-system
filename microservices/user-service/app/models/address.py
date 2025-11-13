@@ -1,9 +1,8 @@
-# app/models/address.py
+from typing import List
 from sqlalchemy import String, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import TYPE_CHECKING
-from .base import Base
 
+from .base import Base
 
 
 class Address(Base):
@@ -15,6 +14,8 @@ class Address(Base):
     city: Mapped[str] = mapped_column(String(100), nullable=False)
     province: Mapped[str] = mapped_column(String(100), nullable=False)
 
+    # --- Relationships ---
+    user_profiles: Mapped[List["UserIdentityProfile"]] = relationship(back_populates="address")
 
     def __repr__(self) -> str:
-        return f"<Address id={self.address_id}, {self.district}, {self.province_city}>"
+        return f"<Address id={self.id}, {self.district}, {self.city}>"

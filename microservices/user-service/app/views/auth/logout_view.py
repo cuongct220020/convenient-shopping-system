@@ -4,33 +4,32 @@ from sanic.response import json
 from sanic.views import HTTPMethodView
 
 from app.decorators.auth import protected
-from app.repositories.user_session_repository import UserSessionRepository
+from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
-from app.schemas.response_schema import GenericResponse
-# Không cần LogoutRequest hay validate_request nữa
+from shopping_shared.schemas.response_schema import GenericResponse
+
 
 class LogoutView(HTTPMethodView):
     decorators = [protected]  # Chỉ cần xác thực access token
 
     async def post(self, request: Request):
-        """Handles user logout by revoking access token and clearing refresh token cookie."""
-        # 1. Lấy thông tin access token (đã được middleware @protected xác thực)
+        """Handles user logout by revoking tokens and clearing the session from the database."""
+        # 1. Lấy thông tin từ context và cookie
         access_jti = request.ctx.jti
         access_exp = request.ctx.exp
-
-        # 2. Lấy refresh token từ cookie
+        user_id = request.ctx.user_id
         refresh_token = request.cookies.get("refresh_token")
 
-        session_repo = UserSessionRepository(request.ctx.db_session)
+        # 2. Khởi tạo repository
+        user_repo = UserRepository(request.ctx.db_session)
 
-        # 3. Gọi AuthService.logout
-        # Service sẽ vô hiệu hóa access_jti
-        # và vô hiệu hóa refresh_token (nếu nó tồn tại)
+        # 3. Gọi service để thực hiện logout
         await AuthService.logout(
-            session_repo=session_repo,
+            user_id=user_id,
+            user_repo=user_repo,
             access_jti=access_jti,
             access_exp=access_exp,
-            refresh_token=refresh_token  # Truyền token từ cookie
+            refresh_token=refresh_token
         )
 
         response_data = GenericResponse(status="success", message="Logout successful.")

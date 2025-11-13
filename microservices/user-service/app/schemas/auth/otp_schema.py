@@ -1,7 +1,7 @@
 from enum import Enum
 from pydantic import EmailStr, SecretStr, Field
 
-from app.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 
 class OtpAction(str, Enum):
     REGISTER = "register"

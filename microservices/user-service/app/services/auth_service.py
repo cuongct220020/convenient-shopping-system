@@ -4,11 +4,9 @@ from typing import Any
 import jwt
 from pydantic import BaseModel as PydanticBase, SecretStr, EmailStr
 
-from app.databases.redis_manager import redis_manager
-from app.exceptions import Unauthorized, Forbidden, Conflict, NotFound
-from app.models.user_session import UserSession
+from shopping_shared.caching.redis_manager import redis_manager
+from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound
 from app.repositories.user_repository import UserRepository
-from app.repositories.user_session_repository import UserSessionRepository
 from app.schemas.auth.login_schema import LoginRequest
 from app.schemas.auth.otp_schema import OTPRequest, OtpAction, OTPVerifyRequest
 from app.schemas.auth.register_schema import RegisterRequest
@@ -17,7 +15,8 @@ from app.schemas.auth.token_schema import TokenData
 from app.schemas.users.user_schema import UserUpdate
 from app.utils.password_utils import verify_password, hash_password
 from app.utils.jwt_utils import jwt_handler
-from app.services.email_service import email_service
+from shopping_shared.messaging.kafka_manager import kafka_manager
+from shopping_shared.messaging.topics import NOTIFICATION_TOPIC
 from app.services.otp_service import otp_service
 
 
@@ -62,12 +61,12 @@ class AuthService:
     async def login(
             cls,
             login_data: LoginRequest,
-            user_repo: UserRepository,
-            session_repo: UserSessionRepository,
-            ip_address: str | None,
-            user_agent: str | None
+            user_repo: UserRepository
     ) -> TokenData:
-        """Handles user login, creates tokens, and records the user session in the database."""
+        """
+        Handles user login, creates JWTs, and saves the refresh token JTI
+        to enforce a single session.
+        """
         user = await user_repo.get_by_username(login_data.username)
         if not user or not verify_password(login_data.password.get_secret_value(), user.password):
             raise Unauthorized("Invalid username or password")
@@ -75,25 +74,18 @@ class AuthService:
         if not user.is_active:
             raise Forbidden("Account is not active. Please verify your email.")
 
+        # Reset failed login attempts if any
         if hasattr(user, 'failed_login_attempts') and user.failed_login_attempts > 0:
             await user_repo.reset_failed_attempts(user.user_id)
 
-        await user_repo.update_last_login(user.user_id)
+        # Generate new tokens
+        access_token, refresh_token, _, refresh_jti, expires_in = jwt_handler.create_tokens(
+            user_id=user.id, user_role=user.user_role.value)
 
-        access_token, refresh_token, access_jti, refresh_jti, expires_in = jwt_handler.create_tokens(
-            user_id=user.user_id, user_role=user.user_role.value)
-
-        refresh_payload = jwt.decode(refresh_token, options={"verify_signature": False})
-        refresh_expires_at = datetime.fromtimestamp(refresh_payload.get('exp'), tz=UTC)
-
-        session = UserSession(
-            user_id=user.user_id,
-            jti=refresh_jti,
-            expires_at=refresh_expires_at,
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
-        await session_repo.create(session)
+        # Update user record with the new JTI and last login time
+        user.active_refresh_jti = refresh_jti
+        user.last_login = datetime.now(UTC)
+        await user_repo.session.commit()
 
         return TokenData(
             access_token=access_token,
@@ -103,46 +95,44 @@ class AuthService:
         )
 
     @classmethod
-    async def logout(cls, session_repo: UserSessionRepository, access_jti: str, access_exp: int,
-                     refresh_token: str | None):
+    async def logout(cls, user_id: Any, user_repo: UserRepository, access_jti: str, access_exp: int, refresh_token: str | None):
         """
-        Logs out a user by revoking the access token (in Redis) 
-        and, if provided, the refresh token (in DB).
+        Logs out a user by revoking tokens in Redis and clearing the active JTI in the database.
         """
-        # 1. Vô hiệu hóa access token trong Redis (bắt buộc)
-        exp_datetime = datetime.fromtimestamp(access_exp, tz=UTC)
-        await jwt_handler.revoke(jti=access_jti, exp=exp_datetime)
+        # 1. Revoke the access token in Redis (mandatory)
+        access_exp_datetime = datetime.fromtimestamp(access_exp, tz=UTC)
+        await jwt_handler.revoke(jti=access_jti, exp=access_exp_datetime)
 
-        # 2. Vô hiệu hóa refresh token trong DB (nếu nó được cung cấp)
+        # 2. Find user and clear their active JTI from the database
+        user = await user_repo.get_by_id(user_id)
+        if user:
+            user.active_refresh_jti = None
+            await user_repo.session.commit()
+
+        # 3. Revoke the refresh token in Redis (if provided)
         if not refresh_token:
-            return  # Không có cookie, không cần làm gì thêm
+            return
 
         try:
-            # Xác minh token (không kiểm tra blacklist) để lấy jti
             payload = await jwt_handler.verify(token=refresh_token, token_type="refresh", check_revocation=False)
             refresh_jti = payload.get("jti")
-            user_id = payload.get("sub")
+            refresh_exp = payload.get("exp")
 
-            session = await session_repo.get_by_jti(refresh_jti)
-            if session and session.user_id == user_id:
-                session.revoked = True
-                await session_repo.session.commit()
-        except (jwt.PyJWTError, Unauthorized, NotFound):
-            # Nếu token không hợp lệ, hết hạn, hoặc không tìm thấy,
-            # chúng ta không cần làm gì cả. Mục tiêu là logout,
-            # và token này đã không thể sử dụng được nữa.
-            pass
+            if refresh_jti and refresh_exp:
+                refresh_exp_datetime = datetime.fromtimestamp(refresh_exp, tz=UTC)
+                await jwt_handler.revoke(jti=refresh_jti, exp=refresh_exp_datetime)
+        except (jwt.PyJWTError, Unauthorized):
+            pass # Token is already invalid, no action needed
 
     @classmethod
     async def refresh_tokens(
             cls,
             old_refresh_token: str,
-            session_repo: UserSessionRepository,
             user_repo: UserRepository,
-            ip_address: str | None,
-            user_agent: str | None
     ) -> TokenData:
-        """Handles token refresh and rotation for enhanced security."""
+        """
+        Handles token refresh with rotation, enforcing a single active session.
+        """
         try:
             payload = await jwt_handler.verify(token=old_refresh_token, token_type="refresh")
         except (jwt.PyJWTError, Unauthorized) as e:
@@ -151,29 +141,24 @@ class AuthService:
         user_id = payload.get("sub")
         old_jti = payload.get("jti")
 
-        session = await session_repo.get_by_jti(old_jti)
-
-        if not session or session.revoked:
-            await session_repo.revoke_all_for_user(user_id)
-            await cls.revoke_all_access_tokens_for_user(user_id)
-            raise Forbidden("Compromised refresh token detected. All sessions have been logged out.")
-
         user = await user_repo.get_by_id(user_id)
         if not user or not user.is_active:
             raise Unauthorized("User account is inactive or not found.")
 
-        access_token, new_refresh_token, access_jti, new_refresh_jti, expires_in = jwt_handler.create_tokens(
-            user_id=user.user_id, user_role=user.user_role.value)
+        # CRITICAL CHECK: Enforce single session
+        if user.active_refresh_jti != old_jti:
+            # This token is not the currently active one; it has been superseded by a new login.
+            # As a security measure, revoke all tokens for the user.
+            await cls.revoke_all_tokens_for_user(user_id, user_repo)
+            raise Forbidden("This session has been invalidated by a newer login.")
 
-        new_refresh_payload = jwt.decode(new_refresh_token, options={"verify_signature": False})
-        new_expires_at = datetime.fromtimestamp(new_refresh_payload.get('exp'), tz=UTC)
+        # Create a new pair of tokens
+        access_token, new_refresh_token, _, new_refresh_jti, expires_in = jwt_handler.create_tokens(
+            user_id=user.id, user_role=user.user_role.value)
 
-        session.jti = new_refresh_jti
-        session.expires_at = new_expires_at
-        session.last_active = datetime.now(UTC)
-        session.ip_address = ip_address
-        session.user_agent = user_agent
-        await session_repo.session.commit()
+        # Update the user's record with the new JTI
+        user.active_refresh_jti = new_refresh_jti
+        await user_repo.session.commit()
 
         return TokenData(
             access_token=access_token,
@@ -195,16 +180,26 @@ class AuthService:
                 raise NotFound("No account found with this email address.")
 
         otp_code = await otp_service.generate_and_store_otp(otp_data.email, otp_data.action.value)
-        await email_service.send_otp(email=otp_data.email, otp_code=otp_code, action=otp_data.action)
+        
+        # Instead of sending email directly, publish an event to Kafka
+        producer = await kafka_manager.get_producer()
+        message = {
+            "type": "send_otp",
+            "payload": {
+                "email": otp_data.email,
+                "otp_code": otp_code,
+                "action": otp_data.action.value
+            }
+        }
+        await producer.send_and_wait(NOTIFICATION_TOPIC, message)
 
     @classmethod
     async def reset_password_with_otp(
             cls,
             data: ResetPasswordRequest,
             user_repo: UserRepository,
-            session_repo: UserSessionRepository
     ):
-        """Verifies OTP from Redis, resets password, and revokes all sessions."""
+        """Verifies OTP, resets password, and revokes all sessions/tokens for the user."""
         is_valid = await otp_service.verify_otp(
             email=data.email,
             action=OtpAction.RESET_PASSWORD.value,
@@ -215,15 +210,15 @@ class AuthService:
             raise Unauthorized("Invalid or expired OTP code.")
 
         user = await user_repo.get_by_username(data.email)
-        if not user:  # Should not happen if request_otp check passed, but good practice
+        if not user:
             raise NotFound("User account not found.")
 
+        # Reset password
         hashed_new_password = hash_password(data.new_password.get_secret_value())
-        update_schema = UserUpdate(password=SecretStr(hashed_new_password))
-        await user_repo.update(user.user_id, update_schema)
-
-        await session_repo.revoke_all_for_user(user.user_id)
-        await cls.revoke_all_access_tokens_for_user(user.user_id)
+        user.password = hashed_new_password
+        
+        # Invalidate all sessions
+        await cls.revoke_all_tokens_for_user(user.id, user_repo)
 
     @classmethod
     async def verify_registration_otp(cls, data: OTPVerifyRequest, user_repo: UserRepository):
@@ -242,10 +237,22 @@ class AuthService:
             raise NotFound("User account not found.")
 
         if not user.is_active:
-            await user_repo.activate_user(user.user_id)
+            await user_repo.activate_user(user.id)
 
     @classmethod
-    async def revoke_all_access_tokens_for_user(cls, user_id: Any):
-        """Instantly invalidates all access tokens for a user by setting a revocation timestamp in Redis."""
+    async def revoke_all_tokens_for_user(cls, user_id: Any, user_repo: UserRepository):
+        """
+        Instantly invalidates all tokens for a user by:
+        1. Setting a global revocation timestamp in Redis.
+        2. Clearing the active refresh token JTI from the user's database record.
+        """
+        # 1. Invalidate in DB
+        user = await user_repo.get_by_id(user_id)
+        if user:
+            user.active_refresh_jti = None
+            await user_repo.session.commit()
+
+        # 2. Invalidate in Redis
         key = f"user_revoke_all_timestamp:{user_id}"
-        await redis_manager.client.set(key, int(datetime.now(UTC).timestamp()), ex=timedelta(days=31))
+        refresh_token_days = 30 # Should ideally get from config
+        await redis_manager.client.set(key, int(datetime.now(UTC).timestamp()), ex=timedelta(days=refresh_token_days + 1))

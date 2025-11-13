@@ -6,7 +6,7 @@ from typing import Optional
 
 from sanic import Sanic
 
-from app.utils.logger_utils import get_logger
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -50,6 +50,8 @@ class EmailService:
         message.attach(MIMEText(html_content, "html"))
 
         try:
+            # smtplib is blocking, so it should be run in a separate thread in an async app
+            # For simplicity here, we call it directly, but for production, consider `asyncio.to_thread`
             with smtplib.SMTP(self.config.EMAIL_HOST, self.config.EMAIL_PORT) as server:
                 server.starttls()
                 server.login(sender_email, password)
@@ -62,29 +64,29 @@ class EmailService:
 
     async def send_otp(self, email: str, otp_code: str, action: str):
         """
-        Constructs and sends an OTP email.
+        Constructs and sends an OTP email based on the action.
         """
-        if action.upper() == "REGISTER":
+        if action == "register":
             subject = "Welcome! Your Verification Code"
             body_html = f"""
             <html>
             <body>
                 <h2>Welcome to Our Service!</h2>
                 <p>Thank you for registering. Please use the following One-Time Password (OTP) to activate your account:</p>
-                <p style=\"font-size: 24px; font-weight: bold; letter-spacing: 2px;\">{otp_code}</p>
+                <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">{otp_code}</p>
                 <p>This code will expire in 5 minutes.</p>
                 <p>If you did not request this, please ignore this email.</p>
             </body>
             </html>
             """
-        elif action.upper() == "RESET_PASSWORD":
+        elif action == "reset_password":
             subject = "Your Password Reset Code"
             body_html = f"""
             <html>
             <body>
                 <h2>Password Reset Request</h2>
                 <p>We received a request to reset your password. Use the following One-Time Password (OTP):</p>
-                <p style=\"font-size: 24px; font-weight: bold; letter-spacing: 2px;\">{otp_code}</p>
+                <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">{otp_code}</p>
                 <p>This code will expire in 5 minutes.</p>
                 <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
             </body>
@@ -96,4 +98,5 @@ class EmailService:
 
         await self._send_email(to_email=email, subject=subject, html_content=body_html)
 
+# Create a singleton instance for the application to use
 email_service = EmailService()

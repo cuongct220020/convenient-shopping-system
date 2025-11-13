@@ -2,7 +2,7 @@
 import re
 from typing import Annotated
 from pydantic import Field, SecretStr, AfterValidator
-from app.exceptions import BadRequest
+from shopping_shared.exceptions import BadRequest
 
 # --- Custom Validators ---
 

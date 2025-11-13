@@ -2,9 +2,9 @@
 import random
 from datetime import timedelta
 
-from app.databases.redis_manager import redis_manager
+from shopping_shared.caching.redis_manager import redis_manager
 from app.utils.password_utils import hash_password, verify_password
-from app.exceptions import Unauthorized
+from shopping_shared.exceptions import Unauthorized
 
 
 class OTPService:

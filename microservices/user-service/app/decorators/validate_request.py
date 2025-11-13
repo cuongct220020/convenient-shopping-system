@@ -7,8 +7,8 @@ from sanic.request import Request
 from sanic.response import json
 
 # Import the standardized response schema
-from app.schemas.response_schema import GenericResponse
-from app.schemas import BaseSchema # Import BaseSchema
+from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.schemas.base_schema import BaseSchema # Import BaseSchema
 
 
 def validate_request(schema: Type[BaseSchema]):

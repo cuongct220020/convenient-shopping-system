@@ -3,7 +3,7 @@ import time
 
 from sanic import Request
 
-from common.utils.logger_utils import get_logger
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger('Middleware')
 

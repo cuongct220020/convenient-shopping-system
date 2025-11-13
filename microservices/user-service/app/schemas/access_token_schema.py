@@ -1,5 +1,5 @@
 # app/schemas/auth/access_token_schema.py
-from app.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 
 class AccessTokenResponse(BaseSchema):
     """Schema cho dữ liệu access token trả về trong JSON body."""

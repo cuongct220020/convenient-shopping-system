@@ -5,9 +5,8 @@ from sanic.views import HTTPMethodView
 
 from app.exceptions import Unauthorized
 from app.services.auth_service import AuthService
-from app.schemas.response_schema import GenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from app.repositories.user_repository import UserRepository
-from app.repositories.user_session_repository import UserSessionRepository
 from app.schemas.auth.token_schema import TokenData
 
 
@@ -27,19 +26,11 @@ class RefreshView(HTTPMethodView):
 
         # Instantiate required repositories
         user_repo = UserRepository(session=request.ctx.db_session)
-        session_repo = UserSessionRepository(session=request.ctx.db_session)
-
-        # Get request metadata
-        ip_address = request.ip
-        user_agent = request.headers.get("User-Agent")
 
         # 2. Gọi service với token từ cookie
         new_token_dto: TokenData = await AuthService.refresh_tokens(
             old_refresh_token=old_refresh_token,
-            session_repo=session_repo,
             user_repo=user_repo,
-            ip_address=ip_address,
-            user_agent=user_agent
         )
 
         # 3. Chuẩn bị response chỉ chứa access token mới

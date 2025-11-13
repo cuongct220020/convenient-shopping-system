@@ -1,5 +1,5 @@
 # app/schemas/auth/token_schema.py
-from app.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 
 class TokenData(BaseSchema):
     """Consolidated token data."""

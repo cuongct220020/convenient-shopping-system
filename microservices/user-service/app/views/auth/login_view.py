@@ -5,11 +5,10 @@ from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.repositories.user_session_repository import UserSessionRepository
 from app.schemas.access_token_schema import AccessTokenResponse
 from app.schemas.auth.login_schema import LoginRequest
 from app.services.auth_service import AuthService
-from app.schemas.response_schema import GenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from app.schemas.auth.token_schema import TokenData
 
 
@@ -23,18 +22,10 @@ class LoginView(HTTPMethodView):
 
         # Instantiate required repositories with the request's DB session
         user_repo = UserRepository(session=request.ctx.db_session)
-        session_repo = UserSessionRepository(session=request.ctx.db_session)
-
-        # Get request metadata
-        ip_address = request.ip
-        user_agent = request.headers.get("User-Agent")
 
         token_dto: TokenData = await AuthService.login(
             login_data=validated_data,
             user_repo=user_repo,
-            session_repo=session_repo,
-            ip_address=ip_address,
-            user_agent=user_agent
         )
 
         # 1. Chuẩn bị dữ liệu JSON chỉ chứa access token
