@@ -6,9 +6,8 @@ from app.decorators.cache import cache
 from app.exceptions import NotFound, Conflict, Unauthorized
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.repositories.user_session_repository import UserSessionRepository
 from app.schemas.auth.change_password_schema import ChangePasswordRequest
-from app.schemas.users.user_schema import UserRead, UserCreate, UserUpdate, ProfileUpdateSchema
+from app.schemas.users.user_schema import UserRead, UserUpdate, ProfileUpdateSchema
 from app.schemas.admin.user_admin_schema import AdminUserCreateSchema, AdminUserUpdateSchema
 from app.utils.password_utils import hash_password, verify_password
 from app.services.auth_service import AuthService
@@ -31,23 +30,21 @@ class UserService:
             cls,
             user_id: Any,
             data: ChangePasswordRequest,
-            user_repo: UserRepository,
-            session_repo: UserSessionRepository
+            user_repo: UserRepository
     ):
-        """Changes a user's password, revokes all DB sessions, and invalidates all access tokens."""
+        """Changes a user's password and invalidates all their tokens."""
         user = await user_repo.get_by_id(user_id)
         if not user:
             raise NotFound("Authenticated user not found.")
 
-        if verify_password(data.old_password.get_secret_value(), user.password):
+        if not verify_password(data.old_password.get_secret_value(), user.password):
             raise Unauthorized("Invalid old password.")
 
         hashed_new_password = hash_password(data.new_password.get_secret_value())
-        update_schema = UserUpdate(password=SecretStr(hashed_new_password))
-        await user_repo.update(user.user_id, update_schema)
-
-        await session_repo.revoke_all_for_user(user.user_id)
-        await AuthService.revoke_all_access_tokens_for_user(user.user_id)
+        user.password = hashed_new_password
+        
+        # Invalidate all sessions for the user
+        await AuthService.revoke_all_tokens_for_user(user.id, user_repo)
 
     async def update_user_profile(self, user_id: Any, profile_data: ProfileUpdateSchema) -> User:
         """Updates a user's profile information."""
@@ -69,16 +66,20 @@ class UserService:
             raise Conflict(f"User with username {user_data.username} already exists.")
 
         hashed_password = hash_password(user_data.password.get_secret_value())
-        
-        user_create_for_repo = UserCreate(
+
+        # The UserCreate schema is insufficient, so we build the model directly.
+        new_user = self.user_repo.model(
             username=user_data.username,
-            password=SecretStr(hashed_password),
+            password=hashed_password,
             user_role=user_data.user_role,
             is_active=user_data.is_active,
             first_name=user_data.first_name,
-            last_name=user_data.last_name
+            last_name=user_data.last_name,
+            email=user_data.username  # Assuming email is username
         )
-        new_user = await self.user_repo.create(user_create_for_repo)
+        self.user_repo.session.add(new_user)
+        await self.user_repo.session.flush()
+        await self.user_repo.session.refresh(new_user)
         return new_user
 
     async def get_user_details_by_admin(self, user_id: int) -> User:
@@ -93,21 +94,20 @@ class UserService:
         user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise NotFound(f"User with id {user_id} not found.")
-        
+
         user_update_for_repo = UserUpdate(**update_data.model_dump(exclude_unset=True))
-        
+
         updated_user = await self.user_repo.update(user_id, user_update_for_repo)
         return updated_user
 
-    async def delete_user_by_admin(self, user_id: int, session_repo: UserSessionRepository) -> None:
+    async def delete_user_by_admin(self, user_id: int) -> None:
         """
-        Deletes a user (soft delete by setting is_active=False) and revokes all their sessions.
+        Deletes a user (soft delete by setting is_active=False) and revokes all their tokens.
         """
         user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise NotFound(f"User with id {user_id} not found.")
-        
+
         await self.user_repo.update(user_id, UserUpdate(is_active=False))
-        
-        await session_repo.revoke_all_for_user(user_id)
-        await AuthService.revoke_all_access_tokens_for_user(user_id)
+
+        await AuthService.revoke_all_tokens_for_user(user_id, self.user_repo)

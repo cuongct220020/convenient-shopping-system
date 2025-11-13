@@ -8,7 +8,6 @@ from sanic_ext.extensions.openapi.types import Schema
 from app.decorators.auth import protected
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.repositories.user_session_repository import UserSessionRepository
 from app.schemas.admin.user_admin_schema import AdminUserCreateSchema, AdminUserUpdateSchema, AdminUserResponseSchema
 from app.schemas.response_schema import GenericResponse, PaginationResponse
 from app.services.user_service import UserService
@@ -121,10 +120,9 @@ class AdminUserDetailView(HTTPMethodView):
     async def delete(self, request: Request, user_id: int):
         """Soft deletes a specific user and revokes their sessions."""
         user_repo = UserRepository(request.ctx.db_session)
-        session_repo = UserSessionRepository(request.ctx.db_session)
         user_service = UserService(user_repo)
 
-        await user_service.delete_user_by_admin(user_id, session_repo)
+        await user_service.delete_user_by_admin(user_id)
 
         response = GenericResponse(
             status="success",

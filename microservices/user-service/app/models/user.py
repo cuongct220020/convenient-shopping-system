@@ -12,7 +12,7 @@ from .base import Base
 class User(Base):
     __tablename__ = "users"
 
-    user_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     user_role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole), default=UserRole.FAMILY_MEMBER)
@@ -27,6 +27,18 @@ class User(Base):
     last_login: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(UTC), nullable=True
     )
+    active_refresh_jti: Mapped[str] = mapped_column(String, nullable=True, index=True)
 
     def __repr__(self) -> str:
         return f"<User username={self.username}, role={self.user_role}>"
+
+
+class UserIdentityProfile(Base):
+    __tablename__ = "user_identity_profiles"
+
+    pass
+
+class UserHealthProfile(Base):
+    __tablename__ = "user_health_profiles"
+
+    pass

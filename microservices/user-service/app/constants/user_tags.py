@@ -1,4 +1,4 @@
-from enum import ENUM
+from enum import Enum
 
 class AgeTag(str, Enum):
     """Tags for age groups."""

@@ -5,7 +5,6 @@ from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.repositories.user_session_repository import UserSessionRepository
 from app.schemas.auth.reset_password_schema import ResetPasswordRequest
 from app.services.auth_service import AuthService
 from app.schemas.response_schema import GenericResponse
@@ -19,12 +18,10 @@ class ResetPasswordView(HTTPMethodView):
         validated_data = request.ctx.validated_data
 
         user_repo = UserRepository(session=request.ctx.db_session)
-        session_repo = UserSessionRepository(session=request.ctx.db_session)
 
         await AuthService.reset_password_with_otp(
             data=validated_data,
             user_repo=user_repo,
-            session_repo=session_repo
         )
 
         response = GenericResponse(

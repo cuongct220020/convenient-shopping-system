@@ -10,7 +10,6 @@ from app.views.users.change_password_view import ChangePasswordView
 from app.views.auth.reset_password_view import ResetPasswordView
 from app.views.auth.otp_request_view import OTPRequestView
 from app.views.auth.otp_verify_view import OTPVerifyView
-from app.views.auth.sessions_view import SessionsView
 # from app.views.auth.unlock_view import UnlockView
 
 # --- Khởi tạo Blueprint ---
@@ -33,11 +32,6 @@ auth_bp.add_route(LogoutView.as_view(), '/logout')
 # POST /api/v1/auth/refresh (Public: Yêu cầu Refresh Token)
 auth_bp.add_route(RefreshView.as_view(), '/refresh')
 
-# GET /api/v1/auth/sessions (Protected: Lấy danh sách thiết bị)
-# DELETE /api/v1/auth/sessions/<session_id> (Protected: Xóa 1 thiết bị)
-auth_bp.add_route(SessionsView.as_view(), '/sessions')
-auth_bp.add_route(SessionsView.as_view(), '/sessions/<session_id:int>')
-
 
 # === 3. Quản lý Mật khẩu ===
 # POST /api/v1/auth/password/change (Protected: Đổi mật khẩu khi đã đăng nhập)
@@ -53,6 +47,3 @@ auth_bp.add_route(OTPRequestView.as_view(), '/otp/request')
 
 # POST /api/v1/auth/otp/verify (Public: Xác thực OTP cho 'register')
 auth_bp.add_route(OTPVerifyView.as_view(), '/otp/verify')
-
-# # POST /api/v1/auth/account/unlock (Public: Mở khóa tài khoản bằng OTP)
-# auth_bp.add_route(UnlockView.as_view(), '/account/unlock')
