@@ -6,8 +6,9 @@ from sqlalchemy import String, DateTime, func, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
-from .base import Base
-from .constants import UserRole
+from shopping_shared.databases.base_model import Base
+
+from app.constants import UserRole
 
 
 class User(Base):
@@ -16,11 +17,11 @@ class User(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
 
     user_name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     system_role: Mapped[UserRole] = mapped_column(
-        SQLEnum(UserRole), nullable=False, default=UserRole.FAMILY_MEMBER
+        SQLEnum(UserRole), nullable=False, default=UserRole.USER
     )
 
     phone_num: Mapped[Optional[str]] = mapped_column(String(20), unique=True, nullable=True)
@@ -64,11 +65,6 @@ class User(Base):
     # 1-N tới FamilyGroup (với tư cách người tạo)
     created_groups: Mapped[List["FamilyGroup"]] = relationship(
         foreign_keys="FamilyGroup.created_by_user_id", back_populates="creator"
-    )
-
-    # 1-N tới FamilyGroup (với tư cách headchef)
-    headchef_of_groups: Mapped[List["FamilyGroup"]] = relationship(
-        foreign_keys="FamilyGroup.headchef_user_id", back_populates="headchef"
     )
 
     def __repr__(self) -> str:

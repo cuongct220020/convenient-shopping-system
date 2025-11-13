@@ -4,8 +4,7 @@ from uuid import UUID
 from sqlalchemy import String, BigInteger, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
-
+from shopping_shared.databases.base_model import Base
 
 class Tag(Base):
     __tablename__ = "tags"
@@ -33,4 +32,8 @@ class UserTag(Base):
     )
     tag_id: Mapped[int] = mapped_column(
         ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True
+    )
+
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), default=func.now(), nullable=True
     )

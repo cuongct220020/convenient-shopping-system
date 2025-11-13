@@ -3,11 +3,15 @@ import enum
 
 
 class UserRole(str, enum.Enum):
-    """Enum for user roles."""
+    """Enum for system-level user roles."""
     ADMIN = "admin"
     USER = "user"
-    FAMILY_MEMBER = "family_member"
+
+
+class GroupRole(str, enum.Enum):
+    """Enum for user roles within a family group."""
     HEAD_CHEF = "head_chef"
+    MEMBER = "member"
 
 
 class UserGender(str, enum.Enum):

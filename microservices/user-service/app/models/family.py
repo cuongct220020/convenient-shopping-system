@@ -4,8 +4,10 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import String, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
-from .base import Base
+from shopping_shared.databases.base_model import Base
+from app.constants import GroupRole
 
 
 class FamilyGroup(Base):
@@ -18,9 +20,6 @@ class FamilyGroup(Base):
     created_by_user_id: Mapped[Optional[UUID]] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    headchef_user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
-    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -32,10 +31,6 @@ class FamilyGroup(Base):
     # --- Relationships ---
     creator: Mapped[Optional["User"]] = relationship(
         foreign_keys=[created_by_user_id], back_populates="created_groups"
-    )
-
-    headchef: Mapped["User"] = relationship(
-        foreign_keys=[headchef_user_id], back_populates="headchef_of_groups"
     )
 
     # N-M tới User (qua bảng group_memberships)
@@ -55,4 +50,7 @@ class GroupMembership(Base):
     )
     group_id: Mapped[UUID] = mapped_column(
         ForeignKey("family_groups.id", ondelete="CASCADE"), primary_key=True
+    )
+    role: Mapped[GroupRole] = mapped_column(
+        SQLEnum(GroupRole), nullable=False, default=GroupRole.MEMBER
     )

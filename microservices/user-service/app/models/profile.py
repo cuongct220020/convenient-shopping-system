@@ -8,8 +8,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
-from .base import Base
-from .constants import UserGender, ActivityLevel, HealthCondition, HealthGoal
+from shopping_shared.databases.base_model import Base
+from app.constants import UserGender, ActivityLevel, HealthCondition, HealthGoal
 
 
 class UserIdentityProfile(Base):
@@ -52,13 +52,13 @@ class UserHealthProfile(Base):
     weight_kg: Mapped[Optional[float]] = mapped_column(Numeric(5, 2), nullable=True)
 
     activity_level: Mapped[Optional[ActivityLevel]] = mapped_column(
-        SQLEnum(ActivityLevel), nullable=True
+        SQLEnum(ActivityLevel), nullable=True, default=ActivityLevel.NORMAL
     )
     curr_condition: Mapped[Optional[HealthCondition]] = mapped_column(
-        SQLEnum(HealthCondition), nullable=True
+        SQLEnum(HealthCondition), nullable=True, default=HealthCondition.NORMAL
     )
     health_goal: Mapped[Optional[HealthGoal]] = mapped_column(
-        SQLEnum(HealthGoal), nullable=True
+        SQLEnum(HealthGoal), nullable=True, default=HealthGoal.MAINTAIN
     )
 
     updated_at: Mapped[Optional[datetime]] = mapped_column(

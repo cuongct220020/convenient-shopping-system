@@ -3,8 +3,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import String, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from .base import Base
+from shopping_shared.databases.base_model import Base
 
 
 class AuthRefreshToken(Base):

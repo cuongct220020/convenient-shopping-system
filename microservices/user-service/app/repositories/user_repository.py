@@ -102,17 +102,6 @@ class UserRepository(BaseRepository[User, UserCreate, UserUpdate]):
         await self.session.execute(q)
         await self.session.flush()
 
-    async def unlock_user(self, user_id: Any) -> None:
-        if not (hasattr(self.model, 'is_locked') and hasattr(self.model, 'updated_at')):
-            return
-
-        values = {"is_locked": False, "failed_login_attempts": 0, "updated_at": func.now()}
-        if hasattr(self.model, "locked_until"):
-            values["locked_until"] = None
-        q = update(self.model).where(self.model.user_id == user_id).values(**values)  # Correctly use user_id
-        await self.session.execute(q)
-        await self.session.flush()
-
     async def update_last_login(self, user_id: Any, when: Optional[datetime] = None) -> None:
         if not hasattr(self.model, 'last_login'):
             return
