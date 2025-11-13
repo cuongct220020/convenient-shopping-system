@@ -2,7 +2,7 @@
 from sanic import Sanic
 from sanic_cors import CORS
 
-from app.utils.logger_utils import get_logger
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -70,6 +70,9 @@ def create_app(*config_cls) -> Sanic:
     register_listeners(sanic_app)
     register_views(sanic_app)
     register_hooks(sanic_app)
-    register_error_handlers(sanic_app)
+    
+    # Register shared error handlers
+    from shopping_shared.sanic.error_handler import register_shared_error_handlers
+    register_shared_error_handlers(sanic_app)
 
     return sanic_app

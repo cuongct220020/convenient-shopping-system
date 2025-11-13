@@ -3,7 +3,7 @@ import re
 from pydantic import Field, SecretStr, field_validator
 
 from app.constants.user_role_constants import UserRole
-from app.hooks import exceptions
+from shopping_shared import exceptions
 from app.schemas import BaseSchema
 
 

@@ -3,9 +3,9 @@ from functools import wraps
 from sanic.request import Request
 from sanic.response import json
 
-from app.databases.redis_manager import redis_manager
+from shopping_shared.caching.redis_manager import redis_manager
 from app.schemas.response_schema import GenericResponse
-from app.exceptions import TooManyRequests  # Import the custom exception
+from shopping_shared.exceptions import TooManyRequests  # Import the custom exception
 
 
 def rate_limit_per_user(limit: int, period: int):

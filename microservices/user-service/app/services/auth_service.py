@@ -4,8 +4,8 @@ from typing import Any
 import jwt
 from pydantic import BaseModel as PydanticBase, SecretStr, EmailStr
 
-from app.databases.redis_manager import redis_manager
-from app.exceptions import Unauthorized, Forbidden, Conflict, NotFound
+from shopping_shared.caching.redis_manager import redis_manager
+from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth.login_schema import LoginRequest
 from app.schemas.auth.otp_schema import OTPRequest, OtpAction, OTPVerifyRequest

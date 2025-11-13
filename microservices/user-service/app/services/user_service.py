@@ -3,7 +3,7 @@ from typing import Any
 from pydantic import SecretStr
 
 from app.decorators.cache import cache
-from app.exceptions import NotFound, Conflict, Unauthorized
+from shopping_shared.exceptions import NotFound, Conflict, Unauthorized
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth.change_password_schema import ChangePasswordRequest

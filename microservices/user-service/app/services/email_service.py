@@ -6,7 +6,7 @@ from typing import Optional
 
 from sanic import Sanic
 
-from app.utils.logger_utils import get_logger
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 

@@ -5,8 +5,8 @@ from typing import Literal, Optional
 
 from sanic import Sanic
 
-from app.databases.redis_manager import redis_manager
-from app.exceptions import Unauthorized
+from shopping_shared.caching.redis_manager import redis_manager
+from shopping_shared.exceptions import Unauthorized
 
 
 class JWTHandler:

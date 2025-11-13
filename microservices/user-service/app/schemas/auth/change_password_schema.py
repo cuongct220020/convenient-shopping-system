@@ -1,7 +1,7 @@
 from pydantic import SecretStr, model_validator
 from app.schemas import BaseSchema
 from app.schemas.custom_types import PasswordStr
-from app.exceptions import BadRequest
+from shopping_shared.exceptions import BadRequest
 
 class ChangePasswordRequest(BaseSchema):
     old_password: SecretStr

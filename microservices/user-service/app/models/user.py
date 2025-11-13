@@ -3,11 +3,9 @@ from datetime import datetime, UTC
 from sqlalchemy import String, Integer, DateTime, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
-from typing import TYPE_CHECKING
 from app.constants.user_role_constants import UserRole
 
 from .base import Base
-
 
 class User(Base):
     __tablename__ = "users"
@@ -42,3 +40,17 @@ class UserHealthProfile(Base):
     __tablename__ = "user_health_profiles"
 
     pass
+
+
+class Address(Base):
+    __tablename__ = "addresses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ward: Mapped[str] = mapped_column(String(100), nullable=True)
+    district: Mapped[str] = mapped_column(String(100), nullable=True)
+    city: Mapped[str] = mapped_column(String(100), nullable=False)
+    province: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
+    def __repr__(self) -> str:
+        return f"<Address id={self.address_id}, {self.district}, {self.province_city}>"

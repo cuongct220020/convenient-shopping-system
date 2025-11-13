@@ -4,7 +4,7 @@ from typing import Callable, Sequence
 
 from sanic.request import Request
 
-from app.exceptions import Unauthorized, Forbidden
+from shopping_shared.exceptions import Unauthorized, Forbidden
 
 
 def protected(roles: Sequence[str] | None = None):

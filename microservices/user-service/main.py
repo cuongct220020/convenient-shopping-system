@@ -1,7 +1,7 @@
 from typing import Final
 
 from app import create_app
-from app.utils.logger_utils import get_logger
+from shopping_shared.utils.logger_utils import get_logger
 from config import Config, PostgreSQLConfig, RedisConfig, EmailConfig, DEFAULT_JWT_SECRET
 
 logger = get_logger(__name__)
