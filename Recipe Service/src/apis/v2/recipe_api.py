@@ -1,5 +1,6 @@
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, status, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
+from typing import List
 from services.recipe_crud import RecipeCRUD
 from models.recipe_component import Recipe
 from schemas.recipe import (
@@ -11,15 +12,29 @@ from utils.custom_mapping import recipe_detailed_response_mapping
 
 recipe_crud = RecipeCRUD(Recipe)
 
-recipe_router: APIRouter = create_crud_router(
+recipe_router = APIRouter(
+    prefix="/v2/recipes",
+    tags=["Recipes"]
+)
+
+@recipe_router.get(
+    "/search",
+    response_model=List[RecipeResponse],
+    status_code=status.HTTP_200_OK,
+    description="Search for recipes by keyword in their names or ingredients. Returns a list of matching recipes."
+)
+def search_recipes(keyword: str = Query(...), limit: int = Query(10), db: Session = Depends(get_db)):
+    return recipe_crud.search(db, keyword=keyword, limit=limit)
+
+crud_router: APIRouter = create_crud_router(
     model=Recipe,
     crud_base=recipe_crud,
     create_schema=RecipeCreate,
     update_schema=RecipeUpdate,
     response_schema=RecipeResponse,
-    prefix="/v2/recipes",
-    tags=["Recipes"]
 )
+
+recipe_router.include_router(crud_router)
 
 @recipe_router.get(
     "/detail/{id}",

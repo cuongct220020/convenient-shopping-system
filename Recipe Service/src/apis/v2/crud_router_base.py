@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, Body, status, HTTPException
-from typing import TypeVar, Type, List
+from typing import TypeVar, Type, List, Optional
 from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
 from core.database import get_db
@@ -21,8 +21,8 @@ def create_crud_router(
         create_schema: Type[CreateSchemaType],
         update_schema: Type[UpdateSchemaType],
         response_schema: Type[ResponseSchemaType],
-        prefix: str,
-        tags: list[str]
+        prefix: str = "",
+        tags: Optional[list[str]] = None
 ) -> APIRouter:
     router = APIRouter(prefix=prefix, tags=tags)
 

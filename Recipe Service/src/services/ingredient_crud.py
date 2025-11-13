@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import select, union_all
 from .crud_base import CRUDBase
+from typing import List
 from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient, BulkIngredient
 from schemas.ingredient import IngredientCreate, IngredientUpdate
 
@@ -34,3 +36,17 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         db.commit()
         db.refresh(db_obj)
         return db_obj
+
+    def search(self, db: Session, keyword: str, limit: int = 10) -> List[Ingredient]:
+        countable_search = db.execute(
+            select(CountableIngredient)
+            .where(CountableIngredient.component_name.ilike(f"%{keyword}%"))
+            .limit(limit)
+        ).scalars().all()
+        uncountable_search = db.execute(
+            select(UncountableIngredient)
+            .where(UncountableIngredient.component_name.ilike(f"%{keyword}%"))
+            .limit(limit)
+        ).scalars().all()
+        return countable_search + uncountable_search
+
