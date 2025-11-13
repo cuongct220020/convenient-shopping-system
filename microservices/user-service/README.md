@@ -65,3 +65,5 @@
 
    * Dành cho Frontend/UI: Bạn có thể tạo một endpoint GET /admin/roles (chỉ Admin được gọi) để trả về danh sách tất cả các vai trò có thể có trong hệ thống: ["USER", "ADMIN", "HEAD_CHEF", "MEMBER"].
    * Mục đích: Giúp trang quản trị của Admin có thể hiển thị một danh sách dropdown để chọn và gán vai trò cho người dùng. Đây là nghiệp vụ phục vụ cho giao diện, không phải để kiểm tra quyền lúc thực thi API.
+
+

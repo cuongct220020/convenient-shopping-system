@@ -16,6 +16,7 @@ from .otp import (
     VerifyAccountRequestSchema,
     RequestEmailChangeRequestSchema,
     ConfirmEmailChangeRequestSchema,
+    ResetPasswordRequestSchema,
 )
 from .profile import (
     AddressSchema,
@@ -28,6 +29,8 @@ from .user import (
     UserPublicProfileSchema,
     UserCoreInfoSchema,
     UserUpdateSchema,
+    UserCreateSchema,
+    UserAdminCreateSchema,
     UserDetailedProfileSchema,
     UserAdminViewSchema,
     UserAdminUpdateSchema,
@@ -63,6 +66,7 @@ __all__ = [
     "VerifyAccountRequestSchema",
     "RequestEmailChangeRequestSchema",
     "ConfirmEmailChangeRequestSchema",
+    "ResetPasswordRequestSchema",
     # Profile
     "AddressSchema",
     "UserIdentityProfileSchema",
@@ -73,6 +77,8 @@ __all__ = [
     "UserPublicProfileSchema",
     "UserCoreInfoSchema",
     "UserUpdateSchema",
+    "UserCreateSchema",
+    "UserAdminCreateSchema",
     "UserDetailedProfileSchema",
     "UserAdminViewSchema",
     "UserAdminUpdateSchema",

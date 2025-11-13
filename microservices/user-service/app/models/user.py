@@ -29,6 +29,8 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
+    active_refresh_jti: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -44,11 +46,6 @@ class User(Base):
 
     # 1-1 tới UserHealthProfile
     health_profile: Mapped["UserHealthProfile"] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
-    )
-
-    # 1-N tới AuthRefreshToken
-    refresh_tokens: Mapped[List["AuthRefreshToken"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 

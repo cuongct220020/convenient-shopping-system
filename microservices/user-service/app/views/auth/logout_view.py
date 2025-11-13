@@ -3,15 +3,14 @@ from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
 
-from app.decorators.auth import protected
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from shopping_shared.schemas.response_schema import GenericResponse
 
 
 class LogoutView(HTTPMethodView):
-    decorators = [protected]  # Chỉ cần xác thực access token
-
+    # The 'protected' decorator has been removed.
+    # Authentication is handled by the global 'request_auth' middleware.
     async def post(self, request: Request):
         """Handles user logout by revoking tokens and clearing the session from the database."""
         # 1. Lấy thông tin từ context và cookie
@@ -24,7 +23,7 @@ class LogoutView(HTTPMethodView):
         user_repo = UserRepository(request.ctx.db_session)
 
         # 3. Gọi service để thực hiện logout
-        await AuthService.logout(
+        await AuthService.logout_account(
             user_id=user_id,
             user_repo=user_repo,
             access_jti=access_jti,

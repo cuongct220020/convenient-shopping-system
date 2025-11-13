@@ -16,7 +16,7 @@ class OTPGenerationView(HTTPMethodView):
     # Decorators are applied from bottom up.
     # 1. @validate_request runs first to validate email and action.
     # 2. @rate_limit_by_email runs second to prevent spam.
-    @rate_limit_by_email(limit=3, period=300)  # 3 requests per 5 minutes per email
+    @rate_limit_by_email(limit=15, period=300)  # 15 requests per 5 minutes per email
     @validate_request(SendVerificationOTPRequestSchema)
     async def post(self, request: Request):
         """Handles the logic to request and send an OTP for a specific action."""

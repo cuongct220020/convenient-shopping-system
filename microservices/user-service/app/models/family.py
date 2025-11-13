@@ -54,3 +54,11 @@ class GroupMembership(Base):
     role: Mapped[GroupRole] = mapped_column(
         SQLEnum(GroupRole), nullable=False, default=GroupRole.MEMBER
     )
+
+    added_by_user_id: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE")
+    )
+
+    jointed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

@@ -1,4 +1,5 @@
 # app/constants/__init__.py
+from .auth import OTPAction
 from .tags import (
     AgeTag,
     AllergyTag,
@@ -12,9 +13,12 @@ from .user import (
     HealthGoal,
     UserGender,
     UserRole,
+    GroupRole,
 )
 
 __all__ = [
+    # Auth
+    "OTPAction",
     # Tags
     "AgeTag",
     "AllergyTag",
@@ -27,4 +31,5 @@ __all__ = [
     "HealthGoal",
     "UserGender",
     "UserRole",
+    "GroupRole",
 ]

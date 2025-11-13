@@ -2,8 +2,9 @@
 import random
 from datetime import timedelta
 
-from shopping_shared.caching.redis_manager import redis_manager
 from app.utils.password_utils import hash_password, verify_password
+
+from shopping_shared.caching.redis_manager import redis_manager
 from shopping_shared.exceptions import Unauthorized
 
 

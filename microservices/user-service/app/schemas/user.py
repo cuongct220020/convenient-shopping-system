@@ -28,6 +28,21 @@ class UserUpdateSchema(BaseSchema):
     last_name: Optional[str] = Field(None, max_length=255)
     avatar_url: Optional[str] = None
 
+
+class UserCreateSchema(BaseSchema):
+    """Schema for creating a new user, used internally."""
+    user_name: str = Field(..., max_length=255)
+    email: EmailStr
+    password: str  # This will be the hashed password
+    first_name: Optional[str] = Field(None, max_length=255)
+    last_name: Optional[str] = Field(None, max_length=255)
+    is_active: bool = False
+
+
+class UserAdminCreateSchema(UserCreateSchema):
+    """Schema for admins to create a new user."""
+    system_role: UserRole = UserRole.USER
+
 # --- Detailed and Admin Schemas ---
 class UserDetailedProfileSchema(UserCoreInfoSchema):
     """Full user profile including identity and health info."""

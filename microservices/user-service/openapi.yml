@@ -37,10 +37,11 @@ paths:
                 $ref: '#/components/schemas/UserPublicProfileResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-  /auth/send-verification-otp:
+  /auth/otp/send:
     post:
       tags: [Authentication]
-      summary: Gửi mã OTP để xác thực tài khoản
+      summary: Yêu cầu gửi mã OTP theo hành động
+      description: Gửi mã OTP cho một hành động cụ thể (đăng ký, quên mật khẩu, v.v.).
       requestBody:
         required: true
         content:
@@ -56,10 +57,11 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-  /auth/verify-account:
+  /auth/otp/verify:
     post:
       tags: [Authentication]
-      summary: Xác thực tài khoản bằng mã OTP
+      summary: Xác thực mã OTP
+      description: Xác thực mã OTP cho các hành động khác nhau (đăng ký, quên mật khẩu, v.v.).
       requestBody:
         required: true
         content:
@@ -68,7 +70,7 @@ paths:
               $ref: '#/components/schemas/VerifyAccountRequest'
       responses:
         '200':
-          description: "Xác thực tài khoản thành công."
+          description: "Xác thực OTP thành công."
           content:
             application/json:
               schema:
