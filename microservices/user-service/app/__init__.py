@@ -15,6 +15,7 @@ def register_extensions(sanic_app: Sanic):
 def register_listeners(sanic_app: Sanic):
     from app.hooks.database import setup_db, close_db
     from app.hooks.caching import setup_redis, close_redis
+    from app.hooks.kafka import setup_kafka, close_kafka
 
     # Register database hooks
     sanic_app.register_listener(setup_db, "before_server_start")
@@ -23,6 +24,10 @@ def register_listeners(sanic_app: Sanic):
     # Register Redis hooks
     sanic_app.register_listener(setup_redis, "before_server_start")
     sanic_app.register_listener(close_redis, "after_server_stop")
+    
+    # Register Kafka hooks
+    sanic_app.register_listener(setup_kafka, "before_server_start")
+    sanic_app.register_listener(close_kafka, "after_server_stop")
 
 def register_views(sanic_app: Sanic):
     from app.apis import api # Import the api Blueprint.group

@@ -9,7 +9,7 @@ from app.decorators.auth import protected
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
 from app.schemas.admin.user_admin_schema import AdminUserCreateSchema, AdminUserUpdateSchema, AdminUserResponseSchema
-from app.schemas.response_schema import GenericResponse, PaginationResponse
+from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 from app.services.user_service import UserService
 
 

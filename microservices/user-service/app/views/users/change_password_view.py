@@ -6,7 +6,7 @@ from sanic.views import HTTPMethodView
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth.change_password_schema import ChangePasswordRequest
-from app.schemas.response_schema import GenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from app.services.user_service import UserService
 
 

@@ -1,7 +1,7 @@
 # app/schemas/auth/reset_password_schema.py
 from pydantic import EmailStr, SecretStr, Field
 
-from app.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 from app.schemas.custom_types import PasswordStr
 
 

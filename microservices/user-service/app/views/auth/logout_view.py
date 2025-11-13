@@ -6,7 +6,7 @@ from sanic.views import HTTPMethodView
 from app.decorators.auth import protected
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
-from app.schemas.response_schema import GenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 
 
 class LogoutView(HTTPMethodView):

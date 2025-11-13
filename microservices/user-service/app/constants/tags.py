@@ -1,4 +1,6 @@
+# app/constants/tags.py
 from enum import Enum
+
 
 class AgeTag(str, Enum):
     """Tags for age groups."""

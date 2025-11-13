@@ -4,7 +4,7 @@ from pydantic import Field, SecretStr, field_validator
 
 from app.constants.user_role_constants import UserRole
 from shopping_shared import exceptions
-from app.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 
 
 from typing import Union, Literal

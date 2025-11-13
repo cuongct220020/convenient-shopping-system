@@ -1,5 +1,5 @@
 from pydantic import SecretStr, model_validator
-from app.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 from app.schemas.custom_types import PasswordStr
 from shopping_shared.exceptions import BadRequest
 

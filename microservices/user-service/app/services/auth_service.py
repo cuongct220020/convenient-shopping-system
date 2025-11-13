@@ -15,7 +15,8 @@ from app.schemas.auth.token_schema import TokenData
 from app.schemas.users.user_schema import UserUpdate
 from app.utils.password_utils import verify_password, hash_password
 from app.utils.jwt_utils import jwt_handler
-from app.services.email_service import email_service
+from shopping_shared.messaging.kafka_manager import kafka_manager
+from shopping_shared.messaging.topics import NOTIFICATION_TOPIC
 from app.services.otp_service import otp_service
 
 
@@ -179,7 +180,18 @@ class AuthService:
                 raise NotFound("No account found with this email address.")
 
         otp_code = await otp_service.generate_and_store_otp(otp_data.email, otp_data.action.value)
-        await email_service.send_otp(email=otp_data.email, otp_code=otp_code, action=otp_data.action)
+        
+        # Instead of sending email directly, publish an event to Kafka
+        producer = await kafka_manager.get_producer()
+        message = {
+            "type": "send_otp",
+            "payload": {
+                "email": otp_data.email,
+                "otp_code": otp_code,
+                "action": otp_data.action.value
+            }
+        }
+        await producer.send_and_wait(NOTIFICATION_TOPIC, message)
 
     @classmethod
     async def reset_password_with_otp(

@@ -2,12 +2,12 @@ from typing import Final
 
 from app import create_app
 from shopping_shared.utils.logger_utils import get_logger
-from config import Config, PostgreSQLConfig, RedisConfig, EmailConfig, DEFAULT_JWT_SECRET
+from config import Config, PostgreSQLConfig, RedisConfig, KafkaConfig, DEFAULT_JWT_SECRET
 
 logger = get_logger(__name__)
 
 # Create the Sanic app instance as a module-level constant
-app: Final = create_app(Config, PostgreSQLConfig, RedisConfig, EmailConfig)
+app: Final = create_app(Config, PostgreSQLConfig, RedisConfig, KafkaConfig)
 
 # Configure OpenAPI Security Schemes
 app.config.OAS_SECURITY_SCHEMES = {

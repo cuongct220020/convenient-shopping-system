@@ -4,7 +4,7 @@ from sanic.request import Request
 from sanic.response import json
 
 from shopping_shared.caching.redis_manager import redis_manager
-from app.schemas.response_schema import GenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.exceptions import TooManyRequests  # Import the custom exception
 
 

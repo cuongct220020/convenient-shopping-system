@@ -8,7 +8,7 @@ from app.decorators.rate_limit_by_email import rate_limit_by_email
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth.otp_schema import OTPRequest
 from app.services.auth_service import AuthService
-from app.schemas.response_schema import GenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 
 
 class OTPRequestView(HTTPMethodView):

@@ -8,7 +8,7 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.access_token_schema import AccessTokenResponse
 from app.schemas.auth.login_schema import LoginRequest
 from app.services.auth_service import AuthService
-from app.schemas.response_schema import GenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from app.schemas.auth.token_schema import TokenData
 
 
