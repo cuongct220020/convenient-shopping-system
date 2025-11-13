@@ -1,4 +1,4 @@
-# app/models/user.py
+# app/models/user_constants.py
 from datetime import datetime, UTC
 from sqlalchemy import String, Integer, DateTime, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
