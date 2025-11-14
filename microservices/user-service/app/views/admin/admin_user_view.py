@@ -16,7 +16,7 @@ from app.schemas import (
     SuccessResponse,
 )
 from app.services.user_service import UserService
-from shopping_shared.exceptions import Forbidden
+from shared.shopping_shared import Forbidden
 
 
 class AdminUserListView(HTTPMethodView):

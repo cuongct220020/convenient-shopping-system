@@ -1,4 +1,4 @@
-# app/apis/admin_bp.py
+# app/apis/user_admin_bp.py
 from sanic import Blueprint
 from app.views.admin.admin_user_view import AdminUserListView, AdminUserDetailView
 

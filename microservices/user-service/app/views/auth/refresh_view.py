@@ -5,7 +5,7 @@ from sanic.views import HTTPMethodView
 
 from app.exceptions import Unauthorized
 from app.services.auth_service import AuthService
-from shopping_shared.schemas.response_schema import GenericResponse
+from shared.shopping_shared.schemas import GenericResponse
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth.token_schema import TokenData
 

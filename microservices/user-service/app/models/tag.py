@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import String, BigInteger, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from shopping_shared.databases.base_model import Base
+from shared.shopping_shared.databases.base_model import Base
 
 class Tag(Base):
     __tablename__ = "tags"

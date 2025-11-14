@@ -1,6 +1,6 @@
 # /microservices/user-service/app/schemas/response.py
 from typing import List, Optional
-from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
+from shared.shopping_shared.schemas import GenericResponse, PaginationResponse
 from .auth import TokenResponseSchema
 from .group import GroupDetailedSchema, GroupMemberSchema
 from .profile import UserIdentityProfileSchema, UserHealthProfileSchema

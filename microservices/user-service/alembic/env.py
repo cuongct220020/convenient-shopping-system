@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
 # Import models for 'autogenerate' support
-from shopping_shared.databases.base_model import Base
+from shared.shopping_shared.databases.base_model import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

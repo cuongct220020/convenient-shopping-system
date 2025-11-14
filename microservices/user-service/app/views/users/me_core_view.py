@@ -1,4 +1,4 @@
-# app/views/users/me_view.py
+# app/views/users/me_core_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
@@ -19,33 +19,7 @@ class MeView(HTTPMethodView):
         pass
 
 
-class MeIdentityProfileView(HTTPMethodView):
 
-    async def get(self, request: Request, user_id: int):
-        pass
 
-    async def patch(self, request: Request, user_id: int):
-        pass
 
-class MeHealthProfileView(HTTPMethodView):
 
-    async def get(self, request: Request, user_id: int):
-        pass
-
-    async def patch(self, request: Request, user_id: int):
-        pass
-
-class MeChangePasswordView(HTTPMethodView):
-
-    async def post(self, request: Request, user_id: int):
-        pass
-
-class MeRequestChangeEmailView(HTTPMethodView):
-
-    async def post(self, request: Request, user_id: int):
-        pass
-
-class MeConfirmChangeEmailView(HTTPMethodView):
-
-    async def post(self, request: Request, user_id: int):
-        pass

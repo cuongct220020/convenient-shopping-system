@@ -2,7 +2,7 @@
 from sanic import Sanic, Request
 
 from shopping_shared.databases.database_manager import database_manager as postgres_db
-from app.models.base import Base
+from shopping_shared.databases.base_model import Base
 
 
 async def setup_db(app: Sanic):

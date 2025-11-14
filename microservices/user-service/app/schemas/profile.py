@@ -1,8 +1,8 @@
-# /microservices/user-service/app/schemas/profile.py
+# /microservices/user-service/app/schemas/user_bp.py
 from datetime import date
 from typing import Optional
 from pydantic import Field, EmailStr
-from shopping_shared.schemas.base_schema import BaseSchema
+from shared.shopping_shared.schemas import BaseSchema
 from app.constants import UserGender, ActivityLevel, HealthCondition, HealthGoal
 
 # --- Address Schemas ---

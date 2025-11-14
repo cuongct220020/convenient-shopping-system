@@ -10,4 +10,4 @@ python-dotenv
 passlib[bcrypt]
 PyJWT
 
--e ../../shopping_shared
+-e ../../shared

@@ -2,8 +2,8 @@
 from functools import wraps
 from sanic.request import Request
 
-from shopping_shared.caching.redis_manager import redis_manager
-from shopping_shared.exceptions import TooManyRequests
+from shared.shopping_shared.caching.redis_manager import redis_manager
+from shared.shopping_shared import TooManyRequests
 
 def rate_limit_by_email(limit: int, period: int):
     """

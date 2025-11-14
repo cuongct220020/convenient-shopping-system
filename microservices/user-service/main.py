@@ -1,13 +1,11 @@
-from typing import Final
-
 from app import create_app
 from shopping_shared.utils.logger_utils import get_logger
-from config import Config, PostgreSQLConfig, RedisConfig, KafkaConfig, DEFAULT_JWT_SECRET
+from config import Config
 
 logger = get_logger(__name__)
 
 # Create the Sanic app instance as a module-level constant
-app: Final = create_app(Config, PostgreSQLConfig, RedisConfig, KafkaConfig)
+app = create_app(Config)
 
 # Configure OpenAPI Security Schemes
 app.config.OAS_SECURITY_SCHEMES = {
@@ -25,7 +23,7 @@ app.config.OAS_SECURITY = [{"BearerAuth": []}]
 def main() -> None:
     """Checks configuration and runs the application."""
     # Warn if the default secret key is being used in a non-debug environment
-    if not app.config.get('DEBUG') and app.config.get('JWT_SECRET') == DEFAULT_JWT_SECRET:
+    if not app.config.get('DEBUG') and app.config.get('JWT_SECRET') == '85c145a16bd6f6e1f3e104ca78c6a102':
         logger.warning(
             'JWT_SECRET is using the insecure default value in a production environment. '
             'Please set a strong secret key in your environment variables.'

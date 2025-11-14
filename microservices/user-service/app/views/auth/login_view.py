@@ -10,7 +10,7 @@ from app.schemas.auth.login_schema import LoginRequest
 from app.services.auth_service import AuthService
 from app.schemas.auth.token_schema import TokenData
 
-from shopping_shared.schemas.response_schema import GenericResponse
+from shared.shopping_shared.schemas import GenericResponse
 
 
 class LoginView(HTTPMethodView):
