@@ -3,8 +3,8 @@ from sanic import Sanic, Request, response
 from pydantic import ValidationError
 
 # Import the shared exceptions
-from shopping_shared import exceptions as shared_exceptions
-from shopping_shared.utils.logger_utils import get_logger
+from shared.shopping_shared import exceptions as shared_exceptions
+from shared.shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 
