@@ -1,7 +1,7 @@
 from typing import Type
 from schemas.recipe import RecipeDetailedResponse, ComponentDetailedBase
-from schemas.ingredient import CountableIngredientResponse, UncountableIngredientResponse, BulkIngredientResponse
-from models.recipe_component import Recipe, ComponentList, RecipeComponent, CountableIngredient, UncountableIngredient, BulkIngredient
+from schemas.ingredient import CountableIngredientResponse, UncountableIngredientResponse
+from models.recipe_component import Recipe, ComponentList, RecipeComponent, CountableIngredient, UncountableIngredient
 
 """
     Recursive mapper for RecipeDetailedResponse
@@ -9,8 +9,7 @@ from models.recipe_component import Recipe, ComponentList, RecipeComponent, Coun
 
 ingredient_response_map: dict[Type[RecipeComponent], Type] = {
     CountableIngredient: CountableIngredientResponse,
-    UncountableIngredient: UncountableIngredientResponse,
-    BulkIngredient: BulkIngredientResponse,
+    UncountableIngredient: UncountableIngredientResponse
 }
 
 def recipe_detailed_response_mapping(recipe: Recipe) -> RecipeDetailedResponse:

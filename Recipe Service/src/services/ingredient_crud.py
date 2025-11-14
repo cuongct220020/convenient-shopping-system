@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, union_all
 from .crud_base import CRUDBase
 from typing import List
-from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient, BulkIngredient
+from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient
 from schemas.ingredient import IngredientCreate, IngredientUpdate
 
 """
@@ -13,7 +13,6 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
     model_map = {
         "countable_ingredient": CountableIngredient,
         "uncountable_ingredient": UncountableIngredient,
-        "bulk_ingredient": BulkIngredient,
     }
 
     def create(self, db: Session, obj_in: IngredientCreate) -> Ingredient:

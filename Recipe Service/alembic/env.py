@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 from core.database import Base
 from models.recipe_component import (
-    RecipeComponent, Ingredient, CountableIngredient, UncountableIngredient, BulkIngredient, Recipe, ComponentList
+    RecipeComponent, Ingredient, CountableIngredient, UncountableIngredient, Recipe, ComponentList
 )
 
 # this is the Alembic Config object, which provides

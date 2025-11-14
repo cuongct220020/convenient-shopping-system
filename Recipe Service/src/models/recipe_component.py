@@ -40,7 +40,7 @@ class CountableIngredient(Ingredient):
 
     component_id: Mapped[int] = mapped_column(ForeignKey("ingredients.component_id"), primary_key=True)
     component_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    c_measurement_unit: Mapped[CMeasurementUnit] = mapped_column(Enum(CMeasurementUnit))
+    c_measurement_unit: Mapped[CMeasurementUnit] = mapped_column(Enum(CMeasurementUnit), nullable=False)
 
     __mapper_args__ = {
         "polymorphic_identity": "countable_ingredient"
@@ -52,7 +52,7 @@ class UncountableIngredient(Ingredient):
 
     component_id: Mapped[int] = mapped_column(ForeignKey("ingredients.component_id"), primary_key=True)
     component_name: Mapped[str] = mapped_column(String, nullable=False)
-    uc_measurement_unit: Mapped[UCMeasurementUnit] = mapped_column(Enum(UCMeasurementUnit))
+    uc_measurement_unit: Mapped[UCMeasurementUnit] = mapped_column(Enum(UCMeasurementUnit), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("component_name", "uc_measurement_unit", name="unique_uncountable_ingredient"),
@@ -60,16 +60,6 @@ class UncountableIngredient(Ingredient):
 
     __mapper_args__ = {
         "polymorphic_identity": "uncountable_ingredient",
-    }
-
-
-class BulkIngredient(UncountableIngredient):
-    __tablename__ = "bulk_ingredients"
-
-    component_id: Mapped[int] = mapped_column(ForeignKey("uncountable_ingredients.component_id"), primary_key=True)
-
-    __mapper_args__ = {
-        "polymorphic_identity": "bulk_ingredient"
     }
 
 

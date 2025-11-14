@@ -5,7 +5,7 @@ from enums.c_measurement_unit import CMeasurementUnit
 from enums.uc_measurement_unit import UCMeasurementUnit
 
 class IngredientBase(BaseModel):
-    type: Literal["countable_ingredient", "uncountable_ingredient", "bulk_ingredient"]
+    type: Literal["countable_ingredient", "uncountable_ingredient"]
     estimated_shelf_life: Optional[int] = None
     protein: Optional[float] = None
     fat: Optional[float] = None
@@ -33,11 +33,8 @@ class UncountableIngredientCreate(IngredientBase):
     component_name: str
     uc_measurement_unit: UCMeasurementUnit
 
-class BulkIngredientCreate(UncountableIngredientCreate):
-    type: Literal["bulk_ingredient"]
-
 IngredientCreate: TypeAlias = Annotated[
-    CountableIngredientCreate | UncountableIngredientCreate | BulkIngredientCreate,
+    CountableIngredientCreate | UncountableIngredientCreate,
     Field(discriminator='type')
 ]
 
@@ -50,11 +47,8 @@ class UncountableIngredientUpdate(IngredientBase):
     type: Literal["uncountable_ingredient"]
     component_name: Optional[str] = None
 
-class BulkIngredientUpdate(UncountableIngredientUpdate):
-    type: Literal["bulk_ingredient"]
-
 IngredientUpdate: TypeAlias = Annotated[
-    CountableIngredientUpdate | UncountableIngredientUpdate | BulkIngredientUpdate,
+    CountableIngredientUpdate | UncountableIngredientUpdate,
     Field(discriminator='type')
 ]
 
@@ -71,11 +65,8 @@ class UncountableIngredientResponse(IngredientBase):
     component_name: str
     uc_measurement_unit: UCMeasurementUnit
 
-class BulkIngredientResponse(UncountableIngredientResponse):
-    type: Literal["bulk_ingredient"]
-
 IngredientResponse: TypeAlias = Annotated[
-    CountableIngredientResponse | UncountableIngredientResponse | BulkIngredientResponse,
+    CountableIngredientResponse | UncountableIngredientResponse,
     Field(discriminator='type')
 ]
 
