@@ -1,4 +1,4 @@
-# shopping_shared/schemas/base_schema.py
+# shared/shopping_shared/schemas/base_schema.py
 from pydantic import BaseModel, ConfigDict
 
 class BaseSchema(BaseModel):

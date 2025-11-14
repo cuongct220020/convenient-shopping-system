@@ -1,6 +1,10 @@
+# shared/shopping_shared/caching/redis_manager.py
 from redis.asyncio import Redis, ConnectionPool
 from shopping_shared.exceptions import CacheError
 
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger(__name__)
 
 class RedisManager:
     """A manager for the Redis connection pool, designed for common use."""
@@ -11,14 +15,24 @@ class RedisManager:
 
     def setup(self, host: str, port: int, db: int):
         """Creates the connection pool."""
-        self.pool = ConnectionPool(host=host, port=port, db=db, decode_responses=True)
+        try:
+            self.pool = ConnectionPool(host=host, port=port, db=db, decode_responses=True)
+            logger.info(f"Redis connection pool initialized: {host}:{port}, db={db}")
+        except Exception as e:
+            logger.error(f"Failed to initialize Redis connection pool: {e}")
+            raise
 
     async def close(self):
         """Closes the connection pool."""
-        if self._client:
-            await self._client.close()
-        if self.pool:
-            await self.pool.disconnect()
+        try:
+            if self._client:
+                await self._client.close()
+                logger.debug("Redis client closed.")
+            if self.pool:
+                await self.pool.disconnect()
+                logger.info("Redis connection pool disconnected.")
+        except Exception as e:
+            logger.error(f"Error occurred while closing Redis connection: {e}")
 
     @property
     def client(self) -> Redis:
@@ -27,9 +41,11 @@ class RedisManager:
         The connection pool handles the underlying connection management.
         """
         if not self.pool:
+            logger.error("Redis connection pool not initialized. Call setup() first.")
             raise CacheError("Redis connection pool not initialized. Call setup() first.")
         if not self._client:
             self._client = Redis(connection_pool=self.pool)
+            logger.debug("Redis client created from pool.")
         return self._client
 
 

@@ -1,4 +1,4 @@
-# shopping_shared/databases/base_model.py
+# shared/shopping_shared/databases/base_model.py
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 from sqlalchemy import MetaData
 
