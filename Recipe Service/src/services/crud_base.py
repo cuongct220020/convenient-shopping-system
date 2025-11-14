@@ -1,8 +1,10 @@
 from typing import Generic, TypeVar, Optional, Sequence, Dict, Any
 from sqlalchemy.orm import Session, DeclarativeBase
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.inspection import inspect
 from pydantic import BaseModel
+from fastapi import HTTPException
 
 """
     Generic CRUD base class for reuse across CRUD operations of different models
@@ -49,8 +51,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 related_objects = [related_model(**item) for item in value]
                 setattr(db_obj, field, related_objects)
         db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        try:
+            db.commit()
+            db.refresh(db_obj)
+        except IntegrityError as e:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
         return db_obj
 
     def update(self, db: Session, obj_in: UpdateSchemaType, db_obj: ModelType) -> ModelType:
@@ -64,8 +70,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 new_objects = [related_model(**item) for item in value]
                 setattr(db_obj, field, new_objects)
         db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        try:
+            db.commit()
+            db.refresh(db_obj)
+        except IntegrityError as e:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
         return db_obj
 
 

@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select, union_all
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from .crud_base import CRUDBase
 from typing import List
+from fastapi import HTTPException
 from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient
 from schemas.ingredient import IngredientCreate, IngredientUpdate
 
@@ -21,8 +23,12 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
             raise ValueError(f"Unknown ingredient type: {obj_in.type}")
         db_obj = model_class(**obj_in.model_dump())
         db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        try:
+            db.commit()
+            db.refresh(db_obj)
+        except IntegrityError as e:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
         return db_obj
 
     def update(self, db: Session, obj_in: IngredientUpdate, db_obj: Ingredient) -> Ingredient:
@@ -32,8 +38,12 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         for field, value in update_data.items():
             setattr(db_obj, field, value)
         db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        try:
+            db.commit()
+            db.refresh(db_obj)
+        except IntegrityError as e:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
         return db_obj
 
     def search(self, db: Session, keyword: str, limit: int = 10) -> List[Ingredient]:
