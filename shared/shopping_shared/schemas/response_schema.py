@@ -12,12 +12,10 @@ class GenericResponse(BaseModel, Generic[T]):
     message: Optional[str] = None
     data: Optional[T] = None
 
-class PaginationResponse(BaseModel, Generic[T]):
+class PaginationResponse(GenericResponse[list[T]]):
     """
     A generic pagination response model to standardize API outputs for lists.
     """
-    status: str = "success"
-    message: Optional[str] = None
     data: list[T]
     page: int
     page_size: int
