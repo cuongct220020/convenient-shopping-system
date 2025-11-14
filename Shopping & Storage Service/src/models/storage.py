@@ -22,11 +22,13 @@ class Storage(Base):
 @event.listens_for(Storage, "after_insert")
 def set_storage_name_after_insert(mapper, connection, target):
     if not target.storage_name:
+        new_name = f"{target.storage_type.name.replace('_', ' ').title()} #{target.storage_id} of Group #{target.group_id}"
         connection.execute(
             update(Storage)
             .where(Storage.storage_id == target.storage_id)
-            .values(storage_name=f"{target.storage_type.name.replace("_", " ").title()} #{target.storage_id} of Group #{target.group_id}")
+            .values(storage_name=new_name)
         )
+        target.storage_name = new_name
 
 class StorableUnit(Base):
     __tablename__ = "storable_units"
@@ -66,10 +68,3 @@ class StorableUnit(Base):
             name="quantity_unit_required_for_measurable"
         ),
     )
-
-@event.listens_for(StorableUnit, "before_flush")
-def check_package_quantity(session, flush_context, instances):
-    for obj in session.new.union(session.dirty):
-        if isinstance(obj, StorableUnit):
-            if obj.package_quantity is not None and obj.package_quantity <= 0:
-                session.delete(obj)
