@@ -1,3 +1,5 @@
+# shared/shopping_shared/configs.py
+
 class PostgreSQLConfig:
     """PostgreSQL database configuration."""
 

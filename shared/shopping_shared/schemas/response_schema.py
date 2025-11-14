@@ -1,4 +1,4 @@
-# shopping_shared/schemas/response_schema.py
+# shared/shopping_shared/schemas/response_schema.py
 from typing import Generic, TypeVar, Optional
 from pydantic import BaseModel
 

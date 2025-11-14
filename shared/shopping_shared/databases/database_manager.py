@@ -1,3 +1,4 @@
+# shared/shopping_shared/databases/database_manager.py
 from contextlib import asynccontextmanager
 from typing import TypeAlias, Any, AsyncGenerator, Optional
 
@@ -31,10 +32,6 @@ class DatabaseManager:
     async def setup(self, database_uri: str, debug: bool = False) -> None:
         """
         Initializes the database engine and session maker.
-        The database_uri should be a full connection string (e.g., for PostgreSQL:
-        'postgresql+asyncpg://user:password@host:port/dbname').
-        For production environments like AWS RDS, ensure credentials and host are securely
-        managed via environment variables or a secrets manager.
         """
         if not database_uri:
             raise DatabaseError("Database URI is not provided. Cannot set up database.")

@@ -1,4 +1,5 @@
-# app/utils/logger_utils.py
+# shared/shopping_shared/utils/logger_utils.py
+
 import logging
 from logging.handlers import RotatingFileHandler
 

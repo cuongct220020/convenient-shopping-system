@@ -1,4 +1,4 @@
-# shopping_shared/exceptions.py
+# shared/shopping_shared/exceptions.py
 
 class SharedAppException(Exception):
     """
@@ -75,3 +75,15 @@ class CacheError(SharedAppException):
     """Raised for cache-related errors (e.g., Redis)."""
     status_code = 503
     message = "A cache service error occurred."
+
+
+class MessageBrokerError(SharedAppException):
+    """Raised for message broker-related errors (e.g., Kafka)."""
+    status_code = 503
+    message = "A message broker service error occurred."
+
+
+class KafkaConnectionError(SharedAppException):
+    """Raised specifically for Kafka connection issues."""
+    status_code = 503
+    message = "Failed to connect to Kafka."

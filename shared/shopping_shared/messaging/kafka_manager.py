@@ -1,11 +1,13 @@
+# shared/shopping_shared/messaging/kafka_manager.py
 import asyncio
 import json
 from typing import Optional
 
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
-from aiokafka.errors import KafkaConnectionError
+from aiokafka.errors import KafkaError as AIOKafkaError
 
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.exceptions import MessageBrokerError, KafkaConnectionError
 
 logger = get_logger(__name__)
 
@@ -35,7 +37,7 @@ class KafkaManager:
         The producer is started on its first retrieval.
         """
         if not self._bootstrap_servers:
-            raise ConnectionError("KafkaManager is not configured. Call setup() first.")
+            raise MessageBrokerError("KafkaManager is not configured. Call setup() first.")
 
         if self._producer is None:
             logger.info("Initializing Kafka producer...")
@@ -47,10 +49,10 @@ class KafkaManager:
                 )
                 await self._producer.start()
                 logger.info("Kafka producer started successfully.")
-            except KafkaConnectionError as e:
+            except AIOKafkaError as e:
                 logger.error(f"Failed to connect Kafka producer: {e}")
                 self._producer = None  # Reset on failure
-                raise
+                raise KafkaConnectionError(f"Failed to connect Kafka producer: {e}") from e
         return self._producer
 
     def create_consumer(self, *topics, group_id: str, **kwargs) -> AIOKafkaConsumer:
