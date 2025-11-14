@@ -4,8 +4,8 @@ from typing import Any
 import jwt
 from pydantic import EmailStr
 
-from shared.shopping_shared.caching.redis_manager import redis_manager
-from shared.shopping_shared import Unauthorized, Forbidden, Conflict, NotFound
+from shopping_shared.caching.redis_manager import redis_manager
+from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound
 from app.constants import OtpAction
 from app.repositories.user_repository import UserRepository
 from app.schemas import (
@@ -19,8 +19,8 @@ from app.schemas import (
 from app.schemas.user import UserCreateSchema
 from app.utils.password_utils import verify_password, hash_password
 from app.utils.jwt_utils import jwt_handler
-from shared.shopping_shared import kafka_manager
-from shared.shopping_shared.messaging.topics import NOTIFICATION_TOPIC
+# from shopping_shared import kafka_manager
+# from shopping_shared.messaging.topics import NOTIFICATION_TOPIC
 from app.services.otp_service import otp_service
 
 

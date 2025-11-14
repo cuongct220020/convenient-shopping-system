@@ -5,9 +5,9 @@ from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth.reset_password_schema import ResetPasswordRequest
+from app.schemas.auth import ResetPasswordRequestSchema
 from app.services.auth_service import AuthService
-from shared.shopping_shared.schemas import GenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 
 
 class ResetPasswordView(HTTPMethodView):

@@ -1,6 +1,6 @@
 # /microservices/user-service/app/schemas/otp.py
 from pydantic import Field, EmailStr, SecretStr
-from shared.shopping_shared.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 from app.constants.auth import OtpAction
 
 

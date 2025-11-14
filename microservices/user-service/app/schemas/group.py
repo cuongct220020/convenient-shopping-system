@@ -2,7 +2,7 @@
 from typing import Optional, List
 from uuid import UUID
 from pydantic import Field
-from shared.shopping_shared.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 from app.constants import GroupRole
 from .user import UserPublicProfileSchema
 

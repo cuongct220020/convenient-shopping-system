@@ -9,5 +9,6 @@ gunicorn
 python-dotenv
 passlib[bcrypt]
 PyJWT
+pydantic[email]
 
 -e ../../shared

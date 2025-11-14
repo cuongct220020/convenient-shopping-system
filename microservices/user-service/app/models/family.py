@@ -6,7 +6,7 @@ from sqlalchemy import String, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
-from shared.shopping_shared.databases.base_model import Base
+from shopping_shared.databases.base_model import Base
 from app.constants import GroupRole
 
 

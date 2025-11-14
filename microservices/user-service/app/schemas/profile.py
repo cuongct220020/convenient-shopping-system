@@ -2,7 +2,7 @@
 from datetime import date
 from typing import Optional
 from pydantic import Field, EmailStr
-from shared.shopping_shared.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 from app.constants import UserGender, ActivityLevel, HealthCondition, HealthGoal
 
 # --- Address Schemas ---
@@ -33,7 +33,7 @@ class UserHealthProfileSchema(BaseSchema):
     """Schema for user health profile responses."""
     height_cm: Optional[int] = Field(None, gt=0)
     weight_kg: Optional[float] = Field(None, gt=0)
-    activity_level: Optional[ActivityLevel] = ActivityLevel.NORMAL
+    activity_level: Optional[ActivityLevel] = ActivityLevel.MODERATE
     curr_condition: Optional[HealthCondition] = HealthCondition.NORMAL
     health_goal: Optional[HealthGoal] = HealthGoal.MAINTAIN
 

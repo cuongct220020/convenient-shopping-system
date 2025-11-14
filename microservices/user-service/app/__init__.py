@@ -77,7 +77,7 @@ def create_app(*config_cls) -> Sanic:
     register_hooks(sanic_app)
     
     # Register shared error handlers
-    from shared.shopping_shared.sanic.error_handler import register_shared_error_handlers
+    from shopping_shared.sanic.error_handler import register_shared_error_handlers
     register_shared_error_handlers(sanic_app)
 
     return sanic_app

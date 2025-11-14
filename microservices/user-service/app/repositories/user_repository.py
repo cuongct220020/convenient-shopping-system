@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.models.user import User
 from app.models.address import Address
-from shared.shopping_shared import BaseRepository
+from shopping_shared.databases.base_repository import BaseRepository
 from app.schemas import (
     UserCreateSchema,
     UserUpdateSchema,

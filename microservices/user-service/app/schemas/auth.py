@@ -1,6 +1,6 @@
 # /microservices/user-service/app/schemas/auth.py
 from pydantic import Field, EmailStr, SecretStr
-from shared.shopping_shared.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 
 # --- Authentication Schemas ---
 class RegisterRequestSchema(BaseSchema):
@@ -13,7 +13,7 @@ class RegisterRequestSchema(BaseSchema):
 
 class LoginRequestSchema(BaseSchema):
     """Schema for user login requests."""
-    email: EmailStr
+    username: str = Field(..., min_length=3, max_length=255)
     password: SecretStr
 
 class TokenResponseSchema(BaseSchema):

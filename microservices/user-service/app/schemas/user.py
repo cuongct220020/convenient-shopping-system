@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 from pydantic import Field, EmailStr
-from shared.shopping_shared.schemas import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 from app.constants import UserRole
 from .profile import UserIdentityProfileSchema, UserHealthProfileSchema, UserIdentityProfileUpdateSchema, UserHealthProfileUpdateSchema
 

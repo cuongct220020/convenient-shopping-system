@@ -1,7 +1,9 @@
 # app/utils/password_utils.py
 import bcrypt
 import asyncio
-from app.schemas.custom_types import PasswordStr
+
+from pydantic import SecretStr
+
 
 def _blocking_verify_password(
         login_password_str: str,
@@ -17,7 +19,7 @@ def _blocking_verify_password(
         hashed_password_str.encode('utf-8')
     )
 
-async def verify_password(login_password: PasswordStr, hashed_password: str) -> bool:
+async def verify_password(login_password: SecretStr, hashed_password: str) -> bool:
     """
     Verifies a plain text password against a hashed version in a separate thread.
     """

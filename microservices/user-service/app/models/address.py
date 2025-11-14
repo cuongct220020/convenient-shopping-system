@@ -1,7 +1,7 @@
 from typing import List
 from sqlalchemy import String, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from shared.shopping_shared.databases.base_model import Base
+from shopping_shared.databases.base_model import Base
 
 class Address(Base):
     __tablename__ = "addresses"

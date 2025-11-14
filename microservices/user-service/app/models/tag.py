@@ -1,10 +1,11 @@
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import String, BigInteger, ForeignKey
+from sqlalchemy import String, BigInteger, ForeignKey, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from shared.shopping_shared.databases.base_model import Base
+from shopping_shared.databases.base_model import Base
 
 class Tag(Base):
     __tablename__ = "tags"

@@ -553,7 +553,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    put:
+    patch:
       tags: [Admin - User Management]
       summary: Cập nhật toàn bộ thông tin người dùng
       security:
@@ -640,7 +640,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    put:
+    patch:
       tags: [Admin - Group Management]
       summary: Cập nhật thông tin một nhóm bất kỳ
       security:
