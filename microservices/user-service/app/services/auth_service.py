@@ -2,8 +2,8 @@
 from datetime import datetime, UTC, timedelta
 from typing import Any
 import jwt
-from pydantic import EmailStr
 
+from app.schemas.auth import AccessTokenResponseSchema
 from shopping_shared.caching.redis_manager import redis_manager
 from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound
 from app.constants import OtpAction
@@ -54,6 +54,7 @@ class AuthService:
         otp_request_data = SendVerificationOTPRequestSchema(email=reg_data.email, action=OtpAction.REGISTER)
         await cls.request_otp(otp_request_data, user_repo)
 
+
     @classmethod
     async def login_account(
             cls,
@@ -64,16 +65,13 @@ class AuthService:
         Handles user login, creates JWTs, and saves the refresh token JTI
         to enforce a single session.
         """
-        user = await user_repo.get_by_username(login_data.email)
+        user = await user_repo.get_by_username(login_data.username)
         if not user or not verify_password(login_data.password.get_secret_value(), user.password):
             raise Unauthorized("Invalid username or password")
 
         if not user.is_active:
             raise Forbidden("Account is not active. Please verify your email.")
 
-        # Reset failed login attempts if any
-        if hasattr(user, 'failed_login_attempts') and user.failed_login_attempts > 0:
-            await user_repo.reset_failed_attempts(user.id)
 
         # Generate new tokens. Note: user.system_role.value might be needed if it's an enum
         access_token, refresh_token, _, refresh_jti = jwt_handler.create_tokens(
@@ -86,10 +84,15 @@ class AuthService:
         user.last_login = datetime.now(UTC)
         await user_repo.session.commit()
 
-        return TokenResponseSchema(
+        return AccessTokenResponseSchema(
             access_token=access_token,
             refresh_token=refresh_token,
         )
+
+    @classmethod
+    async def attach_refresh_token_to_response(cls, response: json):
+        pass
+
 
     @classmethod
     async def logout_account(cls, user_id: Any, user_repo: UserRepository, access_jti: str, access_exp: int,

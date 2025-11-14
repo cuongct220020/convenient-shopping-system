@@ -30,9 +30,9 @@ def register_listeners(sanic_app: Sanic):
     sanic_app.register_listener(close_kafka, "after_server_stop")
 
 def register_views(sanic_app: Sanic):
-    from app.apis import api # Import the api Blueprint.group
+    from app.apis import api # Import the api Blueprint.groups
 
-    # Register the main API blueprint group with the /api/v1/user-service prefix
+    # Register the main API blueprint groups with the /api/v1/user-service prefix
     sanic_app.blueprint(api, url_prefix="/api/v1/user-service")
 
 def register_hooks(sanic_app: Sanic):

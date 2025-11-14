@@ -71,7 +71,7 @@ services:
           - /api/v1/user-service/me/family/remove-member
         strip_path: true
         plugins:
-          # Rate limiting for family group endpoints - 100 requests per hour per IP
+          # Rate limiting for family groups endpoints - 100 requests per hour per IP
           - name: rate-limiting
             config:
               hour: 100

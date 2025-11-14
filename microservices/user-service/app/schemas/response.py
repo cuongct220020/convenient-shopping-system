@@ -34,11 +34,11 @@ class UserHealthProfileResponse(GenericResponse[UserHealthProfileSchema]):
 
 # --- Group Responses ---
 class GroupDetailedResponse(GenericResponse[GroupDetailedSchema]):
-    """Response containing detailed information about a group."""
+    """Response containing detailed information about a groups."""
     message: str = "Lấy thông tin nhóm thành công."
 
 class GroupMemberResponse(GenericResponse[GroupMemberSchema]):
-    """Response containing information about a group member."""
+    """Response containing information about a groups member."""
     message: str = "Thao tác với thành viên nhóm thành công."
 
 # --- Admin Responses ---
@@ -56,5 +56,5 @@ class GroupDetailedPaginatedResponse(PaginationResponse[GroupDetailedSchema]):
     message: str = "Lấy danh sách nhóm thành công."
 
 class GroupMemberPaginatedResponse(PaginationResponse[GroupMemberSchema]):
-    """Paginated response for listing group members."""
+    """Paginated response for listing groups members."""
     message: str = "Lấy danh sách thành viên thành công."

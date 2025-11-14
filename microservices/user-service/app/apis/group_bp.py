@@ -1,7 +1,7 @@
 # microservices/user-service/app/apis/group_bp.py
 from sanic import Blueprint
 
-from .app.views.group.group_view import GroupView, GroupMemberView
+from app.views.groups.group_view import GroupView, GroupMemberView
 
 
 group_bp = Blueprint('group_bp', url_prefix='/groups')

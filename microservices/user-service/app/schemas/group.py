@@ -1,4 +1,4 @@
-# /microservices/user-service/app/schemas/group.py
+# /microservices/user-service/app/schemas/groups.py
 from typing import Optional, List
 from uuid import UUID
 from pydantic import Field
@@ -8,17 +8,17 @@ from .user import UserPublicProfileSchema
 
 # --- Group Schemas ---
 class GroupMemberSchema(BaseSchema):
-    """Schema representing a member within a group."""
+    """Schema representing a member within a groups."""
     user: UserPublicProfileSchema
     role: GroupRole
 
 class GroupCreateSchema(BaseSchema):
-    """Schema for creating a new group."""
+    """Schema for creating a new groups."""
     group_name: str = Field(..., min_length=1, max_length=255)
     group_avatar_url: Optional[str] = None
 
 class GroupDetailedSchema(BaseSchema):
-    """Detailed schema for a group, including its members."""
+    """Detailed schema for a groups, including its members."""
     id: UUID
     group_name: str
     group_avatar_url: Optional[str] = None

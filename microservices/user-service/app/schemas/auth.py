@@ -16,11 +16,13 @@ class LoginRequestSchema(BaseSchema):
     username: str = Field(..., min_length=3, max_length=255)
     password: SecretStr
 
-class TokenResponseSchema(BaseSchema):
+
+class AccessTokenResponseSchema(BaseSchema):
     """Schema for token responses."""
     access_token: str
-    refresh_token: str
     token_type: str = "Bearer"
+    expires_in_minutes: int
+
 
 class ChangePasswordRequestSchema(BaseSchema):
     """Schema for an authenticated user to change their password."""

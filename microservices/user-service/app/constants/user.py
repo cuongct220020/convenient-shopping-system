@@ -9,7 +9,7 @@ class UserRole(str, enum.Enum):
 
 
 class GroupRole(str, enum.Enum):
-    """Enum for user roles within a family group."""
+    """Enum for user roles within a family groups."""
     HEAD_CHEF = "head_chef"
     MEMBER = "member"
 
