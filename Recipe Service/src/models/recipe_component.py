@@ -68,7 +68,7 @@ class ComponentList(Base):
 
     recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.component_id"),primary_key=True)
     component_id: Mapped[int] = mapped_column(ForeignKey("recipe_components.component_id"),primary_key=True)
-    quantity: Mapped[float] = mapped_column(Float, nullable=True)
+    quantity: Mapped[float] = mapped_column(Float, nullable=False)
 
     recipe: Mapped["Recipe"] = relationship(
         back_populates="component_list",

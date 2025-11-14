@@ -5,18 +5,18 @@ from .ingredient import IngredientResponse
 
 class ComponentBase(BaseModel):
     component_id: int
-    quantity: float
+    quantity: float = Field(..., gt=0)
 
 class RecipeBase(BaseModel):
     image_url: Optional[str] = None
-    prep_time: Optional[int] = None
-    cook_time: Optional[int] = None
+    prep_time: Optional[int] = Field(None, gt=0)
+    cook_time: Optional[int] = Field(None, gt=0)
     description: Optional[str] = None
 
 # === Create ===
 class RecipeCreate(RecipeBase):
     component_name: str
-    default_servings: int = 1
+    default_servings: int = Field(1, ge=1)
     instructions: list[str]
     component_list: list[ComponentBase]
 
@@ -25,7 +25,7 @@ class RecipeCreate(RecipeBase):
 # === Update ===
 class RecipeUpdate(RecipeBase):
     component_name: Optional[str] = None
-    default_servings: Optional[int] = None
+    default_servings: Optional[int] = Field(None, ge=1)
     instructions: Optional[list[str]] = None
     component_list: Optional[list[ComponentBase]] = None
 

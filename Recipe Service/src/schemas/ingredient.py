@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal, Annotated
 from typing_extensions import TypeAlias
 from enums.c_measurement_unit import CMeasurementUnit
@@ -6,13 +6,13 @@ from enums.uc_measurement_unit import UCMeasurementUnit
 
 class IngredientBase(BaseModel):
     type: Literal["countable_ingredient", "uncountable_ingredient"]
-    estimated_shelf_life: Optional[int] = None
-    protein: Optional[float] = None
-    fat: Optional[float] = None
-    carb: Optional[float] = None
-    fiber: Optional[float] = None
-    calories: Optional[float] = None
-    estimated_price: Optional[int] = None
+    estimated_shelf_life: Optional[int] = Field(None, ge=0)
+    protein: Optional[float] = Field(None, ge=0)
+    fat: Optional[float] = Field(None, ge=0)
+    carb: Optional[float] = Field(None, ge=0)
+    fiber: Optional[float] = Field(None, ge=0)
+    calories: Optional[float] = Field(None, ge=0)
+    estimated_price: Optional[int] = Field(None, ge=0)
     ingredient_tag_list: Optional[list[int]] = None
 
     model_config = ConfigDict(
