@@ -2,7 +2,7 @@
 
 from sanic import Request
 from app.utils.jwt_utils import jwt_handler
-from app.exceptions import Unauthorized
+from shopping_shared.exceptions import Unauthorized
 
 
 # --- Middleware entry point ---
