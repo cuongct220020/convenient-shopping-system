@@ -26,6 +26,26 @@ recipe_router = APIRouter(
 def search_recipes(keyword: str = Query(...), limit: int = Query(10), db: Session = Depends(get_db)):
     return recipe_crud.search(db, keyword=keyword, limit=limit)
 
+@recipe_router.put(
+    "/{id}",
+    response_model=RecipeResponse,
+    status_code=status.HTTP_200_OK,
+    description=(
+            f"Update an existing Recipe identified by its ID with the provided data. "
+            "Returns 404 if the Recipe does not exist."
+            "Returns 400 if component list of the Recipe contains the Recipe itself to prevent infinite loop."
+    )
+)
+def update_recipe(id: int, obj_in: RecipeUpdate, db: Session = Depends(get_db)):
+    db_obj = recipe_crud.get(db, id)
+    if db_obj is None:
+        raise HTTPException(status_code=404, detail=f"Recipe with id={id} not found")
+    if obj_in.component_list:
+        for c in obj_in.component_list:
+            if c.component_id == id:
+                raise HTTPException(status_code=400, detail="component_list cannot contain self")
+    return recipe_crud.update(db, obj_in, db_obj)
+
 crud_router: APIRouter = create_crud_router(
     model=Recipe,
     crud_base=recipe_crud,
