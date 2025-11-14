@@ -13,7 +13,7 @@ class RegisterRequestSchema(BaseSchema):
 
 class LoginRequestSchema(BaseSchema):
     """Schema for user login requests."""
-    email: EmailStr
+    username: str = Field(..., min_length=3, max_length=255)
     password: SecretStr
 
 class TokenResponseSchema(BaseSchema):

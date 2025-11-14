@@ -3,11 +3,12 @@ from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
 
-from app.exceptions import Unauthorized
-from app.services.auth_service import AuthService
+from shopping_shared.exceptions import Unauthorized
 from shopping_shared.schemas.response_schema import GenericResponse
+
+from app.services.auth_service import AuthService
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth.token_schema import TokenData
+from app.schemas.auth import TokenResponseSchema
 
 
 class RefreshView(HTTPMethodView):

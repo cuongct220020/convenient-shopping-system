@@ -32,8 +32,8 @@ def register_listeners(sanic_app: Sanic):
 def register_views(sanic_app: Sanic):
     from app.apis import api # Import the api Blueprint.group
 
-    # Register the main API blueprint group with the /api/v1 prefix
-    sanic_app.blueprint(api, url_prefix="/api/v1")
+    # Register the main API blueprint group with the /api/v1/user-service prefix
+    sanic_app.blueprint(api, url_prefix="/api/v1/user-service")
 
 def register_hooks(sanic_app: Sanic):
     from app.hooks.request_context import after_request

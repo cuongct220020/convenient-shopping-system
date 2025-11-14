@@ -152,7 +152,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
-  /me:
+  /users/me:
     get:
       tags: [Profile]
       summary: Lấy thông tin tài khoản cơ bản
@@ -186,7 +186,7 @@ paths:
                 $ref: '#/components/schemas/UserCoreInfoResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /me/identity-profile:
+  /users/me/profile/identity:
     get:
       tags: [Profile]
       summary: Lấy hồ sơ định danh
@@ -220,7 +220,7 @@ paths:
                 $ref: '#/components/schemas/UserIdentityProfileResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /me/health-profile:
+  /users/me/profile/health:
     get:
       tags: [Profile]
       summary: Lấy hồ sơ sức khỏe
@@ -254,7 +254,7 @@ paths:
                 $ref: '#/components/schemas/UserHealthProfileResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /me/change-password:
+  /users/me/change-password:
     post:
       tags: [Profile]
       summary: Thay đổi mật khẩu (khi đã đăng nhập)
@@ -277,7 +277,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /me/email/request-change:
+  /users/me/email/request-change:
     post:
       tags: [Profile]
       summary: Yêu cầu thay đổi địa chỉ email
@@ -300,7 +300,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /me/email/confirm-change:
+  /users/me/email/confirm-change:
     post:
       tags: [Profile]
       summary: Xác nhận thay đổi địa chỉ email bằng mã OTP
@@ -363,8 +363,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /groups/{groupId}/leave:
-    post:
+  /groups/{groupId}/members/me:
+    delete:
       tags: [Groups]
       summary: Thành viên tự rời khỏi nhóm
       security:
@@ -553,7 +553,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    put:
+    patch:
       tags: [Admin - User Management]
       summary: Cập nhật toàn bộ thông tin người dùng
       security:
@@ -640,7 +640,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    put:
+    patch:
       tags: [Admin - Group Management]
       summary: Cập nhật thông tin một nhóm bất kỳ
       security:

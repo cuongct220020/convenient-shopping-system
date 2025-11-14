@@ -19,8 +19,8 @@ from app.schemas import (
 from app.schemas.user import UserCreateSchema
 from app.utils.password_utils import verify_password, hash_password
 from app.utils.jwt_utils import jwt_handler
-from shopping_shared.messaging.kafka_manager import kafka_manager
-from shopping_shared.messaging.topics import NOTIFICATION_TOPIC
+# from shopping_shared import kafka_manager
+# from shopping_shared.messaging.topics import NOTIFICATION_TOPIC
 from app.services.otp_service import otp_service
 
 

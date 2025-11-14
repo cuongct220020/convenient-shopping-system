@@ -1,7 +1,7 @@
 from typing import Final
 from app import create_app
 from config import Config, KafkaConfig, EmailConfig
-from shopping_shared.utils.logger_utils import get_logger
+from shared.shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 

@@ -5,16 +5,15 @@ from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.schemas.access_token_schema import AccessTokenResponse
-from app.schemas.auth.login_schema import LoginRequest
+from app.schemas.auth import LoginRequestSchema
 from app.services.auth_service import AuthService
-from app.schemas.auth.token_schema import TokenData
+from app.schemas.auth import TokenResponseSchema
 
 from shopping_shared.schemas.response_schema import GenericResponse
 
 
 class LoginView(HTTPMethodView):
-    decorators = [validate_request(LoginRequest)]
+    decorators = [validate_request(LoginRequestSchema)]
 
     async def post(self, request: Request):
         """Handles user login and token generation."""
@@ -30,7 +29,7 @@ class LoginView(HTTPMethodView):
         )
 
         # 1. Chuẩn bị dữ liệu JSON chỉ chứa access token
-        access_token_data = AccessTokenResponse(
+        access_token_data = TokenResponseSchema(
             access_token=token_dto.access_token,
             token_type=token_dto.token_type,
             expires_in_minutes=token_dto.expires_in_minutes,

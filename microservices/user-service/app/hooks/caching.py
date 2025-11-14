@@ -1,6 +1,5 @@
 # app/hooks/caching.py
 from sanic import Sanic, Request
-from sanic.exceptions import SanicException
 
 from shopping_shared.caching.redis_manager import redis_manager
 from shopping_shared.utils.logger_utils import get_logger

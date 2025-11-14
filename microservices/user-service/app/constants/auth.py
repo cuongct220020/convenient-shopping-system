@@ -2,7 +2,7 @@
 from enum import Enum
 
 
-class OTPAction(str, Enum):
+class OtpAction(str, Enum):
     """Enum for OTP actions."""
     REGISTER = "register"
     RESET_PASSWORD = "reset_password"

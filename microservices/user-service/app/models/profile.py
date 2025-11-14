@@ -52,7 +52,7 @@ class UserHealthProfile(Base):
     weight_kg: Mapped[Optional[float]] = mapped_column(Numeric(5, 2), nullable=True)
 
     activity_level: Mapped[Optional[ActivityLevel]] = mapped_column(
-        SQLEnum(ActivityLevel), nullable=True, default=ActivityLevel.NORMAL
+        SQLEnum(ActivityLevel), nullable=True, default=ActivityLevel.MODERATE
     )
     curr_condition: Mapped[Optional[HealthCondition]] = mapped_column(
         SQLEnum(HealthCondition), nullable=True, default=HealthCondition.NORMAL

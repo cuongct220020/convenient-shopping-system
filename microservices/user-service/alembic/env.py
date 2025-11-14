@@ -1,7 +1,11 @@
 import asyncio
 from logging.config import fileConfig
 import os
+import sys
 from dotenv import load_dotenv
+
+# Add the project root to the Python path to find shared modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -9,7 +13,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
 # Import models for 'autogenerate' support
-from shopping_shared.databases.base_model import Base
+from shared.shopping_shared.databases.base_model import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
