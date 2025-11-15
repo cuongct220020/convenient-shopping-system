@@ -23,11 +23,11 @@ class UserGender(str, enum.Enum):
 
 class ActivityLevel(str, enum.Enum):
     """Enum for user activity levels."""
-    SEDENTARY = "sedentary"  # Ít vận động
-    LIGHT = "light"  # Vận động nhẹ
-    MODERATE = "moderate"  # Vận động vừa
-    ACTIVE = "active"  # Năng động
-    VERY_ACTIVE = "very_active"  # Rất năng động
+    SEDENTARY = "sedentary"  # Ít vận động; hệ số 1.2; ngồi nhiều, không tập
+    LIGHT = "light"  # Vận động nhẹ; hệ số 1.375; 1-3 buổi/tuần
+    MODERATE = "moderate"  # Vận động vừa; hệ số 1.5; 3-5 buổi/tuần
+    ACTIVE = "active"  # Năng động (tập nặng); hệ số 1.725; 6-7 buổi/tuần.
+    VERY_ACTIVE = "very_active"  # Rất năng động (tập rất nặng); hệ số 1.9; Lao động nặng, 2 lần tập/ngày
 
 
 class HealthCondition(str, enum.Enum):

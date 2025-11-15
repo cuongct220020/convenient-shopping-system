@@ -8,6 +8,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
+from app.models import Address, User
 from shopping_shared.databases.base_model import Base
 from app.constants import UserGender, ActivityLevel, HealthCondition, HealthGoal
 

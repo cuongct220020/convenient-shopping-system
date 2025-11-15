@@ -8,7 +8,7 @@ The schemas are organized by resource type.
 from .auth import (
     RegisterRequestSchema,
     LoginRequestSchema,
-    TokenResponseSchema,
+    AccessTokenSchema,
     ChangePasswordRequestSchema,
 )
 from .otp import (
@@ -18,7 +18,7 @@ from .otp import (
     ConfirmEmailChangeRequestSchema,
     ResetPasswordRequestSchema,
 )
-from .profile import (
+from .user_profile import (
     AddressSchema,
     UserIdentityProfileSchema,
     UserIdentityProfileUpdateSchema,
@@ -35,44 +35,34 @@ from .user import (
     UserAdminViewSchema,
     UserAdminUpdateSchema,
 )
-from .group import (
-    GroupMemberSchema,
-    GroupCreateSchema,
-    GroupDetailedSchema,
-)
-from .response import (
-    SuccessResponse,
-    TokenDataResponse,
-    UserPublicProfileResponse,
-    UserCoreInfoResponse,
-    UserIdentityProfileResponse,
-    UserHealthProfileResponse,
-    GroupDetailedResponse,
-    GroupMemberResponse,
-    UserAdminViewResponse,
-    UserAdminViewPaginatedResponse,
-    GroupDetailedPaginatedResponse,
-    GroupMemberPaginatedResponse,
+from .family_group import (
+    FamilyGroupMemberSchema,
+    FamilyGroupCreateSchema,
+    FamilyGroupUpdateSchema,
+    FamilyGroupDetailedSchema
 )
 
 __all__ = [
     # Auth
     "RegisterRequestSchema",
     "LoginRequestSchema",
-    "TokenResponseSchema",
+    "AccessTokenSchema",
     "ChangePasswordRequestSchema",
+
     # OTP
     "SendVerificationOTPRequestSchema",
     "VerifyAccountRequestSchema",
     "RequestEmailChangeRequestSchema",
     "ConfirmEmailChangeRequestSchema",
     "ResetPasswordRequestSchema",
+
     # Profile
     "AddressSchema",
     "UserIdentityProfileSchema",
     "UserIdentityProfileUpdateSchema",
     "UserHealthProfileSchema",
     "UserHealthProfileUpdateSchema",
+
     # User
     "UserPublicProfileSchema",
     "UserCoreInfoSchema",
@@ -82,21 +72,10 @@ __all__ = [
     "UserDetailedProfileSchema",
     "UserAdminViewSchema",
     "UserAdminUpdateSchema",
+
     # Group
-    "GroupMemberSchema",
-    "GroupCreateSchema",
-    "GroupDetailedSchema",
-    # Responses
-    "SuccessResponse",
-    "TokenDataResponse",
-    "UserPublicProfileResponse",
-    "UserCoreInfoResponse",
-    "UserIdentityProfileResponse",
-    "UserHealthProfileResponse",
-    "GroupDetailedResponse",
-    "GroupMemberResponse",
-    "UserAdminViewResponse",
-    "UserAdminViewPaginatedResponse",
-    "GroupDetailedPaginatedResponse",
-    "GroupMemberPaginatedResponse",
+    "FamilyGroupMemberSchema",
+    "FamilyGroupCreateSchema",
+    "FamilyGroupUpdateSchema",
+    "FamilyGroupDetailedSchema"
 ]

@@ -1,36 +1,37 @@
 # app/services/auth_service.py
 from datetime import datetime, UTC, timedelta
-from typing import Any
+from typing import Any, Tuple
 import jwt
+from pydantic import EmailStr
 
-from app.schemas.auth import AccessTokenResponseSchema
 from shopping_shared.caching.redis_manager import redis_manager
-from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound
+from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, BadRequest
+
 from app.constants import OtpAction
 from app.repositories.user_repository import UserRepository
+from app.schemas.user import UserCreateSchema
+from app.utils.password_utils import verify_password, hash_password
+from app.utils.jwt_utils import jwt_handler
+from app.services.otp_service import otp_service
+from app.services.redis_service import RedisService
+
 from app.schemas import (
     LoginRequestSchema,
     RegisterRequestSchema,
-    TokenResponseSchema,
+    AccessTokenSchema,
     SendVerificationOTPRequestSchema,
     VerifyAccountRequestSchema,
     ResetPasswordRequestSchema,
 )
-from app.schemas.user import UserCreateSchema
-from app.utils.password_utils import verify_password, hash_password
-from app.utils.jwt_utils import jwt_handler
-# from shopping_shared import kafka_manager
-# from shopping_shared.messaging.topics import NOTIFICATION_TOPIC
-from app.services.otp_service import otp_service
 
 
 class AuthService:
 
     @classmethod
-    async def register_user(
-            cls,
-            reg_data: RegisterRequestSchema,
-            user_repo: UserRepository
+    async def register_account(
+        cls,
+        reg_data: RegisterRequestSchema,
+        user_repo: UserRepository
     ):
         """Handles the first step of registration: creating an inactive user and sending a verification OTP."""
         existing_user = await user_repo.get_by_username(reg_data.email)
@@ -57,41 +58,51 @@ class AuthService:
 
     @classmethod
     async def login_account(
-            cls,
-            login_data: LoginRequestSchema,
-            user_repo: UserRepository
-    ) -> TokenResponseSchema:
+        cls,
+        login_data: LoginRequestSchema,
+        user_repo: UserRepository
+    ) -> Tuple[AccessTokenSchema, str]:
         """
         Handles user login, creates JWTs, and saves the refresh token JTI
         to enforce a single session.
         """
-        user = await user_repo.get_by_username(login_data.username)
-        if not user or not verify_password(login_data.password.get_secret_value(), user.password):
+        user_identifier = login_data.identifier
+
+        if EmailStr(user_identifier):
+            user = await user_repo.get_by_email(user_identifier)
+        else:
+            user = await user_repo.get_by_username(user_identifier)
+
+        if not user or not verify_password(login_data.password.get_secret_value(), user.password_hash):
             raise Unauthorized("Invalid username or password")
 
         if not user.is_active:
             raise Forbidden("Account is not active. Please verify your email.")
 
-
-        # Generate new tokens. Note: user.system_role.value might be needed if it's an enum
-        access_token, refresh_token, _, refresh_jti = jwt_handler.create_tokens(
+        # Generate new tokens
+        jwt_token, refresh_token, jwt_token_jti, refresh_token_jti = jwt_handler.create_tokens(
             user_id=str(user.id),
             user_role=user.system_role.value
         )
 
-        # Update user record with the new JTI and last login time
-        user.active_refresh_jti = refresh_jti
-        user.last_login = datetime.now(UTC)
-        await user_repo.session.commit()
-
-        return AccessTokenResponseSchema(
-            access_token=access_token,
-            refresh_token=refresh_token,
+        access_token = AccessTokenSchema(
+            access_token=jwt_token,
+            token_type="Bearer",
+            expires_in_minutes=int(jwt_token["expires_delta"])
         )
 
-    @classmethod
-    async def attach_refresh_token_to_response(cls, response: json):
-        pass
+        # Cập nhật refresh token JTI cho user để thực hiện single session
+        await user_repo.update_refresh_jti(user.id, refresh_token_jti)
+
+
+
+        user.last_login = datetime.now()
+        await user_repo.update(user)
+
+        return access_token, refresh_token
+
+
+
 
 
     @classmethod
@@ -130,7 +141,7 @@ class AuthService:
             cls,
             old_refresh_token: str,
             user_repo: UserRepository,
-    ) -> TokenResponseSchema:
+    ) -> AccessTokenResponseSchema:
         """
         Handles token refresh with rotation, enforcing a single active session.
         """
@@ -161,10 +172,8 @@ class AuthService:
         user.active_refresh_jti = new_refresh_jti
         await user_repo.session.commit()
 
-        return TokenResponseSchema(
-            access_token=access_token,
-            refresh_token=new_refresh_token,
-        )
+        return AccessTokenResponseSchema(
+            access_token=access_token        )
 
     @classmethod
     async def request_otp(
@@ -185,17 +194,6 @@ class AuthService:
 
         otp_code = await otp_service.generate_and_store_otp(otp_data.email, otp_data.action.value)
 
-        # # Instead of sending email directly, publish an event to Kafka
-        # producer = await kafka_manager.get_producer()
-        # message = {
-        #     "type": "send_otp",
-        #     "payload": {
-        #         "email": otp_data.email,
-        #         "otp_code": otp_code,
-        #         "action": otp_data.action.value
-        #     }
-        # }
-        # await producer.send_and_wait(NOTIFICATION_TOPIC, message)
 
     @classmethod
     async def verify_otp_and_perform_action(

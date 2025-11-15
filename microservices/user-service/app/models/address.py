@@ -1,6 +1,8 @@
 from typing import List
 from sqlalchemy import String, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models import UserIdentityProfile
 from shopping_shared.databases.base_model import Base
 
 class Address(Base):
