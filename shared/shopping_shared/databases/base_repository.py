@@ -4,19 +4,16 @@ from typing import Generic, TypeVar, Type, Optional, List, Any, Dict
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
-from sqlalchemy.inspection import inspect
 
-from app.models.base import Base
+from shopping_shared.databases.base_model import Base
 
-# --- Generic Type Variables ---
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
-# --- Standardized Pagination Result Schema ---
 class PaginationResult(BaseModel, Generic[ModelType]):
-    """Standardized schema for paginated query results."""
+    """Schema for paginated query results."""
     items: List[ModelType]
     total_items: int
     total_pages: int
@@ -24,13 +21,10 @@ class PaginationResult(BaseModel, Generic[ModelType]):
     page_size: int
 
 
-# --- The New BaseRepository ---
-class BaseRepository(Generic[ModelType]):
+class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     """
-    A generic, powerful, and best-practice oriented repository.
-
-    Handles soft-deletes, pagination, and dynamic filtering/sorting.
-    It operates within a given session and never commits.
+    Generic repository with soft-deletes, pagination, and dynamic filtering/sorting.
+    Operates within a given session and never commits.
     """
 
     def __init__(self, model: Type[ModelType], session: AsyncSession):
@@ -42,8 +36,6 @@ class BaseRepository(Generic[ModelType]):
         """
         self.model = model
         self.session = session
-        # Inspect the model to find the name of the primary key column
-        self.pk_name = inspect(self.model).primary_key[0].name
 
     def _apply_filters_and_sort(
             self,
@@ -53,17 +45,14 @@ class BaseRepository(Generic[ModelType]):
             include_deleted: bool = False
     ):
         """Applies filtering, sorting, and soft-delete logic to a statement."""
-        # 1. Apply soft-delete filter by default
         if hasattr(self.model, "is_deleted") and not include_deleted:
             stmt = stmt.where(self.model.is_deleted == False)
 
-        # 2. Apply dynamic filters
         if filters:
             for field, value in filters.items():
                 if hasattr(self.model, field):
                     stmt = stmt.where(getattr(self.model, field) == value)
 
-        # 3. Apply dynamic sorting
         if sort_by:
             for sort_field in sort_by:
                 direction = "desc" if sort_field.endswith("_desc") else "asc"
@@ -75,7 +64,8 @@ class BaseRepository(Generic[ModelType]):
 
     async def get_by_id(self, record_id: Any, include_deleted: bool = False) -> Optional[ModelType]:
         """Gets a single record by its primary key."""
-        pk_column = getattr(self.model, self.pk_name)
+        # Get the primary key column directly from the model
+        pk_column = self.model.__table__.primary_key.columns.values()[0]
         query = select(self.model).where(pk_column == record_id)
 
         # Apply soft-delete logic only if the model supports it
@@ -110,10 +100,8 @@ class BaseRepository(Generic[ModelType]):
             include_deleted: bool = False,
     ) -> PaginationResult[ModelType]:
         """Gets a paginated list of records."""
-        if page < 1: page = 1
-        if page_size < 1: page_size = 10
+        page, page_size = max(1, page), max(1, page_size)
 
-        # Create and apply filters to the count query
         count_stmt = self._apply_filters_and_sort(
             select(func.count()).select_from(self.model),
             filters,
@@ -121,14 +109,13 @@ class BaseRepository(Generic[ModelType]):
         )
         total_items = (await self.session.execute(count_stmt)).scalar_one()
 
-        # Create and apply filters/sort to the data query
         data_stmt = self._apply_filters_and_sort(
             select(self.model),
             filters,
             sort_by,
             include_deleted
-        )
-        data_stmt = data_stmt.offset((page - 1) * page_size).limit(page_size)
+        ).offset((page - 1) * page_size).limit(page_size)
+
         result = await self.session.execute(data_stmt)
         items = list(result.scalars().all())
 
@@ -179,7 +166,7 @@ class BaseRepository(Generic[ModelType]):
         if not hasattr(self.model, "is_deleted"):
             raise AttributeError(f"Model {self.model.__name__} does not have 'is_deleted' attribute.")
 
-        pk_column = getattr(self.model, self.pk_name)
+        pk_column = self.model.__table__.primary_key.columns.values()[0]
         stmt = (
             update(self.model)
             .where(pk_column == record_id)
