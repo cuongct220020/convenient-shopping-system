@@ -14,7 +14,7 @@ class Storage(Base):
     storage_type: Mapped[StorageType] = mapped_column(Enum(StorageType), nullable=False)
     group_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    storage_units: Mapped[list["StorableUnit"]] = relationship(
+    storage_unit_list: Mapped[list["StorableUnit"]] = relationship(
         back_populates="storage",
         cascade="all, delete-orphan"
     )
@@ -45,7 +45,7 @@ class StorableUnit(Base):
     expiration_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
     storage: Mapped["Storage"] = relationship(
-        back_populates="storage_units",
+        back_populates="storage_unit_list",
         foreign_keys=[storage_id]
     )
 
