@@ -1,8 +1,7 @@
-# app/hooks/database.py
+# microservices/user-service/app/hooks/database.py
 from sanic import Sanic, Request
 
 from shopping_shared.databases.database_manager import database_manager as postgres_db
-from shopping_shared.databases.base_model import Base
 
 
 async def setup_db(app: Sanic):
@@ -10,10 +9,9 @@ async def setup_db(app: Sanic):
     This hook initializes the database connection and creates tables using the shared manager.
     It runs once before the server starts.
     """
-    db_uri = app.config.get("DATABASE_URI")
+    db_uri = app.config.POSTGRESQL.DATABASE_URI
     debug = app.config.get("DEBUG", False)
     await postgres_db.setup(database_uri=db_uri, debug=debug)
-    await postgres_db.create_tables(base=Base)
 
 
 async def close_db(_app: Sanic):

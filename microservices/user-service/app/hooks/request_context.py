@@ -1,4 +1,4 @@
-# app/hooks/request_context.py
+# microservices/user-service/app/hooks/request_context.py
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse
 

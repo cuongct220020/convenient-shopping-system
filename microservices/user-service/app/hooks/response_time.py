@@ -1,9 +1,9 @@
-# app/hooks/response_time.py
+# microservices/user-service/app/hooks/response_time.py
 import time
 
 from sanic import Request
 
-from shared.shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger('Middleware')
 

@@ -1,4 +1,4 @@
-# app/hooks/message_broker.py
+# microservices/user-service/app/hooks/message_broker.py
 from sanic import Sanic
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger

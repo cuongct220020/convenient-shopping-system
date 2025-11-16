@@ -1,9 +1,8 @@
-# app/repositories/user_repository.py
+# microservices/user-service/app/repositories/user_repository.py
 from typing import Optional
 from uuid import UUID
 
 from pydantic import EmailStr
-from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shopping_shared.databases.base_repository import BaseRepository

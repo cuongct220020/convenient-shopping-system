@@ -10,5 +10,6 @@ python-dotenv
 passlib[bcrypt]
 PyJWT
 pydantic[email]
+greenlet
 
 -e ../../shared

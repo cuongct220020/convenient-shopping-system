@@ -4,8 +4,8 @@ from typing import Callable, Any, Type
 
 from pydantic import BaseModel
 
-from shared.shopping_shared.caching.redis_manager import redis_manager
-from shared.shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.caching.redis_manager import redis_manager
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 
