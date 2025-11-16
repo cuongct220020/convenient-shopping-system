@@ -5,11 +5,11 @@ from enums.uc_measurement_unit import UCMeasurementUnit
 
 class StorableUnitCreate(BaseModel):
     unit_name: str
-    storage_id: int
-    package_quantity: Optional[int] = 1
-    component_id: Optional[int] = None
+    storage_id: int = Field(gt=0)
+    package_quantity: int = Field(1, ge=1)
+    component_id: Optional[int] = Field(None, gt=0)
     content_type: Optional[str] = None
-    content_quantity: Optional[float] = None
+    content_quantity: Optional[float] = Field(None, gt=0)
     content_unit: Optional[UCMeasurementUnit] = None
     expiration_date: Optional[datetime] = None
 

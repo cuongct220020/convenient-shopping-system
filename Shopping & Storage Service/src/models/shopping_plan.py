@@ -25,7 +25,7 @@ class Report(Base):
 
     report_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     plan_id: Mapped[int] = mapped_column(ForeignKey("shopping_plans.plan_id"), nullable=False, unique=True)
-    report_date: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    report_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
     report_content: Mapped[dict] = mapped_column(JSON, nullable=False)
     spent_amount: Mapped[int] = mapped_column(Integer, default=0)
 

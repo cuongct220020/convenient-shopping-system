@@ -6,7 +6,7 @@ from schemas.storable_unit_schemas import StorableUnitResponse
 class StorageCreate(BaseModel):
     storage_name: Optional[str] = None
     storage_type: StorageType
-    group_id: int
+    group_id: int = Field(gt=0)
 
     model_config = ConfigDict(extra="forbid")
 
