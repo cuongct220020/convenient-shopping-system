@@ -1,3 +1,7 @@
+from sanic import Request
+from sanic.views import HTTPMethodView
+
+
 class GroupView(HTTPMethodView):
 
     async def post(self, request: Request):

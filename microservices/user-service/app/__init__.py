@@ -15,7 +15,7 @@ def register_extensions(sanic_app: Sanic):
 def register_listeners(sanic_app: Sanic):
     from app.hooks.database import setup_db, close_db
     from app.hooks.caching import setup_redis, close_redis
-    from app.hooks.kafka import setup_kafka, close_kafka
+    from app.hooks.message_broker import setup_kafka, close_kafka
 
     # Register database hooks
     sanic_app.register_listener(setup_db, "before_server_start")
@@ -30,9 +30,9 @@ def register_listeners(sanic_app: Sanic):
     sanic_app.register_listener(close_kafka, "after_server_stop")
 
 def register_views(sanic_app: Sanic):
-    from app.apis import api # Import the api Blueprint.group
+    from app.apis import api # Import the api Blueprint.groups
 
-    # Register the main API blueprint group with the /api/v1/user-service prefix
+    # Register the main API blueprint groups with the /api/v1/user-service prefix
     sanic_app.blueprint(api, url_prefix="/api/v1/user-service")
 
 def register_hooks(sanic_app: Sanic):
@@ -40,7 +40,7 @@ def register_hooks(sanic_app: Sanic):
     from app.hooks.response_time import add_start_time, add_spent_time
     from app.hooks.database import manage_db_session
     from app.hooks.caching import inject_redis_client
-    from app.hooks.request_auth import auth
+    from app.hooks.request_auth import auth_middleware
 
     # IMPORTANT: The order of middleware can be important.
     # Middlewares that wrap the handler are executed like onion layers.
@@ -57,7 +57,7 @@ def register_hooks(sanic_app: Sanic):
     sanic_app.register_middleware(inject_redis_client, attach_to='request')
 
     # 4. Authentication middleware
-    sanic_app.register_middleware(auth, attach_to='request')
+    sanic_app.register_middleware(auth_middleware, attach_to='request')
 
     # 5. (Innermost) Generic post-request hook
     sanic_app.register_middleware(after_request, attach_to='response')

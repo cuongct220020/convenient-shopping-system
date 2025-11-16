@@ -1,21 +1,21 @@
 # shared/shopping_shared/databases/base_repository.py
 import math
 from typing import Generic, TypeVar, Type, Optional, List, Any, Dict
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 from sqlalchemy.inspection import inspect
 
-from app.models.base import Base
+from shopping_shared.databases.base_model import Base
+from shopping_shared.schemas.base_schema import BaseSchema
 
 # --- Generic Type Variables ---
 ModelType = TypeVar("ModelType", bound=Base)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseSchema)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseSchema)
 
 
 # --- Standardized Pagination Result Schema ---
-class PaginationResult(BaseModel, Generic[ModelType]):
+class PaginationResult(BaseSchema, Generic[ModelType]):
     """Standardized schema for paginated query results."""
     items: List[ModelType]
     total_items: int
@@ -25,7 +25,7 @@ class PaginationResult(BaseModel, Generic[ModelType]):
 
 
 # --- The New BaseRepository ---
-class BaseRepository(Generic[ModelType]):
+class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     """
     A generic, powerful, and best-practice oriented repository.
 
@@ -83,6 +83,40 @@ class BaseRepository(Generic[ModelType]):
             query = query.where(self.model.is_deleted == False)
 
         result = await self.session.execute(query)
+        return result.scalars().first()
+
+    async def get_by_field(
+        self,
+        field_name: str,
+        subject: str,
+        include_deleted: bool = False
+    ) -> Optional[ModelType]:
+        """Fetches a record by any field name."""
+        if not subject:
+            return None
+
+        field = getattr(self.model, field_name)
+        stmt = select(self.model).where(field == subject)
+        stmt = self._apply_filters_and_sort(stmt, filters=None, sort_by=None, include_deleted=include_deleted)
+
+        result = await self.session.execute(stmt.limit(1))
+        return result.scalars().first()
+
+    async def get_by_field_case_insensitive(
+        self,
+        field_name: str,
+        subject: str,
+        include_deleted: bool = False
+    ) -> Optional[ModelType]:
+        """Fetches a record by any field name with case-insensitive comparison."""
+        if not subject:
+            return None
+
+        field = getattr(self.model, field_name)
+        stmt = select(self.model).where(func.lower(field) == func.lower(subject))
+        stmt = self._apply_filters_and_sort(stmt, filters=None, sort_by=None, include_deleted=include_deleted)
+
+        result = await self.session.execute(stmt.limit(1))
         return result.scalars().first()
 
     async def get_many(
@@ -157,6 +191,25 @@ class BaseRepository(Generic[ModelType]):
             for key, value in update_data.items():
                 setattr(instance, key, value)
             self.session.add(instance)
+            await self.session.flush()
+            await self.session.refresh(instance)
+        return instance
+
+    async def update_field(self, record_id: Any, field_name: str, field_value: Any) -> Optional[ModelType]:
+        """Updates a single field in the record."""
+        instance = await self.get_by_id(record_id)
+        if instance:
+            setattr(instance, field_name, field_value)
+            await self.session.flush()
+            await self.session.refresh(instance)
+        return instance
+
+    async def update_fields(self, record_id: Any, field_updates: Dict[str, Any]) -> Optional[ModelType]:
+        """Updates multiple fields in the record."""
+        instance = await self.get_by_id(record_id)
+        if instance:
+            for field_name, field_value in field_updates.items():
+                setattr(instance, field_name, field_value)
             await self.session.flush()
             await self.session.refresh(instance)
         return instance

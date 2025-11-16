@@ -1,4 +1,4 @@
-# app/utils/password_utils.py
+# microservices/user-service/app/utils/password_utils.py
 import bcrypt
 import asyncio
 
@@ -9,20 +9,27 @@ def _blocking_verify_password(
         login_password_str: str,
         hashed_password_str: str
     ) -> bool:
+
     """
     Hàm đồng bộ (blocking) thực hiện việc so sánh bcrypt.
     Mật khẩu hash đã được lưu trong DB là str, cần encode về bytes cho bcrypt.checkpw.
     """
+
     # So sánh mật khẩu trần (đã encode) với mật khẩu hash (đã encode)
     return bcrypt.checkpw(
         login_password_str.encode('utf-8'),
         hashed_password_str.encode('utf-8')
     )
 
-async def verify_password(login_password: SecretStr, hashed_password: str) -> bool:
+async def verify_password(
+        login_password: SecretStr,
+        hashed_password: str
+    ) -> bool:
+
     """
     Verifies a plain text password against a hashed version in a separate thread.
     """
+
     # 1. Lấy chuỗi trần của mật khẩu đăng nhập từ SecretStr
     plain_password_str = login_password.get_secret_value()
 

@@ -1,106 +1,191 @@
+# microservices/user-service/app/utils/jwt_utils.py
+
 import jwt
-from datetime import datetime, timedelta, UTC
 import uuid
-from typing import Literal, Optional
+
+from typing import Optional, Tuple, Literal
+from datetime import datetime, timedelta, UTC
 
 from sanic import Sanic
 
-from shopping_shared.caching.redis_manager import redis_manager
 from shopping_shared.exceptions import Unauthorized
+from shopping_shared.schemas.base_schema import BaseSchema
 
+
+class TokenData(BaseSchema):
+    access_token: str
+    refresh_token: str
+    access_jti: uuid.UUID
+    refresh_jti: uuid.UUID
+    at_expires_in_minutes: int
+    rt_ttl_seconds: int
 
 class JWTHandler:
+    """
+    Handles JWT creation
+    """
+
     def __init__(self, app: Optional[Sanic] = None):
         if app:
             self.init_app(app)
 
     def init_app(self, app: Sanic):
-        self.app = app
         self.config = app.config
-        self.redis = redis_manager
+        # Cache các giá trị config
+        self.secret_key = self._get_config_value('JWT_SECRET')
+        self.algorithm = self._get_config_value('JWT_ALGORITHM', 'HS256')
+
+        self.access_token_expire_minutes = int(
+            self._get_config_value('JWT_ACCESS_TOKEN_EXPIRES_MINUTES', 15)
+        )
+        self.refresh_token_expire_days = int(
+            self._get_config_value('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 30)
+        )
 
     def _get_config_value(self, key: str, default=None):
         return self.config.get(key, default)
 
-    def create_tokens(self, user_id: str, user_role: str | None = None):
-        access_token_jti = str(uuid.uuid4())
-        refresh_token_jti = str(uuid.uuid4())
-
-        access_expires_delta = timedelta(minutes=self._get_config_value('JWT_ACCESS_TOKEN_EXPIRES_MINUTES', 15))
-        refresh_expires_delta = timedelta(days=self._get_config_value('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 30))
-
+    def _create_token_payload(
+            self,
+            user_id: str,
+            token_type: str,
+            expiry_delta: timedelta,
+            user_role: str | None = None
+    ) -> Tuple[dict, str]:
+        """
+        Tạo payload chung và JTI cho token.
+        """
+        jti = str(uuid.uuid4())
         issued_at_time = datetime.now(UTC)
 
-        access_payload = {
-            'token_type': 'access',
-            'exp': issued_at_time + access_expires_delta,
+        payload = {
+            'iss': 'app-user-consumer',  # Issuer claim for Kong
+            'token_type': token_type,
+            'exp': issued_at_time + expiry_delta,
             'iat': issued_at_time,
-            'jti': access_token_jti,
             'sub': str(user_id),
-            'role': user_role
+            'jti': jti
         }
 
-        refresh_payload = {
-            'token_type': 'refresh',
-            'exp': issued_at_time + refresh_expires_delta,
-            'iat': issued_at_time,
-            'jti': refresh_token_jti,
-            'sub': str(user_id),
-            'role': user_role
-        }
+        if user_role:
+            payload['user_role'] = user_role
 
-        secret_key = self._get_config_value('JWT_SECRET')
-        algorithm = self._get_config_value('JWT_ALGORITHM')
+        return payload, jti
 
-        access_token = jwt.encode(access_payload, secret_key, algorithm=algorithm)
-        refresh_token = jwt.encode(refresh_payload, secret_key, algorithm=algorithm)
 
-        return (
-            access_token,
-            refresh_token,
-            access_token_jti,
-            refresh_token_jti,
-            access_expires_delta.total_seconds() / 60
+    def _build_access_token(
+            self, user_id: str, user_role: str | None = None
+    ) -> Tuple[str, str, int]:
+        """
+        Xây dựng Access Token với thời gian hết hạn ngắn.
+        Trả về: (token_str, jti, expires_in_minutes)
+        """
+        expiry_delta = timedelta(minutes=self.access_token_expire_minutes)
+
+        payload, jti = self._create_token_payload(
+            user_id=user_id,
+            token_type='access',
+            expiry_delta=expiry_delta,
+            user_role=user_role
         )
 
-    async def verify(self, token: str, token_type: Literal['access', 'refresh'] = 'access', check_revocation: bool = True):
-        secret_key = self._get_config_value('JWT_SECRET')
-        algorithm = self._get_config_value('JWT_ALGORITHM')
+        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        return token, jti, self.access_token_expire_minutes
 
+    def _build_refresh_token(
+            self, user_id: str, user_role: str | None = None
+    ) -> Tuple[str, str, int]:
+        """
+        Xây dựng Refresh Token với thời gian hết hạn dài.
+        Trả về: (token_str, jti, ttl_seconds)
+        """
+        expiry_delta = timedelta(days=self.refresh_token_expire_days)
+
+        payload, jti = self._create_token_payload(
+            user_id=user_id,
+            token_type='refresh',
+            expiry_delta=expiry_delta,
+            user_role=user_role
+        )
+
+        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        ttl_seconds = int(expiry_delta.total_seconds())
+        return token, jti, ttl_seconds
+
+
+    def create_tokens(
+            self,
+            user_id: str,
+            user_role: str | None = None
+    ) -> TokenData:
+        """
+        Tạo cả access và refresh token.
+        Trả về: (
+            access_token,
+            refresh_token,
+            access_jti,
+            refresh_jti,
+            at_expires_in_minutes, (cho client)
+            rt_ttl_seconds (cho Redis)
+        )
+        """
+        # Gọi 2 hàm chuyên biệt
+        access_token, access_jti, at_expires_in_minutes = self._build_access_token(
+            user_id, user_role
+        )
+
+        refresh_token, refresh_jti, rt_ttl_seconds = self._build_refresh_token(
+            user_id, user_role
+        )
+
+        return TokenData(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            access_jti=access_jti,
+            refresh_jti=refresh_jti,
+            at_expires_in_minutes=at_expires_in_minutes,
+            rt_ttl_seconds=rt_ttl_seconds
+        )
+
+    def decode_token_stateless(
+        self,
+        token: str,
+        expected_token_type: Literal['access', 'refresh']
+    ) -> dict:
+        """
+        Giải mã token và thực hiện kiểm tra STATELESS.
+        Chỉ kiểm tra Chữ ký, Thời gian hết hạn (exp), và loại token.
+        KHÔNG kiểm tra Redis (Allowlist/Blocklist).
+
+        Raise Unauthorized nếu thất bại.
+        Trả về payload nếu thành công.
+        """
         try:
-            payload = jwt.decode(token, secret_key, algorithms=[algorithm])
+            payload = jwt.decode(
+                token,
+                self.secret_key,
+                algorithms=[self.algorithm]
+            )
+
         except jwt.ExpiredSignatureError:
             raise Unauthorized("Token has expired")
         except jwt.InvalidTokenError:
             raise Unauthorized("Invalid token")
+        except Exception as e:
+            # Bắt các lỗi JWT khác
+            raise Unauthorized(f"Token decoding error: {e}")
 
-        if payload.get('token_type') != token_type:
-            raise Unauthorized(f"Invalid token type. Expected '{token_type}'.")
+        # Kiểm tra loại token
+        token_type = payload.get('token_type')
+        if token_type != expected_token_type:
+            raise Unauthorized(f"Invalid token type. Expected '{expected_token_type}'.")
 
-        if check_revocation:
-            # 1. Check for global revocation (password change, etc.)
-            user_id = payload.get('sub')
-            iat = payload.get('iat')
-            global_revoke_key = f"user_revoke_all_timestamp:{user_id}"
-            last_global_revoke_ts = await self.redis.client.get(global_revoke_key)
-
-            if last_global_revoke_ts and iat < int(last_global_revoke_ts):
-                raise Unauthorized("Token has been revoked by a security event.")
-
-            # 2. Check for individual token revocation (logout)
-            jti = payload.get('jti')
-            is_revoked = await self.redis.client.get(f"revoked_jti:{jti}")
-            if is_revoked:
-                raise Unauthorized("Token has been revoked.")
+        # Kiểm tra các trường bắt buộc
+        if not payload.get('sub') or not payload.get('jti'):
+            raise Unauthorized("Invalid token payload (missing 'sub' or 'jti').")
 
         return payload
 
-    async def revoke(self, jti: str, exp: datetime):
-        """Revokes a token by adding its JTI to a denylist in Redis with a TTL."""
-        now = datetime.now(UTC)
-        ttl = exp - now
-        if ttl.total_seconds() > 0:
-            await self.redis.client.setex(f"revoked_jti:{jti}", int(ttl.total_seconds()), "revoked")
 
+# Singleton instance
 jwt_handler = JWTHandler()
-

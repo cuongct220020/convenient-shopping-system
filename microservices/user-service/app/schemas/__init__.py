@@ -8,17 +8,15 @@ The schemas are organized by resource type.
 from .auth import (
     RegisterRequestSchema,
     LoginRequestSchema,
-    TokenResponseSchema,
-    ChangePasswordRequestSchema,
-)
-from .otp import (
-    SendVerificationOTPRequestSchema,
-    VerifyAccountRequestSchema,
-    RequestEmailChangeRequestSchema,
-    ConfirmEmailChangeRequestSchema,
+    AccessTokenSchema,
     ResetPasswordRequestSchema,
 )
-from .profile import (
+from .otp import (
+    OTPRequestSchema,
+    OTPVerifyRequestSchema
+)
+
+from .user_profile import (
     AddressSchema,
     UserIdentityProfileSchema,
     UserIdentityProfileUpdateSchema,
@@ -26,77 +24,51 @@ from .profile import (
     UserHealthProfileUpdateSchema,
 )
 from .user import (
-    UserPublicProfileSchema,
-    UserCoreInfoSchema,
-    UserUpdateSchema,
+    UserInfoSchema,
+    UserInfoUpdateSchema,
     UserCreateSchema,
     UserAdminCreateSchema,
     UserDetailedProfileSchema,
     UserAdminViewSchema,
     UserAdminUpdateSchema,
 )
-from .group import (
-    GroupMemberSchema,
-    GroupCreateSchema,
-    GroupDetailedSchema,
-)
-from .response import (
-    SuccessResponse,
-    TokenDataResponse,
-    UserPublicProfileResponse,
-    UserCoreInfoResponse,
-    UserIdentityProfileResponse,
-    UserHealthProfileResponse,
-    GroupDetailedResponse,
-    GroupMemberResponse,
-    UserAdminViewResponse,
-    UserAdminViewPaginatedResponse,
-    GroupDetailedPaginatedResponse,
-    GroupMemberPaginatedResponse,
+from .family_group import (
+    FamilyGroupMemberSchema,
+    FamilyGroupCreateSchema,
+    FamilyGroupUpdateSchema,
+    FamilyGroupDetailedSchema
 )
 
 __all__ = [
     # Auth
     "RegisterRequestSchema",
     "LoginRequestSchema",
-    "TokenResponseSchema",
-    "ChangePasswordRequestSchema",
-    # OTP
-    "SendVerificationOTPRequestSchema",
-    "VerifyAccountRequestSchema",
-    "RequestEmailChangeRequestSchema",
-    "ConfirmEmailChangeRequestSchema",
+    "AccessTokenSchema",
     "ResetPasswordRequestSchema",
+
+    # OTP
+    "OTPRequestSchema",
+    "OTPVerifyRequestSchema",
+
     # Profile
     "AddressSchema",
     "UserIdentityProfileSchema",
     "UserIdentityProfileUpdateSchema",
     "UserHealthProfileSchema",
     "UserHealthProfileUpdateSchema",
+
     # User
-    "UserPublicProfileSchema",
-    "UserCoreInfoSchema",
-    "UserUpdateSchema",
+    "UserInfoSchema",
+    "UserInfoUpdateSchema",
     "UserCreateSchema",
     "UserAdminCreateSchema",
     "UserDetailedProfileSchema",
     "UserAdminViewSchema",
     "UserAdminUpdateSchema",
+
     # Group
-    "GroupMemberSchema",
-    "GroupCreateSchema",
-    "GroupDetailedSchema",
-    # Responses
-    "SuccessResponse",
-    "TokenDataResponse",
-    "UserPublicProfileResponse",
-    "UserCoreInfoResponse",
-    "UserIdentityProfileResponse",
-    "UserHealthProfileResponse",
-    "GroupDetailedResponse",
-    "GroupMemberResponse",
-    "UserAdminViewResponse",
-    "UserAdminViewPaginatedResponse",
-    "GroupDetailedPaginatedResponse",
-    "GroupMemberPaginatedResponse",
+    "FamilyGroupMemberSchema",
+    "FamilyGroupCreateSchema",
+    "FamilyGroupUpdateSchema",
+    "FamilyGroupDetailedSchema"
 ]

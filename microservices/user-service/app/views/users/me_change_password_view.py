@@ -15,7 +15,8 @@ class ChangePasswordView(HTTPMethodView):
 
     async def post(self, request: Request):
         """Handles changing the password for the authenticated user."""
-        user_id = request.ctx.user_id
+        auth_payload = request.ctx.auth_payload
+        user_id = auth_payload["sub"]
         validated_data = request.ctx.validated_data
 
         user_repo = UserRepository(session=request.ctx.db_session)

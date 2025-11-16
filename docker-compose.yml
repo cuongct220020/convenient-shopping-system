@@ -63,12 +63,13 @@ services:
   ################################
 
   api-gateway:
-    image: kong:3.7
+    image: kong:latest
     container_name: api-gateway
     networks:
       - app-network
     environment:
       KONG_DATABASE: 'off'
+      KONG_JWT_SECRET: ${JWT_SECRET}
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout

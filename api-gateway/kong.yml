@@ -1,77 +1,73 @@
 _format_version: "3.0"
 
+# 1. KHAI BÁO CONSUMER VÀ JWT SECRET
+consumers:
+  - username: app-user-consumer
+
+jwt_secrets:
+  - consumer: app-user-consumer
+    # Tham chiếu biến môi trường KONG_JWT_SECRET
+    secret: "{{ KONG_JWT_SECRET }}"
+    algorithm: HS256
+
 services:
   - name: user-service
     url: http://user-service:8000 # Internal Docker network URL
+    
+    # 2. ÁP DỤNG PLUGIN REQUEST-TRANSFORMER CHO TOÀN BỘ SERVICE
+    plugins:
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - "X-User-ID:$(jwt_claim.sub)"
+              - "X-User-Role:$(jwt_claim.user_role)"
+              - "X-JTI:$(jwt_claim.jti)"
+              - "X-EXP:$(jwt_claim.exp)"
+      # Global rate limiting for the entire service - 5000 requests per hour per IP
+      - name: rate-limiting
+        config:
+          hour: 5000
+          limit_by: ip
+          policy: local
+
     routes:
-      - name: user-service-auth
-        paths:
-          - /api/v1/user-service/auth
-          - /api/v1/user-service/auth/
-        strip_path: true
-        plugins:
-          # Basic rate limiting for all auth endpoints - 100 requests per hour per IP
-          - name: rate-limiting
-            config:
-              hour: 100
-              limit_by: ip
-              policy: local  # Use local in-memory policy for single instance
-      - name: user-service-register
+      # --- CÁC ROUTE PUBLIC (KHÔNG CẦN JWT) ---
+      - name: user-service-auth-public
         paths:
           - /api/v1/user-service/auth/register
-        strip_path: true
-        plugins:
-          # More restrictive rate limiting for registration - 5 requests per 15 minutes per IP
-          - name: rate-limiting
-            config:
-              minute: 5
-              limit_by: ip
-              policy: local
-      - name: user-service-otp-request
-        paths:
-          - /api/v1/user-service/auth/otp/request
-        strip_path: true
-        plugins:
-          # Rate limiting for OTP request endpoint - 3 requests per 5 minutes per IP
-          - name: rate-limiting
-            config:
-              minute: 3
-              limit_by: ip
-              policy: local
-      - name: user-service-login
-        paths:
+          - /api/v1/user-service/auth/otp/send
+          - /api/v1/user-service/auth/otp/verify
           - /api/v1/user-service/auth/login
+          - /api/v1/user-service/auth/reset-password
+          - /api/v1/user-service/auth/refresh-token
         strip_path: true
         plugins:
-          # Rate limiting for login endpoint - 10 requests per 15 minutes per IP
+          # Rate limiting for sensitive public endpoints
           - name: rate-limiting
             config:
               minute: 10
               limit_by: ip
               policy: local
+
+      # --- CÁC ROUTE CẦN BẢO VỆ (ÁP DỤNG JWT PLUGIN) ---
       - name: user-service-profile
         paths:
-          - /api/v1/user-service/me
-          - /api/v1/user-service/me/
+          - /api/v1/user-service/users/me
         strip_path: true
         plugins:
-          # Rate limiting for profile endpoints - 1000 requests per hour per IP
+          - name: jwt # 3. ÁP DỤNG JWT PLUGIN
           - name: rate-limiting
             config:
               hour: 1000
               limit_by: ip
               policy: local
-      - name: user-service-family
+      - name: user-service-groups
         paths:
-          - /api/v1/user-service/me/family
-          - /api/v1/user-service/me/family/
-          - /api/v1/user-service/me/family/members
-          - /api/v1/user-service/me/family/invite
-          - /api/v1/user-service/me/family/transfer
-          - /api/v1/user-service/me/family/remove-member
+          - /api/v1/user-service/groups
         strip_path: true
         plugins:
-          # Rate limiting for family group endpoints - 100 requests per hour per IP
+          - name: jwt # 3. ÁP DỤNG JWT PLUGIN
           - name: rate-limiting
             config:
               hour: 100
@@ -80,22 +76,21 @@ services:
       - name: user-service-admin
         paths:
           - /api/v1/user-service/admin
-          - /api/v1/user-service/admin/
         strip_path: true
         plugins:
-          # Rate limiting for admin endpoints - 500 requests per hour per IP
+          - name: jwt # 3. ÁP DỤNG JWT PLUGIN
           - name: rate-limiting
             config:
               hour: 500
               limit_by: ip
               policy: local
-    plugins:
-      # Global rate limiting for the entire service - 5000 requests per hour per IP
-      - name: rate-limiting
-        config:
-          hour: 5000
-          limit_by: ip
-          policy: local
+      # Catch-all for other user-service paths that might need protection
+      - name: user-service-protected-catchall
+        paths:
+          - /api/v1/user-service/
+        strip_path: true
+        plugins:
+          - name: jwt # 3. ÁP DỤNG JWT PLUGIN
 
 # Default rate limiting for all other requests to the API gateway
 plugins:

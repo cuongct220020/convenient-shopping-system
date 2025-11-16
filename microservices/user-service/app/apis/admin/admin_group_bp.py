@@ -1,9 +1,10 @@
+# microservices/user-service/app/apis/admin/admin_group_bp.py
+
 from app.apis.admin import admin_bp
 from app.views.admin.admin_group_view import (
     AdminGroupsView,
     AdminGroupDetailView,
-    AdminGroupMembersView,
-    AdminGroupMembersManageView
+    AdminGroupMembersView
 )
 
 admin_bp.add_route(AdminGroupsView.as_view(), '/groups')

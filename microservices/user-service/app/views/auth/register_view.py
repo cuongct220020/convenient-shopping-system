@@ -18,7 +18,7 @@ class RegisterView(HTTPMethodView):
 
         user_repo = UserRepository(session=request.ctx.db_session)
 
-        await AuthService.register_user(
+        await AuthService.register_account(
             reg_data=validated_data,
             user_repo=user_repo
         )

@@ -1,3 +1,4 @@
+# microservices/user-service/app/apis/__init__.py
 from sanic import Blueprint
 
 from .auth_bp import auth_bp

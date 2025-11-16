@@ -1,5 +1,5 @@
 # shared/shopping_shared/databases/base_model.py
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column
+from sqlalchemy.orm import declarative_base
 from sqlalchemy import MetaData
 
 # Define a naming convention for constraints to ensure Alembic works smoothly.

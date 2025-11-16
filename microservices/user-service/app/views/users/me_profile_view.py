@@ -1,5 +1,4 @@
-from urllib.request import Request
-
+from sanic import Request
 from sanic.views import HTTPMethodView
 
 class MeIdentityProfileView(HTTPMethodView):

@@ -1,4 +1,4 @@
-# app/constants/auth.py
+# microservices/user-service/app/constants/auth.py
 from enum import Enum
 
 
