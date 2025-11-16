@@ -5,7 +5,7 @@ from .ingredient import IngredientResponse
 
 class ComponentBase(BaseModel):
     component_id: int
-    quantity: float = Field(..., gt=0)
+    quantity: float = Field(gt=0)
 
 class RecipeBase(BaseModel):
     image_url: Optional[str] = None
