@@ -1,19 +1,22 @@
 # shared/shopping_shared/databases/base_repository.py
 import math
 from typing import Generic, TypeVar, Type, Optional, List, Any, Dict
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
+from sqlalchemy.inspection import inspect
 
 from shopping_shared.databases.base_model import Base
+from shopping_shared.schemas.base_schema import BaseSchema
 
+# --- Generic Type Variables ---
 ModelType = TypeVar("ModelType", bound=Base)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseSchema)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseSchema)
 
 
-class PaginationResult(BaseModel, Generic[ModelType]):
-    """Schema for paginated query results."""
+# --- Standardized Pagination Result Schema ---
+class PaginationResult(BaseSchema, Generic[ModelType]):
+    """Standardized schema for paginated query results."""
     items: List[ModelType]
     total_items: int
     total_pages: int
@@ -21,14 +24,26 @@ class PaginationResult(BaseModel, Generic[ModelType]):
     page_size: int
 
 
-class BaseReadOnlyRepository(Generic[ModelType]):
+# --- The New BaseRepository ---
+class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     """
-    Generic repository for read-only operations.
-    Works with just the model type, no schema required.
+    A generic, powerful, and best-practice oriented repository.
+
+    Handles soft-deletes, pagination, and dynamic filtering/sorting.
+    It operates within a given session and never commits.
     """
+
     def __init__(self, model: Type[ModelType], session: AsyncSession):
+        """
+        Initializes the repository with the SQLAlchemy model and a session.
+
+        :param model: The SQLAlchemy model class.
+        :param session: The SQLAlchemy AsyncSession for this request.
+        """
         self.model = model
         self.session = session
+        # Inspect the model to find the name of the primary key column
+        self.pk_name = inspect(self.model).primary_key[0].name
 
     def _apply_filters_and_sort(
             self,
@@ -38,14 +53,17 @@ class BaseReadOnlyRepository(Generic[ModelType]):
             include_deleted: bool = False
     ):
         """Applies filtering, sorting, and soft-delete logic to a statement."""
+        # 1. Apply soft-delete filter by default
         if hasattr(self.model, "is_deleted") and not include_deleted:
             stmt = stmt.where(self.model.is_deleted == False)
 
+        # 2. Apply dynamic filters
         if filters:
             for field, value in filters.items():
                 if hasattr(self.model, field):
                     stmt = stmt.where(getattr(self.model, field) == value)
 
+        # 3. Apply dynamic sorting
         if sort_by:
             for sort_field in sort_by:
                 direction = "desc" if sort_field.endswith("_desc") else "asc"
@@ -57,8 +75,7 @@ class BaseReadOnlyRepository(Generic[ModelType]):
 
     async def get_by_id(self, record_id: Any, include_deleted: bool = False) -> Optional[ModelType]:
         """Gets a single record by its primary key."""
-        # Get the primary key column directly from the model
-        pk_column = self.model.__table__.primary_key.columns.values()[0]
+        pk_column = getattr(self.model, self.pk_name)
         query = select(self.model).where(pk_column == record_id)
 
         # Apply soft-delete logic only if the model supports it
@@ -68,19 +85,38 @@ class BaseReadOnlyRepository(Generic[ModelType]):
         result = await self.session.execute(query)
         return result.scalars().first()
 
-    async def get_by_field(self, field_name: str, value: Any, include_deleted: bool = False) -> Optional[ModelType]:
-        """Gets a single record by any field."""
-        if not value:
+    async def get_by_field(
+        self,
+        field_name: str,
+        subject: str,
+        include_deleted: bool = False
+    ) -> Optional[ModelType]:
+        """Fetches a record by any field name."""
+        if not subject:
             return None
 
         field = getattr(self.model, field_name)
-        query = select(self.model).where(field == value)
+        stmt = select(self.model).where(field == subject)
+        stmt = self._apply_filters_and_sort(stmt, filters=None, sort_by=None, include_deleted=include_deleted)
 
-        # Apply soft-delete logic only if the model supports it
-        if hasattr(self.model, "is_deleted") and not include_deleted:
-            query = query.where(self.model.is_deleted == False)
+        result = await self.session.execute(stmt.limit(1))
+        return result.scalars().first()
 
-        result = await self.session.execute(query)
+    async def get_by_field_case_insensitive(
+        self,
+        field_name: str,
+        subject: str,
+        include_deleted: bool = False
+    ) -> Optional[ModelType]:
+        """Fetches a record by any field name with case-insensitive comparison."""
+        if not subject:
+            return None
+
+        field = getattr(self.model, field_name)
+        stmt = select(self.model).where(func.lower(field) == func.lower(subject))
+        stmt = self._apply_filters_and_sort(stmt, filters=None, sort_by=None, include_deleted=include_deleted)
+
+        result = await self.session.execute(stmt.limit(1))
         return result.scalars().first()
 
     async def get_many(
@@ -108,8 +144,10 @@ class BaseReadOnlyRepository(Generic[ModelType]):
             include_deleted: bool = False,
     ) -> PaginationResult[ModelType]:
         """Gets a paginated list of records."""
-        page, page_size = max(1, page), max(1, page_size)
+        if page < 1: page = 1
+        if page_size < 1: page_size = 10
 
+        # Create and apply filters to the count query
         count_stmt = self._apply_filters_and_sort(
             select(func.count()).select_from(self.model),
             filters,
@@ -117,13 +155,14 @@ class BaseReadOnlyRepository(Generic[ModelType]):
         )
         total_items = (await self.session.execute(count_stmt)).scalar_one()
 
+        # Create and apply filters/sort to the data query
         data_stmt = self._apply_filters_and_sort(
             select(self.model),
             filters,
             sort_by,
             include_deleted
-        ).offset((page - 1) * page_size).limit(page_size)
-
+        )
+        data_stmt = data_stmt.offset((page - 1) * page_size).limit(page_size)
         result = await self.session.execute(data_stmt)
         items = list(result.scalars().all())
 
@@ -135,16 +174,6 @@ class BaseReadOnlyRepository(Generic[ModelType]):
             page_size=page_size,
         )
 
-
-class BaseCreateRepository(BaseReadOnlyRepository[ModelType], Generic[ModelType, CreateSchemaType]):
-    """
-    Generic repository for create operations only.
-    Requires model type and create schema.
-    """
-    def __init__(self, model: Type[ModelType], session: AsyncSession):
-        # Initialize the read-only base to support get operations needed for upsert
-        BaseReadOnlyRepository.__init__(self, model, session)
-
     async def create(self, data: CreateSchemaType) -> ModelType:
         """Creates a new record from a Pydantic schema."""
         instance = self.model(**data.model_dump())
@@ -152,38 +181,6 @@ class BaseCreateRepository(BaseReadOnlyRepository[ModelType], Generic[ModelType,
         await self.session.flush()  # Flush to get DB-generated values like ID
         await self.session.refresh(instance)  # Refresh to load all columns
         return instance
-
-    async def upsert_by_field(self, field_name: str, field_value: Any, data: CreateSchemaType) -> ModelType:
-        """Upserts (update if exists, create if not) a record based on a specific field."""
-        instance = await self.get_by_field(field_name, field_value)
-
-        if instance:
-            # Update existing record
-            update_data = data.model_dump(exclude_unset=True)
-            for key, value in update_data.items():
-                setattr(instance, key, value)
-            await self.session.flush()
-            await self.session.refresh(instance)
-            return instance
-        else:
-            # Create new record - for upsert, we need to set the field value
-            data_dict = data.model_dump()
-            data_dict[field_name] = field_value
-            instance = self.model(**data_dict)
-            self.session.add(instance)
-            await self.session.flush()
-            await self.session.refresh(instance)
-            return instance
-
-
-class BaseUpdateRepository(BaseReadOnlyRepository[ModelType], Generic[ModelType, UpdateSchemaType]):
-    """
-    Generic repository for update operations only.
-    Requires model type and update schema.
-    """
-    def __init__(self, model: Type[ModelType], session: AsyncSession):
-        # Initialize the read-only base to support get operations needed for update
-        BaseReadOnlyRepository.__init__(self, model, session)
 
     async def update(self, record_id: Any, data: UpdateSchemaType) -> Optional[ModelType]:
         """Updates an existing record from a Pydantic schema."""
@@ -198,28 +195,24 @@ class BaseUpdateRepository(BaseReadOnlyRepository[ModelType], Generic[ModelType,
             await self.session.refresh(instance)
         return instance
 
-    async def update_by_field(self, field_name: str, field_value: Any, data: UpdateSchemaType) -> Optional[ModelType]:
-        """Updates a record found by a specific field."""
-        instance = await self.get_by_field(field_name, field_value)
+    async def update_field(self, record_id: Any, field_name: str, field_value: Any) -> Optional[ModelType]:
+        """Updates a single field in the record."""
+        instance = await self.get_by_id(record_id)
         if instance:
-            # Use exclude_unset to only update fields that were provided in the request
-            update_data = data.model_dump(exclude_unset=True)
-            for key, value in update_data.items():
-                setattr(instance, key, value)
-            self.session.add(instance)
+            setattr(instance, field_name, field_value)
             await self.session.flush()
             await self.session.refresh(instance)
         return instance
 
-
-class BaseDeleteRepository(BaseReadOnlyRepository[ModelType], Generic[ModelType]):
-    """
-    Generic repository for delete operations only.
-    Requires only model type.
-    """
-    def __init__(self, model: Type[ModelType], session: AsyncSession):
-        # Initialize the read-only base to support get operations needed for delete
-        BaseReadOnlyRepository.__init__(self, model, session)
+    async def update_fields(self, record_id: Any, field_updates: Dict[str, Any]) -> Optional[ModelType]:
+        """Updates multiple fields in the record."""
+        instance = await self.get_by_id(record_id)
+        if instance:
+            for field_name, field_value in field_updates.items():
+                setattr(instance, field_name, field_value)
+            await self.session.flush()
+            await self.session.refresh(instance)
+        return instance
 
     async def delete(self, record_id: Any) -> bool:
         """Performs a hard delete of a record."""
@@ -239,7 +232,7 @@ class BaseDeleteRepository(BaseReadOnlyRepository[ModelType], Generic[ModelType]
         if not hasattr(self.model, "is_deleted"):
             raise AttributeError(f"Model {self.model.__name__} does not have 'is_deleted' attribute.")
 
-        pk_column = self.model.__table__.primary_key.columns.values()[0]
+        pk_column = getattr(self.model, self.pk_name)
         stmt = (
             update(self.model)
             .where(pk_column == record_id)
@@ -249,81 +242,6 @@ class BaseDeleteRepository(BaseReadOnlyRepository[ModelType], Generic[ModelType]
         result = await self.session.execute(stmt)
 
         if result.rowcount > 0:
-            await self.session.flush()
-            return True
-        return False
-
-
-class BaseRepository(BaseReadOnlyRepository[ModelType],
-                     BaseCreateRepository[ModelType, CreateSchemaType],
-                     BaseUpdateRepository[ModelType, UpdateSchemaType],
-                     BaseDeleteRepository[ModelType],
-                     Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-    """
-    Combined repository with all operations: read, create, update, delete.
-    This maintains backward compatibility with the original design.
-    """
-
-    def __init__(self, model: Type[ModelType], session: AsyncSession):
-        # Initialize all parent classes
-        BaseReadOnlyRepository.__init__(self, model, session)
-        BaseCreateRepository.__init__(self, model, session)
-        BaseUpdateRepository.__init__(self, model, session)
-        BaseDeleteRepository.__init__(self, model, session)
-
-    async def update(self, record_id: Any, data: UpdateSchemaType) -> Optional[ModelType]:
-        """Updates an existing record from a Pydantic schema."""
-        instance = await self.get_by_id(record_id)
-        if instance:
-            # Use exclude_unset to only update fields that were provided in the request
-            update_data = data.model_dump(exclude_unset=True)
-            for key, value in update_data.items():
-                setattr(instance, key, value)
-            self.session.add(instance)
-            await self.session.flush()
-            await self.session.refresh(instance)
-        return instance
-
-    async def update_by_field(self, field_name: str, field_value: Any, data: UpdateSchemaType) -> Optional[ModelType]:
-        """Updates a record found by a specific field."""
-        instance = await self.get_by_field(field_name, field_value)
-        if instance:
-            # Use exclude_unset to only update fields that were provided in the request
-            update_data = data.model_dump(exclude_unset=True)
-            for key, value in update_data.items():
-                setattr(instance, key, value)
-            self.session.add(instance)
-            await self.session.flush()
-            await self.session.refresh(instance)
-        return instance
-
-    async def upsert_by_field(self, field_name: str, field_value: Any, data: CreateSchemaType) -> ModelType:
-        """Upserts (update if exists, create if not) a record based on a specific field."""
-        instance = await self.get_by_field(field_name, field_value)
-
-        if instance:
-            # Update existing record
-            update_data = data.model_dump(exclude_unset=True)
-            for key, value in update_data.items():
-                setattr(instance, key, value)
-            await self.session.flush()
-            await self.session.refresh(instance)
-            return instance
-        else:
-            # Create new record - for upsert, we need to set the field value
-            data_dict = data.model_dump()
-            data_dict[field_name] = field_value
-            instance = self.model(**data_dict)
-            self.session.add(instance)
-            await self.session.flush()
-            await self.session.refresh(instance)
-            return instance
-
-    async def delete(self, record_id: Any) -> bool:
-        """Performs a hard delete of a record."""
-        instance = await self.get_by_id(record_id)
-        if instance:
-            await self.session.delete(instance)
             await self.session.flush()
             return True
         return False

@@ -1,3 +1,5 @@
+# microservices/user-service/app/models/__init__.py
+
 from .address import Address
 from .family_group import FamilyGroup, GroupMembership
 from .user_profile import UserIdentityProfile, UserHealthProfile

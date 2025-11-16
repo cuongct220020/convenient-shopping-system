@@ -45,7 +45,7 @@ class UserAdminCreateSchema(UserCreateSchema):
 
 
 # --- Detailed and Admin Schemas ---
-class UserDetailedProfileSchema(UserCoreInfoSchema):
+class UserDetailedProfileSchema(UserInfoSchema):
     """Full user profile including identity and health info."""
     identity_profile: Optional[UserIdentityProfileSchema] = None
     health_profile: Optional[UserHealthProfileSchema] = None
@@ -58,7 +58,7 @@ class UserAdminViewSchema(UserDetailedProfileSchema):
     last_login: Optional[datetime] = None
 
 
-class UserAdminUpdateSchema(UserCoreInfoUpdateSchema):
+class UserAdminUpdateSchema(UserInfoUpdateSchema):
     """Schema for admins to update any user's information."""
     system_role: Optional[UserRole] = None
     identity_profile: Optional[UserIdentityProfileUpdateSchema] = None

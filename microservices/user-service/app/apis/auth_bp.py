@@ -7,7 +7,7 @@ from app.views.auth.login_view import LoginView
 from app.views.auth.logout_view import LogoutView
 from app.views.auth.refresh_view import RefreshView
 from app.views.auth.reset_password_view import ResetPasswordView
-from app.views.auth.otp_generation_view import OTPGenerationView
+from app.views.auth.otp_request_view import OTPRequestView
 from app.views.auth.otp_verification_view import OTPVerificationView
 
 # --- Khởi tạo Blueprint ---
@@ -38,7 +38,7 @@ auth_bp.add_route(ResetPasswordView.as_view(), '/reset-password')
 
 # === 3. OTP Send & Verify ===
 # POST /api/v1/auth/otp/send (Public: Gửi yêu cầu OTP cho 'register' hoặc 'reset_password')
-auth_bp.add_route(OTPGenerationView.as_view(), '/otp/send')
+auth_bp.add_route(OTPRequestView.as_view(), '/otp/send')
 
 # POST /api/v1/auth/otp/verify (Public: Xác thực OTP cho 'register')
 auth_bp.add_route(OTPVerificationView.as_view(), '/otp/verify')

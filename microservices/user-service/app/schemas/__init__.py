@@ -9,15 +9,13 @@ from .auth import (
     RegisterRequestSchema,
     LoginRequestSchema,
     AccessTokenSchema,
-    ChangePasswordRequestSchema,
-)
-from .otp import (
-    SendVerificationOTPRequestSchema,
-    VerifyAccountRequestSchema,
-    RequestEmailChangeRequestSchema,
-    ConfirmEmailChangeRequestSchema,
     ResetPasswordRequestSchema,
 )
+from .otp import (
+    OTPRequestSchema,
+    OTPVerifyRequestSchema
+)
+
 from .user_profile import (
     AddressSchema,
     UserIdentityProfileSchema,
@@ -26,9 +24,8 @@ from .user_profile import (
     UserHealthProfileUpdateSchema,
 )
 from .user import (
-    UserPublicProfileSchema,
-    UserCoreInfoSchema,
-    UserUpdateSchema,
+    UserInfoSchema,
+    UserInfoUpdateSchema,
     UserCreateSchema,
     UserAdminCreateSchema,
     UserDetailedProfileSchema,
@@ -47,14 +44,11 @@ __all__ = [
     "RegisterRequestSchema",
     "LoginRequestSchema",
     "AccessTokenSchema",
-    "ChangePasswordRequestSchema",
+    "ResetPasswordRequestSchema",
 
     # OTP
-    "SendVerificationOTPRequestSchema",
-    "VerifyAccountRequestSchema",
-    "RequestEmailChangeRequestSchema",
-    "ConfirmEmailChangeRequestSchema",
-    "ResetPasswordRequestSchema",
+    "OTPRequestSchema",
+    "OTPVerifyRequestSchema",
 
     # Profile
     "AddressSchema",
@@ -64,9 +58,8 @@ __all__ = [
     "UserHealthProfileUpdateSchema",
 
     # User
-    "UserPublicProfileSchema",
-    "UserCoreInfoSchema",
-    "UserUpdateSchema",
+    "UserInfoSchema",
+    "UserInfoUpdateSchema",
     "UserCreateSchema",
     "UserAdminCreateSchema",
     "UserDetailedProfileSchema",

@@ -26,11 +26,6 @@ class LoginRequestSchema(BaseSchema):
     )
     password: SecretStr
 
-class LoginResponseSchema(BaseSchema):
-    """Schema for user login responses."""
-    access_token: str
-    user_info: Optional[UserInfoSchema] = None
-
 
 class AccessTokenSchema(BaseSchema):
     """Schema for token responses."""
@@ -39,7 +34,14 @@ class AccessTokenSchema(BaseSchema):
     expires_in_minutes: int
 
 
-class ChangePasswordRequestSchema(BaseSchema):
-    """Schema for an authenticated user to change their password."""
-    current_password: SecretStr
+class LoginResponseSchema(BaseSchema):
+    """Schema for user login responses."""
+    access_token: AccessTokenSchema
+    user_info: Optional[UserInfoSchema] = None
+
+
+class ResetPasswordRequestSchema(BaseSchema):
+    """Schema for reset password requests."""
     new_password: SecretStr
+    email: EmailStr
+    otp_code: str

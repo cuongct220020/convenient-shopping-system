@@ -1,67 +1,63 @@
-# app/hooks/request_auth.py
-
+# microservices/user-service/app/hooks/request_auth.py
 from sanic import Request
-from app.utils.jwt_utils import jwt_handler
+
+from app.services.redis_service import RedisService
 from shopping_shared.exceptions import Unauthorized
 
 
-# --- Middleware entry point ---
-async def auth(request: Request):
+async def auth_middleware(request: Request):
     """
-    Middleware to authenticate requests using JWT and attach user info to request.ctx.
-    Runs before view handlers.
+    Middleware để xử lý thông tin người dùng từ các header do API Gateway (Kong) thêm vào.
+    Hook này chạy sau khi Kong đã xác thực JWT.
     """
     if not _is_auth_required(request):
-        return  # Skip for public endpoints
+        return  # Bỏ qua các endpoint public
 
-    # Extract "Authorization: Bearer <token>"
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise Unauthorized("Missing or invalid Authorization header")
+    # Đọc thông tin người dùng từ các header do Kong thêm vào (đã được chuyển thành lowercase)
+    user_id = request.headers.get("x-user-id")
+    user_role = request.headers.get("x-user-role")
+    access_jti = request.headers.get("x-jti")
+    exp_str = request.headers.get("x-exp")
+    iat_str = request.headers.get("x-iat")
 
-    token = auth_header.split(" ")[1]
-    payload = await _verify_and_decode_token(token)
+    if not user_id:
+        raise Unauthorized("Missing user identity from API Gateway.")
 
-    # Attach claims to request context for later access in views
-    request.ctx.user_id = payload.get("sub")
-    request.ctx.role = payload.get("role")
-    request.ctx.jti = payload.get("jti")
-    request.ctx.exp = payload.get("exp")
+    if await RedisService.is_token_in_blocklist(access_token_jti=access_jti):
+        raise Unauthorized("Access token has been revoked.")
 
+    token_iat = int(iat_str)
+    global_revoke_ts = await RedisService.get_global_revoke_timestamp(user_id)
 
-# --- Internal helpers ---
+    if global_revoke_ts and token_iat < global_revoke_ts:
+        # Token này được tạo trước khi user đổi password -> không hợp lệ
+        raise Unauthorized("Token has been revoked by a security event.")
 
-async def _verify_and_decode_token(token: str):
-    """
-    Verify JWT signature, expiration, and optional denylist checks.
-    Ensures the token is an 'access' token.
-    """
-    if not token:
-        raise Unauthorized("JWT token required")
-
-    # Explicitly verify that this is an access token
-    payload = await jwt_handler.verify(token=token, token_type="access")
-
-    if not payload or "sub" not in payload:
-        raise Unauthorized("Invalid JWT payload")
-
-    return payload
+    request.ctx.auth_payload = {
+        "sub": user_id,
+        "role": user_role,
+        "jti": access_jti,
+        "exp": int(exp_str),
+        "iat": token_iat
+    }
 
 
 def _is_auth_required(request: Request) -> bool:
     """
-    Determine if the current request should be authenticated.
+    Xác định xem request hiện tại có cần xác thực hay không.
     """
     ignore_methods = {"OPTIONS"}
     ignore_paths = {
         "/",
         "/favicon.ico",
-        "/api/v1/auth/login",
-        "/api/v1/auth/register"
+        "/auth/login",
+        "/auth/register",
+        "/auth/otp/send",
+        "/auth/otp/verify",
+        "/auth/reset-password"
     }
     ignore_prefixes = ["/docs/"]
 
-    # Skip OPTIONS and docs
     if request.method in ignore_methods:
         return False
 
@@ -71,5 +67,8 @@ def _is_auth_required(request: Request) -> bool:
 
     if request.path in ignore_paths:
         return False
+
+    if request.path == "/auth/refresh-token":
+        return False  # Tạm thời bỏ qua, nó cần 1 logic riêng
 
     return True

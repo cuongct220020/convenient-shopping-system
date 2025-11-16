@@ -1,55 +1,61 @@
-# app/services/otp_service.py
+# microservices/user-service/app/services/otp_service.py
 import random
 from datetime import timedelta
 
 from app.utils.password_utils import hash_password, verify_password
-
-from shopping_shared.caching.redis_manager import redis_manager
-from shopping_shared.exceptions import Unauthorized
+from app.services.redis_service import RedisService
 
 
 class OTPService:
-    _KEY_PREFIX = "otp"
     _TTL = timedelta(minutes=5)  # OTPs are valid for 5 minutes
 
     @classmethod
-    def _get_key(cls, email: str, action: str) -> str:
-        """Constructs a structured key for storing the OTP in Redis."""
-        return f"{cls._KEY_PREFIX}:{action.lower()}:{email.lower()}"
-
-    @classmethod
-    async def generate_and_store_otp(cls, email: str, action: str) -> str:
+    async def generate_and_store_otp(cls, email: str, action: str, data: dict = None) -> str:
         """
-        Generates a 6-digit OTP, hashes it, and stores the hash in Redis with a TTL.
+        Generates a 6-digit OTP, hashes it, and stores the hash and optional data in Redis.
         Returns the plain-text OTP to be sent to the user.
         """
         otp_code = str(random.randint(100000, 999999))
         hashed_otp = hash_password(otp_code)
 
-        key = cls._get_key(email, action)
-        await redis_manager.client.setex(key, cls._TTL, hashed_otp)
+        # Prepare data for storage
+        stored_data = {"otp_hash": hashed_otp}
+        if data:
+            stored_data.update(data)
+
+        await RedisService.set_otp(
+            email=email,
+            action=action,
+            otp_data=stored_data,
+            ttl_seconds=int(cls._TTL.total_seconds())
+        )
 
         return otp_code
 
     @classmethod
-    async def verify_otp(cls, email: str, action: str, submitted_code: str) -> bool:
+    async def verify_otp(cls, email: str, action: str, submitted_code: str) -> dict | None:
         """
-        Verifies the submitted OTP against the stored hash in Redis.
-        If verification is successful, the OTP key is deleted to prevent reuse.
+        Verifies the submitted OTP against the stored hash using RedisService.
+        If verification is successful, the OTP key is deleted and the stored data is returned.
         """
-        key = cls._get_key(email, action)
-        stored_hash = await redis_manager.client.get(key)
+        stored_data = await RedisService.get_otp(email, action)
 
-        if not stored_hash:
+        if not stored_data:
             # OTP does not exist or has expired
-            return False
+            return None
 
-        if verify_password(submitted_code, stored_hash.decode()):
+        stored_hash = stored_data.get("otp_hash")
+        if not stored_hash:
+            # Data is corrupted or in an old format
+            return None
+
+        # The redis client is configured with decode_responses=True, so no .decode() needed
+        if await verify_password(submitted_code, stored_hash):
             # Correct OTP, delete it immediately to prevent reuse
-            await redis_manager.client.delete(key)
-            return True
-        
+            await RedisService.delete_otp(email, action)
+            return stored_data
+
         # Incorrect OTP
-        return False
+        return None
 
 otp_service = OTPService()

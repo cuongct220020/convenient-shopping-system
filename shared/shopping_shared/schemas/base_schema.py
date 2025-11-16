@@ -10,5 +10,6 @@ class BaseSchema(BaseModel):
         from_attributes=True,  # Equivalent to orm_mode = True in Pydantic v1
         extra='forbid',
         populate_by_name=True, # Cho phép dùng alias
-        use_enum_values=True # Tự động chuyển Enum thành giá trị của nó
+        use_enum_values=True, # Tự động chuyển Enum thành giá trị của nó
+        arbitrary_types_allowed=True  # Cho phép sử dụng các kiểu tùy ý như SQLAlchemy model
     )

@@ -1,4 +1,4 @@
-# app/apis/admin_user_bp.py
+# microservices/user-service/app/apis/admin/admin_user_bp.py
 from app.apis.admin import admin_bp
 from app.views.admin.admin_user_view import AdminUsersView, AdminUserDetailView
 

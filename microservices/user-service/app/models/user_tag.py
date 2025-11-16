@@ -5,7 +5,6 @@ from uuid import UUID
 from sqlalchemy import String, BigInteger, ForeignKey, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models import User
 from shopping_shared.databases.base_model import Base
 
 class Tag(Base):

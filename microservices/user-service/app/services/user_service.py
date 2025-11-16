@@ -1,7 +1,7 @@
-# app/services/user_service.py
+# microservices/user-service/app/services/user_service.py
 from typing import Any
-from app.decorators.cache import cache
-from shared.shopping_shared import NotFound, Conflict, Unauthorized
+from app.decorators.caching import cache
+from shopping_shared.exceptions import NotFound, Conflict, Unauthorized
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas import (

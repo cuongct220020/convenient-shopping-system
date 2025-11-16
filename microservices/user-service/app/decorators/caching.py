@@ -1,4 +1,4 @@
-# app/decorators/cache.py
+# app/decorators/caching.py
 from functools import wraps
 from typing import Callable, Any, Type
 
