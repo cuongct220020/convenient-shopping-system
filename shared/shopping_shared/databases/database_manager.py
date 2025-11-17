@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import declarative_base # Import declarative_base to hint its usage
 
 from shopping_shared.exceptions import DatabaseError
 from shopping_shared.utils.logger_utils import get_logger
@@ -40,7 +39,8 @@ class DatabaseManager:
         self.session_maker = async_sessionmaker(
             bind=self.engine,
             autoflush=False,
-            autocommit=False
+            autocommit=False,
+            expire_on_commit=False,
         )
         logger.info(f"Database engine initialized: {database_uri.split('://')[0]}://****:****@{database_uri.split('@')[-1]}")
 
