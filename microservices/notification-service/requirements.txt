@@ -2,4 +2,4 @@ sanic
 python-dotenv
 aiokafka
 
--e ../../shopping_shared
+-e ../../shared
