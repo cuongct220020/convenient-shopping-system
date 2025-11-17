@@ -43,7 +43,7 @@ class Config:
 
     # Kafka Setting
     KAFKA = KafkaConfig(
-        bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
+        bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9094'),
     )
 
 

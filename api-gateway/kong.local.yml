@@ -1,9 +1,9 @@
-# kong.yml - Declarative Kong Configuration
+# kong.yml.local.yml - Declarative Kong Configuration
 _format_version: "3.0"
 
 services:
 - name: user-service
-  url: http://user-service:8000
+  url: http://host.docker.internal:8000
   routes:
   - name: user-service-auth
     paths:
@@ -36,7 +36,7 @@ services:
       limit_by: ip
 
 - name: health-check
-  url: http://user-service:8000/
+  url: http://host.docker.internal:8000/
   routes:
   - name: user-service-health
     paths:

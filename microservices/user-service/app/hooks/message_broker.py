@@ -9,10 +9,10 @@ logger = get_logger(__name__)
 async def setup_kafka(app: Sanic):
     """Hook to initialize the Kafka connection."""
     logger.info("Initializing Kafka producer...")
-    kafka_servers = app.config.get("KAFKA_BOOTSTRAP_SERVERS")
+    kafka_servers = app.config.KAFKA.KAFKA_BOOTSTRAP_SERVERS
     kafka_manager.setup(bootstrap_servers=kafka_servers)
-    # Initialize the producer on startup
-    await kafka_manager.get_producer()
+    # # Initialize the producer on startup
+    # await kafka_manager.get_producer()
 
 
 async def close_kafka(_app: Sanic):

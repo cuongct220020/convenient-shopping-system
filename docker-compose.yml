@@ -1,4 +1,4 @@
-# docker-compose.yml
+# convenient-shopping-system/docker-compose.yml
 
 # This is the master docker-compose file for the entire system.
 # It defines all infrastructure and application services for an integrated environment.
@@ -33,26 +33,33 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     networks:
       - app-network
     restart: unless-stopped
 
   kafka:
     image: apache/kafka:latest
-    container_name: shopping-kafka-message-broker
+    container_name: shopping-kafka-broker
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://localhost:9092,CONTROLLER://localhost:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # Cổng 9092 cho nội bộ Docker, 9094 cho bên ngoài (localhost)
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094, CONTROLLER://kafka:9093
+      # Quảng bá tên dịch vụ 'kafka:9092' cho các container khác
+      # Quảng bá 'localhost:9094' cho ứng dụng local (python3 main.py)
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092, EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_NUM_PARTITIONS: 3
+    ports:
+      - "9094:9094"
     networks:
       - app-network
     restart: unless-stopped
@@ -60,10 +67,10 @@ services:
   # Kong Gateway (Declarative mode - no database needed)
   kong:
     image: kong/kong:latest
-    container_name: kong-gateway
+    container_name: kong.yml-gateway
     environment:
       KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong.yml/declarative/kong.yml.local.yml
       KONG_PROXY_LISTEN: 0.0.0.0:8000
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_PROXY_ACCESS_LOG: /dev/stdout
@@ -92,6 +99,8 @@ services:
       context: .
       dockerfile: microservices/user-service/Dockerfile
     container_name: user-service
+    profiles:
+      - app # Sẽ chỉ chạy khi bạn gõ --profile app
     depends_on:
       - postgres
       - redis
@@ -124,8 +133,7 @@ services:
     networks:
       - app-network
     restart: unless-stopped
-#    env_file:
-#      - ./microservices/user-service/.env
+
 
 volumes:
   postgres_data:
