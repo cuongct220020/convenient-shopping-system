@@ -67,10 +67,10 @@ services:
   # Kong Gateway (Declarative mode - no database needed)
   kong:
     image: kong/kong:latest
-    container_name: kong.yml-gateway
+    container_name: kong-gateway
     environment:
       KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /usr/local/kong.yml/declarative/kong.yml.local.yml
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
       KONG_PROXY_LISTEN: 0.0.0.0:8000
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_PROXY_ACCESS_LOG: /dev/stdout
