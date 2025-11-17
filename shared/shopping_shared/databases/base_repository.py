@@ -50,6 +50,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             stmt,
             filters: Optional[Dict[str, Any]] = None,
             sort_by: Optional[List[str]] = None,
+            load_options: Optional[List[Any]] = None,
             include_deleted: bool = False
     ):
         """Applies filtering, sorting, and soft-delete logic to a statement."""
@@ -71,9 +72,19 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 if hasattr(self.model, field_name):
                     column = getattr(self.model, field_name)
                     stmt = stmt.order_by(getattr(column, direction)())
+
+        # 4. Apply eager loading options
+        if load_options:
+            stmt = stmt.options(*load_options)
+
         return stmt
 
-    async def get_by_id(self, record_id: Any, include_deleted: bool = False) -> Optional[ModelType]:
+    async def get_by_id(
+        self,
+        record_id: Any,
+        load_options: Optional[List[Any]] = None,
+        include_deleted: bool = False
+    ) -> Optional[ModelType]:
         """Gets a single record by its primary key."""
         pk_column = getattr(self.model, self.pk_name)
         query = select(self.model).where(pk_column == record_id)
@@ -82,39 +93,33 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if hasattr(self.model, "is_deleted") and not include_deleted:
             query = query.where(self.model.is_deleted == False)
 
+        # Apply eager loading options <-- MỚI
+        if load_options:
+            query = query.options(*load_options)
+
         result = await self.session.execute(query)
-        return result.scalars().first()
-
-    async def get_by_field(
-        self,
-        field_name: str,
-        subject: str,
-        include_deleted: bool = False
-    ) -> Optional[ModelType]:
-        """Fetches a record by any field name."""
-        if not subject:
-            return None
-
-        field = getattr(self.model, field_name)
-        stmt = select(self.model).where(field == subject)
-        stmt = self._apply_filters_and_sort(stmt, filters=None, sort_by=None, include_deleted=include_deleted)
-
-        result = await self.session.execute(stmt.limit(1))
         return result.scalars().first()
 
     async def get_by_field_case_insensitive(
         self,
         field_name: str,
         subject: str,
+        load_options: Optional[List[Any]] = None,
         include_deleted: bool = False
     ) -> Optional[ModelType]:
-        """Fetches a record by any field name with case-insensitive comparison."""
+        """Fetches a record by any field name with case-insensitive comparison and optional eager loading."""
         if not subject:
             return None
 
         field = getattr(self.model, field_name)
         stmt = select(self.model).where(func.lower(field) == func.lower(subject))
-        stmt = self._apply_filters_and_sort(stmt, filters=None, sort_by=None, include_deleted=include_deleted)
+        stmt = self._apply_filters_and_sort(
+            stmt,
+            filters=None,
+            sort_by=None,
+            load_options=load_options,
+            include_deleted=include_deleted
+        )
 
         result = await self.session.execute(stmt.limit(1))
         return result.scalars().first()
@@ -124,12 +129,19 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             *,
             filters: Optional[Dict[str, Any]] = None,
             sort_by: Optional[List[str]] = None,
+            load_options: Optional[List[Any]] = None,
             skip: int = 0,
             limit: int = 100,
             include_deleted: bool = False
     ) -> List[ModelType]:
         """Gets multiple records with filtering, sorting, and limit/offset."""
-        stmt = self._apply_filters_and_sort(select(self.model), filters, sort_by, include_deleted)
+        stmt = self._apply_filters_and_sort(
+            select(self.model),
+            filters,
+            sort_by,
+            load_options,
+            include_deleted
+        )
         stmt = stmt.offset(skip).limit(limit)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
@@ -141,9 +153,10 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             page_size: int = 10,
             filters: Optional[Dict[str, Any]] = None,
             sort_by: Optional[List[str]] = None,
+            load_options: Optional[List[Any]] = None,
             include_deleted: bool = False,
     ) -> PaginationResult[ModelType]:
-        """Gets a paginated list of records."""
+        """Gets a paginated list of records with optional eager loading."""
         if page < 1: page = 1
         if page_size < 1: page_size = 10
 
@@ -160,6 +173,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             select(self.model),
             filters,
             sort_by,
+            load_options,
             include_deleted
         )
         data_stmt = data_stmt.offset((page - 1) * page_size).limit(page_size)
