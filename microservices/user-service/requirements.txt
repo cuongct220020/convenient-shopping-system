@@ -13,5 +13,6 @@ pydantic[email]
 greenlet
 black
 ruff
+pytest
 
 -e ../../shared
