@@ -1,6 +1,6 @@
 # microservices/user-service/app/services/auth_service.py
 from typing import Tuple
-from pydantic import EmailStr
+from pydantic import EmailStr, ValidationError
 from sqlalchemy import func
 
 from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError
@@ -67,7 +67,13 @@ class AuthService:
         """
         user_identifier = login_data.identifier
 
-        if EmailStr(user_identifier):
+        try:
+            EmailStr(user_identifier)
+            is_email = True
+        except ValidationError:
+            is_email = False
+
+        if is_email:
             user = await user_repo.get_by_email(user_identifier)
         else:
             user = await user_repo.get_by_username(user_identifier)

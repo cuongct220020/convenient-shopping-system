@@ -13,7 +13,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
 # Import models for 'autogenerate' support
-from shared.shopping_shared.databases.base_model import Base
+from shopping_shared.databases.base_model import Base
+import app.models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -28,16 +29,17 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 target_metadata = Base.metadata
 
-# Load environment variables from .env file
-load_dotenv()
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path=os.path.abspath(dotenv_path))
 
 # Get DB connection info from environment variables
-DB_DRIVER = os.getenv("DB_DRIVER")
-DB_USER = os.getenv('DB_USER')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_NAME = os.getenv('DB_NAME')
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT')
+DB_DRIVER = os.getenv("POSTGRES_DB_DRIVER")
+DB_USER = os.getenv('POSTGRES_DB_USER')
+DB_PASSWORD = os.getenv('POSTGRES_DB_PASSWORD')
+DB_NAME = os.getenv('POSTGRES_DB_NAME')
+DB_HOST = os.getenv('POSTGRES_DB_HOST')
+DB_PORT = os.getenv('POSTGRES_DB_PORT')
+
 DATABASE_URI = f'{DB_DRIVER}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 
 def run_migrations_offline() -> None:

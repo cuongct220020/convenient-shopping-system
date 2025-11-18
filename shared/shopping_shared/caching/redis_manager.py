@@ -13,10 +13,23 @@ class RedisManager:
         self.pool: ConnectionPool | None = None
         self._client: Redis | None = None
 
-    def setup(self, host: str, port: int, db: int):
+    def setup(
+            self,
+            host: str,
+            port: int,
+            db: int,
+            password: str,
+            decode_responses: bool = True
+    ):
         """Creates the connection pool."""
         try:
-            self.pool = ConnectionPool(host=host, port=port, db=db, decode_responses=True)
+            self.pool = ConnectionPool(
+                host=host,
+                port=port,
+                db=db,
+                password=password,
+                decode_responses=decode_responses
+            )
             logger.info(f"Redis connection pool initialized: {host}:{port}, db={db}")
         except Exception as e:
             logger.error(f"Failed to initialize Redis connection pool: {e}")

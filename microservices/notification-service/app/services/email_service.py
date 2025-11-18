@@ -1,4 +1,4 @@
-# app/services/email_service.py
+# microservices/notification-service/app/services/email_service.py
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -6,7 +6,7 @@ from typing import Optional
 
 from sanic import Sanic
 
-from shared.shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 

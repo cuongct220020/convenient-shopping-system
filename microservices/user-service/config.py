@@ -24,12 +24,12 @@ class Config:
 
     # PostgreSQL Settings
     POSTGRESQL = PostgreSQLConfig(
-        driver=os.getenv('POSTGRESQL_DRIVER', 'postgresql+asyncpg'),
-        user=os.getenv('POSTGRESQL_USER', 'myname'),
-        password=os.getenv('POSTGRESQL_PASSWORD', 'mypassword'),
-        host=os.getenv('POSTGRESQL_HOST', 'localhost'),
-        port=int(os.getenv('POSTGRESQL_PORT', 5432)),
-        name=os.getenv('POSTGRESQL_DATABASE', 'convenient_shopping')
+        driver=os.getenv('POSTGRES_DB_DRIVER', 'postgresql+asyncpg'),
+        user=os.getenv('POSTGRES_DB_USER', 'myname'),
+        password=os.getenv('POSTGRES_DB_PASSWORD', 'mypassword'),
+        host=os.getenv('POSTGRES_DB_HOST', 'localhost'),
+        port=int(os.getenv('POSTGRES_DB_PORT', 5432)),
+        name=os.getenv('POSTGRES_DB_NAME', 'convenient_shopping')
     )
 
     # Redis Setting
@@ -43,7 +43,7 @@ class Config:
 
     # Kafka Setting
     KAFKA = KafkaConfig(
-        bootstrap_servers=os.getenv('KAFKA_SERVERS', 'localhost:9092'),
+        bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9094'),
     )
 
 

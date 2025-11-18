@@ -1,11 +1,11 @@
 # microservices/user-service/app/services/redis_service.py
+import json
 from datetime import datetime, UTC
 
 from shopping_shared.caching.redis_manager import redis_manager
 
 
 class RedisService:
-    _redis_client = redis_manager.client
 
     # --- Key Naming Convention ---
     # Format: <service_name>:<object_type>:<identifier>
@@ -63,7 +63,8 @@ class RedisService:
         Ghi đè bất kỳ phiên cũ nào (support for /login endpoint).
         """
         allowlist_key = cls._get_allowlist_key(user_id)
-        await cls._redis_client.set(
+        # SỬA: Gọi redis_manager.client() tại đây
+        await redis_manager.client().set(
             allowlist_key,
             new_refresh_jti,
             ex=ttl_seconds
@@ -80,7 +81,7 @@ class RedisService:
         (support for /refresh-token endpoint).
         """
         allowlist_key = cls._get_allowlist_key(user_id)
-        stored_jti = await cls._redis_client.get(allowlist_key)
+        stored_jti = await redis_manager.client().get(allowlist_key)
 
         if stored_jti is None:
             return False
@@ -96,7 +97,7 @@ class RedisService:
         Xóa Refresh Token JTI khỏi Allowlist khi user logout.
         """
         allowlist_key = cls._get_allowlist_key(user_id)
-        await cls._redis_client.delete(allowlist_key)
+        await redis_manager.client().delete(allowlist_key)
 
     @classmethod
     async def add_token_to_blocklist(
@@ -109,7 +110,8 @@ class RedisService:
         """
         blocklist_key = cls._get_blocklist_key(access_token_jti)
         if remaining_ttl_seconds > 0:
-            await cls._redis_client.set(
+            # SỬA: Gọi redis_manager.client() tại đây
+            await redis_manager.client().set(
                 blocklist_key,
                 "true",
                 ex=remaining_ttl_seconds
@@ -124,7 +126,7 @@ class RedisService:
         Kiểm tra JTI của Access Token có nằm trong Blocklist không.
         """
         blocklist_key = cls._get_blocklist_key(access_token_jti)
-        is_blocked = await cls._redis_client.get(blocklist_key)
+        is_blocked = await redis_manager.client().get(blocklist_key)
         return bool(is_blocked)
 
     # ---  Global Revoke ---
@@ -132,14 +134,12 @@ class RedisService:
     async def revoke_all_tokens_for_user(cls, user_id: str):
         """
         Đặt một "mốc thời gian thu hồi" toàn cục cho user.
-        Việc này sẽ vô hiệu hóa tất cả token được cấp TRƯỚC thời điểm này.
         (Được gọi khi reset/đổi mật khẩu)
         """
         key = cls._get_global_revoke_key(user_id)
         current_timestamp = int(datetime.now(UTC).timestamp())
 
-        # Chỉ cần set, không cần TTL (hoặc TTL dài, ví dụ 7 ngày)
-        await cls._redis_client.set(key, current_timestamp)
+        await redis_manager.client().set(key, current_timestamp)
 
     @classmethod
     async def get_global_revoke_timestamp(cls, user_id: str) -> int | None:
@@ -148,30 +148,31 @@ class RedisService:
         (Được gọi bởi Auth Middleware trên mọi request)
         """
         key = cls._get_global_revoke_key(user_id)
-        ts_str = await cls._redis_client.get(key)
+        ts_str = await redis_manager.client().get(key)
 
         return int(ts_str) if ts_str else None
 
-    # --- OTP Methods ---
+    # --- OTP Methods (SỬA LOGIC) ---
     @classmethod
-    async def set_otp(cls, email: str, action: str, otp_hash: str, ttl_seconds: int):
-        """Stores an OTP hash in Redis with a TTL."""
+    async def set_otp(cls, email: str, action: str, otp_data: dict, ttl_seconds: int):
+        """SỬA: Lưu trữ dữ liệu OTP (dưới dạng JSON) vào Redis với TTL."""
         key = cls._get_otp_key(email, action)
-        await cls._redis_client.set(key, otp_hash, ex=ttl_seconds)
+        await redis_manager.client().set(key, json.dumps(otp_data), ex=ttl_seconds)
 
     @classmethod
-    async def get_otp(cls, email: str, action: str) -> str | None:
-        """Retrieves an OTP hash from Redis."""
+    async def get_otp(cls, email: str, action: str) -> dict | None:
+        """SỬA: Lấy dữ liệu OTP (dưới dạng JSON) từ Redis."""
         key = cls._get_otp_key(email, action)
-        return await cls._redis_client.get(key)
+        data_str = await redis_manager.client().get(key)
+        if data_str:
+            return json.loads(data_str)
+        return None
 
     @classmethod
     async def delete_otp(cls, email: str, action: str):
         """Deletes an OTP from Redis."""
         key = cls._get_otp_key(email, action)
-        await cls._redis_client.delete(key)
-
-
+        await redis_manager.client().delete(key)
 
 
 redis_service = RedisService()

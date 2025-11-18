@@ -5,9 +5,8 @@ from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import LoginRequestSchema, AccessTokenSchema, LoginResponseSchema
+from app.schemas.auth import LoginRequestSchema
 from app.services.auth_service import AuthService
-from main import app
 
 from shopping_shared.schemas.response_schema import GenericResponse
 
@@ -36,7 +35,7 @@ class LoginView(HTTPMethodView):
         response = json(response_data.model_dump(by_alias=True), status=200)
 
         # Attach Refresh Token to cookie
-        refresh_ttl_days = app.config.get("REFRESH_TOKEN_EXPIRATION_DAYS", 7)
+        refresh_ttl_days = request.app.config.get("REFRESH_TOKEN_EXPIRATION_DAYS", 7)
         refresh_ttl_seconds = refresh_ttl_days * 24 * 60 * 60
 
         response.set_cookie(

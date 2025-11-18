@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from shared.shopping_shared import KafkaConfig, EmailConfig
+from shopping_shared.configs import KafkaConfig
 
 load_dotenv()
 
@@ -14,9 +14,11 @@ class Config:
         "auto_reload": True,
     }
 
+    KAFKA = KafkaConfig(
+        bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS'),
+    )
 
-class EmailConfig:
-    """ Email configuration for Notification-Service. """
+    # Email Configuration
     EMAIL_HOST = 'smtp.gmail.com'
     EMAIL_PORT = 587
     EMAIL_USE_TLS = True

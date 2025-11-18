@@ -1,4 +1,6 @@
-# app/__init__.py
+# microservices/user-service/app/__init__.py
+from urllib import response
+
 from sanic import Sanic
 from sanic_cors import CORS
 
@@ -38,7 +40,7 @@ def register_views(sanic_app: Sanic):
 def register_hooks(sanic_app: Sanic):
     from app.hooks.request_context import after_request
     from app.hooks.response_time import add_start_time, add_spent_time
-    from app.hooks.database import manage_db_session
+    from app.hooks.database import open_db_session, close_db_session
     from app.hooks.caching import inject_redis_client
     from app.hooks.request_auth import auth_middleware
 
@@ -51,7 +53,8 @@ def register_hooks(sanic_app: Sanic):
 
     # 2. Manages DB session lifecycle (commit, rollback, close)
     # This should wrap the business logic to ensure transactions are handled correctly.
-    sanic_app.register_middleware(manage_db_session)
+    sanic_app.register_middleware(open_db_session, attach_to='request')
+    sanic_app.register_middleware(close_db_session, attach_to='response')
 
     # 3. Injects Redis client into the request context
     sanic_app.register_middleware(inject_redis_client, attach_to='request')

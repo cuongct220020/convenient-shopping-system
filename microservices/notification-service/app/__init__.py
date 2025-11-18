@@ -1,6 +1,6 @@
 from sanic import Sanic
-from shared.shopping_shared.utils.logger_utils import get_logger
-from shared.shopping_shared import kafka_manager
+from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.messaging.kafka_manager import kafka_manager
 from app.services.email_service import email_service
 from app.consumers.notification_consumer import consume_notifications
 

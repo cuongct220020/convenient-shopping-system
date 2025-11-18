@@ -1,6 +1,6 @@
-from shared.shopping_shared import kafka_manager
-from shared.shopping_shared.messaging.topics import NOTIFICATION_TOPIC
-from shared.shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.messaging.kafka_manager import kafka_manager
+from shopping_shared.messaging.topics import NOTIFICATION_TOPIC
+from shopping_shared.utils.logger_utils import get_logger
 from app.services.email_service import email_service
 
 logger = get_logger(__name__)
