@@ -17,21 +17,26 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
 
         if unit is None:
             raise HTTPException(status_code=404, detail=f"StorableUnit with id={id} not found")
-        if unit.package_quantity > consume_quantity:
-            unit.package_quantity -= consume_quantity
-            db.add(unit)
-            try:
+        try:
+            if unit.package_quantity == consume_quantity and unit.reserved_quantity == 0:
+                db.delete(unit)
+                db.commit()
+                return "Consumed and deleted", None
+            elif unit.package_quantity - unit.reserved_quantity >= consume_quantity:
+                unit.package_quantity -= consume_quantity
+                db.add(unit)
                 db.commit()
                 db.refresh(unit)
-            except IntegrityError as e:
-                db.rollback()
-                raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
-            return "Consumed", unit
-        elif unit.package_quantity == consume_quantity:
-            db.delete(unit)
-            db.commit()
-            return "Consumed and deleted", None
-        else:
-            raise HTTPException(status_code=400, detail=f"Cannot consume from StorableUnit with id={id}: insufficient quantity (available: {unit.package_quantity}, requested: {consume_quantity})")
+                return "Consumed", unit
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot consume from StorableUnit with id={id}: "
+                           f"insufficient quantity (available: {unit.package_quantity}, requested: {consume_quantity})"
+                )
+        except IntegrityError as e:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
+
 
 

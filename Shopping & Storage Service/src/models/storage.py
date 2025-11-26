@@ -36,6 +36,7 @@ class StorableUnit(Base):
     unit_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     storage_id: Mapped[int] = mapped_column(ForeignKey("storages.storage_id"), nullable=False)
     package_quantity: Mapped[int] = mapped_column(Integer, default=1)
+    reserved_quantity: Mapped[int] = mapped_column(Integer, default=0)
     unit_name: Mapped[str] = mapped_column(String, nullable=False)
     component_id: Mapped[int] = mapped_column(Integer)
     content_type: Mapped[str] = mapped_column(String)
@@ -51,10 +52,6 @@ class StorableUnit(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "(content_quantity IS NULL OR content_quantity > 0)",
-            name="content_quantity_positive"
-        ),
-        CheckConstraint(
             "(component_id IS NULL AND content_type IS NULL) "
             "OR (component_id IS NOT NULL AND content_type IS NOT NULL)",
             name="component_id_type_pairing"
@@ -63,8 +60,12 @@ class StorableUnit(Base):
             "(content_type = 'countable_ingredient' AND "
             " content_quantity IS NULL AND content_unit IS NULL) "
             "OR "
-            "(content_type != 'countable_ingredient' AND "
+            "(content_type = 'uncountable_ingredient' AND "
             " content_quantity IS NOT NULL AND content_unit IS NOT NULL)",
             name="quantity_unit_required_for_measurable"
         ),
+        CheckConstraint(
+            "reserved_quantity <= package_quantity",
+            name="reserved_le_package"
+        )
     )
