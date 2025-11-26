@@ -3,6 +3,7 @@ from typing import Optional, Literal, Annotated
 from typing_extensions import TypeAlias
 from enums.c_measurement_unit import CMeasurementUnit
 from enums.uc_measurement_unit import UCMeasurementUnit
+from enums.category import Category
 
 class IngredientBase(BaseModel):
     type: Literal["countable_ingredient", "uncountable_ingredient"]
@@ -26,11 +27,13 @@ class IngredientBase(BaseModel):
 class CountableIngredientCreate(IngredientBase):
     type: Literal["countable_ingredient"]
     component_name: str
+    category: Category
     c_measurement_unit: CMeasurementUnit
 
 class UncountableIngredientCreate(IngredientBase):
     type: Literal["uncountable_ingredient"]
     component_name: str
+    category: Category
     uc_measurement_unit: UCMeasurementUnit
 
 IngredientCreate: TypeAlias = Annotated[
@@ -42,10 +45,12 @@ IngredientCreate: TypeAlias = Annotated[
 class CountableIngredientUpdate(IngredientBase):
     type: Literal["countable_ingredient"]
     component_name: Optional[str] = None
+    category: Optional[Category] = None
 
 class UncountableIngredientUpdate(IngredientBase):
     type: Literal["uncountable_ingredient"]
     component_name: Optional[str] = None
+    category: Optional[Category] = None
 
 IngredientUpdate: TypeAlias = Annotated[
     CountableIngredientUpdate | UncountableIngredientUpdate,
@@ -57,12 +62,14 @@ class CountableIngredientResponse(IngredientBase):
     type: Literal["countable_ingredient"]
     component_id: int
     component_name: str
+    category: Category
     c_measurement_unit: CMeasurementUnit
 
 class UncountableIngredientResponse(IngredientBase):
     type: Literal["uncountable_ingredient"]
     component_id: int
     component_name: str
+    category: Category
     uc_measurement_unit: UCMeasurementUnit
 
 IngredientResponse: TypeAlias = Annotated[

@@ -2,6 +2,7 @@ from sqlalchemy import Integer, String, Float, Enum, ForeignKey, JSON, UniqueCon
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from enums.c_measurement_unit import CMeasurementUnit
 from enums.uc_measurement_unit import UCMeasurementUnit
+from enums.category import Category
 from core.database import Base
 
 class RecipeComponent(Base):
@@ -20,6 +21,7 @@ class Ingredient(RecipeComponent):
     __tablename__ = "ingredients"
 
     component_id: Mapped[int] = mapped_column(ForeignKey("recipe_components.component_id"), primary_key=True)
+    category: Mapped[Category] = mapped_column(Enum(Category), default=Category.others)
     estimated_shelf_life: Mapped[int] = mapped_column(Integer, nullable=True)
     protein: Mapped[float] = mapped_column(Float, nullable=True)
     fat: Mapped[float] = mapped_column(Float, nullable=True)
