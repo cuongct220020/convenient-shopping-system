@@ -42,19 +42,19 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(({
           )}
         </label>
       )}
-      
+
       <div className="relative">
         {icon && (
           <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
             {icon}
           </div>
         )}
-        
+
         <input
           ref={ref}
           className={`
             w-full px-3 py-2 border border-gray-300 rounded-lg
-            focus:outline-none focus:ring-2 focus:ring-[#c93045] focus:border-transparent
+            focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-300
             disabled:bg-gray-100 disabled:cursor-not-allowed
             ${icon ? 'pl-10' : ''}
             ${error ? 'border-red-500' : ''}
@@ -64,7 +64,7 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(({
           {...props}
         />
       </div>
-      
+
       {error && (
         <p className={`text-sm text-red-600 ${errorClassName}`}>
           {error}

@@ -5,6 +5,8 @@ import ForgotPassword1 from '../pages/ForgotPassword1'
 import ForgotPassword2 from '../pages/ForgotPassword2'
 import RegisterNotification from '../pages/RegisterNotification'
 import ForgotPasswordNotification from '../pages/ForgotPasswordNotification'
+import LoginAuthentication from '../pages/LoginAuthentication'
+import ForgotPasswordAuthentication from '../pages/ForgotPasswordAuthentication'
 
 export default function App() {
   return (
@@ -17,6 +19,8 @@ export default function App() {
         <Route path="/forgot-password-2" element={<ForgotPassword2 />} />
         <Route path="/register-notification" element={<RegisterNotification />} />
         <Route path="/forgot-password-notification" element={<ForgotPasswordNotification />} />
+        <Route path="/login-authentication" element={<LoginAuthentication />} />
+        <Route path="/forgot-password-authentication" element={<ForgotPasswordAuthentication />} />
       </Routes>
     </Router>
   );

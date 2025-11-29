@@ -26,24 +26,24 @@ export default function ForgotPassword() {
     if (!input.trim()) {
       return "Email hoặc tên đăng nhập không được để trống";
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    
+
     const isEmail = emailRegex.test(input);
     const isUsername = usernameRegex.test(input);
-    
+
     if (!isEmail && !isUsername) {
       return "Email hoặc tên đăng nhập không hợp lệ";
     }
-    
+
     return null;
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmail(value);
-    
+
     if (touched.email) {
       setErrors(prev => ({
         ...prev,
@@ -62,29 +62,29 @@ export default function ForgotPassword() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate email field
     const emailError = validateEmailOrUsername(email);
-    
+
     setErrors({
       email: emailError
     });
-    
+
     setTouched({
       email: true
     });
-    
+
     // If no errors, proceed with password reset
     if (!emailError) {
       console.log('Password reset request for:', email);
       // Add actual password reset logic here
-      navigate('/forgot-password-2');
+      navigate('/forgot-password-authentication');
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center items-center relative overflow-hidden font-sans">
-      
+
       {/* Mobile Container */}
       <div className="w-[375px] h-[812px] bg-white relative shadow-2xl overflow-hidden flex flex-col">
 
@@ -96,7 +96,7 @@ export default function ForgotPassword() {
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto no-scrollbar relative z-10">
           <div className="px-6 pb-8 pt-2">
-        
+
             {/* Title */}
             <div className="mb-4">
               <h2 className="text-center text-3xl font-bold text-[#c93045] mb-8">Đặt lại mật khẩu</h2>

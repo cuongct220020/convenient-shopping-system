@@ -8,7 +8,7 @@ import { BackButton } from '../components/BackButton';
 
 export default function ForgotPassword2() {
   const navigate = useNavigate();
-  
+
   const [password1, setPassword1] = useState('');
   const [password2, setPassword2] = useState('');
   const [errors, setErrors] = useState<{
@@ -50,14 +50,14 @@ export default function ForgotPassword2() {
   const handlePassword1Change = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPassword1(value);
-    
+
     if (touched.password1) {
       setErrors(prev => ({
         ...prev,
         password1: validatePassword(value)
       }));
     }
-    
+
     // Also validate confirm password if it has been touched
     if (touched.password2) {
       setErrors(prev => ({
@@ -78,7 +78,7 @@ export default function ForgotPassword2() {
   const handlePassword2Change = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPassword2(value);
-    
+
     if (touched.password2) {
       setErrors(prev => ({
         ...prev,
@@ -97,21 +97,21 @@ export default function ForgotPassword2() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate all fields
     const password1Error = validatePassword(password1);
     const password2Error = validateConfirmPassword(password2, password1);
-    
+
     setErrors({
       password1: password1Error,
       password2: password2Error
     });
-    
+
     setTouched({
       password1: true,
       password2: true
     });
-    
+
     // If no errors, proceed with password reset
     if (!password1Error && !password2Error) {
       console.log('Password reset confirmed');
@@ -122,19 +122,19 @@ export default function ForgotPassword2() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center items-center relative overflow-hidden font-sans">
-      
+
       {/* Mobile Container */}
       <div className="w-[375px] h-[812px] bg-white relative shadow-2xl overflow-hidden flex flex-col">
 
         {/* Header: Back Button */}
         <div className="my-4">
-          <BackButton to="/forgot-password-1" text="Quay lại" />
+          <BackButton to="/forgot-password-authentication" text="Quay lại" />
         </div>
 
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto no-scrollbar relative z-10">
           <div className="px-6 pb-8 pt-2">
-          
+
             {/* Title */}
             <div className="mb-4">
               <h2 className="text-center text-3xl font-bold text-[#c93045] mb-8">Đặt lại mật khẩu</h2>

@@ -31,17 +31,17 @@ export default function Login() {
     if (!input.trim()) {
       return "Email hoặc tên đăng nhập không được để trống";
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    
+
     const isEmail = emailRegex.test(input);
     const isUsername = usernameRegex.test(input);
-    
+
     if (!isEmail && !isUsername) {
       return "Email hoặc tên đăng nhập không hợp lệ";
     }
-    
+
     return null;
   };
 
@@ -55,7 +55,7 @@ export default function Login() {
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmail(value);
-    
+
     if (touched.email) {
       setErrors(prev => ({
         ...prev,
@@ -75,7 +75,7 @@ export default function Login() {
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPassword(value);
-    
+
     if (touched.password) {
       setErrors(prev => ({
         ...prev,
@@ -94,32 +94,32 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate all fields
     const emailError = validateEmailOrUsername(email);
     const passwordError = validatePassword(password);
-    
+
     setErrors({
       email: emailError,
       password: passwordError
     });
-    
+
     setTouched({
       email: true,
       password: true
     });
-    
+
     // If no errors, proceed with login
     if (!emailError && !passwordError) {
       console.log('Login attempt with:', email);
       // Add actual login logic here
-      alert('Đăng nhập thành công!');
+      navigate('/login-authentication')
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center items-center relative overflow-hidden font-sans">
-      
+
       {/* Mobile Container */}
       <div className="w-[375px] h-[812px] bg-white relative shadow-2xl overflow-hidden flex flex-col">
 
@@ -150,7 +150,7 @@ export default function Login() {
 
             {/* Login Form */}
             <form onSubmit={handleSubmit}>
-              
+
               <div className="mb-4">
                 <InputField
                   id="email-username"
