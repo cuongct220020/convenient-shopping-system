@@ -90,11 +90,12 @@ def get_nutrition(food_id):
     }
 
 def main():
-    #input_file = './data/ingredient_v1.json' -- :200
+    #input_file = './data/ingredient_v1.json'
     input_file = './data/tmp/pre_error.txt'
-    nutri_file = './data/tmp/ingredient_v1_nutri.jsonl'   # JSON Lines
-    error_file = './data/tmp/error.txt'
-
+    nutri_file = '/mnt/disk1/hachi/crawler/data/tmp/ingredient_v1_nutri.jsonl'   # JSON Lines
+    error_file = '/mnt/disk1/hachi/crawler/data/tmp/error.txt'
+    print(input_file)
+    os.makedirs(os.path.dirname(nutri_file), exist_ok=True)
     BATCH_SIZE = 50   # mỗi 100 nguyên liệu thì flush xuống file
 
     ingredients = get_input(input_file)
@@ -104,7 +105,7 @@ def main():
 
     for ingre in tqdm(ingredients):
         try:
-            time.sleep(0.2)
+            time.sleep(0.5)
             item = ingre['name_en']
             food = search_food(item)
 

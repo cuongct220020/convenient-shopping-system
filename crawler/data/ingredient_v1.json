@@ -352,15 +352,6 @@
     ]
   },
   {
-    "id": "ingre00040",
-    "name_vi": "blueberries:",
-    "name_en": "Blueberries",
-    "category": "fresh_fruits",
-    "unit": [
-      "quả"
-    ]
-  },
-  {
     "id": "ingre00041",
     "name_vi": "bo bo",
     "name_en": "Bok choy",
@@ -1907,15 +1898,6 @@
     ]
   },
   {
-    "id": "ingre00212",
-    "name_vi": "bánh tráng đông lạnh:",
-    "name_en": "Frozen rice paper",
-    "category": "snacks",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre00213",
     "name_vi": "bánh tráng đậu xanh",
     "name_en": "Green pea rice paper",
@@ -2027,15 +2009,6 @@
     "unit": [
       "gr",
       "gram"
-    ]
-  },
-  {
-    "id": "ingre00226",
-    "name_vi": "bánh đúc",
-    "name_en": "Tofu皮 (Note: The literal translation is \"Tofu skin\" or \"bean curd sheet\", which is what bánh đúc",
-    "category": "snacks",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -3597,15 +3570,6 @@
     ]
   },
   {
-    "id": "ingre00396",
-    "name_vi": "bơ lạt; 500g bột chiên xù",
-    "name_en": "Butter; 500g Fried Bread Crumbs",
-    "category": "snacks",
-    "unit": [
-      "muỗng cà phê"
-    ]
-  },
-  {
     "id": "ingre00397",
     "name_vi": "bơ lỏng",
     "name_en": "Liquid butter",
@@ -4170,15 +4134,6 @@
     "name_vi": "bắp chuối bào sẵn",
     "name_en": "Frozen Corn",
     "category": "vegetables",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
-    "id": "ingre00455",
-    "name_vi": "bắp chuối hột",
-    "name_en": "Corn:numel kernels",
-    "category": "fresh_fruits",
     "unit": [
       "gr"
     ]
@@ -5568,15 +5523,6 @@
     ]
   },
   {
-    "id": "ingre00611",
-    "name_vi": "bột chiên xù:",
-    "name_en": "Puffed Rice Powder",
-    "category": "snacks",
-    "unit": [
-      "g"
-    ]
-  },
-  {
     "id": "ingre00612",
     "name_vi": "bột chuối",
     "name_en": "Banana powder",
@@ -5975,15 +5921,6 @@
       "gr",
       "muỗng cà phê",
       "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre00653",
-    "name_vi": "bột gelatin:",
-    "name_en": "Gelatin Powder:",
-    "category": "others",
-    "unit": [
-      "chén"
     ]
   },
   {
@@ -7391,15 +7328,6 @@
     "id": "ingre00821",
     "name_vi": "bột ngọt và đường",
     "name_en": "Soy Sauce and Sugar",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre00832",
-    "name_vi": "bột ngọt; hạt nêm; tiêu xay",
-    "name_en": "Soy Sauce; Seasoning Powder; Ground Pepper",
     "category": "seasonings",
     "unit": [
       "ít"
@@ -9940,15 +9868,6 @@
     ]
   },
   {
-    "id": "ingre01105",
-    "name_vi": "chanh:",
-    "name_en": "Lemon",
-    "category": "fresh_fruits",
-    "unit": [
-      "trái"
-    ]
-  },
-  {
     "id": "ingre01106",
     "name_vi": "chao",
     "name_en": "Pickled plum",
@@ -10417,15 +10336,6 @@
     "category": "candies",
     "unit": [
       "ml"
-    ]
-  },
-  {
-    "id": "ingre01156",
-    "name_vi": "chocolate đen:",
-    "name_en": "Dark chocolate:",
-    "category": "candies",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -13641,15 +13551,6 @@
     ]
   },
   {
-    "id": "ingre01511",
-    "name_vi": "cá cơm: 300g",
-    "name_en": "Mackerel: 300g",
-    "category": "seafood_&_fish_balls",
-    "unit": [
-      "g"
-    ]
-  },
-  {
     "id": "ingre01512",
     "name_vi": "cá cờ",
     "name_en": "Carp",
@@ -13855,15 +13756,6 @@
     "category": "seafood_&_fish_balls",
     "unit": [
       "gr"
-    ]
-  },
-  {
-    "id": "ingre01533",
-    "name_vi": "cá hồi:",
-    "name_en": "Salmon",
-    "category": "seafood_&_fish_balls",
-    "unit": [
-      "g"
     ]
   },
   {
@@ -17406,15 +17298,6 @@
     ]
   },
   {
-    "id": "ingre01906",
-    "name_vi": "củ ngải bún: 1 củ nhỏ nghệ 100  hoa chuối bào ăn kèm",
-    "name_en": "Turmeric: 1 small piece Banana flower sliced to eat with",
-    "category": "grains_staples",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre01907",
     "name_vi": "củ niễng",
     "name_en": "Celery",
@@ -17494,15 +17377,6 @@
     "unit": [
       "muỗng cà phê",
       "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre01915",
-    "name_vi": "củ riềng:",
-    "name_en": "Galangal",
-    "category": "vegetables",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -17747,15 +17621,6 @@
     ]
   },
   {
-    "id": "ingre01943",
-    "name_vi": "da ếch :",
-    "name_en": "Frogskin",
-    "category": "others",
-    "unit": [
-      "g"
-    ]
-  },
-  {
     "id": "ingre01945",
     "name_vi": "dầu ăn",
     "name_en": "Cooking oil",
@@ -17965,15 +17830,6 @@
     ]
   },
   {
-    "id": "ingre01969",
-    "name_vi": "dâu tây:",
-    "name_en": "Strawberry",
-    "category": "fresh_fruits",
-    "unit": [
-      "trái"
-    ]
-  },
-  {
     "id": "ingre01970",
     "name_vi": "dâu tươi",
     "name_en": "Strawberry",
@@ -18011,15 +17867,6 @@
     "category": "fresh_fruits",
     "unit": [
       "gr"
-    ]
-  },
-  {
-    "id": "ingre01974",
-    "name_vi": "dâu:",
-    "name_en": "Strawberry",
-    "category": "fresh_fruits",
-    "unit": [
-      "quả"
     ]
   },
   {
@@ -18525,15 +18372,6 @@
     ]
   },
   {
-    "id": "ingre02030",
-    "name_vi": "dưa leo:",
-    "name_en": "Cucumber",
-    "category": "vegetables",
-    "unit": [
-      "trái"
-    ]
-  },
-  {
     "id": "ingre02031",
     "name_vi": "dưa lê",
     "name_en": "Cucumber",
@@ -18664,15 +18502,6 @@
     ]
   },
   {
-    "id": "ingre02045",
-    "name_vi": "dạ dày",
-    "name_en": "Stomach:numelocks",
-    "category": "fresh_meat",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre02046",
     "name_vi": "dạ dày bò",
     "name_en": "Beef stomach",
@@ -18741,15 +18570,6 @@
     "category": "seasonings",
     "unit": [
       "muỗng cà phê"
-    ]
-  },
-  {
-    "id": "ingre02053",
-    "name_vi": "dấm:   giấm",
-    "name_en": "Vinegar",
-    "category": "seasonings",
-    "unit": [
-      "ml"
     ]
   },
   {
@@ -18907,15 +18727,6 @@
     ]
   },
   {
-    "id": "ingre02071",
-    "name_vi": "dầu dừa:",
-    "name_en": "Coconut oil:",
-    "category": "others",
-    "unit": [
-      "ml"
-    ]
-  },
-  {
     "id": "ingre02072",
     "name_vi": "dầu gạch cua",
     "name_en": "Crab roe oil",
@@ -19027,16 +18838,6 @@
     "category": "seasonings",
     "unit": [
       "gr"
-    ]
-  },
-  {
-    "id": "ingre02086",
-    "name_vi": "dầu hào:",
-    "name_en": "Soy Sauce:",
-    "category": "seasonings",
-    "unit": [
-      "muỗng canh",
-      "ml"
     ]
   },
   {
@@ -19469,15 +19270,6 @@
     "category": "others",
     "unit": [
       "ít"
-    ]
-  },
-  {
-    "id": "ingre02133",
-    "name_vi": "dầu ăn:",
-    "name_en": "Cooking oil:",
-    "category": "others",
-    "unit": [
-      "ml"
     ]
   },
   {
@@ -21147,15 +20939,6 @@
     "category": "seasonings",
     "unit": [
       "gói"
-    ]
-  },
-  {
-    "id": "ingre02313",
-    "name_vi": "gia vị thêm như đường; muối; bột ngọt; nước mắm",
-    "name_en": "Additional seasonings such as sugar; salt; monosodium glutamate; fish sauce",
-    "category": "seasonings",
-    "unit": [
-      "ít"
     ]
   },
   {
@@ -23317,15 +23100,6 @@
     ]
   },
   {
-    "id": "ingre02564",
-    "name_vi": "heo sữa",
-    "name_en": "Pork:numel",
-    "category": "fresh_meat",
-    "unit": [
-      "con"
-    ]
-  },
-  {
     "id": "ingre02565",
     "name_vi": "hoa anh đào khô",
     "name_en": "Dried cherry blossom",
@@ -25482,15 +25256,6 @@
     ]
   },
   {
-    "id": "ingre02843",
-    "name_vi": "hàu sữa:",
-    "name_en": "Mussel",
-    "category": "seafood_&_fish_balls",
-    "unit": [
-      "con"
-    ]
-  },
-  {
     "id": "ingre02844",
     "name_vi": "hàu thịt",
     "name_en": "Mussel Meat",
@@ -25966,15 +25731,6 @@
     ]
   },
   {
-    "id": "ingre02900",
-    "name_vi": "hạnh nhân:",
-    "name_en": "Almond",
-    "category": "snacks",
-    "unit": [
-      "g"
-    ]
-  },
-  {
     "id": "ingre02901",
     "name_vi": "hạt",
     "name_en": "Seed",
@@ -26047,15 +25803,6 @@
     "category": "snacks",
     "unit": [
       "gr"
-    ]
-  },
-  {
-    "id": "ingre02909",
-    "name_vi": "hạt bí:",
-    "name_en": "Pumpkin seed:",
-    "category": "vegetables",
-    "unit": [
-      "g"
     ]
   },
   {
@@ -26949,42 +26696,6 @@
     "category": "seasonings",
     "unit": [
       "gr"
-    ]
-  },
-  {
-    "id": "ingre03019",
-    "name_vi": "hạt nêm; muối; đường; bột ngọt",
-    "name_en": "Seasoning; Salt; Sugar; Monosodium Glutamate",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre03020",
-    "name_vi": "hạt nêm; đường; muối; bột ngọt; đường phèn; dầu mè",
-    "name_en": "Seasoning; Sugar; Salt; Monosodium Glutamate; Molasses; Sesame Oil",
-    "category": "seasonings",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
-    "id": "ingre03021",
-    "name_vi": "hạt nêm;hạt tiêu;muối;đường",
-    "name_en": "Seasoning;Pepper;Salt;Sugar",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre03022",
-    "name_vi": "hạt nêm;đường;muối",
-    "name_en": "Seasoning;sugar;salt",
-    "category": "seasonings",
-    "unit": [
-      "ít"
     ]
   },
   {
@@ -28063,15 +27774,6 @@
     ]
   },
   {
-    "id": "ingre03138",
-    "name_vi": "kem phô mai :",
-    "name_en": "Cheese",
-    "category": "ice_cream_&_cheese",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre03139",
     "name_vi": "kem phô mai bào sợi",
     "name_en": "Shredded cream cheese",
@@ -28399,30 +28101,12 @@
     ]
   },
   {
-    "id": "ingre03175",
-    "name_vi": "kem whipping :",
-    "name_en": "Whipping Cream",
-    "category": "ice_cream_&_cheese",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre03176",
     "name_vi": "kem whipping cream",
     "name_en": "Whipping Cream",
     "category": "milk",
     "unit": [
       "ml"
-    ]
-  },
-  {
-    "id": "ingre03177",
-    "name_vi": "kem whipping cream:",
-    "name_en": "Whipping Cream",
-    "category": "milk",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -28566,13 +28250,6 @@
       "kg",
       "củ"
     ]
-  },
-  {
-    "id": "ingre03193",
-    "name_vi": "khoai lang mật :",
-    "name_en": "Sweet Potato",
-    "category": "vegetables",
-    "unit": []
   },
   {
     "id": "ingre03194",
@@ -29469,15 +29146,6 @@
     ]
   },
   {
-    "id": "ingre03291",
-    "name_vi": "kiwi xanh:",
-    "name_en": "Green kiwi",
-    "category": "fresh_fruits",
-    "unit": [
-      "quả"
-    ]
-  },
-  {
     "id": "ingre03294",
     "name_vi": "kiến vàng",
     "name_en": "Yellow Ant",
@@ -30282,15 +29950,6 @@
     "category": "vegetables",
     "unit": [
       "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre03382",
-    "name_vi": "lá chanh thái:",
-    "name_en": "Lemongrass",
-    "category": "vegetables",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -32204,15 +31863,6 @@
     ]
   },
   {
-    "id": "ingre03586",
-    "name_vi": "lòng đỏ trứng gà:",
-    "name_en": "Egg yolk:",
-    "category": "seasonings",
-    "unit": [
-      "cái"
-    ]
-  },
-  {
     "id": "ingre03587",
     "name_vi": "lòng đỏ trứng muối",
     "name_en": "Salted Egg Yolk",
@@ -33419,15 +33069,6 @@
     ]
   },
   {
-    "id": "ingre03719",
-    "name_vi": "miến tàu:",
-    "name_en": "Rice Noodles",
-    "category": "grains_staples",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre03720",
     "name_vi": "miến tươi",
     "name_en": "Fresh vermicelli",
@@ -33799,15 +33440,6 @@
     ]
   },
   {
-    "id": "ingre03767",
-    "name_vi": "muối hột:",
-    "name_en": "Sea Salt:",
-    "category": "seasonings",
-    "unit": [
-      "muỗng cà phê"
-    ]
-  },
-  {
     "id": "ingre03768",
     "name_vi": "muối iot",
     "name_en": "Salt iodized",
@@ -34171,52 +33803,6 @@
     ]
   },
   {
-    "id": "ingre03831",
-    "name_vi": "muối:",
-    "name_en": "Salt:",
-    "category": "seasonings",
-    "unit": [
-      "muỗng cà phê",
-      "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre03833",
-    "name_vi": "muối; tiêu",
-    "name_en": "Salt; Pepper",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre03834",
-    "name_vi": "muối; đường; bột ngọt; hạt nêm; tiêu",
-    "name_en": "Salt; Sugar; Monosodium Glutamate; Seasoning Powder; Pepper",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre03836",
-    "name_vi": "muối;hạt nêm;đường",
-    "name_en": "Salt;Soy Sauce;Sugar",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre03837",
-    "name_vi": "muối;đường;bột ngọt;tiêu",
-    "name_en": "Salt;Sugar;Monosodium Glutamate;Pepper",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
     "id": "ingre03838",
     "name_vi": "muốt",
     "name_en": "Mutton",
@@ -34318,15 +33904,6 @@
       "gr",
       "muỗng cà phê",
       "thìa canh"
-    ]
-  },
-  {
-    "id": "ingre03850",
-    "name_vi": "màu dầu điều:",
-    "name_en": "Peanut oil color",
-    "category": "snacks",
-    "unit": [
-      "muỗng canh"
     ]
   },
   {
@@ -36832,17 +36409,6 @@
     ]
   },
   {
-    "id": "ingre04128",
-    "name_vi": "mật ong:",
-    "name_en": "Honey",
-    "category": "others",
-    "unit": [
-      "muỗng cà phê",
-      "muỗng canh",
-      "ml"
-    ]
-  },
-  {
     "id": "ingre04129",
     "name_vi": "mật rỉ đường",
     "name_en": "Palm sugar syrup",
@@ -38297,15 +37863,6 @@
     "id": "ingre04284",
     "name_vi": "mực ống tươi",
     "name_en": "Fresh tube squid",
-    "category": "seafood_&_fish_balls",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
-    "id": "ingre04285",
-    "name_vi": "mực ống:",
-    "name_en": "Tube squid:",
     "category": "seafood_&_fish_balls",
     "unit": [
       "gr"
@@ -40663,16 +40220,6 @@
     ]
   },
   {
-    "id": "ingre04548",
-    "name_vi": "nước cốt chanh:",
-    "name_en": "Lemon juice:",
-    "category": "beverages",
-    "unit": [
-      "muỗng canh",
-      "ml"
-    ]
-  },
-  {
     "id": "ingre04549",
     "name_vi": "nước cốt cà phê",
     "name_en": "Coffee extract",
@@ -42253,25 +41800,6 @@
     ]
   },
   {
-    "id": "ingre04718",
-    "name_vi": "nước mắm:",
-    "name_en": "Fish Sauce",
-    "category": "seasonings",
-    "unit": [
-      "muỗng canh",
-      "ml"
-    ]
-  },
-  {
-    "id": "ingre04719",
-    "name_vi": "nước mắm; đường",
-    "name_en": "Fish Sauce; Sugar",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
     "id": "ingre04720",
     "name_vi": "nước mắmm",
     "name_en": "Fish sauce",
@@ -43732,15 +43260,6 @@
     ]
   },
   {
-    "id": "ingre04883",
-    "name_vi": "nước: 300ml",
-    "name_en": "Water: 300ml",
-    "category": "beverages",
-    "unit": [
-      "ml"
-    ]
-  },
-  {
     "id": "ingre04884",
     "name_vi": "nướng tương",
     "name_en": "Barbecue Sauce",
@@ -44346,15 +43865,6 @@
   {
     "id": "ingre04948",
     "name_vi": "nấm mỡ trắng",
-    "name_en": "White Fungus",
-    "category": "others",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
-    "id": "ingre04949",
-    "name_vi": "nấm mỡ trắng:",
     "name_en": "White Fungus",
     "category": "others",
     "unit": [
@@ -45485,15 +44995,6 @@
       "gr",
       "cái",
       "lát"
-    ]
-  },
-  {
-    "id": "ingre05071",
-    "name_vi": "phô mai con bò cười:",
-    "name_en": "Cheese Cow Smile",
-    "category": "ice_cream_&_cheese",
-    "unit": [
-      "miếng"
     ]
   },
   {
@@ -47932,15 +47433,6 @@
     ]
   },
   {
-    "id": "ingre05345",
-    "name_vi": "rau nêm (ngò gai;ngò rí",
-    "name_en": "Cilantro",
-    "category": "vegetables",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
     "id": "ingre05346",
     "name_vi": "rau nấm ăn kèm",
     "name_en": "Accompanying mushrooms",
@@ -48189,15 +47681,6 @@
       "nhánh",
       "muỗng canh",
       "ít"
-    ]
-  },
-  {
-    "id": "ingre05386",
-    "name_vi": "rau thơm :",
-    "name_en": "Basil",
-    "category": "others",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -48525,15 +48008,6 @@
     "category": "vegetables",
     "unit": [
       "ít"
-    ]
-  },
-  {
-    "id": "ingre05428",
-    "name_vi": "rau ăn kèm: cà tím; rau muống; mướp; bông súng; rau đắng;",
-    "name_en": "Accompanying vegetables: eggplant; water spinach; bitter melon; Chinese broccoli; bitter gourd;",
-    "category": "vegetables",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -50424,15 +49898,6 @@
     ]
   },
   {
-    "id": "ingre05637",
-    "name_vi": "sake chín:",
-    "name_en": "Red sake",
-    "category": "alcoholic_beverages",
-    "unit": [
-      "quả"
-    ]
-  },
-  {
     "id": "ingre05638",
     "name_vi": "sake nhật",
     "name_en": "Sake",
@@ -52297,15 +51762,6 @@
     ]
   },
   {
-    "id": "ingre05850",
-    "name_vi": "sơ ri:",
-    "name_en": "Limequat",
-    "category": "fresh_fruits",
-    "unit": [
-      "kg"
-    ]
-  },
-  {
     "id": "ingre05851",
     "name_vi": "sương sa",
     "name_en": "Dragon fruit",
@@ -52509,15 +51965,6 @@
     "unit": [
       "gr",
       "miếng"
-    ]
-  },
-  {
-    "id": "ingre05875",
-    "name_vi": "sườn cây",
-    "name_en": "Rib骨imonial: The translation provided (Rib骨) seems incorrect as \"sườn cây\" specifically refers to a type of rib used in",
-    "category": "fresh_meat",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -52987,15 +52434,6 @@
     ]
   },
   {
-    "id": "ingre05924",
-    "name_vi": "sả:",
-    "name_en": "Garlic Chili",
-    "category": "vegetables",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre05925",
     "name_vi": "sấu",
     "name_en": "Sour sop",
@@ -53455,16 +52893,6 @@
     "category": "seasonings",
     "unit": [
       "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre05974",
-    "name_vi": "sốt mayonnaise:",
-    "name_en": "Mayonnaise",
-    "category": "seasonings",
-    "unit": [
-      "muỗng canh",
-      "g"
     ]
   },
   {
@@ -54247,15 +53675,6 @@
     ]
   },
   {
-    "id": "ingre06062",
-    "name_vi": "sợi phở",
-    "name_en": "Noodle丝 (this is a direct translation, but typically \"phở noodle\" or \"pho noodle\" would be used in English",
-    "category": "grains_staples",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre06063",
     "name_vi": "sợi phở khô",
     "name_en": "Dry vermicelli noodles",
@@ -54582,15 +54001,6 @@
     ]
   },
   {
-    "id": "ingre06098",
-    "name_vi": "sữa chua hy lạp:",
-    "name_en": "Greek yogurt:",
-    "category": "yogurt",
-    "unit": [
-      "g"
-    ]
-  },
-  {
     "id": "ingre06100",
     "name_vi": "sữa chua không đường",
     "name_en": "Plain Yogurt",
@@ -54685,15 +54095,6 @@
     "category": "yogurt",
     "unit": [
       "ml"
-    ]
-  },
-  {
-    "id": "ingre06112",
-    "name_vi": "sữa chua:",
-    "name_en": "Yogurt:",
-    "category": "milk",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -55094,16 +54495,6 @@
     ]
   },
   {
-    "id": "ingre06164",
-    "name_vi": "sữa tươi:",
-    "name_en": "Fresh Milk",
-    "category": "milk",
-    "unit": [
-      "gr",
-      "ml"
-    ]
-  },
-  {
     "id": "ingre06165",
     "name_vi": "sữa yến mạch",
     "name_en": "Oat milk",
@@ -55243,16 +54634,6 @@
     "category": "milk",
     "unit": [
       "hộp"
-    ]
-  },
-  {
-    "id": "ingre06181",
-    "name_vi": "sữa đặc:",
-    "name_en": "Sweetened Condensed Milk",
-    "category": "milk",
-    "unit": [
-      "muỗng canh",
-      "g"
     ]
   },
   {
@@ -55879,15 +55260,6 @@
     "category": "vegetables",
     "unit": [
       "quả"
-    ]
-  },
-  {
-    "id": "ingre06255",
-    "name_vi": "thơm:",
-    "name_en": "Basil",
-    "category": "vegetables",
-    "unit": [
-      "trái"
     ]
   },
   {
@@ -56526,15 +55898,6 @@
     "id": "ingre06326",
     "name_vi": "thịt bò xay siêu nạc",
     "name_en": "Ground Sirloin",
-    "category": "fresh_meat",
-    "unit": [
-      "g"
-    ]
-  },
-  {
-    "id": "ingre06327",
-    "name_vi": "thịt bò xay: 200g",
-    "name_en": "Ground Beef: 200g",
     "category": "fresh_meat",
     "unit": [
       "g"
@@ -57369,15 +56732,6 @@
     "id": "ingre06416",
     "name_vi": "thịt heo xay nhỏ",
     "name_en": "Minced pork",
-    "category": "fresh_meat",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
-    "id": "ingre06418",
-    "name_vi": "thịt heo xay:",
-    "name_en": "Ground Pork",
     "category": "fresh_meat",
     "unit": [
       "gr"
@@ -59023,15 +58377,6 @@
     ]
   },
   {
-    "id": "ingre06594",
-    "name_vi": "tinh chất vani:",
-    "name_en": "Vanilla extract:",
-    "category": "candies",
-    "unit": [
-      "muỗng cà phê"
-    ]
-  },
-  {
     "id": "ingre06595",
     "name_vi": "tinh chất vanila",
     "name_en": "Vanilla extract",
@@ -59489,15 +58834,6 @@
     ]
   },
   {
-    "id": "ingre06643",
-    "name_vi": "tiêu xanh:",
-    "name_en": "Green pepper",
-    "category": "others",
-    "unit": [
-      "gram"
-    ]
-  },
-  {
     "id": "ingre06644",
     "name_vi": "tiêu xay",
     "name_en": "Ground pepper",
@@ -59522,15 +58858,6 @@
     "category": "seasonings",
     "unit": [
       "ít"
-    ]
-  },
-  {
-    "id": "ingre06652",
-    "name_vi": "tiêu xay:",
-    "name_en": "Ground Pepper:",
-    "category": "seasonings",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -59587,15 +58914,6 @@
     "category": "seasonings",
     "unit": [
       "muỗng cà phê",
-      "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre06666",
-    "name_vi": "tiêu:",
-    "name_en": "Pepper:",
-    "category": "seasonings",
-    "unit": [
       "muỗng canh"
     ]
   },
@@ -61143,15 +60461,6 @@
     ]
   },
   {
-    "id": "ingre06843",
-    "name_vi": "trứng gà:",
-    "name_en": "Chicken egg:",
-    "category": "seasonings",
-    "unit": [
-      "quả"
-    ]
-  },
-  {
     "id": "ingre06844",
     "name_vi": "trứng hột vịt lộn",
     "name_en": "Quail's egg",
@@ -61700,15 +61009,6 @@
     "category": "fresh_fruits",
     "unit": [
       "quả"
-    ]
-  },
-  {
-    "id": "ingre06907",
-    "name_vi": "táo tây:",
-    "name_en": "Celery",
-    "category": "fresh_fruits",
-    "unit": [
-      "trái"
     ]
   },
   {
@@ -62281,15 +61581,6 @@
     "name_vi": "tôm tươi lột vỏ",
     "name_en": "Fresh Shrimp Peeled",
     "category": "fresh_meat",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
-    "id": "ingre06967",
-    "name_vi": "tôm tươi:",
-    "name_en": "Fresh shrimp:",
-    "category": "seafood_&_fish_balls",
     "unit": [
       "gr"
     ]
@@ -62983,15 +62274,6 @@
     ]
   },
   {
-    "id": "ingre07046",
-    "name_vi": "tương ớt:",
-    "name_en": "Hot Sauce:",
-    "category": "seasonings",
-    "unit": [
-      "muỗng canh"
-    ]
-  },
-  {
     "id": "ingre07047",
     "name_vi": "tảo bẹ",
     "name_en": "Kelp",
@@ -63128,15 +62410,6 @@
     ]
   },
   {
-    "id": "ingre07062",
-    "name_vi": "tắc:",
-    "name_en": "Tangerine",
-    "category": "others",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre07063",
     "name_vi": "tỏi",
     "name_en": "Garlic",
@@ -63258,15 +62531,6 @@
       "thìa canh",
       "muỗng cà phê",
       "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre07078",
-    "name_vi": "tỏi băm:",
-    "name_en": "Minced Garlic:",
-    "category": "seasonings",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -63674,24 +62938,6 @@
     ]
   },
   {
-    "id": "ingre07130",
-    "name_vi": "tỏi:",
-    "name_en": "Garlic:",
-    "category": "seasonings",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
-    "id": "ingre07131",
-    "name_vi": "tỏi; ớt băm",
-    "name_en": "Garlic; Chili Paste",
-    "category": "seasonings",
-    "unit": [
-      "muỗng canh"
-    ]
-  },
-  {
     "id": "ingre07132",
     "name_vi": "tổ yến",
     "name_en": "Bird's Nest",
@@ -63849,15 +63095,6 @@
     "category": "seasonings",
     "unit": [
       "cái"
-    ]
-  },
-  {
-    "id": "ingre07148",
-    "name_vi": "vani:",
-    "name_en": "Vanilla",
-    "category": "seasonings",
-    "unit": [
-      "muỗng cà phê"
     ]
   },
   {
@@ -65667,15 +64904,6 @@
     ]
   },
   {
-    "id": "ingre07347",
-    "name_vi": "xoài:",
-    "name_en": "Mango",
-    "category": "fresh_fruits",
-    "unit": [
-      "quả"
-    ]
-  },
-  {
     "id": "ingre07348",
     "name_vi": "xuyên khung",
     "name_en": "Chinese cabbage",
@@ -65909,15 +65137,6 @@
     "id": "ingre07372",
     "name_vi": "xà lách xoắn xanh",
     "name_en": "Spinach",
-    "category": "vegetables",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
-    "id": "ingre07377",
-    "name_vi": "xà lách:",
-    "name_en": "Lettuce",
     "category": "vegetables",
     "unit": [
       "gr"
@@ -66700,15 +65919,6 @@
     "category": "instant_foods",
     "unit": [
       "gr"
-    ]
-  },
-  {
-    "id": "ingre07461",
-    "name_vi": "yến mạch:",
-    "name_en": "Oat",
-    "category": "cereals_grains",
-    "unit": [
-      "g"
     ]
   },
   {
@@ -67683,15 +66893,6 @@
     ]
   },
   {
-    "id": "ingre07565",
-    "name_vi": "đùi gà:",
-    "name_en": "Chicken thigh:",
-    "category": "fresh_meat",
-    "unit": [
-      "cái"
-    ]
-  },
-  {
     "id": "ingre07566",
     "name_vi": "đùi tỏi",
     "name_en": "Garlic thigh",
@@ -68025,15 +67226,6 @@
     "unit": [
       "gr",
       "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre07604",
-    "name_vi": "đường cát:",
-    "name_en": "Sugar",
-    "category": "seasonings",
-    "unit": [
-      "gr"
     ]
   },
   {
@@ -68509,15 +67701,6 @@
     ]
   },
   {
-    "id": "ingre07655",
-    "name_vi": "đường trắng:",
-    "name_en": "White sugar:",
-    "category": "seasonings",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
     "id": "ingre07656",
     "name_vi": "đường tuỳ khẩu vị",
     "name_en": "Sugar to taste",
@@ -68654,7 +67837,7 @@
   },
   {
     "id": "ingre07670",
-    "name_vi": "đường đường",
+    "name_vi": "đường",
     "name_en": "Sugar",
     "category": "seasonings",
     "unit": [
@@ -68668,61 +67851,6 @@
     "category": "seasonings",
     "unit": [
       "gr"
-    ]
-  },
-  {
-    "id": "ingre07693",
-    "name_vi": "đường:",
-    "name_en": "Sugar:",
-    "category": "seasonings",
-    "unit": [
-      "gr",
-      "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre07694",
-    "name_vi": "đường; bột ngọt; hạt nêm",
-    "name_en": "Sugar; MSG; Seasoning Powder",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre07695",
-    "name_vi": "đường; bột ngọt; muối",
-    "name_en": "Sugar; MSG; Salt",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre07696",
-    "name_vi": "đường;muối;bột ngọt;hạt nêm",
-    "name_en": "Sugar;Salt;Monosodium Glutamate;Seasoning Powder",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre07697",
-    "name_vi": "đường;muối;hạt nêm;nước mắm",
-    "name_en": "Sugar;Salt;Seasoning;Fish Sauce",
-    "category": "seasonings",
-    "unit": [
-      "ít"
-    ]
-  },
-  {
-    "id": "ingre07698",
-    "name_vi": "đường;nước mắm;hạt nêm;bột ngọt",
-    "name_en": "Sugar;Fish Sauce;Seasoning Powder;Monosodium Glutamate",
-    "category": "seasonings",
-    "unit": [
-      "ít"
     ]
   },
   {
@@ -68896,22 +68024,6 @@
     "category": "vegetables",
     "unit": [
       "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre07717",
-    "name_vi": "đầu hành lá",
-    "name_en": "Chive;top",
-    "category": "vegetables",
-    "unit": [
-      "cây",
-      "chén",
-      "gr",
-      "nhánh",
-      "cái",
-      "muỗng cà phê",
-      "muỗng canh",
-      "ít"
     ]
   },
   {
@@ -69271,24 +68383,6 @@
     ]
   },
   {
-    "id": "ingre07756",
-    "name_vi": "đậu hũ trắng  (1 bìa)",
-    "name_en": "Tofu white (1 block)",
-    "category": "vegetables",
-    "unit": [
-      "gr"
-    ]
-  },
-  {
-    "id": "ingre07757",
-    "name_vi": "đậu hũ trắng:100 g",
-    "name_en": "Tofu white:100 g",
-    "category": "vegetables",
-    "unit": [
-      "g"
-    ]
-  },
-  {
     "id": "ingre07758",
     "name_vi": "đậu hũ trứng",
     "name_en": "Tofu Scrambled Eggs",
@@ -69463,7 +68557,7 @@
   {
     "id": "ingre07776",
     "name_vi": "đậu nành lông",
-    "name_en": "Hair豆",
+    "name_en": "Hair Tofu",
     "category": "grains_staples",
     "unit": [
       "gr"
@@ -71422,24 +70516,6 @@
     "category": "seasonings",
     "unit": [
       "muỗng cà phê"
-    ]
-  },
-  {
-    "id": "ingre07991",
-    "name_vi": "ớt bột:",
-    "name_en": "Chili powder:",
-    "category": "seasonings",
-    "unit": [
-      "muỗng canh"
-    ]
-  },
-  {
-    "id": "ingre07992",
-    "name_vi": "ớt bột;muối;dầu ăn",
-    "name_en": "Chili powder;salt;vegetable oil",
-    "category": "seasonings",
-    "unit": [
-      "ít"
     ]
   },
   {
