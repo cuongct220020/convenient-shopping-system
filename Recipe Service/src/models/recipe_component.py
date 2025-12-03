@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from enums.c_measurement_unit import CMeasurementUnit
 from enums.uc_measurement_unit import UCMeasurementUnit
 from enums.category import Category
+from enums.level import Level
 from core.database import Base
 
 class RecipeComponent(Base):
@@ -90,7 +91,7 @@ class Recipe(RecipeComponent):
     prep_time: Mapped[int] = mapped_column(Integer, nullable=True)
     cook_time: Mapped[int] = mapped_column(Integer, nullable=True)
     default_servings: Mapped[int] = mapped_column(Integer, default=1)
-    description: Mapped[str] = mapped_column(String, nullable=True)
+    level: Mapped[Level] = mapped_column(Enum(Level), nullable=True)
     instructions: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     component_list: Mapped[list["ComponentList"]] = relationship(
         back_populates="recipe",
