@@ -1,43 +1,41 @@
-import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { RefreshCcw } from 'lucide-react'; // Importing an icon for the resend button
-import loginBg from '../assets/login-bg.png';
-import { Button } from '../components/Button';
-import { BackButton } from '../components/BackButton';
-import { OtpInput } from '../components/OtpInput';
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom' // Removed useLocation
+import { RefreshCcw } from 'lucide-react' // Importing an icon for the resend button
+import loginBg from '../assets/login-bg.png'
+import { Button } from '../components/Button'
+import { BackButton } from '../components/BackButton'
+import { OtpInput } from '../components/OtpInput'
 
 export default function LoginAuthentication() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [otpCode, setOtpCode] = useState('');
+  const navigate = useNavigate()
+  // const location = useLocation() // Removed this line
+  const [otpCode, setOtpCode] = useState('')
 
   // Retrieve username passed from the Login page state, or use a placeholder
   // In a real app, ensure you handle the case where state is undefined safely.
-  const username = location.state?.username || "User";
+  // const username = location.state?.username || 'User' // Removed this line
 
   const handleOtpComplete = (code: string) => {
-    setOtpCode(code);
-    console.log('OTP Entered:', code);
-  };
+    setOtpCode(code)
+    console.log('OTP Entered:', code)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (otpCode.length === 6) {
-        console.log("Submitting OTP:", otpCode);
-        // Add actual verification logic here
-        navigate('/forgot-password-2')
+      console.log('Submitting OTP:', otpCode)
+      // Add actual verification logic here
+      navigate('/forgot-password-2')
     } else {
-        alert("Vui lòng nhập đủ 6 số.");
+      alert('Vui lòng nhập đủ 6 số.')
     }
-  };
+  }
 
   return (
     // Reusing the main container styling from Login.tsx for consistency
-    <div className="min-h-screen bg-gray-100 flex justify-center items-center relative overflow-hidden font-sans">
-
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-100 font-sans">
       {/* Mobile Container */}
-      <div className="w-[375px] h-[812px] bg-white relative shadow-2xl overflow-hidden flex flex-col">
-
+      <div className="relative flex h-[812px] w-[375px] flex-col overflow-hidden bg-white shadow-2xl">
         {/* Header: Back Button */}
         <div className="my-4">
           {/* Using existing BackButton component */}
@@ -45,23 +43,24 @@ export default function LoginAuthentication() {
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto no-scrollbar relative z-10">
-          <div className="px-6 pt-4 pb-8">
+        <div className="no-scrollbar relative z-10 flex-1 overflow-y-auto">
+          <div className="px-6 pb-8 pt-4">
             <form onSubmit={handleSubmit}>
               {/* Title */}
-              <h2 className="text-3xl font-bold text-[#c93045] text-center mb-6">
+              <h2 className="mb-6 text-center text-3xl font-bold text-[#c93045]">
                 Xác thực email
               </h2>
 
               {/* Description Text */}
               {/* Using text-justify to match the block text look in image_0.png */}
-              <p className="text-gray-700 text-sm leading-relaxed text-justify mb-4">
-                Chúng tôi vừa gửi mã xác nhận 6 chữ số đến email của bạn (nếu email đã được đăng ký). Bạn vui lòng nhập mã để tiếp tục
+              <p className="mb-4 text-justify text-sm leading-relaxed text-gray-700">
+                Chúng tôi vừa gửi mã xác nhận 6 chữ số đến email của bạn (nếu
+                email đã được đăng ký). Bạn vui lòng nhập mã để tiếp tục
               </p>
 
               {/* New OTP Input Component */}
-              <div className="px-2 mb-8">
-                   <OtpInput length={6} onComplete={handleOtpComplete} />
+              <div className="mb-8 px-2">
+                <OtpInput length={6} onComplete={handleOtpComplete} />
               </div>
 
               {/* Submit Button */}
@@ -73,9 +72,12 @@ export default function LoginAuthentication() {
               </div>
 
               {/* Resend Timer */}
-              <button type="button" className="w-full flex items-center justify-center text-gray-500 text-sm hover:text-[#c93045] transition-colors">
-                  <RefreshCcw size={16} className="mr-2" />
-                  <span>Gửi lại mã 00:59</span>
+              <button
+                type="button"
+                className="flex w-full items-center justify-center text-sm text-gray-500 transition-colors hover:text-[#c93045]"
+              >
+                <RefreshCcw size={16} className="mr-2" />
+                <span>Gửi lại mã 00:59</span>
               </button>
 
               {/* Bottom Spacer */}
@@ -85,15 +87,15 @@ export default function LoginAuthentication() {
         </div>
 
         {/* Background Image Decoration (Bottom) - Same as Login page */}
-        <div className="absolute bottom-0 left-0 right-0 h-80 z-0 pointer-events-none">
-           <div className="absolute inset-0 bg-gradient-to-t from-white/10 via-white/40 to-white z-10"></div>
-           <img
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-80">
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-white/10 via-white/40 to-white"></div>
+          <img
             src={loginBg}
             alt="Food Background"
-            className="w-full h-full object-cover opacity-70"
-           />
+            className="size-full object-cover opacity-70"
+          />
         </div>
       </div>
     </div>
-  );
+  )
 }

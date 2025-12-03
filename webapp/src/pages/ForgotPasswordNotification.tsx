@@ -1,50 +1,44 @@
-import { useNavigate } from 'react-router-dom';
-import { CheckCircle } from 'lucide-react';
-import { Button } from '../components/Button';
+import { useNavigate } from 'react-router-dom'
+import { CheckCircle } from 'lucide-react'
+import { Button } from '../components/Button'
 
 export default function ForgotPasswordNotification() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   const handleClose = () => {
-    navigate('/login');
-  };
+    navigate('/login')
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex justify-center items-center relative overflow-hidden font-sans">
-      
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-100 font-sans">
       {/* Mobile Container */}
-      <div className="w-[375px] h-[812px] bg-gray-700 relative flex items-center justify-center px-6">
-        
+      <div className="relative flex h-[812px] w-[375px] items-center justify-center bg-gray-700 px-6">
         {/* Success Card */}
-        <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-sm w-full text-center">
-          
+        <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-2xl">
           {/* Title */}
-          <h2 className="text-xl font-bold text-gray-800 mb-6">
+          <h2 className="mb-6 text-xl font-bold text-gray-800">
             Mật khẩu đã thay đổi
           </h2>
-          
+
           {/* Success Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center">
+          <div className="mb-6 flex justify-center">
+            <div className="flex size-20 items-center justify-center rounded-full bg-green-500">
               <CheckCircle size={48} className="text-white" strokeWidth={2.5} />
             </div>
           </div>
-          
+
           {/* Message */}
-          <p className="text-sm text-gray-600 mb-8 leading-relaxed">
-            Mật khẩu đặt lại thành công, bạn vui lòng đăng nhập bằng mật khẩu mới
+          <p className="mb-8 text-sm leading-relaxed text-gray-600">
+            Mật khẩu đặt lại thành công, bạn vui lòng đăng nhập bằng mật khẩu
+            mới
           </p>
-          
+
           {/* Close Button */}
-          <Button 
-            variant="primary" 
-            size="fit" 
-            onClick={handleClose}
-          >
+          <Button variant="primary" size="fit" onClick={handleClose}>
             Đóng
           </Button>
         </div>
       </div>
     </div>
-  );
+  )
 }

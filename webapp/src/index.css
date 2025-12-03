@@ -4,3 +4,15 @@
 @tailwind utilities;
 
 /* You can add your own custom global styles below */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f3f4f6; /* A light gray background for the centering effect */
+}
