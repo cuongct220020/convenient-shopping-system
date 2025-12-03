@@ -11,12 +11,12 @@ class ShoppingPlan(Base):
 
     plan_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     group_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    last_modified: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    last_modified: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
     deadline: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     assigner_id: Mapped[int] = mapped_column(Integer, nullable=False)
     assignee_id: Mapped[int] = mapped_column(Integer, nullable=True)
     shopping_list: Mapped[dict] = mapped_column(JSON, nullable=False)
-    plan_status: Mapped[PlanStatus] = mapped_column(Enum(PlanStatus), nullable=False)
+    plan_status: Mapped[PlanStatus] = mapped_column(Enum(PlanStatus), nullable=False, default=PlanStatus.CREATED)
 
     report: Mapped["Report"] = relationship(back_populates="plan")
 
