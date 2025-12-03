@@ -29,7 +29,10 @@ class PlanTransition:
         return 1
 
     def report(self):
+        return 1
 
     def reopen(self):
+        return 1
 
     def expire(self):
+        return 1
