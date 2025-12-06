@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router-dom'
 import React from 'react'
 import { ChevronRight, Users } from 'lucide-react'
 
@@ -18,14 +19,33 @@ export const Sidebar = () => {
 
         {/* Menu */}
         <nav className="space-y-6">
-          <div className="flex cursor-pointer items-center justify-between font-medium text-[#c93045] hover:text-[#b02a3d]">
+          <NavLink
+            to="/ingredient-list"
+            className={({ isActive }) =>
+              `flex cursor-pointer items-center justify-between font-medium transition-colors ${
+                isActive
+                  ? 'text-[#c93045] hover:text-[#b02a3d]'
+                  : 'text-gray-600 hover:text-[#c93045]'
+              }`
+            }
+          >
             <span>Danh mục nguyên liệu</span>
             <ChevronRight size={18} />
-          </div>
+          </NavLink>
 
-          <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#c93045]">
-            Danh mục món ăn
-          </div>
+          <NavLink
+            to="/dish-list"
+            className={({ isActive }) =>
+              `flex cursor-pointer items-center justify-between font-medium transition-colors ${
+                isActive
+                  ? 'text-[#c93045] hover:text-[#b02a3d]'
+                  : 'text-gray-600 hover:text-[#c93045]'
+              }`
+            }
+          >
+            <span>Danh mục món ăn</span>
+            <ChevronRight size={18} />
+          </NavLink>
 
           <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#c93045]">
             Quản lý người dùng
