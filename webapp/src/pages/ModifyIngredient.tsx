@@ -1,14 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
 import { Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { InputField } from '../components/InputField'
 
-const AddIngredient = () => {
+const ModifyIngredient = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const item = location.state?.item
+
   const [isOpen, setIsOpen] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [image, setImage] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    item?.category || null
+  )
+  const [image, setImage] = useState<string | null>(item?.image || null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -55,12 +60,17 @@ const AddIngredient = () => {
     }
   }, [])
 
-  const handleContinue = () => {
+  const handleSave = () => {
+    // Here you would typically save the changes
     navigate('/ingredient-list')
   }
 
-  const handleDraft = () => {
-    navigate('/ingredient-list')
+  const handleCancel = () => {
+    navigate('/view-ingredient', { state: { item } })
+  }
+
+  if (!item) {
+    return <div>Loading...</div>
   }
 
   return (
@@ -79,6 +89,7 @@ const AddIngredient = () => {
             label="Tên nguyên liệu"
             type="text"
             placeholder="Nhập tên nguyên liệu"
+            defaultValue={item.name}
           />
 
           {/* Phân loại */}
@@ -170,7 +181,7 @@ const AddIngredient = () => {
               </label>
               <input
                 type="text"
-                placeholder="0 g"
+                defaultValue="100 g"
                 className="w-full text-gray-700 p-3 border-b border-gray-300 focus:outline-none focus:border-gray-400"
               />
             </div>
@@ -188,7 +199,7 @@ const AddIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     className="w-full p-2 border-b border-gray-300 text-gray-700 focus:outline-none focus:border-gray-400"
                   />
                 </div>
@@ -199,7 +210,7 @@ const AddIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     className="w-full p-2 border-b border-gray-300 text-gray-700 focus:outline-none focus:border-gray-400"
                   />
                 </div>
@@ -210,7 +221,7 @@ const AddIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     className="w-full p-2 border-b border-gray-300 text-gray-700 focus:outline-none focus:border-gray-400"
                   />
                 </div>
@@ -221,7 +232,7 @@ const AddIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     className="w-full p-2 border-b border-gray-300 text-gray-700 focus:outline-none focus:border-gray-400"
                   />
                 </div>
@@ -232,7 +243,7 @@ const AddIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     className="w-full p-2 border-b border-gray-300 text-gray-700 focus:outline-none focus:border-gray-400"
                   />
                 </div>
@@ -246,7 +257,7 @@ const AddIngredient = () => {
               variant="primary"
               size="fit"
               icon={Check}
-              onClick={handleContinue}
+              onClick={handleSave}
               className="mx-0"
             >
               Xác nhận
@@ -255,7 +266,7 @@ const AddIngredient = () => {
               variant="secondary"
               size="fit"
               icon={X}
-              onClick={handleDraft}
+              onClick={handleCancel}
               className="mx-0"
             >
               Hủy
@@ -267,4 +278,4 @@ const AddIngredient = () => {
   )
 }
 
-export default AddIngredient
+export default ModifyIngredient

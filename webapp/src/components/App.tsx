@@ -9,6 +9,7 @@ import LoginAuthentication from '../pages/LoginAuthentication'
 import ForgotPasswordAuthentication from '../pages/ForgotPasswordAuthentication'
 import IngredientList from '../pages/IngredientList'
 import AddIngredient from '../pages/AddIngredient'
+import ModifyIngredient from '../pages/ModifyIngredient'
 import ViewIngredient from '../pages/ViewIngredient'
 import DishList from '../pages/DishList'
 import { Sidebar } from './Sidebar'
@@ -39,6 +40,7 @@ export default function App() {
           />
           <Route path="/ingredient-list" element={<IngredientList />} />
           <Route path="/add-ingredient" element={<AddIngredient />} />
+          <Route path="/modify-ingredient" element={<ModifyIngredient />} />
           <Route path="/view-ingredient" element={<ViewIngredient />} />
           <Route path="/dish-list" element={<DishList />} />
         </Routes>

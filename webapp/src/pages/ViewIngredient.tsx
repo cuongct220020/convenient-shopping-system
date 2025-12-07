@@ -1,6 +1,7 @@
-import { Check, Image as ImageIcon, Edit } from 'lucide-react'
+import { Check, Image as ImageIcon, Edit, Trash2 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/Button'
+import { InputField } from '../components/InputField'
 
 const ViewIngredient = () => {
   const navigate = useNavigate()
@@ -8,6 +9,14 @@ const ViewIngredient = () => {
   const item = location.state?.item
 
   const handleBack = () => {
+    navigate('/ingredient-list')
+  }
+
+  const handleEdit = () => {
+    navigate('/modify-ingredient', { state: { item } })
+  }
+
+  const handleDelete = () => {
     navigate('/ingredient-list')
   }
 
@@ -27,17 +36,12 @@ const ViewIngredient = () => {
         {/* Left Column */}
         <div className="md:col-span-2 flex flex-col gap-6">
           {/* Tên nguyên liệu */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Tên nguyên liệu
-            </label>
-            <input
-              type="text"
-              defaultValue={item.name}
-              readOnly
-              className="w-full p-3 border border-gray-300 rounded-lg text-gray-700 bg-gray-50 focus:outline-none"
-            />
-          </div>
+          <InputField
+            label="Tên nguyên liệu"
+            defaultValue={item.name}
+            readOnly
+            inputClassName="bg-gray-50 focus:outline-none"
+          />
 
           {/* Phân loại */}
           <div>
@@ -79,7 +83,7 @@ const ViewIngredient = () => {
                 type="text"
                 defaultValue="100 g"
                 readOnly
-                className="w-full text-gray-700 p-3 border-b border-gray-300 bg-transparent focus:outline-none"
+                className="w-full text-gray-700 p-3 border-b border-gray-300 bg-gray-50 focus:outline-none"
               />
             </div>
 
@@ -96,9 +100,9 @@ const ViewIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     readOnly
-                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-transparent focus:outline-none"
+                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-gray-50 focus:outline-none"
                   />
                 </div>
                 {/* Đạm */}
@@ -108,9 +112,9 @@ const ViewIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     readOnly
-                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-transparent focus:outline-none"
+                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-gray-50 focus:outline-none"
                   />
                 </div>
                 {/* Chất bột đường */}
@@ -120,9 +124,9 @@ const ViewIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     readOnly
-                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-transparent focus:outline-none"
+                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-gray-50 focus:outline-none"
                   />
                 </div>
                 {/* Chất xơ */}
@@ -132,9 +136,9 @@ const ViewIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     readOnly
-                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-transparent focus:outline-none"
+                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-gray-50 focus:outline-none"
                   />
                 </div>
                 {/* Chất béo */}
@@ -144,9 +148,9 @@ const ViewIngredient = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="0"
+                    defaultValue="0"
                     readOnly
-                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-transparent focus:outline-none"
+                    className="w-full p-2 border-b border-gray-300 text-gray-700 bg-gray-50 focus:outline-none"
                   />
                 </div>
               </div>
@@ -154,12 +158,33 @@ const ViewIngredient = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-4 items-end mt-8">
-            <Button variant="primary" size="fit" icon={Check} onClick={handleBack}>
+          <div className="flex gap-2 justify-center mt-8">
+            <Button
+              variant="primary"
+              size="fit"
+              icon={Check}
+              onClick={handleBack}
+              className="mx-0"
+            >
               Quay lại
             </Button>
-            <Button variant="secondary" size="fit" icon={Edit}>
+            <Button
+              variant="secondary"
+              size="fit"
+              icon={Edit}
+              className="mx-0"
+              onClick={handleEdit}
+            >
               Chỉnh sửa
+            </Button>
+            <Button
+              variant="secondary"
+              size="fit"
+              icon={Trash2}
+              className="mx-0"
+              onClick={handleDelete}
+            >
+              Xóa
             </Button>
           </div>
         </div>
