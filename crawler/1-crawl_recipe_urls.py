@@ -9,7 +9,7 @@ from requests.packages.urllib3.util.retry import Retry
 import time
 
 BASE_URL = "https://www.dienmayxanh.com"
-
+file_out = '/mnt/disk1/hachi/crawler/data/recipe_urls.csv'
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -124,7 +124,7 @@ def main():
 
     for i, category in enumerate(categories, 1):
         print(f"\n[{i}/{len(categories)}] {category['name']}")
-        articles = get_all_articles(category["url"], max_articles_per_category=5)
+        articles = get_all_articles(category["url"], max_articles_per_category=15)
 
 
         for url in articles:
@@ -135,7 +135,7 @@ def main():
 
         print(f"  ✅ {len(articles)} bài viết được thu thập.")
         # Lưu tạm mỗi vòng để tránh mất dữ liệu
-        pd.DataFrame(all_data).to_csv("recipe_urls.csv", index=False, encoding="utf-8-sig")
+        pd.DataFrame(all_data).to_csv(file_out, index=False, encoding="utf-8-sig")
 
         # Nghỉ giữa các category để tránh bị chặn
         time.sleep(2)

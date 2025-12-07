@@ -139,11 +139,11 @@ def crawl_recipe(url):
         return None
 
 def main():
-    df = pd.read_csv('data/recipe_urls.csv')
+    df = pd.read_csv('/mnt/disk1/hachi/crawler/data/recipe_urls.csv')
     
     recipes = []
-    # for i in range(len(df)):
-    for i in range(5):
+    for i in range(len(df)):
+    #for i in range(5):
         row = df.iloc[i]
         url = row['url']
         
@@ -156,7 +156,7 @@ def main():
         
         time.sleep(0.5)
     
-    with open('data/recipes_detail.json', 'w', encoding='utf-8') as f:
+    with open('/mnt/disk1/hachi/crawler/data/recipes_detail.json', 'w', encoding='utf-8') as f:
         json.dump(recipes, f, ensure_ascii=False, indent=2)
     
     print("\n" + "=" * 60)

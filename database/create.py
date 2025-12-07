@@ -1,7 +1,7 @@
 import sqlite3
 
 def create_tables():
-    conn = sqlite3.connect('./grocery_system.db')
+    conn = sqlite3.connect('./grocery_system_v2.db')
     cursor = conn.cursor()
 
     # 1. Bảng cha: recipe_components (Nơi sinh ra ID duy nhất)
@@ -19,7 +19,6 @@ def create_tables():
         component_id INTEGER PRIMARY KEY,
         category TEXT,
         estimated_shelf_life INTEGER,
-        nutrition_per TEXT,
         protein REAL, fat REAL, carb REAL, fiber REAL, calories REAL,
         estimated_price INTEGER,
         ingredient_tag_list TEXT, -- Lưu JSON string

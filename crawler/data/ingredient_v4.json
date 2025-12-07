@@ -120757,19 +120757,6 @@
     }
   },
   {
-    "id": 9290,
-    "name": "trứng gà  lòng",
-    "category": "fresh_meat",
-    "unit": "tách",
-    "nutrition": {
-      "per": "100g",
-      "calories": 172.0,
-      "fat": 6.43,
-      "carbs": 1.11,
-      "protein": 25.78
-    }
-  },
-  {
     "id": 9291,
     "name": "trứng gà cỡ lớn",
     "category": "fresh_meat",

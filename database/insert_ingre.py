@@ -1,7 +1,7 @@
 import sqlite3
 import json
 
-DB_PATH = 'grocery_system.db'
+DB_PATH = 'grocery_system_v2.db'
 
 def is_countable(unit_name):
     """
@@ -33,18 +33,14 @@ def import_ingredients_text_per(json_data):
             # 2. Xử lý dữ liệu dinh dưỡng
             # Lấy nguyên khối nutrition, nếu không có thì trả về dict rỗng
             nutri = item.get('nutrition', {})
-            
-            # Lấy trực tiếp chuỗi text từ trường 'per'.
-            # Nếu không có, mặc định là '100g' hoặc chuỗi rỗng tùy bạn.
-            per_text = nutri.get('per', '100g') 
 
             # Insert vào bảng ingredients
             # Lưu ý: Các chỉ số dinh dưỡng (fat, protein...) vẫn giữ là số để tính toán
             cursor.execute("""
                 INSERT INTO ingredients 
                 (component_id, category, protein, fat, carb, calories, 
-                 estimated_shelf_life, estimated_price, nutrition_per)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 estimated_shelf_life, estimated_price)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 comp_id, 
                 item.get('category'), 
@@ -54,14 +50,14 @@ def import_ingredients_text_per(json_data):
                 nutri.get('calories', 0),
                 365, # Shelf life mặc định
                 0,   # Price mặc định
-                per_text # <--- LƯU THẲNG CHUỖI TEXT VÀO ĐÂY
             ))
 
             # 3. Phân loại Countable / Uncountable (Logic cũ giữ nguyên)
             unit_val = item.get('unit', 'unknown')
             name_val = item.get('name')
+            type_val = item.get('type')
             
-            if is_countable(unit_val):
+            if type_val == 'countable':
                 # Insert vào bảng đếm được
                 cursor.execute("""
                     INSERT INTO countable_ingredients (component_id, component_name, c_measurement_unit)
@@ -75,7 +71,6 @@ def import_ingredients_text_per(json_data):
                 """, (comp_id, name_val, unit_val))
 
             conn.commit()
-            print(f"✅ Đã thêm: {item['name']} (Per: '{per_text}')")
 
         except sqlite3.IntegrityError as e:
             conn.rollback()
@@ -88,7 +83,7 @@ def import_ingredients_text_per(json_data):
 
 # --- CHẠY THỬ VỚI DỮ LIỆU CỦA BẠN ---
 if __name__ == "__main__":
-    with open('/home/gpus/hachi/convenient-shopping-system/crawler/data/ingredient_v4.json', 'r', encoding='utf-8') as f:
+    with open('/home/gpus/hachi/convenient-shopping-system/crawler/data/ingredient_v7.json', 'r', encoding='utf-8') as f:
         raw_json = json.load(f)
     
     import_ingredients_text_per(raw_json)
