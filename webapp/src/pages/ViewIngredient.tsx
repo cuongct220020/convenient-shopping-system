@@ -2,6 +2,7 @@ import { Check, Edit, Trash2 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { IngredientForm } from '../components/IngredientForm'
+import IngredientDashboard from './IngredientList'
 
 const ViewIngredient = () => {
   const navigate = useNavigate()
@@ -57,15 +58,23 @@ const ViewIngredient = () => {
   )
 
   return (
-    <div
-      className="flex items-center justify-center bg-gray-700 p-4"
-      style={{ width: '1440px', height: '1024px' }}
-    >
-      <IngredientForm
-        initialData={item}
-        readOnly={true}
-        actions={customActions}
-      />
+    <div className="relative h-full min-h-screen w-full overflow-hidden bg-gray-50">
+      {/* Background Layer: IngredientDashboard blurred */}
+      <div className="absolute inset-0 z-0 flex flex-col blur-sm pointer-events-none">
+        <IngredientDashboard />
+      </div>
+
+      {/* Overlay Layer: Semi-transparent to make form pop */}
+      <div className="absolute inset-0 z-10 bg-black/30 pointer-events-none" />
+
+      {/* Foreground Layer: The Form */}
+      <div className="relative z-20 flex min-h-screen items-center justify-center p-4">
+        <IngredientForm
+          initialData={item}
+          readOnly={true}
+          actions={customActions}
+        />
+      </div>
     </div>
   )
 }
