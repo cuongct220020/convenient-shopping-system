@@ -89,7 +89,7 @@ export const IngredientForm = ({
     }
     return value
   }
-
+  
   const getInputType = (value: string | number | undefined, defaultType: string) => {
     if (readOnly && (value === undefined || value === null || value === '')) {
       return 'text'
@@ -309,7 +309,7 @@ export const IngredientForm = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 justify-center mt-8">
+        <div className="flex gap-6 justify-center mt-8">
           {actions ? (
             actions
           ) : (
@@ -319,7 +319,7 @@ export const IngredientForm = ({
                 size="fit"
                 icon={Check}
                 onClick={onSubmit}
-                className="mx-0"
+                className="!mx-0"
               >
                 {submitLabel}
               </Button>
@@ -328,7 +328,7 @@ export const IngredientForm = ({
                 size="fit"
                 icon={X}
                 onClick={onCancel}
-                className="mx-0"
+                className="!mx-0"
               >
                 Hủy
               </Button>

@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 
 interface ButtonProps {
-  children: ReactNode
+  children?: ReactNode
   onClick?: () => void
   variant?:
     | 'primary'
@@ -9,6 +9,7 @@ interface ButtonProps {
     | 'text'
     | 'pagination'
     | 'pagination-active'
+    | 'icon'
   icon?: React.ComponentType<{ size?: number | string; className?: string }>
   className?: string
   size?: 'full' | 'fit' | 'auto'
@@ -34,10 +35,15 @@ export const Button = ({
     auto: 'w-auto px-6 mx-auto' // Auto width with horizontal padding and centers
   }
 
+  // For buttons with only icons, use square padding and minimal sizing
+  const isIconOnly = !children && Icon
+
   const baseStyle =
     variant === 'pagination' || variant === 'pagination-active'
       ? 'w-8 h-8 flex items-center justify-center rounded transition-all duration-200 active:scale-95'
-      : `${sizes[size]} py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
+      : isIconOnly
+        ? `${size === 'fit' ? 'w-fit' : size === 'auto' ? 'w-auto' : 'w-full'} py-3 px-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
+        : `${sizes[size]} py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
 
   const variants: Record<string, string> = {
     primary:
@@ -48,7 +54,9 @@ export const Button = ({
     pagination:
       'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-rose-500 text-sm font-medium',
     'pagination-active':
-      'bg-[#c93045] text-white hover:bg-[#b02a3d] shadow-md shadow-red-200 text-sm font-medium'
+      'bg-[#c93045] text-white hover:bg-[#b02a3d] shadow-md shadow-red-200 text-sm font-medium',
+    icon:
+      'bg-gray-200 text-gray-600 hover:bg-gray-300'
   }
 
   return (
@@ -57,7 +65,7 @@ export const Button = ({
       type={type}
       className={`${baseStyle} ${variants[variant]} ${className}`}
     >
-      {Icon && <Icon size={18} className="mr-2" />}
+      {Icon && <Icon size={18} className={!children ? '' : 'mr-2'} />}
       {children}
     </button>
   )
