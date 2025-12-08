@@ -13,6 +13,8 @@ import ModifyIngredient from '../pages/ModifyIngredient'
 import ViewIngredient from '../pages/ViewIngredient'
 import DishList from '../pages/DishList'
 import AddDish from '../pages/AddDish'
+import ModifyDish from '../pages/ModifyDish'
+import ViewDish from '../pages/ViewDish'
 import { Sidebar } from './Sidebar'
 
 export default function App() {
@@ -45,6 +47,8 @@ export default function App() {
           <Route path="/view-ingredient" element={<ViewIngredient />} />
           <Route path="/dish-list" element={<DishList />} />
           <Route path="/add-dish" element={<AddDish />} />
+          <Route path="/modify-dish" element={<ModifyDish />} />
+          <Route path="/view-dish" element={<ViewDish />} />
         </Routes>
       </div>
     </Router>

@@ -78,7 +78,21 @@ const DishList = () => {
   }
 
   const handleItemClick = (item: any) => {
-    navigate('/view-dish', { state: { item } })
+    // Convert the dish item to match ViewDish expected format
+    const dishData = {
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      image: item.image,
+      // Add empty/dummy values for optional fields
+      difficulty: '',
+      servings: 0,
+      cookTime: '',
+      prepTime: '',
+      ingredients: [],
+      instructions: []
+    }
+    navigate('/view-dish', { state: { item: dishData } })
   }
 
   const uniqueCategories = useMemo(() => {

@@ -10,6 +10,7 @@ interface ButtonProps {
     | 'pagination'
     | 'pagination-active'
     | 'icon'
+    | 'danger'
   icon?: React.ComponentType<{ size?: number | string; className?: string }>
   className?: string
   size?: 'full' | 'fit' | 'auto'

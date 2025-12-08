@@ -14,6 +14,17 @@ interface DishFormProps {
   submitLabel?: string
   readOnly?: boolean
   actions?: React.ReactNode
+  initialData?: {
+    dishName: string
+    category: string
+    difficulty: string
+    image: string | null
+    servings: number
+    cookTime: string
+    prepTime: string
+    ingredients: { id: number; name: string; quantity: string }[]
+    instructions: { id: number; title: string; description: string }[]
+  }
 }
 
 export const DishForm: React.FC<DishFormProps> = ({
@@ -21,14 +32,15 @@ export const DishForm: React.FC<DishFormProps> = ({
   onCancel,
   submitLabel = 'Xác nhận',
   readOnly = false,
-  actions
+  actions,
+  initialData
 }) => {
   const [dishName, setDishName] = useState('')
   const [dishNameError, setDishNameError] = useState('')
   const [category, setCategory] = useState('Chọn loại món ăn')
   const [difficulty, setDifficulty] = useState('Chọn độ khó')
   const [image, setImage] = useState<string | null>(null)
-  const [servings, setServings] = useState(0)
+  const [servings, setServings] = useState<string | number>('')
   const [cookTime, setCookTime] = useState('')
   const [prepTime, setPrepTime] = useState('')
 
@@ -43,6 +55,21 @@ export const DishForm: React.FC<DishFormProps> = ({
   const [ingredients, setIngredients] = useState<{ id: number; name: string; quantity: string }[]>([])
 
   const [instructions, setInstructions] = useState<{ id: number; title: string; description: string }[]>([])
+
+  // Initialize form with initialData when provided
+  useEffect(() => {
+    if (initialData) {
+      setDishName(initialData.dishName || '')
+      setCategory(initialData.category || 'Chọn loại món ăn')
+      setDifficulty(initialData.difficulty || 'Chọn độ khó')
+      setImage(initialData.image || null)
+      setServings(initialData.servings || 0)
+      setCookTime(initialData.cookTime || '')
+      setPrepTime(initialData.prepTime || '')
+      setIngredients(initialData.ingredients || [])
+      setInstructions(initialData.instructions || [])
+    }
+  }, [initialData])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -136,7 +163,7 @@ export const DishForm: React.FC<DishFormProps> = ({
     ])
   }
 
-  
+
   const handleAddCookInstruction = () => {
     const newId = instructions.length > 0 ? Math.max(...instructions.map(i => i.id)) + 1 : 1
     setInstructions([
@@ -185,6 +212,7 @@ export const DishForm: React.FC<DishFormProps> = ({
             value={dishName}
             onChange={(e) => setDishName(e.target.value)}
             error={dishNameError}
+            readOnly={readOnly}
           />
         </div>
 
@@ -204,7 +232,7 @@ export const DishForm: React.FC<DishFormProps> = ({
                   }`}
                   onClick={() => !readOnly && setIsCategoryOpen(!isCategoryOpen)}
                 >
-                  <span>{category}</span>
+                  <span className={category === 'Chưa có thông tin' ? 'text-gray-400 italic' : ''}>{category}</span>
                   {!readOnly && <ChevronDown size={20} className="text-gray-500" />}
                 </button>
 
@@ -240,7 +268,7 @@ export const DishForm: React.FC<DishFormProps> = ({
                   }`}
                   onClick={() => !readOnly && setIsDifficultyOpen(!isDifficultyOpen)}
                 >
-                  <span>{difficulty}</span>
+                  <span className={difficulty === 'Chưa có thông tin' ? 'text-gray-400 italic' : ''}>{difficulty}</span>
                   {!readOnly && <ChevronDown size={20} className="text-gray-500" />}
                 </button>
 
@@ -280,18 +308,22 @@ export const DishForm: React.FC<DishFormProps> = ({
                 alt="Selected"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-all">
-                <Button
-                  variant="primary"
-                  size="fit"
-                  icon={ImageIcon}
-                  onClick={handleImageUploadClick}
-                  className="!shadow-none"
-                >
-                  Thay đổi hình ảnh
-                </Button>
-              </div>
+              {!readOnly && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-all">
+                  <Button
+                    variant="primary"
+                    size="fit"
+                    icon={ImageIcon}
+                    onClick={handleImageUploadClick}
+                    className="!shadow-none"
+                  >
+                    Thay đổi hình ảnh
+                  </Button>
+                </div>
+              )}
             </div>
+          ) : readOnly ? (
+            <div className="text-gray-500">Không có hình ảnh</div>
           ) : (
             <Button
               variant="primary"
@@ -309,11 +341,13 @@ export const DishForm: React.FC<DishFormProps> = ({
             Số người ăn
           </label>
           <input
-            type="number"
+            type="text"
             id="servings"
             value={servings}
-            onChange={(e) => setServings(Number(e.target.value))}
-            className="mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none"
+            placeholder='0'
+            onChange={(e) => setServings(e.target.value)}
+            className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${servings === 'Chưa có thông tin' ? 'text-gray-400 font-normal italic' : ''}`}
+            readOnly={readOnly}
           />
         </div>
 
@@ -326,8 +360,10 @@ export const DishForm: React.FC<DishFormProps> = ({
               type="text"
               id="cookTime"
               value={cookTime}
+              placeholder='VD: 1 giờ'
               onChange={(e) => setCookTime(e.target.value)}
-              className="mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none"
+              className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${cookTime === 'Chưa có thông tin' ? 'text-gray-400 font-normal italic' : ''}`}
+              readOnly={readOnly}
             />
           </div>
           <div className="w-1/2">
@@ -337,9 +373,11 @@ export const DishForm: React.FC<DishFormProps> = ({
             <input
               type="text"
               id="prepTime"
+              placeholder='VD: 30 phút'
               value={prepTime}
               onChange={(e) => setPrepTime(e.target.value)}
-              className="mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none"
+              className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${prepTime === 'Chưa có thông tin' ? 'text-gray-400 font-normal italic' : ''}`}
+              readOnly={readOnly}
             />
           </div>
         </div>
@@ -351,60 +389,83 @@ export const DishForm: React.FC<DishFormProps> = ({
         <div>
           <h3 className="mb-4 text-lg font-bold text-gray-800">Nguyên liệu</h3>
           <div className="space-y-4">
-            {ingredients.map((ingredient, index) => (
-              <div key={ingredient.id} className="flex items-center space-x-4">
-                <span className="text-gray-600 w-8">{index + 1}.</span>
-                <div className="flex-1 relative" data-ingredient-dropdown>
-                  <button
-                    type="button"
-                    className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 flex justify-between items-center bg-white focus:outline-none focus:border-gray-400 text-left"
-                    onClick={() => toggleIngredientDropdown(ingredient.id)}
-                  >
-                    <span className="truncate">{ingredient.name}</span>
-                    <ChevronDown size={20} className="text-gray-500 flex-shrink-0" />
-                  </button>
-
-                  {openIngredientDropdowns.has(ingredient.id) && (
-                    <div className="absolute w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                      {ingredientOptions.map((option) => (
-                        <div
-                          key={option}
-                          className="p-3 hover:bg-gray-100 cursor-pointer text-gray-700"
-                          onClick={() => selectIngredient(ingredient.id, option)}
-                        >
-                          {option}
+            {ingredients.length === 0 && readOnly ? (
+              <div className="text-gray-500 italic p-4 text-center bg-gray-50 rounded-lg">
+                Chưa có thông tin nguyên liệu
+              </div>
+            ) : (
+              ingredients.map((ingredient, index) => (
+                <div key={ingredient.id} className="flex items-center space-x-4">
+                  <span className="text-gray-600 w-8">{index + 1}.</span>
+                  {readOnly ? (
+                    <>
+                      <div className="flex-1 p-2 border border-gray-300 rounded-lg bg-gray-50">
+                        <span className="text-gray-700">{ingredient.name}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="p-2 border border-gray-300 rounded-lg bg-gray-50">
+                          <span className="text-gray-700">{ingredient.quantity || 'Chưa có thông tin'}</span>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex-1 relative" data-ingredient-dropdown>
+                        <button
+                          type="button"
+                          className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 flex justify-between items-center bg-white focus:outline-none focus:border-gray-400 text-left"
+                          onClick={() => toggleIngredientDropdown(ingredient.id)}
+                        >
+                          <span className="truncate">{ingredient.name}</span>
+                          <ChevronDown size={20} className="text-gray-500 flex-shrink-0" />
+                        </button>
+
+                        {openIngredientDropdowns.has(ingredient.id) && (
+                          <div className="absolute w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                            {ingredientOptions.map((option) => (
+                              <div
+                                key={option}
+                                className="p-3 hover:bg-gray-100 cursor-pointer text-gray-700"
+                                onClick={() => selectIngredient(ingredient.id, option)}
+                              >
+                                {option}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <InputField
+                        type="text"
+                        value={ingredient.quantity}
+                        onChange={(e) =>
+                          handleIngredientChange(ingredient.id, 'quantity', e.target.value)
+                        }
+                        placeholder="Số lượng (VD: 100g)"
+                        containerClassName="flex-1"
+                      />
+                      <Button
+                        onClick={() => handleRemoveIngredient(ingredient.id)}
+                        variant="icon"
+                        icon={Trash2}
+                        className="!py-2 !px-2 !w-fit !h-fit"
+                      />
+                    </>
                   )}
                 </div>
-                <InputField
-                  type="text"
-                  value={ingredient.quantity}
-                  onChange={(e) =>
-                    handleIngredientChange(ingredient.id, 'quantity', e.target.value)
-                  }
-                  placeholder="Số lượng"
-                  containerClassName="flex-1"
-                />
-                <Button
-                  onClick={() => handleRemoveIngredient(ingredient.id)}
-                  variant="icon"
-                  icon={Trash2}
-                  className="!py-2 !px-2 !w-fit !h-fit"
-                />
-              </div>
-            ))}
+              ))
+            )}
           </div>
-          <div className="mt-4">
-            <Button
-              onClick={handleAddIngredient}
-              variant="secondary"
-              size="fit"
-              icon={Plus}
-              className="!mx-0"
-            />
-          </div>
+          {!readOnly && (
+            <div className="mt-4">
+              <Button
+                onClick={handleAddIngredient}
+                variant="secondary"
+                size="fit"
+                icon={Plus}
+                className="!mx-0"
+              />
+            </div>
+          )}
         </div>
 
         {/* Cooking Instructions */}
@@ -413,53 +474,75 @@ export const DishForm: React.FC<DishFormProps> = ({
 
           <div className="mb-6">
             <div className="space-y-2">
-              {instructions.map((instruction) => (
-                <div key={instruction.id} className="flex items-start space-x-4">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={instruction.title}
-                      onChange={(e) => handleInstructionChange(instruction.id, 'title', e.target.value)}
-                      placeholder="Nhập tên bước"
-                      className="font-bold text-gray-800 w-full border-0 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded px-2 py-1 placeholder:font-normal"
-                    />
-                    <textarea
-                      value={instruction.description}
-                      onChange={(e) => handleInstructionChange(instruction.id, 'description', e.target.value)}
-                      placeholder="Nhập mô tả chi tiết..."
-                      className="text-gray-600 w-full border-0 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded px-2 py-1 mt-1 min-h-[2.5rem] resize-none overflow-hidden"
-                      rows={1}
-                      style={{
-                        height: 'auto'
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = target.scrollHeight + 'px';
-                      }}
-                    />
-                  </div>
-                  <Button
-                    onClick={() => handleRemoveInstruction(instruction.id)}
-                    variant="icon"
-                    icon={Trash2}
-                    className="!py-2 !px-2 !w-fit !h-fit"
-                  />
+              {instructions.length === 0 && readOnly ? (
+                <div className="text-gray-500 italic p-4 text-center bg-gray-50 rounded-lg">
+                  Chưa có thông tin hướng dẫn nấu
                 </div>
-              ))}
+              ) : (
+                instructions.map((instruction) => (
+                  <div key={instruction.id} className="flex items-start space-x-4">
+                    <div className="flex-1">
+                      {readOnly ? (
+                        <>
+                          <div className="font-bold text-gray-800 px-2 py-1">
+                            {instruction.title || 'Chưa có thông tin'}
+                          </div>
+                          <div className="text-gray-600 px-2 py-1 mt-1 whitespace-pre-wrap">
+                            {instruction.description || 'Chưa có thông tin'}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            value={instruction.title}
+                            onChange={(e) => handleInstructionChange(instruction.id, 'title', e.target.value)}
+                            placeholder="Nhập tên bước"
+                            className="font-bold text-gray-800 w-full border-0 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded px-2 py-1 placeholder:font-normal"
+                          />
+                          <textarea
+                            value={instruction.description}
+                            onChange={(e) => handleInstructionChange(instruction.id, 'description', e.target.value)}
+                            placeholder="Nhập mô tả chi tiết..."
+                            className="text-gray-600 w-full border-0 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded px-2 py-1 mt-1 min-h-[2.5rem] resize-none overflow-hidden"
+                            rows={1}
+                            style={{
+                              height: 'auto'
+                            }}
+                            onInput={(e) => {
+                              const target = e.target as HTMLTextAreaElement;
+                              target.style.height = 'auto';
+                              target.style.height = target.scrollHeight + 'px';
+                            }}
+                          />
+                        </>
+                      )}
+                    </div>
+                    {!readOnly && (
+                      <Button
+                        onClick={() => handleRemoveInstruction(instruction.id)}
+                        variant="icon"
+                        icon={Trash2}
+                        className="!py-2 !px-2 !w-fit !h-fit"
+                      />
+                    )}
+                  </div>
+                ))
+              )}
             </div>
-            <div className="mt-4">
-              <Button
-                onClick={handleAddCookInstruction}
-                variant="secondary"
-                size="fit"
-                icon={Plus}
-                className="!mx-0"
-              />
-            </div>
+            {!readOnly && (
+              <div className="mt-4">
+                <Button
+                  onClick={handleAddCookInstruction}
+                  variant="secondary"
+                  size="fit"
+                  icon={Plus}
+                  className="!mx-0"
+                />
+              </div>
+            )}
           </div>
-
-          </div>
+        </div>
 
         {/* Action Buttons */}
         <div className="flex gap-6 justify-center mt-8">
@@ -472,7 +555,7 @@ export const DishForm: React.FC<DishFormProps> = ({
                 size="fit"
                 icon={Check}
                 onClick={handleSave}
-                className="!mx-0"
+                className="!mx-0 -mr-2"
               >
                 {submitLabel}
               </Button>
@@ -481,7 +564,7 @@ export const DishForm: React.FC<DishFormProps> = ({
                 size="fit"
                 icon={X}
                 onClick={onCancel}
-                className="!mx-0"
+                className="!mx-0 -ml-2"
               >
                 Hủy
               </Button>
