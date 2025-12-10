@@ -6,7 +6,7 @@ interface OtpInputProps {
   error?: boolean
 }
 
-export const OtpInput = ({
+export const OPTInput = ({
   length = 6,
   onComplete,
   error = false
@@ -91,7 +91,7 @@ export const OtpInput = ({
           type="text"
           maxLength={1}
           ref={(el) => (inputRefs.current[index] = el)}
-          value={digit}
+          value={digit ? "*" : ""}
           // To hide the numbers like the image (using asterisks), you could change type to "password"
           // But standard OTP UX usually shows the number.
           // To visually match the image's grey boxes:

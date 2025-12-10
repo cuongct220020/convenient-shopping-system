@@ -138,7 +138,7 @@ export default function Login() {
               {/* Logo & Header: ShopSense above Đăng nhập */}
               <div className="mb-6 sm:mb-8 text-center">
                 {/* ShopSense Text with precise S coloring */}
-                <h1 className="mb-3 sm:mb-4 text-2xl sm:text-3xl md:text-4xl font-bold">
+                <h1 className="mb-3 sm:mb-4 text-3xl sm:text-3xl md:text-4xl font-bold">
                   <span className="text-[#c93045]">S</span>
                   <span className="text-[#f7b686]">hop</span>
                   <span className="text-[#c93045]">S</span>
@@ -146,7 +146,7 @@ export default function Login() {
                 </h1>
 
                 {/* Đăng nhập Text */}
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#c93045]">Đăng nhập</h2>
+                <h2 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#c93045]">Đăng nhập</h2>
               </div>
 
               {/* Login Form with max-width constraint */}

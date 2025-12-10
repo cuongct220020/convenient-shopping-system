@@ -4,7 +4,7 @@ import { RefreshCcw } from 'lucide-react' // Importing an icon for the resend bu
 import loginBg from '../assets/login-bg.png'
 import { Button } from '../components/Button'
 import { BackButton } from '../components/BackButton'
-import { OtpInput } from '../components/OtpInput'
+import { OPTInput } from '../components/OPTInput'
 
 export default function LoginAuthentication() {
   const navigate = useNavigate()
@@ -64,7 +64,7 @@ export default function LoginAuthentication() {
 
                 {/* OTP Input Component */}
                 <div className="mb-8 px-2">
-                  <OtpInput length={6} onComplete={handleOtpComplete} />
+                  <OPTInput length={6} onComplete={handleOtpComplete} />
                 </div>
 
                 {/* Submit Button */}
