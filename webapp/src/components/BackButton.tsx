@@ -7,10 +7,6 @@ interface BackButtonProps {
   className?: string
 }
 
-/**
- * BackButton Component
- * A reusable back navigation button with customizable text and destination
- */
 export const BackButton = ({
   to = '/',
   text = 'Trang chủ',

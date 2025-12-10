@@ -175,7 +175,7 @@ export default function Register() {
       !confirmPasswordError
     ) {
       console.log('Registration attempt with:', formData)
-      navigate('/register-notification')
+      navigate('/auth/register-notification')
     }
   }
 
@@ -286,7 +286,7 @@ export default function Register() {
                 variant="secondary"
                 icon={LogIn}
                 size="fit"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/auth/login')}
               >
                 Đăng nhập
               </Button>

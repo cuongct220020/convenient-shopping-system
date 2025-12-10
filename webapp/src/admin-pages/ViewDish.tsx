@@ -10,15 +10,15 @@ const ViewDish = () => {
   const item = location.state?.item
 
   const handleBack = () => {
-    navigate('/dish-list')
+    navigate('/admin/dish-list')
   }
 
   const handleEdit = () => {
-    navigate('/modify-dish', { state: { item } })
+    navigate('/admin/modify-dish', { state: { item } })
   }
 
   const handleDelete = () => {
-    navigate('/dish-list')
+    navigate('/admin/dish-list')
   }
 
   if (!item) {

@@ -113,7 +113,7 @@ export default function Login() {
     if (!emailError && !passwordError) {
       console.log('Login attempt with:', email)
       // Add actual login logic here
-      navigate('/login-authentication')
+      navigate('/auth/login-authentication')
     }
   }
 

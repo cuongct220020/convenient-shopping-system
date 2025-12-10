@@ -25,7 +25,7 @@ export default function LoginAuthentication() {
     if (otpCode.length === 6) {
       console.log('Submitting OTP:', otpCode)
       // Add actual verification logic here
-      navigate('/forgot-password-2')
+      navigate('/auth/forgot-password-2')
     } else {
       alert('Vui lòng nhập đủ 6 số.')
     }
@@ -39,7 +39,7 @@ export default function LoginAuthentication() {
         {/* Header: Back Button */}
         <div className="my-4">
           {/* Using existing BackButton component */}
-          <BackButton to="/forgot-password-1" text="Quay lại" />
+          <BackButton to="/auth/forgot-password-1" text="Quay lại" />
         </div>
 
         {/* Scrollable Content Area */}

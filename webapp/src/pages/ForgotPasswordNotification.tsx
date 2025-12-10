@@ -6,7 +6,7 @@ export default function ForgotPasswordNotification() {
   const navigate = useNavigate()
 
   const handleClose = () => {
-    navigate('/login')
+    navigate('/auth/login')
   }
 
   return (

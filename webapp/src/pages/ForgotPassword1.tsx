@@ -78,7 +78,7 @@ export default function ForgotPassword() {
     if (!emailError) {
       console.log('Password reset request for:', email)
       // Add actual password reset logic here
-      navigate('/forgot-password-authentication')
+      navigate('/auth/forgot-password-authentication')
     }
   }
 
@@ -88,7 +88,7 @@ export default function ForgotPassword() {
       <div className="relative flex h-[812px] w-[375px] flex-col overflow-hidden bg-white shadow-2xl">
         {/* Header: Back Button */}
         <div className="my-4">
-          <BackButton to="/login" text="Quay lại" />
+          <BackButton to="/auth/login" text="Quay lại" />
         </div>
 
         {/* Scrollable Content Area */}

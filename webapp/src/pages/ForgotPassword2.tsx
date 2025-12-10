@@ -119,7 +119,7 @@ export default function ForgotPassword2() {
     if (!password1Error && !password2Error) {
       console.log('Password reset confirmed')
       // Add actual password reset logic here
-      navigate('/forgot-password-notification')
+      navigate('/auth/forgot-password-notification')
     }
   }
 
@@ -129,7 +129,7 @@ export default function ForgotPassword2() {
       <div className="relative flex h-[812px] w-[375px] flex-col overflow-hidden bg-white shadow-2xl">
         {/* Header: Back Button */}
         <div className="my-4">
-          <BackButton to="/forgot-password-authentication" text="Quay lại" />
+          <BackButton to="/auth/forgot-password-authentication" text="Quay lại" />
         </div>
 
         {/* Scrollable Content Area */}

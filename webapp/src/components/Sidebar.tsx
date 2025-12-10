@@ -20,7 +20,7 @@ export const Sidebar = () => {
         {/* Menu */}
         <nav className="space-y-6">
           <NavLink
-            to="/ingredient-list"
+            to="/admin/ingredient-list"
             className={({ isActive }) =>
               `flex cursor-pointer items-center justify-between font-medium transition-colors ${
                 isActive
@@ -34,7 +34,7 @@ export const Sidebar = () => {
           </NavLink>
 
           <NavLink
-            to="/dish-list"
+            to="/admin/dish-list"
             className={({ isActive }) =>
               `flex cursor-pointer items-center justify-between font-medium transition-colors ${
                 isActive

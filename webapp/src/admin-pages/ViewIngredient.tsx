@@ -10,15 +10,15 @@ const ViewIngredient = () => {
   const item = location.state?.item
 
   const handleBack = () => {
-    navigate('/ingredient-list')
+    navigate('/admin/ingredient-list')
   }
 
   const handleEdit = () => {
-    navigate('/modify-ingredient', { state: { item } })
+    navigate('/admin/modify-ingredient', { state: { item } })
   }
 
   const handleDelete = () => {
-    navigate('/ingredient-list')
+    navigate('/admin/ingredient-list')
   }
 
   if (!item) {

@@ -1,24 +1,23 @@
 import { useNavigate } from 'react-router-dom'
-import { DishForm } from '../components/DishForm'
-import DishList from './DishList'
+import { IngredientForm } from '../components/IngredientForm'
+import IngredientDashboard from './IngredientList'
 
-const AddDish = () => {
+const AddIngredient = () => {
   const navigate = useNavigate()
 
-  const handleContinue = (dishData: any) => {
-    console.log('Saving dish:', dishData)
-    navigate('/dish-list')
+  const handleContinue = () => {
+    navigate('/admin/ingredient-list')
   }
 
   const handleDraft = () => {
-    navigate('/dish-list')
+    navigate('/admin/ingredient-list')
   }
 
   return (
     <div className="relative h-full min-h-screen w-full overflow-hidden bg-gray-50">
-      {/* Background Layer: DishList blurred */}
+      {/* Background Layer: IngredientDashboard blurred */}
       <div className="absolute inset-0 z-0 flex flex-col blur-sm pointer-events-none">
-        <DishList />
+        <IngredientDashboard />
       </div>
 
       {/* Overlay Layer: Semi-transparent to make form pop */}
@@ -26,10 +25,10 @@ const AddDish = () => {
 
       {/* Foreground Layer: The Form */}
       <div className="relative z-20 flex min-h-screen items-center justify-center p-4">
-        <DishForm onSubmit={handleContinue} onCancel={handleDraft} />
+        <IngredientForm onSubmit={handleContinue} onCancel={handleDraft} />
       </div>
     </div>
   )
 }
 
-export default AddDish
+export default AddIngredient

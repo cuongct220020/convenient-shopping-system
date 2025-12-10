@@ -4,65 +4,65 @@ import { useNavigate } from 'react-router-dom'
 import Item from '../components/Item'
 import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
-// Assuming the uploaded image is placed in assets
-import hamburgerImg from '../assets/hamburger.png'
+import garlicImg from '../assets/garlic.png'
 
-// Dữ liệu giả lập cho Món ăn
+// Dữ liệu giả lập để hiển thị giống hình ảnh
 const possibleNames = [
-  'Hamburger',
-  'Pizza Hải Sản',
-  'Phở Bò',
-  'Bún Chả',
-  'Cơm Tấm',
-  'Mì Ý Sốt Kem',
-  'Gà Rán',
-  'Khoai Tây Chiên',
-  'Bánh Mì',
-  'Sushi',
-  'Sashimi',
-  'Lẩu Thái',
-  'Bò Bít Tết',
-  'Salad Nga',
-  'Nem Rán',
-  'Bánh Xèo',
-  'Trà Sữa',
-  'Cà Phê Sữa',
-  'Sinh Tố Bơ',
-  'Nước Ép Cam'
+  'Tỏi',
+  'Gừng',
+  'Hành lá',
+  'Ớt',
+  'Chanh',
+  'Cà chua',
+  'Khoai tây',
+  'Cà rốt',
+  'Bí đỏ',
+  'Thịt heo',
+  'Thịt bò',
+  'Thịt gà',
+  'Cá hồi',
+  'Tôm',
+  'Trứng vịt',
+  'Sữa tươi',
+  'Dầu ăn',
+  'Nước mắm',
+  'Đường',
+  'Muối',
+  'Nấm hương',
+  'Đậu phụ',
+  'Hạt tiêu',
+  'Mì gói',
+  'Gạo tẻ'
 ]
-
 const possibleCategories = [
-  'Món ăn vặt',
-  'Món chính',
-  'Món khai vị',
-  'Tráng miệng',
-  'Đồ uống',
-  'Đồ chay',
-  'Bánh ngọt'
+  'Gia vị',
+  'Rau củ',
+  'Thịt',
+  'Hải sản',
+  'Trứng & Sữa',
+  'Đồ khô',
+  'Thực phẩm đóng gói',
+  'Ngũ cốc'
 ]
 
-// Tạo 200 món ăn giả lập
-const allDishesData = Array(200)
+const allIngredientsData = Array(200)
   .fill(null)
   .map((_, index) => {
-    // Để giống screenshot, ta ưu tiên hiển thị Hamburger nhiều hơn một chút trong random
-    const isHamburger = Math.random() > 0.7
     const randomNameIndex = Math.floor(Math.random() * possibleNames.length)
     const randomCategoryIndex = Math.floor(
       Math.random() * possibleCategories.length
     )
-
     return {
       id: index,
-      name: isHamburger ? 'Hamburger' : possibleNames[randomNameIndex],
-      category: isHamburger ? 'Món ăn vặt' : possibleCategories[randomCategoryIndex],
-      image: hamburgerImg
+      name: possibleNames[randomNameIndex],
+      category: possibleCategories[randomCategoryIndex],
+      image: garlicImg
     }
   })
 
 const ITEMS_PER_PAGE = 20
 
-const DishList = () => {
+const IngredientDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [showFilter, setShowFilter] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -73,30 +73,16 @@ const DishList = () => {
     setShowFilter((prev) => !prev)
   }
 
-  const handleAddDishClick = () => {
-    navigate('/add-dish')
+  const handleAddIngredientClick = () => {
+    navigate('/admin/add-ingredient')
   }
 
   const handleItemClick = (item: any) => {
-    // Convert the dish item to match ViewDish expected format
-    const dishData = {
-      id: item.id,
-      name: item.name,
-      category: item.category,
-      image: item.image,
-      // Add empty/dummy values for optional fields
-      difficulty: '',
-      servings: 0,
-      cookTime: '',
-      prepTime: '',
-      ingredients: [],
-      instructions: []
-    }
-    navigate('/view-dish', { state: { item: dishData } })
+    navigate('/admin/view-ingredient', { state: { item } })
   }
 
   const uniqueCategories = useMemo(() => {
-    const categories = new Set(allDishesData.map((item) => item.category))
+    const categories = new Set(allIngredientsData.map((item) => item.category))
     return Array.from(categories)
   }, [])
 
@@ -116,7 +102,7 @@ const DishList = () => {
 
   const { totalPages, currentItems, startIndex, endIndex, totalItems } =
     useMemo(() => {
-      let filteredData = allDishesData
+      let filteredData = allIngredientsData
 
       if (selectedCategories.length > 0) {
         filteredData = filteredData.filter((item) =>
@@ -147,18 +133,19 @@ const DishList = () => {
     }, [currentPage, selectedCategories, searchQuery])
 
   return (
-        <main
-          className="flex flex-1 flex-col overflow-y-auto p-8"
-        >      {/* Header */}
+    <main
+      className="flex flex-1 flex-col overflow-y-auto p-8"
+    >
+      {/* Header */}
       <div className="mb-8 flex flex-col space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">
-            Danh mục món ăn
+            Danh mục nguyên liệu
           </h2>
 
           <div className="flex items-center space-x-4">
-            <Button variant="primary" icon={Plus} size="fit" onClick={handleAddDishClick}>
-              Thêm món ăn
+            <Button variant="primary" icon={Plus} size="fit" onClick={handleAddIngredientClick}>
+              Thêm nguyên liệu
             </Button>
 
             <button
@@ -220,7 +207,7 @@ const DishList = () => {
             <span className="font-bold">
               {startIndex} - {endIndex}
             </span>{' '}
-            / {totalItems} món ăn
+            / {totalItems} nguyên liệu
           </span>
         </div>
       </div>
@@ -240,7 +227,7 @@ const DishList = () => {
         </div>
       ) : (
         <div className="flex h-64 items-center justify-center text-gray-500">
-          Không tìm thấy món ăn nào.
+          Không tìm thấy nguyên liệu nào.
         </div>
       )}
 
@@ -255,4 +242,4 @@ const DishList = () => {
   )
 }
 
-export default DishList
+export default IngredientDashboard

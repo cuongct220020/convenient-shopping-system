@@ -9,11 +9,11 @@ const ModifyDish = () => {
 
   const handleContinue = (dishData: any) => {
     console.log('Updating dish:', dishData)
-    navigate('/dish-list')
+    navigate('/admin/dish-list')
   }
 
   const handleDraft = () => {
-    navigate('/dish-list')
+    navigate('/admin/dish-list')
   }
 
   if (!item) {

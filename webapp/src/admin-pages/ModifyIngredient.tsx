@@ -9,11 +9,11 @@ const ModifyIngredient = () => {
 
   const handleSave = () => {
     // Here you would typically save the changes
-    navigate('/ingredient-list')
+    navigate('/admin/ingredient-list')
   }
 
   const handleCancel = () => {
-    navigate('/view-ingredient', { state: { item } })
+    navigate('/admin/view-ingredient', { state: { item } })
   }
 
   if (!item) {

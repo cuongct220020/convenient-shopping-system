@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom' // Removed useNavigate
+import { useLocation, useNavigate } from 'react-router-dom'
 import { RefreshCcw } from 'lucide-react' // Importing an icon for the resend button
 import loginBg from '../assets/login-bg.png'
 import { Button } from '../components/Button'
@@ -7,7 +7,7 @@ import { BackButton } from '../components/BackButton'
 import { OtpInput } from '../components/OtpInput'
 
 export default function LoginAuthentication() {
-  // const navigate = useNavigate() // Removed this line
+  const navigate = useNavigate()
   const location = useLocation()
   const [otpCode, setOtpCode] = useState('')
 
@@ -26,7 +26,7 @@ export default function LoginAuthentication() {
       console.log('Submitting OTP:', otpCode)
       // Add actual verification logic here
       alert(`Xác thực thành công cho tài khoản: ${username}`)
-      // navigate('/dashboard');
+      navigate('/admin')
     } else {
       alert('Vui lòng nhập đủ 6 số.')
     }
@@ -40,7 +40,7 @@ export default function LoginAuthentication() {
         {/* Header: Back Button */}
         <div className="my-4">
           {/* Using existing BackButton component */}
-          <BackButton to="/login" text="Quay lại" />
+          <BackButton to="/auth/login" text="Quay lại" />
         </div>
 
         {/* Scrollable Content Area */}
