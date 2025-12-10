@@ -78,66 +78,73 @@ export default function ForgotPassword() {
     if (!emailError) {
       console.log('Password reset request for:', email)
       // Add actual password reset logic here
-      navigate('/auth/forgot-password-authentication')
+      navigate('/user/forgot-password-authentication')
     }
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-100 font-sans">
-      {/* Mobile Container */}
-      <div className="relative flex h-[812px] w-[375px] flex-col overflow-hidden bg-white shadow-2xl">
-        {/* Header: Back Button */}
-        <div className="my-4">
-          <BackButton to="/auth/login" text="Quay lại" />
-        </div>
+    <div className="relative min-h-screen w-screen overflow-hidden bg-gray-100 font-sans">
+      {/* Background gradient/image full screen */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="absolute inset-0 bg-black/5"></div>
+      </div>
 
-        {/* Scrollable Content Area */}
-        <div className="no-scrollbar relative z-10 flex-1 overflow-y-auto">
-          <div className="px-6 pb-8 pt-2">
-            {/* Title */}
-            <div className="mb-4">
-              <h2 className="mb-8 text-center text-3xl font-bold text-[#c93045]">
-                Đặt lại mật khẩu
-              </h2>
-              <p className="text-sm text-gray-600">
-                Nhập email hoặc tên tài khoản của bạn.
-              </p>
-            </div>
+      {/* Main Content Container */}
+      <div className="relative flex min-h-screen w-full">
+        <div className="relative flex w-full h-screen flex-col overflow-hidden bg-white">
+          {/* Header: Back Button */}
+          <div className="my-4">
+            <BackButton to="/user/login" text="Đăng nhập" />
+          </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <InputField
-                  id="email"
-                  label="Email"
-                  subLabel="Tên đăng nhập"
-                  placeholder="email@gmail.com"
-                  value={email}
-                  onChange={handleEmailChange}
-                  onBlur={handleEmailBlur}
-                  error={errors.email}
-                />
+          {/* Scrollable Content Area */}
+          <div className="no-scrollbar relative z-10 flex-1 overflow-y-auto">
+            <div className="px-4 sm:px-6 md:px-8 pb-8 pt-2">
+              {/* Header: Đặt lại mật khẩu */}
+              <div className="mb-6 sm:mb-8 text-center">
+                {/* Đặt lại mật khẩu Text */}
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#c93045]">Đặt lại mật khẩu</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Nhập email hoặc tên tài khoản của bạn.
+                </p>
               </div>
 
-              <Button variant="primary" icon={Send} size="fit" type="submit">
-                Xác nhận
-              </Button>
-            </form>
+              {/* Form with max-width constraint */}
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 max-w-sm mx-auto">
+                <div>
+                  <InputField
+                    id="email"
+                    label="Email"
+                    subLabel="Tên đăng nhập"
+                    placeholder="email@gmail.com"
+                    value={email}
+                    onChange={handleEmailChange}
+                    onBlur={handleEmailBlur}
+                    error={errors.email}
+                  />
+                </div>
 
-            {/* Bottom Spacer for scrolling over background */}
-            <div className="h-20"></div>
+                <Button variant="primary" icon={Send} size="fit" type="submit">
+                  Xác nhận
+                </Button>
+              </form>
+
+              {/* Bottom Spacer for scrolling over background */}
+              <div className="h-16 sm:h-20"></div>
+            </div>
           </div>
-        </div>
 
-        {/* Background Image Decoration (Bottom) */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-80">
-          {/* Using a gradient overlay to fade image into white */}
-          <div className="absolute inset-0 z-10 bg-gradient-to-t from-white/10 via-white/40 to-white"></div>
-          {/* Food background placeholder */}
-          <img
-            src={loginBg}
-            alt="Food Background"
-            className="size-full object-cover opacity-70"
-          />
+          {/* Background Image Decoration (Bottom) */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-64 sm:h-80 md:h-96">
+            {/* Using a gradient overlay to fade image into white */}
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-white/10 via-white/40 to-white"></div>
+            {/* Food background placeholder */}
+            <img
+              src={loginBg}
+              alt="Food Background"
+              className="size-full object-cover opacity-70"
+            />
+          </div>
         </div>
       </div>
     </div>

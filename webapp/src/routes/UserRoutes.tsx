@@ -1,5 +1,4 @@
 import { Routes, Route } from 'react-router-dom'
-import UserLayout from '../layouts/UserLayout'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import ForgotPassword1 from '../pages/ForgotPassword1'
@@ -11,18 +10,16 @@ import ForgotPasswordAuthentication from '../pages/ForgotPasswordAuthentication'
 
 export default function UserRoutes() {
   return (
-    <UserLayout>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password-1" element={<ForgotPassword1 />} />
-        <Route path="/forgot-password-2" element={<ForgotPassword2 />} />
-        <Route path="/register-notification" element={<RegisterNotification />} />
-        <Route path="/forgot-password-notification" element={<ForgotPasswordNotification />} />
-        <Route path="/login-authentication" element={<LoginAuthentication />} />
-        <Route path="/forgot-password-authentication" element={<ForgotPasswordAuthentication />} />
-      </Routes>
-    </UserLayout>
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password-1" element={<ForgotPassword1 />} />
+      <Route path="/forgot-password-2" element={<ForgotPassword2 />} />
+      <Route path="/register-notification" element={<RegisterNotification />} />
+      <Route path="/forgot-password-notification" element={<ForgotPasswordNotification />} />
+      <Route path="/login-authentication" element={<LoginAuthentication />} />
+      <Route path="/forgot-password-authentication" element={<ForgotPasswordAuthentication />} />
+    </Routes>
   )
 }
