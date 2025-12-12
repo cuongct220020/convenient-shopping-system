@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react'
-import { Search, Plus, Filter, LayoutGrid } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Search, Plus, Filter, LayoutGrid, Check, Edit, Trash2 } from 'lucide-react'
 import Item from '../components/Item'
 import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
+import { DishForm } from '../components/DishForm'
 // Assuming the uploaded image is placed in assets
 import hamburgerImg from '../assets/hamburger.png'
 
@@ -67,32 +67,49 @@ const DishList = () => {
   const [showFilter, setShowFilter] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const navigate = useNavigate()
+  const [showAddDishForm, setShowAddDishForm] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
 
   const handleToggleFilter = () => {
     setShowFilter((prev) => !prev)
   }
 
   const handleAddDishClick = () => {
-    navigate('/admin/add-dish')
+    setShowAddDishForm(true)
+  }
+
+  const handleDishFormSubmit = (dishData: any) => {
+    console.log('Saving dish:', dishData)
+    setShowAddDishForm(false)
+  }
+
+  const handleDishFormCancel = () => {
+    setShowAddDishForm(false)
   }
 
   const handleItemClick = (item: any) => {
-    // Convert the dish item to match ViewDish expected format
-    const dishData = {
-      id: item.id,
-      name: item.name,
-      category: item.category,
-      image: item.image,
-      // Add empty/dummy values for optional fields
-      difficulty: '',
-      servings: 0,
-      cookTime: '',
-      prepTime: '',
-      ingredients: [],
-      instructions: []
-    }
-    navigate('/admin/view-dish', { state: { item: dishData } })
+    setSelectedItem(item)
+    setViewMode('view')
+  }
+
+  const handleEditClick = () => {
+    setViewMode('edit')
+  }
+
+  const handleSaveClick = () => {
+    // Here you would typically save the changes
+    closeModal()
+  }
+
+  const handleDeleteClick = () => {
+    // Here you would typically delete the item
+    closeModal()
+  }
+
+  const closeModal = () => {
+    setSelectedItem(null)
+    setViewMode(null)
   }
 
   const uniqueCategories = useMemo(() => {
@@ -254,6 +271,106 @@ const DishList = () => {
           className=""
         />
       </div>
+
+      {/* Add Dish Form Modal */}
+      {showAddDishForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Background overlay */}
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={handleDishFormCancel}
+          />
+
+          {/* Form container */}
+          <div className="relative z-10 flex items-center justify-center p-4">
+            <DishForm
+              onSubmit={handleDishFormSubmit}
+              onCancel={handleDishFormCancel}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* View/Edit Dish Modal */}
+      {selectedItem && viewMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Background overlay */}
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={closeModal}
+          />
+
+          {/* Form container */}
+          <div className="relative z-10 flex items-center justify-center p-4">
+            {viewMode === 'view' && (
+              <DishForm
+                initialData={{
+                  dishName: selectedItem.name || 'Chưa có thông tin',
+                  category: selectedItem.category || 'Chưa có thông tin',
+                  difficulty: selectedItem.difficulty || 'Chưa có thông tin',
+                  image: selectedItem.image || null,
+                  servings: selectedItem.servings || 'Chưa có thông tin',
+                  cookTime: selectedItem.cookTime || 'Chưa có thông tin',
+                  prepTime: selectedItem.prepTime || 'Chưa có thông tin',
+                  ingredients: selectedItem.ingredients && selectedItem.ingredients.length > 0 ? selectedItem.ingredients : [],
+                  instructions: selectedItem.instructions && selectedItem.instructions.length > 0 ? selectedItem.instructions : []
+                }}
+                readOnly={true}
+                actions={
+                  <>
+                    <Button
+                      variant="primary"
+                      size="fit"
+                      icon={Check}
+                      onClick={closeModal}
+                      className="mx-0 -mr-1"
+                    >
+                      Quay lại
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="fit"
+                      icon={Edit}
+                      className="mx-0"
+                      onClick={handleEditClick}
+                    >
+                      Chỉnh sửa
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="fit"
+                      icon={Trash2}
+                      className="mx-0"
+                      onClick={handleDeleteClick}
+                    >
+                      Xóa
+                    </Button>
+                  </>
+                }
+                onSubmit={() => {}} // Empty function since form is read-only
+                onCancel={closeModal}
+              />
+            )}
+            {viewMode === 'edit' && (
+              <DishForm
+                initialData={{
+                  dishName: selectedItem.name || '',
+                  category: selectedItem.category || '',
+                  difficulty: selectedItem.difficulty || '',
+                  image: selectedItem.image || null,
+                  servings: selectedItem.servings || 0,
+                  cookTime: selectedItem.cookTime || '',
+                  prepTime: selectedItem.prepTime || '',
+                  ingredients: selectedItem.ingredients || [],
+                  instructions: selectedItem.instructions || []
+                }}
+                onSubmit={handleSaveClick}
+                onCancel={() => setViewMode('view')}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react'
-import { Search, Plus, Filter, LayoutGrid } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Search, Plus, Filter, LayoutGrid, Check, Edit, Trash2 } from 'lucide-react'
 import Item from '../components/Item'
 import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
+import { DishForm } from '../components/DishForm'
+import { IngredientForm } from '../components/IngredientForm'
 import garlicImg from '../assets/garlic.png'
 
 // Dữ liệu giả lập để hiển thị giống hình ảnh
@@ -67,18 +68,60 @@ const IngredientDashboard = () => {
   const [showFilter, setShowFilter] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const navigate = useNavigate()
+  const [showAddDishForm, setShowAddDishForm] = useState(false)
+  const [showAddIngredientForm, setShowAddIngredientForm] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
 
   const handleToggleFilter = () => {
     setShowFilter((prev) => !prev)
   }
 
   const handleAddIngredientClick = () => {
-    navigate('/admin/add-ingredient')
+    setShowAddIngredientForm(true)
+  }
+
+  const handleIngredientFormSubmit = () => {
+    // In a real app, you would collect form data and save it
+    console.log('Saving ingredient')
+    setShowAddIngredientForm(false)
+  }
+
+  const handleIngredientFormCancel = () => {
+    setShowAddIngredientForm(false)
+  }
+
+  const handleDishFormSubmit = (dishData: any) => {
+    console.log('Saving dish:', dishData)
+    setShowAddDishForm(false)
+  }
+
+  const handleDishFormCancel = () => {
+    setShowAddDishForm(false)
   }
 
   const handleItemClick = (item: any) => {
-    navigate('/admin/view-ingredient', { state: { item } })
+    setSelectedItem(item)
+    setViewMode('view')
+  }
+
+  const handleEditClick = () => {
+    setViewMode('edit')
+  }
+
+  const handleSaveClick = () => {
+    // Here you would typically save the changes
+    closeModal()
+  }
+
+  const handleDeleteClick = () => {
+    // Here you would typically delete the item
+    closeModal()
+  }
+
+  const closeModal = () => {
+    setSelectedItem(null)
+    setViewMode(null)
   }
 
   const uniqueCategories = useMemo(() => {
@@ -240,6 +283,104 @@ const IngredientDashboard = () => {
           className=""
         />
       </div>
+
+      {/* Add Dish Form Modal */}
+      {showAddDishForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Background overlay */}
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={handleDishFormCancel}
+          />
+
+          {/* Form container */}
+          <div className="relative z-10 flex items-center justify-center p-4">
+            <DishForm
+              onSubmit={handleDishFormSubmit}
+              onCancel={handleDishFormCancel}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Add Ingredient Form Modal */}
+      {showAddIngredientForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Background overlay */}
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={handleIngredientFormCancel}
+          />
+
+          {/* Form container */}
+          <div className="relative z-10 flex items-center justify-center p-4">
+            <IngredientForm
+              onSubmit={handleIngredientFormSubmit}
+              onCancel={handleIngredientFormCancel}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* View/Edit Ingredient Modal */}
+      {selectedItem && viewMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Background overlay */}
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={closeModal}
+          />
+
+          {/* Form container */}
+          <div className="relative z-10 flex items-center justify-center p-4">
+            {viewMode === 'view' && (
+              <IngredientForm
+                initialData={selectedItem}
+                readOnly={true}
+                actions={
+                  <>
+                    <Button
+                      variant="primary"
+                      size="fit"
+                      icon={Check}
+                      onClick={closeModal}
+                      className="mx-0"
+                    >
+                      Quay lại
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="fit"
+                      icon={Edit}
+                      className="mx-0"
+                      onClick={handleEditClick}
+                    >
+                      Chỉnh sửa
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="fit"
+                      icon={Trash2}
+                      className="mx-0"
+                      onClick={handleDeleteClick}
+                    >
+                      Xóa
+                    </Button>
+                  </>
+                }
+              />
+            )}
+            {viewMode === 'edit' && (
+              <IngredientForm
+                initialData={selectedItem}
+                onSubmit={handleSaveClick}
+                onCancel={() => setViewMode('view')}
+                submitLabel="Lưu"
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

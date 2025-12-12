@@ -9,7 +9,7 @@ interface BackButtonProps {
 
 export const BackButton = ({
   to = '/',
-  text = 'Trang chủ',
+  text = '',
   className = ''
 }: BackButtonProps) => {
   return (
