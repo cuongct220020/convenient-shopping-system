@@ -53,14 +53,14 @@ export default function LoginAuthentication() {
               {/* Header: Xác thực tài khoản */}
               <div className="mb-6 sm:mb-8 text-center">
                 {/* Xác thực tài khoản Text */}
-                <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#c93045]">Xác thực tài khoản</h1>
+                <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Xác thực tài khoản</h1>
               </div>
 
               <form onSubmit={handleSubmit} className="max-w-sm mx-auto">
                 {/* Description Text */}
                 <p className="mb-6 text-justify text-sm leading-relaxed text-gray-700">
                   Xin chào{' '}
-                  <span className="font-bold text-[#c93045]">username</span>, bạn
+                  <span className="font-bold text-[#C3485C]">username</span>, bạn
                   đã đăng nhập thành công. Bạn cần xác nhận tài khoản để tiếp tục
                   sử dụng ứng dụng. Vui lòng nhập mã 6 chữ số được gửi đến email
                   của bạn.
@@ -81,7 +81,7 @@ export default function LoginAuthentication() {
                 {/* Resend Timer */}
                 <button
                   type="button"
-                  className="flex w-full items-center justify-center text-sm text-gray-500 transition-colors hover:text-[#c93045]"
+                  className="flex w-full items-center justify-center text-sm text-gray-500 transition-colors hover:text-[#C3485C]"
                 >
                   <RefreshCcw size={16} className="mr-2" />
                   <span>Gửi lại mã 00:59</span>

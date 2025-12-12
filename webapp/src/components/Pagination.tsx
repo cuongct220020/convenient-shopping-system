@@ -57,7 +57,7 @@ export const Pagination = ({
       {showPreviousNext && (
         <button
           onClick={() => handlePageChange(currentPage - 1)}
-          className={`flex items-center px-3 py-1 text-sm font-semibold hover:text-[#c93045] disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`flex items-center px-3 py-1 text-sm font-semibold hover:text-[#C3485C] disabled:cursor-not-allowed disabled:opacity-50 ${
             currentPage === 1 ? 'cursor-not-allowed opacity-50' : ''
           }`}
         >
@@ -86,7 +86,7 @@ export const Pagination = ({
           onClick={() => handlePageChange(page)}
           className={`w-8 h-8 flex items-center justify-center rounded text-sm font-medium transition-all duration-200 ${
             page === currentPage
-              ? 'bg-[#c93045] text-white hover:bg-[#b02a3d] shadow-md shadow-red-200'
+              ? 'bg-[#C3485C] text-white hover:bg-[#b02a3d] shadow-md shadow-red-200'
               : 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-rose-500'
           }`}
         >

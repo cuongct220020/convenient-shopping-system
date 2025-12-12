@@ -43,7 +43,7 @@ export default function LoginAuthentication() {
         <div className="relative flex w-full h-screen flex-col overflow-hidden bg-white">
           {/* Header: Back Button */}
           <div className="my-4">
-            <BackButton to="/user/forgot-password-1" text="Quay lại" />
+            <BackButton to="/user/forgot-password-email" text="Quay lại" />
           </div>
 
           {/* Scrollable Content Area */}
@@ -52,7 +52,7 @@ export default function LoginAuthentication() {
               {/* Header: Xác thực email */}
               <div className="mb-6 sm:mb-8 text-center">
                 {/* Xác thực email Text */}
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#c93045]">Xác thực email</h1>
+                <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Xác thực email</h1>
               </div>
 
               <form onSubmit={handleSubmit} className="max-w-sm mx-auto">
@@ -77,7 +77,7 @@ export default function LoginAuthentication() {
                 {/* Resend Timer */}
                 <button
                   type="button"
-                  className="flex w-full items-center justify-center text-sm text-gray-500 transition-colors hover:text-[#c93045]"
+                  className="flex w-full items-center justify-center text-sm text-gray-500 transition-colors hover:text-[#C3485C]"
                 >
                   <RefreshCcw size={16} className="mr-2" />
                   <span>Gửi lại mã 00:59</span>

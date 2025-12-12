@@ -139,14 +139,14 @@ export default function Login() {
               <div className="mb-6 sm:mb-8 text-center">
                 {/* ShopSense Text with precise S coloring */}
                 <h1 className="mb-3 sm:mb-4 text-3xl sm:text-3xl md:text-4xl font-bold">
-                  <span className="text-[#c93045]">S</span>
+                  <span className="text-[#C3485C]">S</span>
                   <span className="text-[#f7b686]">hop</span>
-                  <span className="text-[#c93045]">S</span>
+                  <span className="text-[#C3485C]">S</span>
                   <span className="text-[#f7b686]">ense</span>
                 </h1>
 
                 {/* Đăng nhập Text */}
-                <h2 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#c93045]">Đăng nhập</h2>
+                <h2 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Đăng nhập</h2>
               </div>
 
               {/* Login Form with max-width constraint */}
@@ -180,7 +180,7 @@ export default function Login() {
                 <div className="text-right">
                   <Link
                     to="/user/forgot-password-email"
-                    className="text-xs sm:text-sm font-bold text-[#c93045] hover:underline"
+                    className="text-xs sm:text-sm font-bold text-[#C3485C] hover:underline"
                   >
                     Quên mật khẩu?
                   </Link>

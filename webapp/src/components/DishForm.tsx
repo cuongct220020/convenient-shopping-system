@@ -294,7 +294,7 @@ export const DishForm: React.FC<DishFormProps> = ({
           </div>
         </div>
 
-        <div className="bg-[#fcece9] rounded-lg aspect-square flex items-center justify-center relative overflow-hidden">
+        <div className="bg-[#FFD7C1] rounded-lg aspect-square flex items-center justify-center relative overflow-hidden">
           <input
             type="file"
             ref={fileInputRef}

@@ -204,7 +204,7 @@ export default function Register() {
               {/* Header: Đăng ký */}
               <div className="mb-6 sm:mb-8 text-center">
                 {/* Đăng ký Text */}
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#c93045]">Đăng ký tài khoản</h1>
+                <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Đăng ký tài khoản</h1>
               </div>
 
               {/* Form with max-width constraint */}

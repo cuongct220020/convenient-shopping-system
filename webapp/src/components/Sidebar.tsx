@@ -24,8 +24,8 @@ export const Sidebar = () => {
             className={({ isActive }) =>
               `flex cursor-pointer items-center justify-between font-medium transition-colors ${
                 isActive
-                  ? 'text-[#c93045] hover:text-[#b02a3d]'
-                  : 'text-gray-600 hover:text-[#c93045]'
+                  ? 'text-[#C3485C] hover:text-[#b02a3d]'
+                  : 'text-gray-600 hover:text-[#C3485C]'
               }`
             }
           >
@@ -38,8 +38,8 @@ export const Sidebar = () => {
             className={({ isActive }) =>
               `flex cursor-pointer items-center justify-between font-medium transition-colors ${
                 isActive
-                  ? 'text-[#c93045] hover:text-[#b02a3d]'
-                  : 'text-gray-600 hover:text-[#c93045]'
+                  ? 'text-[#C3485C] hover:text-[#b02a3d]'
+                  : 'text-gray-600 hover:text-[#C3485C]'
               }`
             }
           >
@@ -47,11 +47,11 @@ export const Sidebar = () => {
             <ChevronRight size={18} />
           </NavLink>
 
-          <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#c93045]">
+          <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#C3485C]">
             Quản lý người dùng
           </div>
 
-          <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#c93045]">
+          <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#C3485C]">
             Quản lý nhóm
           </div>
         </nav>

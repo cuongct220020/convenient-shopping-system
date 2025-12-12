@@ -46,7 +46,7 @@ export const Button = ({
     primary:
       'bg-[#C3485C] text-white hover:bg-[#b02a3d] shadow-md shadow-red-200',
     secondary:
-      'bg-[#fcece9] text-[#C3485C] border border-[#eeb4b4] hover:bg-[#fbd9d6]',
+      'bg-[#FFD7C1] text-[#C3485C] border border-[#C3485C] hover:bg-[#fbd9d6]',
     text: 'bg-transparent text-[#C3485C] hover:underline text-xs font-semibold w-auto ml-auto block mb-6',
     icon:
       'bg-gray-200 text-gray-600 hover:bg-gray-300'

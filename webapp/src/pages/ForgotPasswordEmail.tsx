@@ -103,7 +103,7 @@ export default function ForgotPassword() {
               {/* Header: Đặt lại mật khẩu */}
               <div className="mb-6 sm:mb-8 text-center">
                 {/* Đặt lại mật khẩu Text */}
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#c93045]">Đặt lại mật khẩu</h1>
+                <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Đặt lại mật khẩu</h1>
                 <p className="mt-2 text-sm text-gray-600">
                   Nhập email hoặc tên tài khoản của bạn.
                 </p>

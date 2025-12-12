@@ -36,7 +36,7 @@ export function NotificationCard({
   onButton2Click,
   button2Variant = 'secondary',
   button2Icon,
-  titleColor = 'text-[#c93045]',
+  titleColor = 'text-[#C3485C]',
   messageColor = 'text-gray-600'
 }: NotificationCardProps) {
   const Icon = icon
