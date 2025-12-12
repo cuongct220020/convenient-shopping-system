@@ -9,9 +9,9 @@ export const Sidebar = () => {
         {/* Logo */}
         <div className="mb-10">
           <h1 className="text-2xl font-bold">
-            <span className="text-[#c93045]">S</span>
+            <span className="text-[#C3485C]">S</span>
             <span className="text-[#f7b686]">hop</span>
-            <span className="text-[#c93045]">S</span>
+            <span className="text-[#C3485C]">S</span>
             <span className="text-[#f7b686]">ense</span> Admin
           </h1>
           <div className="w-46 mx-auto mt-4 h-0.5 bg-gray-200"></div>

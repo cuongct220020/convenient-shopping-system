@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from './Button'
 
 interface PaginationProps {
   currentPage: number
@@ -70,41 +69,41 @@ export const Pagination = ({
       {/* Show first page and ellipsis if needed */}
       {startPage > 1 && (
         <>
-          <Button
-            variant="pagination"
+          <button
             onClick={() => handlePageChange(1)}
-            size="auto"
+            className="w-8 h-8 flex items-center justify-center rounded text-sm font-medium bg-transparent text-gray-600 hover:bg-gray-100 hover:text-rose-500 transition-all duration-200"
           >
             1
-          </Button>
+          </button>
           {startPage > 2 && <span className="px-2">...</span>}
         </>
       )}
 
       {/* Visible page numbers */}
       {pages.map((page) => (
-        <Button
+        <button
           key={page}
-          variant={page === currentPage ? 'pagination-active' : 'pagination'}
           onClick={() => handlePageChange(page)}
-          size="auto"
-          className={page === currentPage ? 'shadow-md' : ''}
+          className={`w-8 h-8 flex items-center justify-center rounded text-sm font-medium transition-all duration-200 ${
+            page === currentPage
+              ? 'bg-[#c93045] text-white hover:bg-[#b02a3d] shadow-md shadow-red-200'
+              : 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-rose-500'
+          }`}
         >
           {page}
-        </Button>
+        </button>
       ))}
 
       {/* Show last page and ellipsis if needed */}
       {endPage < totalPages && (
         <>
           {endPage < totalPages - 1 && <span className="px-2">...</span>}
-          <Button
-            variant="pagination"
+          <button
             onClick={() => handlePageChange(totalPages)}
-            size="auto"
+            className="w-8 h-8 flex items-center justify-center rounded text-sm font-medium bg-transparent text-gray-600 hover:bg-gray-100 hover:text-rose-500 transition-all duration-200"
           >
             {totalPages}
-          </Button>
+          </button>
         </>
       )}
 

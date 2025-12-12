@@ -179,7 +179,7 @@ export default function Login() {
 
                 <div className="text-right">
                   <Link
-                    to="/user/forgot-password-1"
+                    to="/user/forgot-password-email"
                     className="text-xs sm:text-sm font-bold text-[#c93045] hover:underline"
                   >
                     Quên mật khẩu?

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Trash2, Plus, Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react'
 import { Button } from './Button' // Assuming Button component exists
 import { InputField } from './InputField'
+import { FormInput } from './FormInput'
 
 // Mock data for dropdowns
 const categories = ['Đồ ăn vặt', 'Món chính', 'Món khai vị', 'Tráng miệng', 'Đồ uống']
@@ -336,48 +337,40 @@ export const DishForm: React.FC<DishFormProps> = ({
           )}
         </div>
 
-        <div>
-          <label htmlFor="servings" className="block text-sm font-bold text-gray-700">
-            Số người ăn
-          </label>
-          <input
-            type="text"
-            id="servings"
-            value={servings}
-            placeholder='0'
-            onChange={(e) => setServings(e.target.value)}
-            className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${servings === 'Chưa có thông tin' ? 'text-gray-400 font-normal italic' : ''}`}
-            readOnly={readOnly}
-          />
-        </div>
+        <FormInput
+          label="Số người ăn"
+          id="servings"
+          type="text"
+          value={servings}
+          placeholder="0"
+          onChange={(e) => setServings(e.target.value)}
+          readOnly={readOnly}
+          showEmptyState={false}
+        />
 
         <div className="flex space-x-4">
           <div className="w-1/2">
-            <label htmlFor="cookTime" className="block text-sm font-bold text-gray-700">
-              Thời gian nấu
-            </label>
-            <input
-              type="text"
+            <FormInput
+              label="Thời gian nấu"
               id="cookTime"
+              type="text"
               value={cookTime}
-              placeholder='VD: 1 giờ'
+              placeholder="VD: 1 giờ"
               onChange={(e) => setCookTime(e.target.value)}
-              className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${cookTime === 'Chưa có thông tin' ? 'text-gray-400 font-normal italic' : ''}`}
               readOnly={readOnly}
+              showEmptyState={false}
             />
           </div>
           <div className="w-1/2">
-            <label htmlFor="prepTime" className="block text-sm font-bold text-gray-700">
-              Thời gian chuẩn bị
-            </label>
-            <input
-              type="text"
+            <FormInput
+              label="Thời gian chuẩn bị"
               id="prepTime"
-              placeholder='VD: 30 phút'
+              type="text"
               value={prepTime}
+              placeholder="VD: 30 phút"
               onChange={(e) => setPrepTime(e.target.value)}
-              className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${prepTime === 'Chưa có thông tin' ? 'text-gray-400 font-normal italic' : ''}`}
               readOnly={readOnly}
+              showEmptyState={false}
             />
           </div>
         </div>

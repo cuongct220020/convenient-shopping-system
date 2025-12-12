@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react'
 import { Button } from './Button'
 import { InputField } from './InputField'
+import { FormInput } from './FormInput'
 
 interface IngredientFormProps {
   initialData?: {
@@ -89,21 +90,6 @@ export const IngredientForm = ({
     }
     return value
   }
-  
-  const getInputType = (value: string | number | undefined, defaultType: string) => {
-    if (readOnly && (value === undefined || value === null || value === '')) {
-      return 'text'
-    }
-    return defaultType
-  }
-
-  const inputReadOnlyClass = readOnly
-    ? 'bg-gray-50 focus:outline-none'
-    : 'bg-white focus:outline-none focus:border-gray-400'
-
-  const numberInputClass = `w-full p-2 border-b border-gray-300 text-gray-700 ${
-    readOnly ? 'bg-gray-50 focus:outline-none' : 'focus:outline-none focus:border-gray-400'
-  }`
 
   return (
     <div
@@ -200,11 +186,11 @@ export const IngredientForm = ({
             </div>
           ) : (
             <Button
-              variant="primary"
+              variant={readOnly ? 'text' : 'primary'}
               size="fit"
               icon={ImageIcon}
               onClick={handleImageUploadClick}
-              disabled={readOnly}
+              className={readOnly ? '!p-0 !mx-0 !hover:bg-transparent' : ''}
             >
               {readOnly ? 'Chưa có hình ảnh' : 'Thêm hình ảnh'}
             </Button>
@@ -239,71 +225,37 @@ export const IngredientForm = ({
               Bao gồm:
             </label>
             <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-              {/* Calo */}
-              <div className="col-span-2">
-                <label className="block text-gray-700 font-bold mb-1">
-                  Calo
-                </label>
-                <input
-                  type={getInputType(initialData?.calories, 'number')}
-                  placeholder={readOnly ? '' : '0'}
-                  className={numberInputClass}
-                  readOnly={readOnly}
-                  defaultValue={getDisplayValue(initialData?.calories)}
-                />
-              </div>
-              {/* Đạm */}
-              <div>
-                <label className="block text-gray-700 font-bold mb-1">
-                  Đạm
-                </label>
-                <input
-                  type={getInputType(initialData?.protein, 'number')}
-                  placeholder={readOnly ? '' : '0'}
-                  className={numberInputClass}
-                  readOnly={readOnly}
-                  defaultValue={getDisplayValue(initialData?.protein)}
-                />
-              </div>
-              {/* Chất bột đường */}
-              <div>
-                <label className="block text-gray-700 font-bold mb-1">
-                  Chất bột đường
-                </label>
-                <input
-                  type={getInputType(initialData?.carbs, 'number')}
-                  placeholder={readOnly ? '' : '0'}
-                  className={numberInputClass}
-                  readOnly={readOnly}
-                  defaultValue={getDisplayValue(initialData?.carbs)}
-                />
-              </div>
-              {/* Chất xơ */}
-              <div>
-                <label className="block text-gray-700 font-bold mb-1">
-                  Chất xơ
-                </label>
-                <input
-                  type={getInputType(initialData?.fiber, 'number')}
-                  placeholder={readOnly ? '' : '0'}
-                  className={numberInputClass}
-                  readOnly={readOnly}
-                  defaultValue={getDisplayValue(initialData?.fiber)}
-                />
-              </div>
-              {/* Chất béo */}
-              <div>
-                <label className="block text-gray-700 font-bold mb-1">
-                  Chất béo
-                </label>
-                <input
-                  type={getInputType(initialData?.fat, 'number')}
-                  placeholder={readOnly ? '' : '0'}
-                  className={numberInputClass}
-                  readOnly={readOnly}
-                  defaultValue={getDisplayValue(initialData?.fat)}
-                />
-              </div>
+              <FormInput
+                variant="nutrition"
+                label="Calo"
+                value={initialData?.calories}
+                readOnly={readOnly}
+                containerClassName="col-span-2"
+              />
+              <FormInput
+                variant="nutrition"
+                label="Đạm"
+                value={initialData?.protein}
+                readOnly={readOnly}
+              />
+              <FormInput
+                variant="nutrition"
+                label="Chất bột đường"
+                value={initialData?.carbs}
+                readOnly={readOnly}
+              />
+              <FormInput
+                variant="nutrition"
+                label="Chất xơ"
+                value={initialData?.fiber}
+                readOnly={readOnly}
+              />
+              <FormInput
+                variant="nutrition"
+                label="Chất béo"
+                value={initialData?.fat}
+                readOnly={readOnly}
+              />
             </div>
           </div>
         </div>

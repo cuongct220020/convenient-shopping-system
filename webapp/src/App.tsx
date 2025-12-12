@@ -6,7 +6,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/user/login" replace />} />
+        <Route path="/" element={<Navigate to="/admin" replace />} />
         <Route path="/user/*" element={<UserRoutes />} />
         <Route path="/admin/*" element={<AdminRoutes />} />
       </Routes>

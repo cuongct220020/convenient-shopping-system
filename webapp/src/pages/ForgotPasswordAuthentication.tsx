@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom' // Removed useLocation
-import { RefreshCcw } from 'lucide-react' // Importing an icon for the resend button
+import { RefreshCcw, ChevronLeft } from 'lucide-react' // Importing icons
 import loginBg from '../assets/login-bg.png'
 import { Button } from '../components/Button'
-import { BackButton } from '../components/BackButton'
 import { OPTInput } from '../components/OPTInput'
+import { BackButton } from 'components/BackButton'
 
 export default function LoginAuthentication() {
   const navigate = useNavigate()
@@ -25,7 +25,7 @@ export default function LoginAuthentication() {
     if (otpCode.length === 6) {
       console.log('Submitting OTP:', otpCode)
       // Add actual verification logic here
-      navigate('/user/forgot-password-2')
+      navigate('/user/forgot-password-new-password')
     } else {
       alert('Vui lòng nhập đủ 6 số.')
     }

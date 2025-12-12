@@ -16,7 +16,7 @@ export const BackButton = ({
     <div className="flex items-center px-4 py-2">
       <Link
         to={to}
-        className={`flex items-center text-sm font-bold text-[#c93045] hover:opacity-80 ${className}`}
+        className={`flex items-center text-sm font-bold text-[#C3485C] hover:opacity-80 ${className}`}
       >
         <ChevronLeft size={20} strokeWidth={3} />
         <span className="ml-1">{text}</span>

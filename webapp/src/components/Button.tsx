@@ -7,8 +7,6 @@ interface ButtonProps {
     | 'primary'
     | 'secondary'
     | 'text'
-    | 'pagination'
-    | 'pagination-active'
     | 'icon'
     | 'danger'
   icon?: React.ComponentType<{ size?: number | string; className?: string }>
@@ -40,22 +38,16 @@ export const Button = ({
   const isIconOnly = !children && Icon
 
   const baseStyle =
-    variant === 'pagination' || variant === 'pagination-active'
-      ? 'w-8 h-8 flex items-center justify-center rounded transition-all duration-200 active:scale-95'
-      : isIconOnly
-        ? `${size === 'fit' ? 'w-fit' : size === 'auto' ? 'w-auto' : 'w-full'} py-3 px-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
-        : `${sizes[size]} py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
+    isIconOnly
+      ? `${size === 'fit' ? 'w-fit' : size === 'auto' ? 'w-auto' : 'w-full'} py-3 px-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
+      : `${sizes[size]} py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
 
   const variants: Record<string, string> = {
     primary:
-      'bg-[#c93045] text-white hover:bg-[#b02a3d] shadow-md shadow-red-200',
+      'bg-[#C3485C] text-white hover:bg-[#b02a3d] shadow-md shadow-red-200',
     secondary:
-      'bg-[#fcece9] text-[#c93045] border border-[#eeb4b4] hover:bg-[#fbd9d6]',
-    text: 'bg-transparent text-[#c93045] hover:underline text-xs font-semibold w-auto ml-auto block mb-6',
-    pagination:
-      'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-rose-500 text-sm font-medium',
-    'pagination-active':
-      'bg-[#c93045] text-white hover:bg-[#b02a3d] shadow-md shadow-red-200 text-sm font-medium',
+      'bg-[#fcece9] text-[#C3485C] border border-[#eeb4b4] hover:bg-[#fbd9d6]',
+    text: 'bg-transparent text-[#C3485C] hover:underline text-xs font-semibold w-auto ml-auto block mb-6',
     icon:
       'bg-gray-200 text-gray-600 hover:bg-gray-300'
   }

@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Send } from 'lucide-react'
+import { Send, CheckCircle, LogIn, Home } from 'lucide-react'
 import loginBg from '../assets/login-bg.png'
 import { InputField } from '../components/InputField'
 import { Button } from '../components/Button'
 import { BackButton } from '../components/BackButton'
+import { NotificationCard } from '../components/NotificationCard'
 
 export default function ForgotPassword2() {
   const navigate = useNavigate()
@@ -25,6 +26,9 @@ export default function ForgotPassword2() {
     password1: false,
     password2: false
   })
+
+  // State for popup
+  const [showPopup, setShowPopup] = useState(false)
 
   // Validation functions
   const validatePassword = (password: string): string | null => {
@@ -119,7 +123,7 @@ export default function ForgotPassword2() {
     if (!password1Error && !password2Error) {
       console.log('Password reset confirmed')
       // Add actual password reset logic here
-      navigate('/user/forgot-password-notification')
+      setShowPopup(true)
     }
   }
 
@@ -202,6 +206,32 @@ export default function ForgotPassword2() {
           </div>
         </div>
       </div>
+
+      {/* Popup Overlay */}
+      {showPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <NotificationCard
+            title="Thay đổi mật khẩu thành công!"
+            message="Mật khẩu của bạn đã được thay đổi thành công. Vui lòng đăng nhập bằng mật khẩu mới."
+            icon={CheckCircle}
+            iconBgColor="bg-green-500"
+            buttonText="Trang chủ"
+            buttonIcon={Home}
+            onButtonClick={() => {
+              setShowPopup(false)
+              navigate('/user/login')
+            }}
+            buttonVariant='secondary'
+            button2Text="Đăng nhập"
+            button2Icon={LogIn}
+            onButton2Click={() => {
+              setShowPopup(false)
+              navigate('/user/login')
+            }}
+            button2Variant='primary'
+          />
+        </div>
+      )}
     </div>
   )
 }

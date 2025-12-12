@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UserPlus, LogIn } from 'lucide-react'
+import { UserPlus, LogIn, CheckCircle, X } from 'lucide-react'
 import loginBg from '../assets/login-bg.png'
 import { Button } from '../components/Button'
 import { InputField } from '../components/InputField'
 import { BackButton } from '../components/BackButton'
+import { NotificationCard } from '../components/NotificationCard'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -39,6 +40,9 @@ export default function Register() {
     password: false,
     confirmPassword: false
   })
+
+  // State for popup
+  const [showPopup, setShowPopup] = useState(false)
 
   // Validation functions
   const validateEmail = (email: string): string | null => {
@@ -175,7 +179,7 @@ export default function Register() {
       !confirmPasswordError
     ) {
       console.log('Registration attempt with:', formData)
-      navigate('/user/register-notification')
+      setShowPopup(true)
     }
   }
 
@@ -315,6 +319,24 @@ export default function Register() {
           </div>
         </div>
       </div>
+
+      {/* Popup Overlay */}
+      {showPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <NotificationCard
+            title="Đăng ký thành công!"
+            message="Tài khoản của bạn đã được tạo thành công. Vui lòng kiểm tra email để xác thực tài khoản."
+            icon={CheckCircle}
+            iconBgColor="bg-green-500"
+            buttonText="Đăng nhập"
+            buttonIcon={LogIn}
+            onButtonClick={() => {
+              setShowPopup(false)
+              navigate('/user/login')
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }
