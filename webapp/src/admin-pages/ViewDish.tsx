@@ -2,7 +2,7 @@ import { Check, Edit, Trash2 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { DishForm } from '../components/DishForm'
-import DishList from './DishList'
+import DishList from './DishMenu'
 
 const ViewDish = () => {
   const navigate = useNavigate()

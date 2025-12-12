@@ -147,10 +147,9 @@ const DishList = () => {
     }, [currentPage, selectedCategories, searchQuery])
 
   return (
-        <main
-          className="flex flex-1 flex-col overflow-y-auto p-8"
-        >      {/* Header */}
-      <div className="mb-8 flex flex-col space-y-6">
+    <div className="flex min-h-screen flex-1 flex-col pt-6">
+      {/* Header */}
+      <div className="mb-8 flex flex-col space-y-6 px-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">
             Danh mục món ăn
@@ -225,33 +224,37 @@ const DishList = () => {
         </div>
       </div>
 
-      {/* Grid Container */}
-      {currentItems.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {currentItems.map((item) => (
-            <Item
-              key={item.id}
-              name={item.name}
-              category={item.category}
-              image={item.image}
-              onClick={() => handleItemClick(item)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex h-64 items-center justify-center text-gray-500">
-          Không tìm thấy món ăn nào.
-        </div>
-      )}
+      {/* Grid Container - Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        {currentItems.length > 0 ? (
+          <div className="px-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {currentItems.map((item) => (
+              <Item
+                key={item.id}
+                name={item.name}
+                category={item.category}
+                image={item.image}
+                onClick={() => handleItemClick(item)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="px-6 flex h-64 items-center justify-center text-gray-500">
+            Không tìm thấy món ăn nào.
+          </div>
+        )}
+      </div>
 
-      {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        className="mt-auto pt-8"
-      />
-    </main>
+      {/* Pagination - Always at Bottom */}
+      <div className="sticky bottom-0 bg-white px-6 py-4">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          className=""
+        />
+      </div>
+    </div>
   )
 }
 

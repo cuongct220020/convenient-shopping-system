@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { DishForm } from '../components/DishForm'
-import DishList from './DishList'
+import DishList from './DishMenu'
 
 const AddDish = () => {
   const navigate = useNavigate()

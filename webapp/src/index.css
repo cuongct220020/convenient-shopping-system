@@ -11,8 +11,7 @@ html, body, #root {
 }
 
 body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #f3f4f6; /* A light gray background for the centering effect */
+  margin: 0;
+  padding: 0;
+  background-color: #f3f4f6;
 }

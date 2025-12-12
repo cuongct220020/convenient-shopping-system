@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { IngredientForm } from '../components/IngredientForm'
-import IngredientDashboard from './IngredientList'
+import IngredientDashboard from './IngredientMenu'
 
 const ModifyIngredient = () => {
   const navigate = useNavigate()

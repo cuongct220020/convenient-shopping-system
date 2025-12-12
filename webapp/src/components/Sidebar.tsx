@@ -4,7 +4,7 @@ import { ChevronRight, Users } from 'lucide-react'
 
 export const Sidebar = () => {
   return (
-    <aside className="w-65 flex shrink-0 flex-col justify-between border-r border-gray-200 p-6">
+    <aside className="w-64 flex shrink-0 flex-col justify-between border-r border-gray-200 p-6">
       <div>
         {/* Logo */}
         <div className="mb-10">
@@ -14,13 +14,13 @@ export const Sidebar = () => {
             <span className="text-[#C3485C]">S</span>
             <span className="text-[#f7b686]">ense</span> Admin
           </h1>
-          <div className="w-46 mx-auto mt-4 h-0.5 bg-gray-200"></div>
+          <div className="mx-auto mt-4 h-0.5 w-full bg-gray-200"></div>
         </div>
 
         {/* Menu */}
         <nav className="space-y-6">
           <NavLink
-            to="/admin/ingredient-list"
+            to="/admin/ingredient-menu"
             className={({ isActive }) =>
               `flex cursor-pointer items-center justify-between font-medium transition-colors ${
                 isActive
@@ -34,7 +34,7 @@ export const Sidebar = () => {
           </NavLink>
 
           <NavLink
-            to="/admin/dish-list"
+            to="/admin/dish-menu"
             className={({ isActive }) =>
               `flex cursor-pointer items-center justify-between font-medium transition-colors ${
                 isActive
@@ -59,7 +59,7 @@ export const Sidebar = () => {
 
       {/* User Profile */}
       <div className="mt-auto">
-        <div className="w-46 mx-auto mb-6 h-0.5 bg-gray-200"></div>
+        <div className="mx-auto mb-6 h-0.5 w-full bg-gray-200"></div>
         <div className="flex items-center space-x-3">
           <div className="flex size-10 items-center justify-center rounded-full bg-emerald-400 text-white">
             <Users size={20} />

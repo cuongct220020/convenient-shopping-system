@@ -2,7 +2,7 @@ import { Check, Edit, Trash2 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/Button'
 import { IngredientForm } from '../components/IngredientForm'
-import IngredientDashboard from './IngredientList'
+import IngredientDashboard from './IngredientMenu'
 
 const ViewIngredient = () => {
   const navigate = useNavigate()
