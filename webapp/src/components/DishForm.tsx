@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Trash2, Plus, Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react'
 import { Button } from './Button' // Assuming Button component exists
 import { InputField } from './InputField'
-import { FormInput } from './FormInput'
 
 // Mock data for dropdowns
 const categories = ['Đồ ăn vặt', 'Món chính', 'Món khai vị', 'Tráng miệng', 'Đồ uống']
@@ -337,41 +336,53 @@ export const DishForm: React.FC<DishFormProps> = ({
           )}
         </div>
 
-        <FormInput
-          label="Số người ăn"
-          id="servings"
-          type="text"
-          value={servings}
-          placeholder="0"
-          onChange={(e) => setServings(e.target.value)}
-          readOnly={readOnly}
-          showEmptyState={false}
-        />
+        <div>
+          <label htmlFor="servings" className="block text-sm font-bold text-gray-700">
+            Số người ăn
+          </label>
+          <input
+            type="text"
+            id="servings"
+            value={servings === undefined || servings === null ? '' : servings}
+            placeholder="0"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setServings(e.target.value)}
+            readOnly={readOnly}
+            className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${readOnly ? 'bg-gray-50' : ''}`}
+          />
+        </div>
 
         <div className="flex space-x-4">
           <div className="w-1/2">
-            <FormInput
-              label="Thời gian nấu"
-              id="cookTime"
-              type="text"
-              value={cookTime}
-              placeholder="VD: 1 giờ"
-              onChange={(e) => setCookTime(e.target.value)}
-              readOnly={readOnly}
-              showEmptyState={false}
-            />
+            <div>
+              <label htmlFor="cookTime" className="block text-sm font-bold text-gray-700">
+                Thời gian nấu
+              </label>
+              <input
+                type="text"
+                id="cookTime"
+                value={cookTime === undefined || cookTime === null ? '' : cookTime}
+                placeholder="VD: 1 giờ"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCookTime(e.target.value)}
+                readOnly={readOnly}
+                className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${readOnly ? 'bg-gray-50' : ''}`}
+              />
+            </div>
           </div>
           <div className="w-1/2">
-            <FormInput
-              label="Thời gian chuẩn bị"
-              id="prepTime"
-              type="text"
-              value={prepTime}
-              placeholder="VD: 30 phút"
-              onChange={(e) => setPrepTime(e.target.value)}
-              readOnly={readOnly}
-              showEmptyState={false}
-            />
+            <div>
+              <label htmlFor="prepTime" className="block text-sm font-bold text-gray-700">
+                Thời gian chuẩn bị
+              </label>
+              <input
+                type="text"
+                id="prepTime"
+                value={prepTime === undefined || prepTime === null ? '' : prepTime}
+                placeholder="VD: 30 phút"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrepTime(e.target.value)}
+                readOnly={readOnly}
+                className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${readOnly ? 'bg-gray-50' : ''}`}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -52,9 +52,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <ChevronRight size={18} />
             </NavLink>
 
-            <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#C3485C]">
-              Quản lý người dùng
-            </div>
+            <NavLink
+              to="/admin/user-management"
+              className={({ isActive }) =>
+                `flex cursor-pointer items-center justify-between font-medium transition-colors ${
+                  isActive
+                    ? 'text-[#C3485C] hover:text-[#b02a3d]'
+                    : 'text-gray-600 hover:text-[#C3485C]'
+                }`
+              }
+            >
+              <span>Quản lý người dùng</span>
+              <ChevronRight size={18} />
+            </NavLink>
 
             <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#C3485C]">
               Quản lý nhóm

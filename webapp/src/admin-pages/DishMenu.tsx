@@ -62,7 +62,7 @@ const allDishesData = Array(200)
 
 const ITEMS_PER_PAGE = 20
 
-const DishList = () => {
+const DishMenu = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [showFilter, setShowFilter] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -375,4 +375,4 @@ const DishList = () => {
   )
 }
 
-export default DishList
+export default DishMenu

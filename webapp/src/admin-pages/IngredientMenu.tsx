@@ -63,7 +63,7 @@ const allIngredientsData = Array(200)
 
 const ITEMS_PER_PAGE = 20
 
-const IngredientDashboard = () => {
+const IngredientMenu = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [showFilter, setShowFilter] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -385,4 +385,4 @@ const IngredientDashboard = () => {
   )
 }
 
-export default IngredientDashboard
+export default IngredientMenu

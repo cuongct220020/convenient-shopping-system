@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react'
 import { Button } from './Button'
 import { InputField } from './InputField'
-import { FormInput } from './FormInput'
 
 interface IngredientFormProps {
   initialData?: {
@@ -225,37 +224,86 @@ export const IngredientForm = ({
               Bao gồm:
             </label>
             <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-              <FormInput
-                variant="nutrition"
-                label="Calo"
-                value={initialData?.calories}
-                readOnly={readOnly}
-                containerClassName="col-span-2"
-              />
-              <FormInput
-                variant="nutrition"
-                label="Đạm"
-                value={initialData?.protein}
-                readOnly={readOnly}
-              />
-              <FormInput
-                variant="nutrition"
-                label="Chất bột đường"
-                value={initialData?.carbs}
-                readOnly={readOnly}
-              />
-              <FormInput
-                variant="nutrition"
-                label="Chất xơ"
-                value={initialData?.fiber}
-                readOnly={readOnly}
-              />
-              <FormInput
-                variant="nutrition"
-                label="Chất béo"
-                value={initialData?.fat}
-                readOnly={readOnly}
-              />
+              <div className="col-span-2">
+                <label className="block text-gray-700 font-bold mb-1">
+                  Calo
+                </label>
+                <input
+                  type={readOnly ? 'text' : 'number'}
+                  placeholder={readOnly ? '' : '0'}
+                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${readOnly ? 'bg-gray-50 focus:outline-none' : 'focus:outline-none focus:border-gray-400'}`}
+                  readOnly={readOnly}
+                  defaultValue={
+                    readOnly && (initialData?.calories === undefined || initialData?.calories === null)
+                      ? 'Chưa có thông tin'
+                      : initialData?.calories
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-bold mb-1">
+                  Đạm
+                </label>
+                <input
+                  type={readOnly ? 'text' : 'number'}
+                  placeholder={readOnly ? '' : '0'}
+                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${readOnly ? 'bg-gray-50 focus:outline-none' : 'focus:outline-none focus:border-gray-400'}`}
+                  readOnly={readOnly}
+                  defaultValue={
+                    readOnly && (initialData?.protein === undefined || initialData?.protein === null)
+                      ? 'Chưa có thông tin'
+                      : initialData?.protein
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-bold mb-1">
+                  Chất bột đường
+                </label>
+                <input
+                  type={readOnly ? 'text' : 'number'}
+                  placeholder={readOnly ? '' : '0'}
+                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${readOnly ? 'bg-gray-50 focus:outline-none' : 'focus:outline-none focus:border-gray-400'}`}
+                  readOnly={readOnly}
+                  defaultValue={
+                    readOnly && (initialData?.carbs === undefined || initialData?.carbs === null)
+                      ? 'Chưa có thông tin'
+                      : initialData?.carbs
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-bold mb-1">
+                  Chất xơ
+                </label>
+                <input
+                  type={readOnly ? 'text' : 'number'}
+                  placeholder={readOnly ? '' : '0'}
+                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${readOnly ? 'bg-gray-50 focus:outline-none' : 'focus:outline-none focus:border-gray-400'}`}
+                  readOnly={readOnly}
+                  defaultValue={
+                    readOnly && (initialData?.fiber === undefined || initialData?.fiber === null)
+                      ? 'Chưa có thông tin'
+                      : initialData?.fiber
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-bold mb-1">
+                  Chất béo
+                </label>
+                <input
+                  type={readOnly ? 'text' : 'number'}
+                  placeholder={readOnly ? '' : '0'}
+                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${readOnly ? 'bg-gray-50 focus:outline-none' : 'focus:outline-none focus:border-gray-400'}`}
+                  readOnly={readOnly}
+                  defaultValue={
+                    readOnly && (initialData?.fat === undefined || initialData?.fat === null)
+                      ? 'Chưa có thông tin'
+                      : initialData?.fat
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
