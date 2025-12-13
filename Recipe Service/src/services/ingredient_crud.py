@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from .crud_base import CRUDBase
+from shared.shopping_shared.crud.crud_base import CRUDBase
 from typing import List
 from fastapi import HTTPException
 from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient

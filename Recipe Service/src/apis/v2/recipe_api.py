@@ -6,8 +6,8 @@ from models.recipe_component import Recipe
 from schemas.recipe import (
     RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse, RecipeFlattenedResponse
 )
-from .crud_router_base import create_crud_router
-from core.database import get_db
+from shared.shopping_shared.crud.crud_router_base import create_crud_router
+from shared.shopping_shared.databases.fastapi_database import get_db
 from utils.custom_mapping import recipe_detailed_response_mapping
 
 recipe_crud = RecipeCRUD(Recipe)

@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from services.ingredient_crud import IngredientCRUD
 from schemas.ingredient import IngredientCreate, IngredientUpdate, IngredientResponse
 from models.recipe_component import Ingredient
-from .crud_router_base import create_crud_router
-from core.database import get_db
+from shared.shopping_shared.crud.crud_router_base import create_crud_router
+from shared.shopping_shared.databases.fastapi_database import get_db
 
 ingredient_crud = IngredientCRUD(Ingredient)
 

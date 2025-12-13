@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, select, String
 from typing import Sequence, Optional
-from .crud_base import CRUDBase
+from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
 from models.recipe_ingredient_flattened import RecipeIngredientFlattened
 from schemas.recipe import RecipeCreate, RecipeUpdate

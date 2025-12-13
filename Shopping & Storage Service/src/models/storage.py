@@ -4,8 +4,7 @@ from sqlalchemy.sql import func
 from datetime import datetime
 from enums.uc_measurement_unit import UCMeasurementUnit
 from enums.storage_type import StorageType
-from core.database import Base
-
+from shared.shopping_shared.databases.fastapi_database import Base
 class Storage(Base):
     __tablename__ = "storages"
 

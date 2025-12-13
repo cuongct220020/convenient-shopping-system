@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, Query, Body, status, HTTPException
 from typing import TypeVar, Type, List, Optional
 from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
-from core.database import get_db
-from services.crud_base import CRUDBase
+from ..databases.fastapi_database import get_db
+from .crud_base import CRUDBase
 
 """
     Generic CRUD router factory for reuse across CRUD operations of different models
