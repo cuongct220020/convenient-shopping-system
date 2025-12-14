@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, Query, Body, status, HTTPException
-from typing import TypeVar, Type, List, Optional
+from typing import TypeVar, Type, cast, Optional
+from sqlalchemy import inspect
 from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
 from ..databases.fastapi_database import get_db
 from .crud_base import CRUDBase
+from ..schemas.response_schema import PaginationResponse
 
 """
     Generic CRUD router factory for reuse across CRUD operations of different models
@@ -40,15 +42,23 @@ def create_crud_router(
 
     @router.get(
         "/",
-        response_model=List[response_schema],
+        response_model=PaginationResponse[response_schema],                                 # type: ignore
         status_code=status.HTTP_200_OK,
         description=(
                 f"Retrieve a list of {crud_base.model.__name__} items. "
-                "Supports pagination with offset and limit."
+                "Supports pagination with cursor and limit."
         )
     )
-    def get_many_items(offset: int = Query(0, ge=0), limit: int = Query(100, ge=1), db: Session = Depends(get_db)):
-        return crud_base.get_many(db, offset=offset, limit=limit)
+    def get_many_items(cursor: Optional[int] = Query(None, ge=0), limit: int = Query(100, ge=1), db: Session = Depends(get_db)):
+        items = crud_base.get_many(db, cursor=cursor, limit=limit)
+        pk = inspect(crud_base.model).primary_key[0]
+        next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
+        return PaginationResponse(
+            data=list(items),
+            next_cursor=next_cursor,
+            size=len(items),
+            has_more=len(items) == limit
+        )
 
     @router.post(
         "/",

@@ -22,8 +22,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def get(self, db: Session, id: int) -> Optional[ModelType]:
         return db.get(self.model, id)
 
-    def get_many(self, db: Session, offset: int = 0, limit: int = 100) -> Sequence[ModelType]:
-        return db.execute(select(self.model).offset(offset).limit(limit)).scalars().all()
+    def get_many(self, db: Session, cursor: Optional[int] = None, limit: int = 100) -> Sequence[ModelType]:
+        pk = inspect(self.model).primary_key[0]
+        stmt = select(self.model).order_by(pk.desc()).limit(limit)
+        if cursor is not None:
+            stmt = stmt.where(pk < cursor)
+        return db.execute(stmt).scalars().all()
 
     def delete(self, db: Session, id: int) -> ModelType:
         obj = db.get(self.model, id)
