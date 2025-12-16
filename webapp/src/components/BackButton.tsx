@@ -5,6 +5,7 @@ interface BackButtonProps {
   to?: string
   text?: string
   className?: string
+  onClick?: () => void
 }
 
 export const BackButton = ({
@@ -13,7 +14,7 @@ export const BackButton = ({
   className = ''
 }: BackButtonProps) => {
   return (
-    <div className="flex items-center px-4 py-2">
+    <div className="flex items-center px-0 py-2">
       <Link
         to={to}
         className={`flex items-center text-sm font-bold text-[#C3485C] hover:opacity-80 ${className}`}

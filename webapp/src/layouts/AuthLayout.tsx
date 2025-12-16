@@ -19,7 +19,7 @@ export default function AuthLayout() {
       <div className="relative flex min-h-screen w-full">
         <div className="relative flex w-full h-screen flex-col overflow-hidden bg-white">
           {/* Header: Back Button */}
-          <div className="my-4">
+          <div className='px-2'>
             <BackButton to={backTo} text={backText} />
           </div>
 
