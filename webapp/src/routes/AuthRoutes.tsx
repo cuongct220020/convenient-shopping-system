@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
+import AuthLayout from '../layouts/AuthLayout'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 import ForgotPasswordEmail from '../pages/auth/ForgotPasswordEmail'
@@ -6,16 +7,44 @@ import ForgotPasswordNewPassword from '../pages/auth/ForgotPasswordNewPassword'
 import LoginAuthentication from '../pages/auth/LoginAuthentication'
 import ForgotPasswordAuthentication from '../pages/auth/ForgotPasswordAuthentication'
 
-export default function UserRoutes() {
-  return (
-    <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="login" element={<Login />} />
-      <Route path="register" element={<Register />} />
-      <Route path="forgot-password-email" element={<ForgotPasswordEmail />} />
-      <Route path="forgot-password-new-password" element={<ForgotPasswordNewPassword />} />
-      <Route path="login-authentication" element={<LoginAuthentication />} />
-      <Route path="forgot-password-authentication" element={<ForgotPasswordAuthentication />} />
-    </Routes>
-  )
+export const AuthRoutes = {
+  path: "/auth",
+  element: <AuthLayout />,
+  children: [
+    {
+      index: true,
+      element: <Login />,
+      handle: { backTo: "/", backText: "Trang chủ" },
+    },
+    {
+      path: "login",
+      element: <Login />,
+      handle: { backTo: "/", backText: "Trang chủ" },
+    },
+    {
+      path: "register",
+      element: <Register />,
+      handle: { backTo: "/auth/login", backText: "Đăng nhập" },
+    },
+    {
+      path: "forgot-password-email",
+      element: <ForgotPasswordEmail />,
+      handle: { backTo: "/auth/login", backText: "Đăng nhập" },
+    },
+    {
+      path: "forgot-password-new-password",
+      element: <ForgotPasswordNewPassword />,
+      handle: { backTo: "/auth/forgot-password-email", backText: "Quay lại" },
+    },
+    {
+      path: "login-authentication",
+      element: <LoginAuthentication />,
+      handle: { backTo: "/auth/login", backText: "Quay lại" },
+    },
+    {
+      path: "forgot-password-authentication",
+      element: <ForgotPasswordAuthentication />,
+      handle: { backTo: "/auth/forgot-password-email", backText: "Quay lại" },
+    },
+  ],
 }

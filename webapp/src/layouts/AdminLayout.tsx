@@ -1,12 +1,8 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import React from 'react'
 import { ChevronRight, Users } from 'lucide-react'
 
-interface AdminLayoutProps {
-  children: React.ReactNode
-}
-
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export default function AdminLayout() {
   return (
     <div className="flex min-h-screen bg-white font-sans text-gray-800">
       <aside className="w-64 flex shrink-0 flex-col justify-between border-r border-gray-200 p-6">
@@ -91,7 +87,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </aside>
       <main className="flex-1">
-        {children}
+        <Outlet />
       </main>
     </div>
   )

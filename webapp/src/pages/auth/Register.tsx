@@ -1,10 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserPlus, LogIn, CheckCircle, X } from 'lucide-react'
-import loginBg from '../../assets/login-bg.png'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/InputField'
-import { BackButton } from '../../components/BackButton'
 import { NotificationCard } from '../../components/NotificationCard'
 
 export default function Register() {
@@ -184,141 +182,109 @@ export default function Register() {
   }
 
   return (
-    <div className="relative min-h-screen w-screen overflow-hidden bg-gray-100 font-sans">
-      {/* Background gradient/image full screen */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="absolute inset-0 bg-black/5"></div>
+    <>
+      {/* Header: Đăng ký */}
+      <div className="mb-6 sm:mb-8 text-center">
+        {/* Đăng ký Text */}
+        <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Đăng ký tài khoản</h1>
       </div>
 
-      {/* Main Content Container */}
-      <div className="relative flex min-h-screen w-full">
-        <div className="relative flex w-full h-screen flex-col overflow-hidden bg-white">
-          {/* Header: Back Button */}
-          <div className="my-4">
-            <BackButton to="/" text="Trang chủ" />
-          </div>
-
-          {/* Scrollable Content Area */}
-          <div className="no-scrollbar relative z-10 flex-1 overflow-y-auto">
-            <div className="px-4 sm:px-6 md:px-8 pb-8 pt-2">
-              {/* Header: Đăng ký */}
-              <div className="mb-6 sm:mb-8 text-center">
-                {/* Đăng ký Text */}
-                <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Đăng ký tài khoản</h1>
-              </div>
-
-              {/* Form with max-width constraint */}
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 max-w-sm mx-auto">
-                <div>
-                  <InputField
-                    id="email"
-                    label="Email"
-                    required={true}
-                    placeholder="Nhập email"
-                    value={formData.email}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleChange('email', e.target.value)
-                    }
-                    onBlur={() => handleBlur('email')}
-                    error={errors.email}
-                  />
-                </div>
-
-                <div>
-                  <InputField
-                    id="username"
-                    label="Tên đăng nhập"
-                    required={true}
-                    placeholder="Nhập tên đăng nhập"
-                    value={formData.username}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleChange('username', e.target.value)
-                    }
-                    onBlur={() => handleBlur('username')}
-                    error={errors.username}
-                  />
-                </div>
-
-                <div>
-                  <InputField
-                    id="password"
-                    type="password"
-                    label="Mật khẩu"
-                    required={true}
-                    placeholder="Nhập mật khẩu"
-                    value={formData.password}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleChange('password', e.target.value)
-                    }
-                    onBlur={() => handleBlur('password')}
-                    error={errors.password}
-                  />
-                </div>
-
-                <div>
-                  <InputField
-                    id="confirmPassword"
-                    type="password"
-                    label="Xác nhận mật khẩu"
-                    required={true}
-                    placeholder="Nhập lại mật khẩu"
-                    value={formData.confirmPassword}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleChange('confirmPassword', e.target.value)
-                    }
-                    onBlur={() => handleBlur('confirmPassword')}
-                    error={errors.confirmPassword}
-                  />
-                </div>
-
-                {/* Register Button */}
-                <Button
-                  variant="primary"
-                  icon={UserPlus}
-                  size="fit"
-                  type="submit"
-                >
-                  Đăng ký tài khoản
-                </Button>
-              </form>
-
-              {/* Divider */}
-              <div className="relative my-4 sm:my-5 flex items-center text-sm max-w-sm mx-auto">
-                <div className="flex-1 border-t border-gray-300"></div>
-                <span className="px-3 sm:px-4 text-gray-400">hoặc</span>
-                <div className="flex-1 border-t border-gray-300"></div>
-              </div>
-
-              {/* Login Button */}
-              <div className="max-w-sm mx-auto">
-                <Button
-                  variant="secondary"
-                  icon={LogIn}
-                  size="fit"
-                  onClick={() => navigate('/user/login')}
-                >
-                  Đăng nhập
-                </Button>
-              </div>
-
-              {/* Bottom Spacer for scrolling over background */}
-              <div className="h-16 sm:h-20"></div>
-            </div>
-          </div>
-
-          {/* Background Image Decoration (Bottom) */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-64 sm:h-80 md:h-96">
-            {/* Using a gradient overlay to fade image into white */}
-            <div className="absolute inset-0 z-10 bg-gradient-to-t from-white/10 via-white/40 to-white"></div>
-            {/* Food background placeholder */}
-            <img
-              src={loginBg}
-              alt="Food Background"
-              className="size-full object-cover opacity-70"
-            />
-          </div>
+      {/* Form with max-width constraint */}
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 max-w-sm mx-auto">
+        <div>
+          <InputField
+            id="email"
+            label="Email"
+            required={true}
+            placeholder="Nhập email"
+            value={formData.email}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleChange('email', e.target.value)
+            }
+            onBlur={() => handleBlur('email')}
+            error={errors.email}
+          />
         </div>
+
+        <div>
+          <InputField
+            id="username"
+            label="Tên đăng nhập"
+            required={true}
+            placeholder="Nhập tên đăng nhập"
+            value={formData.username}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleChange('username', e.target.value)
+            }
+            onBlur={() => handleBlur('username')}
+            error={errors.username}
+          />
+        </div>
+
+        <div>
+          <InputField
+            id="password"
+            type="password"
+            label="Mật khẩu"
+            required={true}
+            placeholder="Nhập mật khẩu"
+            value={formData.password}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleChange('password', e.target.value)
+            }
+            onBlur={() => handleBlur('password')}
+            error={errors.password}
+          />
+        </div>
+
+        <div>
+          <InputField
+            id="confirmPassword"
+            type="password"
+            label="Xác nhận mật khẩu"
+            required={true}
+            placeholder="Nhập lại mật khẩu"
+            value={formData.confirmPassword}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleChange('confirmPassword', e.target.value)
+            }
+            onBlur={() => handleBlur('confirmPassword')}
+            error={errors.confirmPassword}
+          />
+        </div>
+
+        {/* Register Button */}
+        <Button
+          variant="primary"
+          icon={UserPlus}
+          size="fit"
+          type="submit"
+        >
+          Đăng ký tài khoản
+        </Button>
+      </form>
+
+      {/* Divider */}
+      <div className="relative my-4 sm:my-5 flex items-center text-sm max-w-sm mx-auto">
+        <div className="flex-1 border-t border-gray-300"></div>
+        <span className="px-3 sm:px-4 text-gray-400">hoặc</span>
+        <div className="flex-1 border-t border-gray-300"></div>
       </div>
+
+      {/* Login Button */}
+      <div className="max-w-sm mx-auto">
+        <Button
+          variant="secondary"
+          icon={LogIn}
+          size="fit"
+          onClick={() => navigate('/auth/login')}
+        >
+          Đăng nhập
+        </Button>
+      </div>
+
+      {/* Bottom Spacer for scrolling over background */}
+      <div className="h-16 sm:h-20"></div>
 
       {/* Popup Overlay */}
       {showPopup && (
@@ -332,11 +298,11 @@ export default function Register() {
             buttonIcon={LogIn}
             onButtonClick={() => {
               setShowPopup(false)
-              navigate('/user/login')
+              navigate('/auth/login')
             }}
           />
         </div>
       )}
-    </div>
+    </>
   )
 }
