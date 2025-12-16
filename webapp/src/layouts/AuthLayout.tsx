@@ -1,10 +1,10 @@
 import React from 'react'
 
-interface UserLayoutProps {
+interface AuthLayoutProps {
   children: React.ReactNode
 }
 
-export default function UserLayout({ children }: UserLayoutProps) {
+export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="relative min-h-screen w-screen overflow-hidden bg-gray-100 font-sans">
       {/* Background gradient/image full screen */}

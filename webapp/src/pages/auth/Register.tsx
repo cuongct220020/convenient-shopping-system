@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserPlus, LogIn, CheckCircle, X } from 'lucide-react'
-import loginBg from '../assets/login-bg.png'
-import { Button } from '../components/Button'
-import { InputField } from '../components/InputField'
-import { BackButton } from '../components/BackButton'
-import { NotificationCard } from '../components/NotificationCard'
+import loginBg from '../../assets/login-bg.png'
+import { Button } from '../../components/Button'
+import { InputField } from '../../components/InputField'
+import { BackButton } from '../../components/BackButton'
+import { NotificationCard } from '../../components/NotificationCard'
 
 export default function Register() {
   const navigate = useNavigate()

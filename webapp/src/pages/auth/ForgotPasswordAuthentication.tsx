@@ -1,19 +1,19 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { RefreshCcw } from 'lucide-react' // Importing an icon for the resend button
-import loginBg from '../assets/login-bg.png'
-import { Button } from '../components/Button'
-import { BackButton } from '../components/BackButton'
-import { OPTInput } from '../components/OPTInput'
+import { useNavigate } from 'react-router-dom' // Removed useLocation
+import { RefreshCcw, ChevronLeft } from 'lucide-react' // Importing icons
+import loginBg from '../../assets/login-bg.png'
+import { Button } from '../../components/Button'
+import { OPTInput } from '../../components/OPTInput'
+import { BackButton } from '../../components/BackButton'
 
 export default function LoginAuthentication() {
   const navigate = useNavigate()
-  const location = useLocation()
+  // const location = useLocation() // Removed this line
   const [otpCode, setOtpCode] = useState('')
 
   // Retrieve username passed from the Login page state, or use a placeholder
   // In a real app, ensure you handle the case where state is undefined safely.
-  const username = location.state?.username || 'User'
+  // const username = location.state?.username || 'User' // Removed this line
 
   const handleOtpComplete = (code: string) => {
     setOtpCode(code)
@@ -25,8 +25,7 @@ export default function LoginAuthentication() {
     if (otpCode.length === 6) {
       console.log('Submitting OTP:', otpCode)
       // Add actual verification logic here
-      alert(`Xác thực thành công cho tài khoản: ${username}`)
-      navigate('/admin')
+      navigate('/user/forgot-password-new-password')
     } else {
       alert('Vui lòng nhập đủ 6 số.')
     }
@@ -44,26 +43,23 @@ export default function LoginAuthentication() {
         <div className="relative flex w-full h-screen flex-col overflow-hidden bg-white">
           {/* Header: Back Button */}
           <div className="my-4">
-            <BackButton to="/user/login" text="Đăng nhập" />
+            <BackButton to="/user/forgot-password-email" text="Quay lại" />
           </div>
 
           {/* Scrollable Content Area */}
           <div className="no-scrollbar relative z-10 flex-1 overflow-y-auto">
             <div className="px-4 sm:px-6 md:px-8 pb-8 pt-2">
-              {/* Header: Xác thực tài khoản */}
+              {/* Header: Xác thực email */}
               <div className="mb-6 sm:mb-8 text-center">
-                {/* Xác thực tài khoản Text */}
-                <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Xác thực tài khoản</h1>
+                {/* Xác thực email Text */}
+                <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Xác thực email</h1>
               </div>
 
               <form onSubmit={handleSubmit} className="max-w-sm mx-auto">
                 {/* Description Text */}
                 <p className="mb-6 text-justify text-sm leading-relaxed text-gray-700">
-                  Xin chào{' '}
-                  <span className="font-bold text-[#C3485C]">username</span>, bạn
-                  đã đăng nhập thành công. Bạn cần xác nhận tài khoản để tiếp tục
-                  sử dụng ứng dụng. Vui lòng nhập mã 6 chữ số được gửi đến email
-                  của bạn.
+                  Chúng tôi vừa gửi mã xác nhận 6 chữ số đến email của bạn (nếu
+                  email đã được đăng ký). Bạn vui lòng nhập mã để tiếp tục
                 </p>
 
                 {/* OTP Input Component */}

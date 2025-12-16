@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { LogIn, UserPlus } from 'lucide-react'
-import loginBg from '../assets/login-bg.png'
-import { InputField } from '../components/InputField'
-import { Button } from '../components/Button'
-import { BackButton } from '../components/BackButton'
+import loginBg from '../../assets/login-bg.png'
+import { InputField } from '../../components/InputField'
+import { Button } from '../../components/Button'
+import { BackButton } from '../../components/BackButton'
 
 export default function Login() {
   const navigate = useNavigate()

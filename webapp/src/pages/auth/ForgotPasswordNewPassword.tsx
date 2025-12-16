@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Send, CheckCircle, LogIn, Home } from 'lucide-react'
-import loginBg from '../assets/login-bg.png'
-import { InputField } from '../components/InputField'
-import { Button } from '../components/Button'
-import { BackButton } from '../components/BackButton'
-import { NotificationCard } from '../components/NotificationCard'
+import loginBg from '../../assets/login-bg.png'
+import { InputField } from '../../components/InputField'
+import { Button } from '../../components/Button'
+import { BackButton } from '../../components/BackButton'
+import { NotificationCard } from '../../components/NotificationCard'
 
 export default function ForgotPassword2() {
   const navigate = useNavigate()
