@@ -31,14 +31,14 @@ export default function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white relative">
       {/* Main Content Area - Renders the specific screen content */}
-      <main className="flex-1">
+      <main className="pb-16">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation Bar */}
-      <nav className="bg-gray-100 border-t border-gray-200 px-2.5 py-2.5 h-16 flex justify-around items-center max-w-sm mx-auto w-full">
+      {/* Bottom Navigation Bar - Fixed at bottom */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 border-t border-gray-200 px-2.5 py-2.5 h-16 flex justify-around items-center max-w-sm mx-auto w-full z-50">
 
         {/* Tab 1: Nutrition (Apple) */}
         <TabItem

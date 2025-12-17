@@ -42,18 +42,21 @@ const Profile = () => {
         <MenuItem 
           icon={<Info size={20} className="text-black fill-black" />} 
           text="Hồ sơ cá nhân" 
+          onClick={() => navigate('/main/profile/personal-profile')} 
         />
 
         {/* Item 3: Health Profile */}
         <MenuItem 
           icon={<HeartPulse size={20} className="text-black" />} 
           text="Hồ sơ sức khỏe" 
+          onClick={() => navigate('/main/profile/health-profile')} 
         />
 
         {/* Item 4: Favorites */}
         <MenuItem 
           icon={<Heart size={20} className="text-black fill-black" />} 
           text="Danh mục yêu thích" 
+          onClick={() => navigate('/main/profile/favorites')} 
         />
 
         {/* Logout Button */}
