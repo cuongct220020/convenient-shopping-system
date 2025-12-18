@@ -4,7 +4,7 @@ from typing import Sequence, Optional
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
 from models.recipe_ingredient_flattened import RecipeIngredientFlattened
-from schemas.recipe import RecipeCreate, RecipeUpdate
+from schemas.recipe_schemas import RecipeCreate, RecipeUpdate
 
 """
     Method for RecipeDetailResponse
@@ -16,7 +16,11 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
             select(Recipe)
             .options(
                 selectinload(Recipe.component_list)
-                .selectinload(ComponentList.component)
+                .selectinload(ComponentList.component),
+                selectinload(Recipe.component_list)
+                .selectinload(ComponentList.component.of_type(Recipe))
+                .selectinload(Recipe.component_list)
+                .selectinload(ComponentList.component),
             )
             .where(Recipe.component_id == id)
         ).scalars().first()
