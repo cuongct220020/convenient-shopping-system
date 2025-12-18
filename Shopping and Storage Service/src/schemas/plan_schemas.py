@@ -29,6 +29,7 @@ class PlanResponse(BaseModel):
     plan_id: int
     group_id: int
     deadline: datetime
+    last_modified: datetime
     assigner_id: int
     shopping_list: List[PlanItemBase]
     plan_status: PlanStatus

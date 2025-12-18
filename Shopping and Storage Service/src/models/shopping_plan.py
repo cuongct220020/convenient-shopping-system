@@ -3,6 +3,7 @@ from sqlalchemy import Integer, String, DateTime, ForeignKey, Enum, JSON
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime
+from typing import Optional
 from enums.plan_status import PlanStatus
 from shared.shopping_shared.databases.fastapi_database import Base
 
@@ -14,7 +15,7 @@ class ShoppingPlan(Base):
     last_modified: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
     deadline: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     assigner_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    assignee_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    assignee_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     shopping_list: Mapped[dict] = mapped_column(JSON, nullable=False)
     plan_status: Mapped[PlanStatus] = mapped_column(Enum(PlanStatus), nullable=False, default=PlanStatus.CREATED)
 
