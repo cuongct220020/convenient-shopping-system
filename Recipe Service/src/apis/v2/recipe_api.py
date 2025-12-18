@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from services.recipe_crud import RecipeCRUD
 from models.recipe_component import Recipe
-from schemas.recipe import (
+from schemas.recipe_schemas import (
     RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse, RecipeFlattenedResponse
 )
 from shared.shopping_shared.crud.crud_router_base import create_crud_router
@@ -57,7 +57,7 @@ crud_router: APIRouter = create_crud_router(
 recipe_router.include_router(crud_router)
 
 @recipe_router.get(
-    "/detail/{id}",
+    "/detailed/{id}",
     response_model=RecipeDetailedResponse,
     status_code=status.HTTP_200_OK,
     description=f"Retrieve a Recipe with detailed information about the components by its unique ID. Returns 404 if the Recipe does not exist."
