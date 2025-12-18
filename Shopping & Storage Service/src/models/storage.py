@@ -2,6 +2,7 @@ from sqlalchemy import Integer, String, Float, DateTime, Enum, ForeignKey, Check
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime
+from typing import Optional
 from enums.uc_measurement_unit import UCMeasurementUnit
 from enums.storage_type import StorageType
 from shared.shopping_shared.databases.fastapi_database import Base
@@ -37,10 +38,10 @@ class StorableUnit(Base):
     package_quantity: Mapped[int] = mapped_column(Integer, default=1)
     reserved_quantity: Mapped[int] = mapped_column(Integer, default=0)
     unit_name: Mapped[str] = mapped_column(String, nullable=False)
-    component_id: Mapped[int] = mapped_column(Integer)
-    content_type: Mapped[str] = mapped_column(String)
-    content_quantity: Mapped[float] = mapped_column(Float)
-    content_unit: Mapped[UCMeasurementUnit] = mapped_column(Enum(UCMeasurementUnit))
+    component_id: Mapped[Optional[int]] = mapped_column(Integer)
+    content_type: Mapped[Optional[str]] = mapped_column(String)
+    content_quantity: Mapped[Optional[float]] = mapped_column(Float)
+    content_unit: Mapped[Optional[UCMeasurementUnit]] = mapped_column(Enum(UCMeasurementUnit))
     added_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
     expiration_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
