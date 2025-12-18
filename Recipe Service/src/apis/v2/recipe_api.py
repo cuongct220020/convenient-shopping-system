@@ -8,7 +8,7 @@ from schemas.recipe_schemas import (
 )
 from shared.shopping_shared.crud.crud_router_base import create_crud_router
 from shared.shopping_shared.databases.fastapi_database import get_db
-from utils.custom_mapping import recipe_detailed_response_mapping
+from utils.custom_mapping import recipe_detailed_mapping
 
 recipe_crud = RecipeCRUD(Recipe)
 
@@ -66,7 +66,7 @@ def get_recipe_detailed(id: int, db: Session = Depends(get_db)):
     recipe = recipe_crud.get_detail(db, id)
     if recipe is None:
         raise HTTPException(status_code=404, detail=f"Recipe with id={id} not found")
-    response = recipe_detailed_response_mapping(recipe)
+    response = recipe_detailed_mapping(recipe)
     return response
 
 @recipe_router.get(

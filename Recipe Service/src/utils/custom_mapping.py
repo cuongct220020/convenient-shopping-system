@@ -12,7 +12,7 @@ ingredient_response_map: dict[Type[RecipeComponent], Type] = {
     UncountableIngredient: UncountableIngredientResponse
 }
 
-def recipe_detailed_response_mapping(recipe: Recipe) -> RecipeDetailedResponse:
+def recipe_detailed_mapping(recipe: Recipe) -> RecipeDetailedResponse:
     def build_component_detail(cl: ComponentList) -> ComponentDetailedBase:
         component: RecipeComponent = cl.component
         if isinstance(component, Recipe):
