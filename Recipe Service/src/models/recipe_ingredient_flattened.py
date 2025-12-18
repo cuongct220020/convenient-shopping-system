@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, String, JSON
-from shared.shopping_shared.databases.fastapi_database import Base
+from database import Base
 
 class RecipeIngredientFlattened(Base):
     __tablename__ = "recipe_ingredient_flattened"

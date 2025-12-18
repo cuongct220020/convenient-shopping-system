@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 from enums.uc_measurement_unit import UCMeasurementUnit
 from enums.storage_type import StorageType
-from shared.shopping_shared.databases.fastapi_database import Base
+from database import Base
 class Storage(Base):
     __tablename__ = "storages"
 

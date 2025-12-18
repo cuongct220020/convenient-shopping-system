@@ -4,8 +4,8 @@ from services.plan_crud import PLanCRUD
 from services.plan_transition import PlanTransition
 from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse
 from models.shopping_plan import ShoppingPlan
-from shared.shopping_shared.crud.crud_router_base import create_crud_router
-from shared.shopping_shared.databases.fastapi_database import get_db
+from .crud_router_base import create_crud_router
+from database import get_db
 from shared.shopping_shared.schemas.response_schema import GenericResponse
 
 plan_crud = PLanCRUD(ShoppingPlan)

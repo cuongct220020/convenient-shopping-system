@@ -3,9 +3,9 @@ from typing import TypeVar, Type, cast, Optional
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
-from ..databases.fastapi_database import get_db
-from .crud_base import CRUDBase
-from ..schemas.response_schema import PaginationResponse
+from database import get_db
+from shared.shopping_shared.crud.crud_base import CRUDBase
+from shared.shopping_shared.schemas.response_schema import PaginationResponse
 
 """
     Generic CRUD router factory for reuse across CRUD operations of different models

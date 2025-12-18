@@ -4,8 +4,8 @@ from services.storable_unit_crud import StorableUnitCRUD
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse
 from models.storage import StorableUnit
 from shared.shopping_shared.schemas.response_schema import GenericResponse
-from shared.shopping_shared.crud.crud_router_base import create_crud_router
-from shared.shopping_shared.databases.fastapi_database import get_db
+from .crud_router_base import create_crud_router
+from database import get_db
 
 storable_unit_crud = StorableUnitCRUD(StorableUnit)
 

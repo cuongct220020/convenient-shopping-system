@@ -1,4 +1,4 @@
-from shared.shopping_shared.databases.fastapi_database import engine, Base
+from database import engine, Base
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apis.v2.ingredient_api import ingredient_router

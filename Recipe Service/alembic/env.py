@@ -7,25 +7,10 @@ from alembic import context
 
 import sys
 import os
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# 1️⃣ để import models (src)
-SRC_DIR = os.path.abspath(os.path.join(BASE_DIR, '..', 'src'))
-sys.path.insert(0, SRC_DIR)
-
-# 2️⃣ để import shared
-PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, '..', '..'))
-sys.path.insert(0, PROJECT_ROOT)
-
-from shared.shopping_shared.databases.fastapi_database import Base
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+from database import Base
 from models.recipe_component import (
-    RecipeComponent,
-    Ingredient,
-    CountableIngredient,
-    UncountableIngredient,
-    Recipe,
-    ComponentList,
+    RecipeComponent, Ingredient, CountableIngredient, UncountableIngredient, Recipe, ComponentList
 )
 
 

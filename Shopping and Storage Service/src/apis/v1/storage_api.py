@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from services.storage_crud import StorageCRUD
 from schemas.storage_schemas import StorageCreate, StorageUpdate, StorageResponse
 from models.storage import Storage
-from shared.shopping_shared.crud.crud_router_base import create_crud_router
+from .crud_router_base import create_crud_router
 
 storage_crud = StorageCRUD(Storage)
 

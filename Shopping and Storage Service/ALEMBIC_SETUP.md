@@ -47,7 +47,7 @@ from alembic import context
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 # Import Base từ database config
-from core.database import Base
+from database import Base
 
 # Import tất cả models để Alembic có thể detect chúng
 from models.shopping_plan import ShoppingPlan, Report
@@ -62,6 +62,7 @@ if config.config_file_name is not None:
 
 # Set target_metadata để Alembic biết cấu trúc database
 target_metadata = Base.metadata
+
 
 # (Tùy chọn) Đọc database URL từ biến môi trường
 # import os

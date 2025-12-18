@@ -7,8 +7,8 @@ from schemas.recipe_flattened_schemas import AggregatedIngredientsResponse, Reci
 from schemas.recipe_schemas import (
     RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 )
-from shared.shopping_shared.crud.crud_router_base import create_crud_router
-from shared.shopping_shared.databases.fastapi_database import get_db
+from .crud_router_base import create_crud_router
+from database import get_db
 from utils.custom_mapping import recipe_detailed_mapping, recipes_flattened_aggregated_mapping
 
 recipe_crud = RecipeCRUD(Recipe)
