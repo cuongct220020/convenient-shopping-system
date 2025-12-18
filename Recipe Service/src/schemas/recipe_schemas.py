@@ -1,7 +1,8 @@
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Literal, Annotated
 from typing_extensions import TypeAlias
-from .ingredient import IngredientResponse
+from enums.level import Level
+from .ingredient_schemas import IngredientResponse
 
 class ComponentBase(BaseModel):
     component_id: int
@@ -11,11 +12,11 @@ class RecipeBase(BaseModel):
     image_url: Optional[str] = None
     prep_time: Optional[int] = Field(None, gt=0)
     cook_time: Optional[int] = Field(None, gt=0)
-    description: Optional[str] = None
 
 # === Create ===
 class RecipeCreate(RecipeBase):
     component_name: str
+    level: Level
     default_servings: int = Field(1, ge=1)
     instructions: list[str]
     component_list: list[ComponentBase]
@@ -25,6 +26,7 @@ class RecipeCreate(RecipeBase):
 # === Update ===
 class RecipeUpdate(RecipeBase):
     component_name: Optional[str] = None
+    level: Optional[Level] = None
     default_servings: Optional[int] = Field(None, ge=1)
     instructions: Optional[list[str]] = None
     component_list: Optional[list[ComponentBase]] = None
@@ -35,6 +37,7 @@ class RecipeUpdate(RecipeBase):
 class RecipeResponse(RecipeBase):
     component_id: int
     component_name: str
+    level: Level
     default_servings: int
     instructions: list[str]
     component_list: list[ComponentBase]
@@ -58,6 +61,7 @@ class RecipeDetailedResponse(RecipeBase):
     component_id: int
     component_name: str
     type: Literal["recipe"]
+    level: Level
     default_servings: int
     instructions: list[str]
     component_list: list[ComponentDetailedBase]
@@ -66,9 +70,10 @@ RecipeDetailedResponse.model_rebuild()
 ComponentDetailedBase.model_rebuild()
 
 
-class RecipeFlattenedResponse(BaseModel):
-    recipe_id: int
-    recipe_name: str
-    all_ingredients: list[dict]
-
-    model_config = ConfigDict(from_attributes=True)
+class RecipeFlattenedResponse(RecipeBase):
+    component_id: int
+    component_name: str
+    level: Level
+    default_servings: int
+    instructions: list[str]
+    all_ingredients: dict[int, tuple[float, IngredientResponse]]
