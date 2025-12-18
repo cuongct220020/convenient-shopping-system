@@ -1,28 +1,29 @@
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, select, String
-from typing import Sequence, Optional
+from typing import Sequence
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
 from models.recipe_ingredient_flattened import RecipeIngredientFlattened
-from schemas.recipe import RecipeCreate, RecipeUpdate
+from schemas.recipe_schemas import RecipeCreate, RecipeUpdate
 
 """
     Method for RecipeDetailResponse
 """
 
 class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
-    def get_detail(self, db: Session, id: int) -> Optional[Recipe]:
+    def get_detail(self, db: Session, ids: list[int]) -> Sequence[Recipe]:
         return db.execute(
             select(Recipe)
             .options(
                 selectinload(Recipe.component_list)
-                .selectinload(ComponentList.component)
+                .selectinload(ComponentList.component),
+                selectinload(Recipe.component_list)
+                .selectinload(ComponentList.component.of_type(Recipe))
+                .selectinload(Recipe.component_list)
+                .selectinload(ComponentList.component),
             )
-            .where(Recipe.component_id == id)
-        ).scalars().first()
-
-    def get_flattened(self, db: Session, id: int) -> Optional[RecipeIngredientFlattened]:
-        return db.get(RecipeIngredientFlattened, id)
+            .where(Recipe.component_id.in_(ids))
+        ).scalars().all()
 
     def search(self, db: Session, keyword: str, limit: int = 10)  -> Sequence[Recipe]:
         return db.execute(

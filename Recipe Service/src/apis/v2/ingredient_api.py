@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, status, Depends, Query
 from sqlalchemy.orm import Session
 from services.ingredient_crud import IngredientCRUD
-from schemas.ingredient import IngredientCreate, IngredientUpdate, IngredientResponse
+from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate, IngredientResponse
 from models.recipe_component import Ingredient
 from shared.shopping_shared.crud.crud_router_base import create_crud_router
 from shared.shopping_shared.databases.fastapi_database import get_db
