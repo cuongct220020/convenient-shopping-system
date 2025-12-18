@@ -34,9 +34,3 @@ class StorableUnitResponse(BaseModel):
     expiration_date: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
-
-class StorableUnitConsumeResponse(BaseModel):
-    message: str
-    storable_unit: Optional[StorableUnitResponse] = None
-
-    model_config = ConfigDict(from_attributes=True)
