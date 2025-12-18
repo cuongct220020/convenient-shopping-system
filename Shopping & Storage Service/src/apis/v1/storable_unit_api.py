@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from services.storable_unit_crud import StorableUnitCRUD
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse, StorableUnitConsumeResponse
 from models.storage import StorableUnit
-from .crud_router_base import create_crud_router
-from core.database import get_db
+from shared.shopping_shared.crud.crud_router_base import create_crud_router
+from shared.shopping_shared.databases.fastapi_database import get_db
 
 storable_unit_crud = StorableUnitCRUD(StorableUnit)
 

@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from shopping_shared.configs import KafkaConfig, EmailConfig
+from shopping_shared.configs import KafkaConfig
 
 load_dotenv()
 
@@ -13,4 +13,16 @@ class Config:
         "access_log": False,
         "auto_reload": True,
     }
+
+    KAFKA = KafkaConfig(
+        bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS'),
+    )
+
+    # Email Configuration
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_SENDER = os.getenv('EMAIL_SENDER', 'myemail')
+    EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', 'mypassword')
+
 

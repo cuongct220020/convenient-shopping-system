@@ -1,0 +1,195 @@
+# kong.yml - Declarative Kong Configuration
+# Improved configuration for Convenient Shopping System
+_format_version: "3.0"
+
+# Services configuration
+services:
+  # User Service - handles authentication, user management, and admin functions
+  - name: user-service
+    url: http://user-service:8000
+    routes:
+      # Authentication routes (public, no authentication required)
+      - name: user-service-auth
+        paths:
+          - /api/v1/user-service/auth
+        strip_path: true
+        preserve_host: true
+        # Apply rate limiting specifically to auth endpoints to prevent brute force
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 60
+              hour: 1000
+              policy: redis
+              redis_host: redis
+              redis_port: 6379
+              limit_by: ip
+
+      # User profile routes (requires authentication)
+      - name: user-service-users
+        paths:
+          - /api/v1/user-service/users
+        strip_path: true
+        preserve_host: true
+
+      # Group management routes (requires authentication)
+      - name: user-service-groups
+        paths:
+          - /api/v1/user-service/groups
+        strip_path: true
+        preserve_host: true
+
+      # Admin routes (requires admin role)
+      - name: user-service-admin
+        paths:
+          - /api/v1/user-service/admin
+        strip_path: true
+        preserve_host: true
+        # Restrict access to admin role only
+        plugins:
+          - name: acl
+            config:
+              allow:
+                - admin
+
+      # Health check routes
+      - name: user-service-health
+        paths:
+          - /health
+          - /ready
+        strip_path: true
+        preserve_host: true
+
+    # Apply plugins to all routes in this service
+    plugins:
+      # JWT authentication for all endpoints except auth routes
+      - name: jwt
+        config:
+          uri_param_names:
+            - jwt
+          claims_to_verify:
+            - exp
+            - nbf
+          key_claim_name: kid
+          header_names:
+            - authorization
+          algorithms:
+            - RS256
+      # Rate limiting for general protection
+      - name: rate-limiting
+        config:
+          minute: 100
+          hour: 1000
+          policy: redis
+          redis_host: redis
+          redis_port: 6379
+          limit_by: ip
+
+# Consumer definitions for role-based access control
+consumers:
+  # Consumer for regular users
+  - username: user
+    custom_id: user-role
+    tags:
+      - user-tier
+    # Optionally apply specific rate limits or other configurations for users
+
+  # Consumer for admin users
+  - username: admin
+    custom_id: admin-role
+    tags:
+      - admin-tier
+    # Optionally apply higher rate limits or other admin-specific configurations
+
+# Global plugins - apply to all services/routes
+plugins:
+  # SSL/TLS with ACME for automatic certificate management
+  - name: acme
+    config:
+      account_email: admin@convenientsystem.com
+      domains:
+        - "convenientsystem.com"
+        - "*.convenientsystem.com"
+      tos_accepted: true
+      storage: redis
+      storage_config:
+        redis:
+          host: redis
+          port: 6379
+          password: null
+          database: 0
+      # Enable HTTP-01 and TLS-ALPN-01 challenges
+      http_challenge_port: 80
+      https_challenge_port: 443
+
+  # Bot detection for security
+  - name: bot-detection
+    config:
+      allow: []
+      deny: []
+
+  # Access control list to restrict groups
+  - name: acl
+    config:
+      hide_groups_header: false
+      allow:
+        - user
+        - admin
+
+  # Proxy cache for appropriate responses (only GET requests to cacheable endpoints)
+  - name: proxy-cache
+    config:
+      response_code:
+        - 200
+      request_method:
+        - GET
+      content_type:
+        - application/json
+      cache_ttl: 300  # 5 minutes - appropriate for user data that may change
+      strategy: redis
+      storage_config:
+        redis:
+          host: redis
+          port: 6379
+          database: 1
+
+  # Request transformation - add security and identification headers
+  - name: request-transformer
+    config:
+      add:
+        headers:
+          - X-Forwarded-Proto: https
+          - X-Real-IP: $remote_addr
+          - X-Forwarded-For: $proxy_add_x_forwarded_for
+
+  # Response transformation - remove potentially revealing headers
+  - name: response-transformer
+    config:
+      remove:
+        headers:
+          - Server
+          - X-Powered-By
+          - X-Runtime
+          - X-Version
+
+  # CORS plugin to handle cross-origin requests properly
+  - name: cors
+    config:
+      origins:
+        - "https://convenientsystem.com"
+        - "https://www.convenientsystem.com"
+        - "http://localhost:3000"  # for development
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+        - X-Requested-With
+      max_age: 3600
+      credentials: true

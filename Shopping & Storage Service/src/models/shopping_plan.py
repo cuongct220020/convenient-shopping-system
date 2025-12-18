@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime
 from enums.plan_status import PlanStatus
-from core.database import Base
+from shared.shopping_shared.databases.fastapi_database import Base
 
 class ShoppingPlan(Base):
     __tablename__ = "shopping_plans"

@@ -1,6 +1,5 @@
-# app/hooks/caching.py
+# microservices/user-service/app/hooks/caching.py
 from sanic import Sanic, Request
-from sanic.exceptions import SanicException
 
 from shopping_shared.caching.redis_manager import redis_manager
 from shopping_shared.utils.logger_utils import get_logger
@@ -13,15 +12,19 @@ async def setup_redis(app: Sanic):
     logger.info("Initializing Redis connection pool...")
 
     # Redis Configuration
-    redis_host = app.config.get("REDIS_HOST")
-    redis_port = app.config.get("REDIS_PORT")
-    redis_db = app.config.get("REDIS_DB")
+    redis_host = app.config.REDIS.REDIS_HOST
+    redis_port = app.config.REDIS.REDIS_PORT
+    redis_db = app.config.REDIS.REDIS_DB
+    redis_password = app.config.REDIS.REDIS_PASSWORD
+    decode_responses = app.config.REDIS.REDIS_DECODE_RESPONSES
 
     # Redis setup
     redis_manager.setup(
         host=redis_host,
         port=redis_port,
-        db=redis_db
+        db=redis_db,
+        password=redis_password,
+        decode_responses=decode_responses
     )
 
     # Ping to check connection

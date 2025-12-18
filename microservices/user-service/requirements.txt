@@ -9,5 +9,10 @@ gunicorn
 python-dotenv
 passlib[bcrypt]
 PyJWT
+pydantic[email]
+greenlet
+black
+ruff
+pytest
 
--e ../../shopping_shared
+-e ../../shared

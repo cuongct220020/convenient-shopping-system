@@ -1,178 +1,117 @@
 openapi: 3.1.0
 info:
   title: User Service API
-  description: "API quản lý người dùng cho hệ thống đi chợ tiện lợi. Hỗ trợ authentication bằng JWT, RBAC, quản lý profile và nhóm gia đình."
-  version: 1.0.0
-
+  description: "API quản lý người dùng, profile, và nhóm gia đình cho hệ thống đi chợ tiện lợi. Hỗ trợ xác thực bằng JWT và phân quyền theo vai trò."
+  version: "1.0.0"
 servers:
-  - url: https://api.example.com/api/v1
-    description: Production server
-
+  - url: /api/v1/user-service
+    description: Local Development Server
 tags:
-  - name: Auth
-    description: Authentication & token management
-  - name: Users
-    description: Quản lý người dùng (Admin only)
+  - name: Authentication
+    description: Đăng ký, đăng nhập, làm mới token và các hoạt động xác thực.
   - name: Profile
-    description: Thông tin cá nhân (HeadChef & Family Members)
-  - name: Family
-    description: Quản lý nhóm gia đình (HeadChef & Members)
-
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-  schemas:
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-        email:
-          type: string
-          format: email
-        full_name:
-          type: string
-        role:
-          type: string
-          enum: [admin, headchef, family_member]
-        status:
-          type: string
-          enum: [active, inactive]
-        created_at:
-          type: string
-          format: date-time
-      required:
-        - id
-        - email
-        - role
-        - status
-        - created_at
-
-    UserCreate:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-        full_name:
-          type: string
-        password:
-          type: string
-      required:
-        - email
-        - password
-
-    UserUpdate:
-      type: object
-      properties:
-        full_name:
-          type: string
-        status:
-          type: string
-          enum: [active, inactive]
-
-    AuthLogin:
-      type: object
-      properties:
-        email:
-          type: string
-        password:
-          type: string
-      required:
-        - email
-        - password
-
-    AuthTokens:
-      type: object
-      properties:
-        access_token:
-          type: string
-        refresh_token:
-          type: string
-        token_type:
-          type: string
-          example: Bearer
-
-    FamilyGroup:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        owner_id:
-          type: string
-        members:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-      required:
-        - id
-        - name
-        - owner_id
-        - members
-
-security:
-  - bearerAuth: []
-
+    description: Quản lý thông tin cá nhân của người dùng đang đăng nhập.
+  - name: Groups
+    description: Quản lý nhóm gia đình (tạo, xóa, thêm/xóa thành viên).
+  - name: Admin - User Management
+    description: (Admin only) Quản lý toàn bộ tài khoản và dữ liệu người dùng.
+  - name: Admin - Group Management
+    description: (Admin only) Quản lý toàn bộ các nhóm gia đình trong hệ thống.
 paths:
   /auth/register:
     post:
-      tags:
-        - Auth
+      tags: [Authentication]
       summary: Đăng ký tài khoản mới
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserCreate'
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: User created
+          description: "Tài khoản được tạo thành công."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-
-  /auth/login:
+                $ref: '#/components/schemas/UserPublicProfileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /auth/otp/send:
     post:
-      tags:
-        - Auth
-      summary: Đăng nhập
+      tags: [Authentication]
+      summary: Yêu cầu gửi mã OTP theo hành động
+      description: Gửi mã OTP cho một hành động cụ thể (đăng ký, quên mật khẩu, v.v.).
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthLogin'
+              $ref: '#/components/schemas/SendVerificationOTPRequest'
       responses:
         '200':
-          description: JWT Tokens
+          description: "Gửi OTP thành công."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthTokens'
-
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /auth/otp/verify:
+    post:
+      tags: [Authentication]
+      summary: Xác thực mã OTP
+      description: Xác thực mã OTP cho các hành động khác nhau (đăng ký, quên mật khẩu, v.v.).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyAccountRequest'
+      responses:
+        '200':
+          description: "Xác thực OTP thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Đăng nhập bằng email và mật khẩu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: "Đăng nhập thành công, trả về access và refresh token."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /auth/logout:
     post:
-      tags:
-        - Auth
+      tags: [Authentication]
       summary: Đăng xuất
       security:
         - bearerAuth: []
       responses:
-        '204':
-          description: Logged out
-
-  /auth/refresh:
+        '200':
+          description: "Đăng xuất thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /auth/refresh-token:
     post:
-      tags:
-        - Auth
+      tags: [Authentication]
       summary: Làm mới access token
       requestBody:
         required: true
@@ -185,217 +124,17 @@ paths:
                   type: string
       responses:
         '200':
-          description: JWT Tokens
+          description: "Làm mới token thành công."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthTokens'
-
-  /auth/me:
-    get:
-      tags:
-        - Auth
-      summary: Lấy thông tin user hiện tại
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: User profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-
-  /admin/users:
-    get:
-      tags:
-        - Users
-      summary: Lấy danh sách tất cả người dùng (Admin only)
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Danh sách người dùng
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
-
+                $ref: '#/components/schemas/TokenDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/reset-password:
     post:
-      tags:
-        - Users
-      summary: Tạo user mới (Admin only)
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCreate'
-      responses:
-        '201':
-          description: User created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-
-  /admin/users/{user_id}:
-    get:
-      tags:
-        - Users
-      summary: Lấy thông tin chi tiết user (Admin only)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: User detail
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-
-    put:
-      tags:
-        - Users
-      summary: Cập nhật thông tin user (Admin only)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserUpdate'
-      responses:
-        '200':
-          description: User updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-
-    delete:
-      tags:
-        - Users
-      summary: Xóa hoặc khóa user (Admin only)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: User deleted
-
-  /me:
-    get:
-      tags:
-        - Profile
-      summary: Lấy profile cá nhân
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: User profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-
-    put:
-      tags:
-        - Profile
-      summary: Cập nhật profile cá nhân
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserUpdate'
-      responses:
-        '200':
-          description: Updated profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-
-  /me/family:
-    get:
-      tags:
-        - Family
-      summary: Xem thông tin nhóm gia đình
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Family group
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FamilyGroup'
-
-    post:
-      tags:
-        - Family
-      summary: Tạo nhóm gia đình mới (HeadChef only)
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-      responses:
-        '201':
-          description: Family group created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FamilyGroup'
-
-    delete:
-      tags:
-        - Family
-      summary: Rời khỏi nhóm hoặc xóa nhóm (HeadChef hoặc member)
-      security:
-        - bearerAuth: []
-      responses:
-        '204':
-          description: Left group
-
-  /me/family/invite:
-    post:
-      tags:
-        - Family
-      summary: Mời thành viên mới vào nhóm (HeadChef only)
-      security:
-        - bearerAuth: []
+      tags: [Authentication]
+      summary: Yêu cầu reset mật khẩu
       requestBody:
         required: true
         content:
@@ -405,6 +144,1048 @@ paths:
               properties:
                 email:
                   type: string
+                  format: email
       responses:
         '200':
-          description: Invitation sent
+          description: "Nếu email tồn tại, yêu cầu reset đã được gửi đi."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /users/me:
+    get:
+      tags: [Profile]
+      summary: Lấy thông tin tài khoản cơ bản
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Thông tin cơ bản của người dùng đang đăng nhập."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCoreInfoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Profile]
+      summary: Cập nhật thông tin cá nhân cơ bản
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: "Cập nhật thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCoreInfoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users/me/profile/identity:
+    get:
+      tags: [Profile]
+      summary: Lấy hồ sơ định danh
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Hồ sơ định danh của người dùng."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserIdentityProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Profile]
+      summary: Cập nhật một phần hồ sơ định danh
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserIdentityProfileUpdate'
+      responses:
+        '200':
+          description: "Cập nhật thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserIdentityProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users/me/profile/health:
+    get:
+      tags: [Profile]
+      summary: Lấy hồ sơ sức khỏe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Hồ sơ sức khỏe của người dùng."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserHealthProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Profile]
+      summary: Cập nhật một phần hồ sơ sức khỏe
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserHealthProfileUpdate'
+      responses:
+        '200':
+          description: "Cập nhật thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserHealthProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users/me/change-password:
+    post:
+      tags: [Profile]
+      summary: Thay đổi mật khẩu (khi đã đăng nhập)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: "Thay đổi mật khẩu thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users/me/email/request-change:
+    post:
+      tags: [Profile]
+      summary: Yêu cầu thay đổi địa chỉ email
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestEmailChangeRequest'
+      responses:
+        '200':
+          description: "Yêu cầu gửi OTP thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users/me/email/confirm-change:
+    post:
+      tags: [Profile]
+      summary: Xác nhận thay đổi địa chỉ email bằng mã OTP
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmEmailChangeRequest'
+      responses:
+        '200':
+          description: "Thay đổi địa chỉ email thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /groups:
+    post:
+      tags: [Groups]
+      summary: Tạo một nhóm mới
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupCreate'
+      responses:
+        '201':
+          description: "Tạo nhóm thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /groups/{groupId}:
+    delete:
+      tags: [Groups]
+      summary: Xóa một nhóm (HeadChef only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: "Xóa nhóm thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /groups/{groupId}/members/me:
+    delete:
+      tags: [Groups]
+      summary: Thành viên tự rời khỏi nhóm
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: "Rời nhóm thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /groups/{groupId}/members:
+    post:
+      tags: [Groups]
+      summary: Thêm thành viên vào nhóm (HeadChef only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '201':
+          description: "Thêm thành viên thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMemberResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /groups/{groupId}/members/{userId}:
+    delete:
+      tags: [Groups]
+      summary: Xóa thành viên khỏi nhóm (HeadChef only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: "Xóa thành viên thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Groups]
+      summary: Cập nhật vai trò của thành viên trong nhóm (HeadChef only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  $ref: '#/components/schemas/GroupRole'
+      responses:
+        '200':
+          description: "Cập nhật vai trò thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMemberResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /groups/{groupId}/members/{userId}/identity-profile:
+    get:
+      tags: [Groups]
+      summary: Xem hồ sơ định danh của thành viên trong nhóm
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: "Hồ sơ định danh của thành viên."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserIdentityProfileResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /groups/{groupId}/members/{userId}/health-profile:
+    get:
+      tags: [Groups]
+      summary: Xem hồ sơ sức khỏe của thành viên trong nhóm
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: "Hồ sơ sức khỏe của thành viên."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserHealthProfileResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/users:
+    get:
+      tags: [Admin - User Management]
+      summary: Lấy danh sách tất cả người dùng
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Danh sách người dùng."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAdminViewPaginatedResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin - User Management]
+      summary: Tạo người dùng mới
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: "Tạo người dùng thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAdminViewResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/users/{userId}:
+    get:
+      tags: [Admin - User Management]
+      summary: Lấy thông tin chi tiết của một người dùng
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: "Thông tin chi tiết người dùng."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAdminViewResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Admin - User Management]
+      summary: Cập nhật toàn bộ thông tin người dùng
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserAdminUpdate'
+      responses:
+        '200':
+          description: "Cập nhật thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAdminViewResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Admin - User Management]
+      summary: Xóa một người dùng
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: "Xóa người dùng thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/groups:
+    get:
+      tags: [Admin - Group Management]
+      summary: Lấy danh sách tất cả các nhóm
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: "Danh sách các nhóm."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailedPaginatedResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/groups/{groupId}:
+    get:
+      tags: [Admin - Group Management]
+      summary: Lấy thông tin chi tiết một nhóm bất kỳ
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: "Thông tin chi tiết nhóm."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailedResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Admin - Group Management]
+      summary: Cập nhật thông tin một nhóm bất kỳ
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupCreate'
+      responses:
+        '200':
+          description: "Cập nhật nhóm thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailedResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Admin - Group Management]
+      summary: Xóa một nhóm bất kỳ
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: "Xóa nhóm thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/groups/{groupId}/members:
+    post:
+      tags: [Admin - Group Management]
+      summary: Thêm thành viên vào một nhóm bất kỳ
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '201':
+          description: "Thêm thành viên thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMemberResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/groups/{groupId}/members/{userId}:
+    delete:
+      tags: [Admin - Group Management]
+      summary: Xóa thành viên khỏi một nhóm bất kỳ
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: "Xóa thành viên thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Admin - Group Management]
+      summary: Cập nhật vai trò thành viên trong một nhóm bất kỳ
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  $ref: '#/components/schemas/GroupRole'
+      responses:
+        '200':
+          description: "Cập nhật vai trò thành công."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMemberResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: "ID của nhóm gia đình."
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: "ID của người dùng."
+  responses:
+    BadRequest:
+      description: "Dữ liệu không hợp lệ."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: "Xác thực thất bại."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: "Không có quyền truy cập."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: "Không tìm thấy tài nguyên."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    # --- Base & Enums ---
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: "Mô tả lỗi."
+    UserGender:
+      type: string
+      enum: [MALE, FEMALE, OTHER]
+    ActivityLevel:
+      type: string
+      enum: [LOW, NORMAL, HIGH]
+    HealthCondition:
+      type: string
+      enum: [NORMAL, DIABETES, HIGH_BLOOD_PRESSURE]
+    HealthGoal:
+      type: string
+      enum: [LOSE_WEIGHT, MAINTAIN, GAIN_WEIGHT]
+    GroupRole:
+      type: string
+      enum: [HEAD_CHEF, MEMBER]
+    UserRole:
+      type: string
+      enum: [USER, ADMIN]
+    # --- Request Schemas ---
+    RegisterRequest:
+      type: object
+      properties:
+        user_name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required: [user_name, email, password, first_name, last_name]
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+    ChangePasswordRequest:
+      type: object
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+      required: [current_password, new_password]
+    SendVerificationOTPRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required: [email]
+    VerifyAccountRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        otp:
+          type: string
+      required: [email, otp]
+    RequestEmailChangeRequest:
+      type: object
+      properties:
+        new_email:
+          type: string
+          format: email
+      required: [new_email]
+    ConfirmEmailChangeRequest:
+      type: object
+      properties:
+        new_email:
+          type: string
+          format: email
+        otp:
+          type: string
+      required: [new_email, otp]
+    GroupCreate:
+      type: object
+      properties:
+        group_name:
+          type: string
+        group_avatar_url:
+          type: string
+          format: uri
+      required: [group_name]
+    UserUpdate:
+      type: object
+      properties:
+        phone_num:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+    UserIdentityProfileUpdate:
+      type: object
+      properties:
+        gender:
+          $ref: '#/components/schemas/UserGender'
+        date_of_birth:
+          type: string
+          format: date
+        occupation:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+    UserHealthProfileUpdate:
+      type: object
+      properties:
+        height_cm:
+          type: integer
+        weight_kg:
+          type: number
+          format: float
+        activity_level:
+          $ref: '#/components/schemas/ActivityLevel'
+        curr_condition:
+          $ref: '#/components/schemas/HealthCondition'
+        health_goal:
+          $ref: '#/components/schemas/HealthGoal'
+    UserAdminUpdate:
+      allOf:
+        - $ref: '#/components/schemas/UserUpdate'
+        - type: object
+          properties:
+            user_name:
+              type: string
+            email:
+              type: string
+              format: email
+            system_role:
+              $ref: '#/components/schemas/UserRole'
+            identity_profile:
+              $ref: '#/components/schemas/UserIdentityProfileUpdate'
+            health_profile:
+              $ref: '#/components/schemas/UserHealthProfileUpdate'
+    # --- Data Schemas ---
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: "Bearer"
+    Address:
+      type: object
+      properties:
+        ward:
+          type: string
+        district:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+      required: [city, province]
+    UserIdentityProfile:
+      type: object
+      properties:
+        gender:
+          $ref: '#/components/schemas/UserGender'
+        date_of_birth:
+          type: string
+          format: date
+        occupation:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+    UserHealthProfile:
+      type: object
+      properties:
+        height_cm:
+          type: integer
+        weight_kg:
+          type: number
+          format: float
+        activity_level:
+          $ref: '#/components/schemas/ActivityLevel'
+        curr_condition:
+          $ref: '#/components/schemas/HealthCondition'
+        health_goal:
+          $ref: '#/components/schemas/HealthGoal'
+    UserPublicProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+    UserCoreInfo:
+      allOf:
+        - $ref: '#/components/schemas/UserPublicProfile'
+        - type: object
+          properties:
+            email:
+              type: string
+              format: email
+            phone_num:
+              type: string
+    UserDetailedProfile:
+      allOf:
+        - $ref: '#/components/schemas/UserCoreInfo'
+        - type: object
+          properties:
+            identity_profile:
+              $ref: '#/components/schemas/UserIdentityProfile'
+            health_profile:
+              $ref: '#/components/schemas/UserHealthProfile'
+    UserAdminView:
+      allOf:
+        - $ref: '#/components/schemas/UserDetailedProfile'
+        - type: object
+          properties:
+            system_role:
+              $ref: '#/components/schemas/UserRole'
+            created_at:
+              type: string
+              format: date-time
+            last_login:
+              type: string
+              format: date-time
+    GroupMember:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserPublicProfile'
+        role:
+          $ref: '#/components/schemas/GroupRole'
+    GroupDetailed:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_name:
+          type: string
+        group_avatar_url:
+          type: string
+          format: uri
+        creator:
+          $ref: '#/components/schemas/UserPublicProfile'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMember'
+    # --- Response Wrapper Schemas ---
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, fail, error]
+          default: success
+        message:
+          type: string
+          nullable: true
+        data:
+          nullable: true
+    PaginationResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            page:
+              type: integer
+            page_size:
+              type: integer
+            total_items:
+              type: integer
+            total_pages:
+              type: integer
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            message:
+              type: string
+              example: "Thao tác thành công."
+    TokenDataResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/TokenResponse'
+    UserPublicProfileResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserPublicProfile'
+    UserCoreInfoResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserCoreInfo'
+    UserIdentityProfileResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserIdentityProfile'
+    UserHealthProfileResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserHealthProfile'
+    GroupDetailedResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/GroupDetailed'
+    GroupMemberResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/GroupMember'
+    UserAdminViewResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserAdminView'
+    UserAdminViewPaginatedResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginationResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserAdminView'
+    GroupDetailedPaginatedResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginationResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/GroupDetailed'

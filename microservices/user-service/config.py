@@ -4,30 +4,51 @@ from shopping_shared.configs import PostgreSQLConfig, RedisConfig, KafkaConfig
 
 load_dotenv() # Load .env
 
-# Default configuration for service-specific settings
-DEFAULT_APP_HOST = 'localhost'
-DEFAULT_APP_PORT = 1337
-DEFAULT_DEBUG_MODE = True
-DEFAULT_WORKER_COUNT = 2
-
-DEFAULT_JWT_SECRET = '85c145a16bd6f6e1f3e104ca78c6a102'
-DEFAULT_JWT_ALGORITHM = 'HS256'
-DEFAULT_JWT_EXPIRATION_MINUTES = 10
-DEFAULT_REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 class Config:
     """ Service-specific configurations for User-Service. """
     RUN_SETTING = {
-        'host': os.getenv('APP_HOST', DEFAULT_APP_HOST),
-        'port': int(os.getenv('APP_PORT', DEFAULT_APP_PORT)),
-        'debug': os.getenv('DEBUG', DEFAULT_DEBUG_MODE).lower() == 'true',
+        'host': os.getenv('APP_HOST', 'localhost'),
+        'port': int(os.getenv('APP_PORT', '1337')),
+        'debug': os.getenv('DEBUG', True).lower() == 'true',
         "access_log": False,
         "auto_reload": True,
-        'workers': int(os.getenv('WORKERS', DEFAULT_WORKER_COUNT)),
+        'workers': int(os.getenv('WORKERS', 1)),
     }
 
-    JWT_SECRET = os.getenv('JWT_SECRET', DEFAULT_JWT_SECRET)
-    JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', DEFAULT_JWT_ALGORITHM)
-    JWT_EXPIRATION_MINUTES = os.getenv('JWT_EXPIRATION_MINUTES', DEFAULT_JWT_EXPIRATION_MINUTES)
-    REFRESH_TOKEN_EXPIRE_DAYS = os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', DEFAULT_REFRESH_TOKEN_EXPIRE_DAYS)
+    # JWT Settings
+    JWT_SECRET = os.getenv('JWT_SECRET', '85c145a16bd6f6e1f3e104ca78c6a102')
+    JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
+    JWT_EXPIRATION_MINUTES = os.getenv('JWT_EXPIRATION_MINUTES', 5)
+    REFRESH_TOKEN_EXPIRE_DAYS = os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7)
+
+    # PostgreSQL Settings
+    POSTGRESQL = PostgreSQLConfig(
+        driver=os.getenv('POSTGRES_DB_DRIVER', 'postgresql+asyncpg'),
+        user=os.getenv('POSTGRES_DB_USER', 'myname'),
+        password=os.getenv('POSTGRES_DB_PASSWORD', 'mypassword'),
+        host=os.getenv('POSTGRES_DB_HOST', 'localhost'),
+        port=int(os.getenv('POSTGRES_DB_PORT', 5432)),
+        name=os.getenv('POSTGRES_DB_NAME', 'convenient_shopping')
+    )
+
+    # Redis Setting
+    REDIS = RedisConfig(
+        host=os.getenv('REDIS_HOST', 'localhost'),
+        port=int(os.getenv('REDIS_PORT', 6379)),
+        db=int(os.getenv('REDIS_DB', 0)),
+        password=os.getenv('REDIS_PASSWORD', 'mypassword'),
+        decode_responses=os.getenv('REDIS_DECODE_RESPONSES', True)
+    )
+
+    # Kafka Setting
+    KAFKA = KafkaConfig(
+        bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9094'),
+    )
+
+
+
+
+
+
 

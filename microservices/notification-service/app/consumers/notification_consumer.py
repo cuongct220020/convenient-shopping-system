@@ -12,7 +12,7 @@ async def consume_notifications():
     """
     consumer = kafka_manager.create_consumer(
         NOTIFICATION_TOPIC,
-        group_id="notification_service_group" # A unique group ID for this service
+        group_id="notification_service_group" # A unique groups ID for this service
     )
     await consumer.start()
     logger.info("Notification consumer started and listening for messages...")

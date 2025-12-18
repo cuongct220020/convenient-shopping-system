@@ -1,21 +1,20 @@
 # app/views/auth/refresh_view.py
 from sanic.request import Request
-from sanic.response import json
+from sanic.response import json, HTTPResponse
 from sanic.views import HTTPMethodView
 
-from app.exceptions import Unauthorized
-from app.services.auth_service import AuthService
+from shopping_shared.exceptions import Unauthorized
 from shopping_shared.schemas.response_schema import GenericResponse
-from app.repositories.user_repository import UserRepository
-from app.schemas.auth.token_schema import TokenData
 
+from app.services.auth_service import AuthService
+from app.repositories.user_repository import UserRepository
+from shopping_shared.exceptions import Forbidden
 
 class RefreshView(HTTPMethodView):
-    # Không cần @validate_request vì chúng ta không đọc body
-    async def post(self, request: Request):
+
+    async def post(self, request: Request) -> HTTPResponse:
         """
-        Handles token refresh using a valid refresh token from an HttpOnly cookie.
-        Implements token rotation for enhanced security.
+        Xử lý token refresh
         """
         # 1. Đọc refresh token từ cookie
         old_refresh_token = request.cookies.get("refresh_token")
@@ -23,21 +22,32 @@ class RefreshView(HTTPMethodView):
             raise Unauthorized("Missing refresh token cookie.")
 
         config = request.app.config
-
-        # Instantiate required repositories
         user_repo = UserRepository(session=request.ctx.db_session)
 
-        # 2. Gọi service với token từ cookie
-        new_token_dto: TokenData = await AuthService.refresh_tokens(
-            old_refresh_token=old_refresh_token,
-            user_repo=user_repo,
-        )
+        try:
+            # 2. Gọi service với token từ cookie
+            #    Hàm này giờ trả về TokenData DTO
+            new_token_data = await AuthService.refresh_tokens(
+                old_refresh_token=old_refresh_token,
+                user_repo=user_repo,
+            )
+
+        except (Unauthorized, Forbidden) as e:
+            # --- QUAN TRỌNG: Xóa cookie hỏng/bị thu hồi ---
+            response_data = GenericResponse(status="fail", message=str(e))
+            response = json(response_data.model_dump(), status=401)
+            response.set_cookie(
+                "refresh_token", "", max_age=0, httponly=True,
+                secure=not config.get("DEBUG", False), samesite="Strict",
+                path="/api/v1/user-service/auth/refresh-token"
+            )
+            return response
 
         # 3. Chuẩn bị response chỉ chứa access token mới
         access_token_data = {
-            "access_token": new_token_dto.access_token,
-            "token_type": new_token_dto.token_type,
-            "expires_in_minutes": new_token_dto.expires_in_minutes
+            "access_token": new_token_data.access_token,
+            "token_type": "Bearer", # Bạn có thể thêm vào TokenData DTO
+            "expires_in_minutes": new_token_data.at_expires_in_minutes
         }
         response_data = GenericResponse(
             status="success",
@@ -52,11 +62,12 @@ class RefreshView(HTTPMethodView):
 
         response.set_cookie(
             "refresh_token",
-            new_token_dto.refresh_token,
+            new_token_data.refresh_token,
             max_age=max_age,
             httponly=True,
             secure=not config.get("DEBUG", False),
-            samesite="Strict"
+            samesite="Strict",
+            path="/api/v1/user-service/auth/refresh-token"
         )
 
         return response

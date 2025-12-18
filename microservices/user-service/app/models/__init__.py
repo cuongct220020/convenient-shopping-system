@@ -1,15 +1,13 @@
-from .base import Base
+# microservices/user-service/app/models/__init__.py
+
 from .address import Address
-from .auth import AuthRefreshToken
-from .family import FamilyGroup, GroupMembership
-from .profile import UserIdentityProfile, UserHealthProfile
-from .tag import Tag, UserTag
+from .family_group import FamilyGroup, GroupMembership
+from .user_profile import UserIdentityProfile, UserHealthProfile
+from .user_tag import Tag, UserTag
 from .user import User
 
 __all__ = [
-    "Base",
     "Address",
-    "AuthRefreshToken",
     "FamilyGroup",
     "GroupMembership",
     "UserIdentityProfile",

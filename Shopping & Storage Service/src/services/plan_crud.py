@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from .crud_base import CRUDBase, UpdateSchemaType, ModelType
+from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.shopping_plan import ShoppingPlan
 from schemas.plan_schemas import PlanCreate, PlanUpdate
 

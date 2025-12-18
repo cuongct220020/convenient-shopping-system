@@ -4,21 +4,21 @@ from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth.register_schema import RegisterRequest
+from app.schemas.auth import RegisterRequestSchema
 from app.services.auth_service import AuthService
 from shopping_shared.schemas.response_schema import GenericResponse
 
 
 class RegisterView(HTTPMethodView):
 
-    @validate_request(RegisterRequest)
+    @validate_request(RegisterRequestSchema)
     async def post(self, request: Request):
         """Handles new user registration."""
         validated_data = request.ctx.validated_data
 
         user_repo = UserRepository(session=request.ctx.db_session)
 
-        await AuthService.register_user(
+        await AuthService.register_account(
             reg_data=validated_data,
             user_repo=user_repo
         )

@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from .crud_base import CRUDBase
+from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.storage import StorableUnit
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate
 

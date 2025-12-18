@@ -1,12 +1,11 @@
-from typing import Final
 from app import create_app
-from config import Config, KafkaConfig, EmailConfig
-from shopping_shared.utils.logger_utils import get_logger
+from config import Config, EmailConfig
+from shared.shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger(__name__)
 
 # Create the Sanic app instance
-app: Final = create_app(Config, KafkaConfig, EmailConfig)
+app = create_app(Config, EmailConfig)
 
 def main() -> None:
     """Checks configuration and runs the application."""

@@ -6,8 +6,9 @@ from sqlalchemy import String, DateTime, func, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
-from .base import Base
-from .constants import UserRole
+from shopping_shared.databases.base_model import Base
+
+from app.constants import UserRole
 
 
 class User(Base):
@@ -15,18 +16,20 @@ class User(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
 
-    user_name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(255), nullable=False)
+    username: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     system_role: Mapped[UserRole] = mapped_column(
-        SQLEnum(UserRole), nullable=False, default=UserRole.FAMILY_MEMBER
+        SQLEnum(UserRole), nullable=False, default=UserRole.USER
     )
 
     phone_num: Mapped[Optional[str]] = mapped_column(String(20), unique=True, nullable=True)
     first_name: Mapped[str] = mapped_column(String(255), nullable=False)
     last_name: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -46,11 +49,6 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
 
-    # 1-N tới AuthRefreshToken
-    refresh_tokens: Mapped[List["AuthRefreshToken"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
-    )
-
     # N-M tới Tag (qua bảng user_tags)
     tags: Mapped[List["Tag"]] = relationship(
         secondary="user_tags", back_populates="users"
@@ -64,11 +62,6 @@ class User(Base):
     # 1-N tới FamilyGroup (với tư cách người tạo)
     created_groups: Mapped[List["FamilyGroup"]] = relationship(
         foreign_keys="FamilyGroup.created_by_user_id", back_populates="creator"
-    )
-
-    # 1-N tới FamilyGroup (với tư cách headchef)
-    headchef_of_groups: Mapped[List["FamilyGroup"]] = relationship(
-        foreign_keys="FamilyGroup.headchef_user_id", back_populates="headchef"
     )
 
     def __repr__(self) -> str:
