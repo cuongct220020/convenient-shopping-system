@@ -1,6 +1,6 @@
 from typing import Type
-from schemas.recipe import RecipeDetailedResponse, ComponentDetailedBase
-from schemas.ingredient import CountableIngredientResponse, UncountableIngredientResponse
+from schemas.recipe_schemas import RecipeDetailedResponse, ComponentDetailedBase
+from schemas.ingredient_schemas import CountableIngredientResponse, UncountableIngredientResponse, IngredientResponse
 from models.recipe_component import Recipe, ComponentList, RecipeComponent, CountableIngredient, UncountableIngredient
 
 """
@@ -34,9 +34,16 @@ def recipe_detailed_response_mapping(recipe: Recipe) -> RecipeDetailedResponse:
             component_id=recipe.component_id,
             component_name=recipe.component_name,
             type="recipe",
+            level=recipe.level,
             default_servings=recipe.default_servings,
             instructions=recipe.instructions or [],
-            component_list=[build_component_detail(cl) for cl in recipe.component_list]
+            component_list=[
+                build_component_detail(cl)
+                for cl in recipe.component_list
+            ],
+            image_url=recipe.image_url,
+            prep_time=recipe.prep_time,
+            cook_time=recipe.cook_time,
         )
 
     return build_recipe_detail(recipe)
