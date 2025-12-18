@@ -5,7 +5,7 @@ from shared.shopping_shared.crud.crud_base import CRUDBase
 from typing import List
 from fastapi import HTTPException
 from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient
-from schemas.ingredient import IngredientCreate, IngredientUpdate
+from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate
 
 """
     Override create and update methods to allow flexibility in ingredient types

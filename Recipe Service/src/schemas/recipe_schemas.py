@@ -68,12 +68,3 @@ class RecipeDetailedResponse(RecipeBase):
 
 RecipeDetailedResponse.model_rebuild()
 ComponentDetailedBase.model_rebuild()
-
-
-class RecipeFlattenedResponse(RecipeBase):
-    component_id: int
-    component_name: str
-    level: Level
-    default_servings: int
-    instructions: list[str]
-    all_ingredients: dict[int, tuple[float, IngredientResponse]]
