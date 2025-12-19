@@ -1,10 +1,13 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, status, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import inspect
 from services.ingredient_crud import IngredientCRUD
 from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate, IngredientResponse
 from models.recipe_component import Ingredient
+from enums.category import Category
 from .crud_router_base import create_crud_router
+from shared.shopping_shared.schemas.response_schema import PaginationResponse
 from database import get_db
 
 ingredient_crud = IngredientCRUD(Ingredient)
@@ -16,12 +19,25 @@ ingredient_router = APIRouter(
 
 @ingredient_router.get(
     "/search",
-    response_model=List[IngredientResponse],
+    response_model=PaginationResponse[IngredientResponse],  # type: ignore
     status_code=status.HTTP_200_OK,
-    description="Search for ingredients by keyword in their names. Returns a list of matching ingredients."
+    description="Search for ingredients by keyword in their names with cursor-based pagination. Returns a paginated list of matching ingredients."
 )
-def search_ingredients(keyword: str = Query(...), limit: int = Query(10), db: Session = Depends(get_db)):
-    return ingredient_crud.search(db, keyword=keyword, limit=limit)
+def search_ingredients(
+        keyword: str = Query(...),
+        cursor: Optional[int] = Query(None, ge=0),
+        limit: int = Query(100, ge=1),
+        db: Session = Depends(get_db)
+):
+    items = ingredient_crud.search(db, keyword=keyword, cursor=cursor, limit=limit)
+    pk = inspect(Ingredient).primary_key[0]
+    next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
+    return PaginationResponse(
+        data=list(items),
+        next_cursor=next_cursor,
+        size=len(items),
+        has_more=len(items) == limit
+    )
 
 crud_router = create_crud_router(
     model=Ingredient,

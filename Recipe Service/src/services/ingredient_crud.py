@@ -1,11 +1,12 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, with_polymorphic
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from shared.shopping_shared.crud.crud_base import CRUDBase
-from typing import List
+from typing import List, Optional, Sequence
 from fastapi import HTTPException
 from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient
 from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate
+from enums.category import Category
 
 """
     Override create and update methods to allow flexibility in ingredient types
@@ -46,16 +47,24 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
             raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
         return db_obj
 
-    def search(self, db: Session, keyword: str, limit: int = 10) -> List[Ingredient]:
-        countable_search = db.execute(
-            select(CountableIngredient)
-            .where(CountableIngredient.component_name.ilike(f"%{keyword}%"))
-            .limit(limit)
-        ).scalars().all()
-        uncountable_search = db.execute(
-            select(UncountableIngredient)
-            .where(UncountableIngredient.component_name.ilike(f"%{keyword}%"))
-            .limit(limit)
-        ).scalars().all()
-        return countable_search + uncountable_search
+    def search(self, db: Session, keyword: str, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
+        countable_stmt = select(CountableIngredient).where(
+            CountableIngredient.component_name.ilike(f"%{keyword}%")
+        )
+        if cursor is not None:
+            countable_stmt = countable_stmt.where(CountableIngredient.component_id < cursor)
+        countable_stmt = countable_stmt.order_by(CountableIngredient.component_id.desc()).limit(limit)
+        countable_results = db.execute(countable_stmt).scalars().all()
 
+        uncountable_stmt = select(UncountableIngredient).where(
+            UncountableIngredient.component_name.ilike(f"%{keyword}%")
+        )
+        if cursor is not None:
+            uncountable_stmt = uncountable_stmt.where(UncountableIngredient.component_id < cursor)
+        uncountable_stmt = uncountable_stmt.order_by(UncountableIngredient.component_id.desc()).limit(limit)
+        uncountable_results = db.execute(uncountable_stmt).scalars().all()
+
+        all_results = countable_results + uncountable_results
+        all_results.sort(key=lambda x: x.component_id, reverse=True)
+
+        return all_results[:limit]
