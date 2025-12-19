@@ -1,9 +1,12 @@
-from fastapi import APIRouter, status, Depends, Body
+from fastapi import APIRouter, status, Depends, Body, BackgroundTasks
 from sqlalchemy.orm import Session
+from typing import Any
 from services.plan_crud import PLanCRUD
 from services.plan_transition import PlanTransition
-from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse
+from services.report_process import report_process
+from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse, PlanReport
 from models.shopping_plan import ShoppingPlan
+from shared.shopping_shared.schemas.response_schema import GenericResponse
 from .crud_router_base import create_crud_router
 from database import get_db
 
@@ -70,17 +73,28 @@ def cancel_plan(id: int, assigner_id: int = Body(..., gt=0), db: Session = Depen
 
 @plan_router.post(
     "/{id}/report",
-    response_model=PlanResponse,
+    response_model=GenericResponse[Any],
     status_code=status.HTTP_200_OK,
     description=(
         "Report completion of a shopping plan. "
         "The plan status must be IN_PROGRESS and the assignee_id must match. "
-        "After reporting, the plan status will be COMPLETED."
+        "If confirm=False, will validate the report content against the shopping list and complete the plan only if all required items are reported. "
+        "If confirm=True, immediately complete the plan without validation. The plan status will be COMPLETED. "
+        "After successful report, items from report_content will be added to their respective storages as StorableUnits."
     )
 )
-def report_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
-    return plan_transition.report(db, id, assignee_id)
-
+def report_plan(
+    id: int, 
+    report: PlanReport, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    assignee_id: int = Body(..., gt=0), 
+    confirm: bool = Body(True)
+):
+    is_completed, message, data = plan_transition.report(db, id, assignee_id, report, confirm)
+    if is_completed:
+        background_tasks.add_task(report_process, report)
+    return GenericResponse(message=message, data=data)
 
 @plan_router.post(
     "/{id}/reopen",
