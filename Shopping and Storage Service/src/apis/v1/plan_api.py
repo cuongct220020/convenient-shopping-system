@@ -94,17 +94,3 @@ def report_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depen
 )
 def reopen_plan(id: int, assigner_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
     return plan_transition.reopen(db, id, assigner_id)
-
-
-@plan_router.post(
-    "/{id}/expire",
-    response_model=PlanResponse,
-    status_code=status.HTTP_200_OK,
-    description=(
-        "Expire an active shopping plan. "
-        "The plan must be active. "
-        "After expiration, the plan status will be EXPIRED."
-    )
-)
-def expire_plan(id: int, db: Session = Depends(get_db)):
-    return plan_transition.expire(db, id)
