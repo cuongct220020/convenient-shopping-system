@@ -17,7 +17,7 @@ class PlanTransition:
                 raise HTTPException(status_code=400,
                                     detail=f"Operation not allowed: plan status must be {allowed_status}, got {plan.plan_status}")
 
-    def assign(self, db: Session, id: int, assignee_id: int):
+    def assign(self, db: Session, id: int, assignee_id: int) -> ShoppingPlan:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -29,8 +29,11 @@ class PlanTransition:
 
             plan.assignee_id = assignee_id
             plan.plan_status = PlanStatus.IN_PROGRESS
+            
+            db.refresh(plan)
+            return plan
 
-    def unassign(self, db: Session, id: int, assignee_id: int):
+    def unassign(self, db: Session, id: int, assignee_id: int) -> ShoppingPlan:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -45,8 +48,11 @@ class PlanTransition:
 
             plan.assignee_id = None
             plan.plan_status = PlanStatus.CREATED
+            
+            db.refresh(plan)
+            return plan
 
-    def cancel(self, db: Session, id: int, assigner_id: int):
+    def cancel(self, db: Session, id: int, assigner_id: int) -> ShoppingPlan:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -62,8 +68,11 @@ class PlanTransition:
 
             plan.assignee_id = None
             plan.plan_status = PlanStatus.CANCELLED
+            
+            db.refresh(plan)
+            return plan
 
-    def report(self, db: Session, id: int, assignee_id: int):
+    def report(self, db: Session, id: int, assignee_id: int) -> ShoppingPlan:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -78,8 +87,11 @@ class PlanTransition:
                                     detail=f"Operation not allowed: user {assignee_id} is not the current assignee of this plan")
 
             plan.plan_status = PlanStatus.COMPLETED
+            
+            db.refresh(plan)
+            return plan
 
-    def reopen(self, db: Session, id: int, assigner_id: int):
+    def reopen(self, db: Session, id: int, assigner_id: int) -> ShoppingPlan:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -94,8 +106,11 @@ class PlanTransition:
                                     detail=f"Operation not allowed: user {assigner_id} is not the assigner of this plan")
 
             plan.plan_status = PlanStatus.CREATED
+            
+            db.refresh(plan)
+            return plan
 
-    def expire(self, db: Session, id: int):
+    def expire(self, db: Session, id: int) -> ShoppingPlan:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -106,3 +121,6 @@ class PlanTransition:
             self._preconditions_check(plan, "active")
 
             plan.plan_status = PlanStatus.EXPIRED
+            
+            db.refresh(plan)
+            return plan

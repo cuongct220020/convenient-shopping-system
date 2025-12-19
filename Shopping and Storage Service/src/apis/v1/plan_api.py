@@ -6,7 +6,6 @@ from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse
 from models.shopping_plan import ShoppingPlan
 from .crud_router_base import create_crud_router
 from database import get_db
-from shared.shopping_shared.schemas.response_schema import GenericResponse
 
 plan_crud = PLanCRUD(ShoppingPlan)
 plan_transition = PlanTransition()
@@ -29,7 +28,7 @@ plan_router.include_router(crud_router)
 
 @plan_router.post(
     "/{id}/assign",
-    response_model=GenericResponse[PlanResponse],
+    response_model=PlanResponse,
     status_code=status.HTTP_200_OK,
     description=(
         "Assign a shopping plan to an assignee. "
@@ -38,17 +37,12 @@ plan_router.include_router(crud_router)
     )
 )
 def assign_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
-    plan_transition.assign(db, id, assignee_id)
-    plan = plan_crud.get(db, id)
-    return GenericResponse(
-        message="Plan assigned successfully",
-        data=PlanResponse.model_validate(plan)
-    )
+    return plan_transition.assign(db, id, assignee_id)
 
 
 @plan_router.post(
     "/{id}/unassign",
-    response_model=GenericResponse[PlanResponse],
+    response_model=PlanResponse,
     status_code=status.HTTP_200_OK,
     description=(
         "Unassign a shopping plan from the current assignee. "
@@ -57,17 +51,12 @@ def assign_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depen
     )
 )
 def unassign_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
-    plan_transition.unassign(db, id, assignee_id)
-    plan = plan_crud.get(db, id)
-    return GenericResponse(
-        message="Plan unassigned successfully",
-        data=PlanResponse.model_validate(plan)
-    )
+    return plan_transition.unassign(db, id, assignee_id)
 
 
 @plan_router.post(
     "/{id}/cancel",
-    response_model=GenericResponse[PlanResponse],
+    response_model=PlanResponse,
     status_code=status.HTTP_200_OK,
     description=(
         "Cancel an active shopping plan. "
@@ -76,17 +65,12 @@ def unassign_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Dep
     )
 )
 def cancel_plan(id: int, assigner_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
-    plan_transition.cancel(db, id, assigner_id)
-    plan = plan_crud.get(db, id)
-    return GenericResponse(
-        message="Plan cancelled successfully",
-        data=PlanResponse.model_validate(plan)
-    )
+    return plan_transition.cancel(db, id, assigner_id)
 
 
 @plan_router.post(
     "/{id}/report",
-    response_model=GenericResponse[PlanResponse],
+    response_model=PlanResponse,
     status_code=status.HTTP_200_OK,
     description=(
         "Report completion of a shopping plan. "
@@ -95,17 +79,12 @@ def cancel_plan(id: int, assigner_id: int = Body(..., gt=0), db: Session = Depen
     )
 )
 def report_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
-    plan_transition.report(db, id, assignee_id)
-    plan = plan_crud.get(db, id)
-    return GenericResponse(
-        message="Plan reported as completed successfully",
-        data=PlanResponse.model_validate(plan)
-    )
+    return plan_transition.report(db, id, assignee_id)
 
 
 @plan_router.post(
     "/{id}/reopen",
-    response_model=GenericResponse[PlanResponse],
+    response_model=PlanResponse,
     status_code=status.HTTP_200_OK,
     description=(
         "Reopen a cancelled shopping plan. "
@@ -114,17 +93,12 @@ def report_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depen
     )
 )
 def reopen_plan(id: int, assigner_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
-    plan_transition.reopen(db, id, assigner_id)
-    plan = plan_crud.get(db, id)
-    return GenericResponse(
-        message="Plan reopened successfully",
-        data=PlanResponse.model_validate(plan)
-    )
+    return plan_transition.reopen(db, id, assigner_id)
 
 
 @plan_router.post(
     "/{id}/expire",
-    response_model=GenericResponse[PlanResponse],
+    response_model=PlanResponse,
     status_code=status.HTTP_200_OK,
     description=(
         "Expire an active shopping plan. "
@@ -133,9 +107,4 @@ def reopen_plan(id: int, assigner_id: int = Body(..., gt=0), db: Session = Depen
     )
 )
 def expire_plan(id: int, db: Session = Depends(get_db)):
-    plan_transition.expire(db, id)
-    plan = plan_crud.get(db, id)
-    return GenericResponse(
-        message="Plan expired successfully",
-        data=PlanResponse.model_validate(plan)
-    )
+    return plan_transition.expire(db, id)
