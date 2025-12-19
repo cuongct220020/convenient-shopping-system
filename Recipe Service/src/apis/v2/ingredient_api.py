@@ -39,6 +39,28 @@ def search_ingredients(
         has_more=len(items) == limit
     )
 
+@ingredient_router.get(
+    "/filter",
+    response_model=PaginationResponse[IngredientResponse],
+    status_code=status.HTTP_200_OK,
+    description="Filter ingredients by category with cursor-based pagination. Returns a paginated list of ingredients matching the specified category."
+)
+def filter_ingredients_by_category(
+    category: Category = Query(...),
+    cursor: Optional[int] = Query(None, ge=0),
+    limit: int = Query(100, ge=1),
+    db: Session = Depends(get_db)
+):
+    items = ingredient_crud.filter(db, category=category, cursor=cursor, limit=limit)
+    pk = inspect(Ingredient).primary_key[0]
+    next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
+    return PaginationResponse(
+        data=list(items),
+        next_cursor=next_cursor,
+        size=len(items),
+        has_more=len(items) == limit
+    )
+
 crud_router = create_crud_router(
     model=Ingredient,
     crud_base=ingredient_crud,

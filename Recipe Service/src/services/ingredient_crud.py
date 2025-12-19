@@ -68,3 +68,11 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         all_results.sort(key=lambda x: x.component_id, reverse=True)
 
         return all_results[:limit]
+
+    def filter(self, db: Session, category: Category, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
+        IngredientPoly = with_polymorphic(Ingredient, "*")
+        stmt = select(IngredientPoly).where(IngredientPoly.category == category.value)      # type: ignore
+        if cursor is not None:
+            stmt = stmt.where(IngredientPoly.component_id < cursor)
+        stmt = stmt.order_by(IngredientPoly.component_id.desc()).limit(limit)
+        return db.execute(stmt).scalars().all()
