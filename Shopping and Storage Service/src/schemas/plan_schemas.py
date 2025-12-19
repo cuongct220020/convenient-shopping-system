@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, Literal, List
 from enums.plan_status import PlanStatus
 
@@ -16,12 +16,14 @@ class PlanCreate(BaseModel):
     deadline: datetime
     assigner_id: int = Field(gt=0)
     shopping_list: List[PlanItemBase]
+    others: Optional[dict] = None
 
     model_config = ConfigDict(extra="forbid")
 
 class PlanUpdate(BaseModel):
     deadline: Optional[datetime] = None
     shopping_list: Optional[List[PlanItemBase]] = None
+    others: Optional[dict] = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -32,6 +34,7 @@ class PlanResponse(BaseModel):
     last_modified: datetime
     assigner_id: int
     shopping_list: List[PlanItemBase]
+    others: dict
     plan_status: PlanStatus
 
     model_config = ConfigDict(from_attributes=True)
