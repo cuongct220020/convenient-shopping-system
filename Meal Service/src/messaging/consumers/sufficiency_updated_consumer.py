@@ -4,7 +4,7 @@ from messaging.handlers.sufficiency_updated_handler import handle_sufficiency_up
 async def sufficiency_updated_consumer():
     consumer = kafka_manager.create_consumer(
         "unit_updated",
-        group_id="meal_service_unit_updated_listener"
+        group_id="meal_service_unit_updated_consumer"
     )
     await consumer.start()
     try:
