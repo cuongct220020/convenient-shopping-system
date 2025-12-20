@@ -15,7 +15,7 @@ class RecipeBase(BaseModel):
 class UnitBase(BaseModel):
     unit_id: int = Field(gt=0)
     unit_name: str
-    quantity: float = Field(gt=0)
+    quantity: int = Field(gt=0)
 
     model_config = ConfigDict(extra="forbid")
 
