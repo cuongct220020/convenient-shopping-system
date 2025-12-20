@@ -6,7 +6,7 @@ from services.meal_crud import MealCRUD, MealCommandHandler
 from services.meal_transition import MealTransition
 from schemas.meal_schemas import DailyMealsCommand, MealResponse
 from models.meal import Meal
-from messaging.producers.meal_content_updated_producer import produce_meal_content_updated
+from messaging.producers.meal_event_producer import produce_meal_event
 from database import get_db
 from shared.shopping_shared.schemas.response_schema import PaginationResponse
 
@@ -57,7 +57,7 @@ def get_many_meals(Cursor: Optional[int] = Query(None, ge=0), limit: int = Query
 def process_daily_meal_command(daily_command: DailyMealsCommand, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     responses, events =  meal_command_handler.handle(db, daily_command)
     for event in events:
-        background_tasks.add_task(produce_meal_content_updated, event)
+        background_tasks.add_task(produce_meal_event, event)
     return responses
 
 
