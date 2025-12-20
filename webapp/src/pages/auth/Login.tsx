@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { LogIn, UserPlus } from 'lucide-react'
 import { InputField } from '../../components/InputField'
 import { Button } from '../../components/Button'
+import { AuthService } from '../../services/auth'
+import { ok, Result } from 'neverthrow'
+import { i18n } from '../../utils/i18n/i18n'
+import { i18nKeys } from '../../utils/i18n/keys'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -10,11 +14,11 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{
-    email: string | null
-    password: string | null
+    email: Result<void, i18nKeys>
+    password: Result<void, i18nKeys>
   }>({
-    email: null,
-    password: null
+    email: ok(),
+    password: ok()
   })
   const [touched, setTouched] = useState<{
     email: boolean
@@ -24,32 +28,6 @@ export default function Login() {
     password: false
   })
 
-  // Validation functions
-  const validateEmailOrUsername = (input: string): string | null => {
-    if (!input.trim()) {
-      return 'Email hoặc tên đăng nhập không được để trống'
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
-
-    const isEmail = emailRegex.test(input)
-    const isUsername = usernameRegex.test(input)
-
-    if (!isEmail && !isUsername) {
-      return 'Email hoặc tên đăng nhập không hợp lệ'
-    }
-
-    return null
-  }
-
-  const validatePassword = (password: string): string | null => {
-    if (!password.trim()) {
-      return 'Mật khẩu không được để trống'
-    }
-    return null
-  }
-
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setEmail(value)
@@ -57,7 +35,7 @@ export default function Login() {
     if (touched.email) {
       setErrors((prev) => ({
         ...prev,
-        email: validateEmailOrUsername(value)
+        email: AuthService.validateEmailOrUsername(value)
       }))
     }
   }
@@ -66,7 +44,7 @@ export default function Login() {
     setTouched((prev) => ({ ...prev, email: true }))
     setErrors((prev) => ({
       ...prev,
-      email: validateEmailOrUsername(email)
+      email: AuthService.validateEmailOrUsername(email)
     }))
   }
 
@@ -77,7 +55,7 @@ export default function Login() {
     if (touched.password) {
       setErrors((prev) => ({
         ...prev,
-        password: validatePassword(value)
+        password: AuthService.validatePassword(value)
       }))
     }
   }
@@ -86,7 +64,7 @@ export default function Login() {
     setTouched((prev) => ({ ...prev, password: true }))
     setErrors((prev) => ({
       ...prev,
-      password: validatePassword(password)
+      password: AuthService.validatePassword(password)
     }))
   }
 
@@ -94,8 +72,8 @@ export default function Login() {
     e.preventDefault()
 
     // Validate all fields
-    const emailError = validateEmailOrUsername(email)
-    const passwordError = validatePassword(password)
+    const emailError = AuthService.validateEmailOrUsername(email)
+    const passwordError = AuthService.validatePassword(password)
 
     setErrors({
       email: emailError,
@@ -108,7 +86,7 @@ export default function Login() {
     })
 
     // If no errors, proceed with login
-    if (!emailError && !passwordError) {
+    if (emailError.isOk() && passwordError.isOk()) {
       console.log('Login attempt with:', email)
       // Add actual login logic here
       navigate('/auth/login-authentication')
@@ -118,9 +96,9 @@ export default function Login() {
   return (
     <>
       {/* Logo & Header: ShopSense above Đăng nhập */}
-      <div className="mb-6 sm:mb-8 text-center">
+      <div className="mb-6 text-center sm:mb-8">
         {/* ShopSense Text with precise S coloring */}
-        <h1 className="mb-3 sm:mb-4 text-3xl sm:text-3xl md:text-4xl font-bold">
+        <h1 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-3xl md:text-4xl">
           <span className="text-[#C3485C]">S</span>
           <span className="text-[#f7b686]">hop</span>
           <span className="text-[#C3485C]">S</span>
@@ -128,11 +106,16 @@ export default function Login() {
         </h1>
 
         {/* Đăng nhập Text */}
-        <h2 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Đăng nhập</h2>
+        <h2 className="text-2xl font-bold text-[#C3485C] sm:text-2xl md:text-3xl">
+          Đăng nhập
+        </h2>
       </div>
 
       {/* Login Form with max-width constraint */}
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 max-w-sm mx-auto">
+      <form
+        onSubmit={handleSubmit}
+        className="mx-auto max-w-sm space-y-4 sm:space-y-5"
+      >
         <div>
           <InputField
             id="email-username"
@@ -142,7 +125,7 @@ export default function Login() {
             value={email}
             onChange={handleEmailChange}
             onBlur={handleEmailBlur}
-            error={errors.email}
+            error={errors.email.isErr() ? i18n.t(errors.email.error) : null}
           />
         </div>
 
@@ -155,14 +138,16 @@ export default function Login() {
             value={password}
             onChange={handlePasswordChange}
             onBlur={handlePasswordBlur}
-            error={errors.password}
+            error={
+              errors.password.isErr() ? i18n.t(errors.password.error) : null
+            }
           />
         </div>
 
         <div className="text-right">
           <Link
             to="/auth/forgot-password-email"
-            className="text-xs sm:text-sm font-bold text-[#C3485C] hover:underline"
+            className="text-xs font-bold text-[#C3485C] hover:underline sm:text-sm"
           >
             Quên mật khẩu?
           </Link>
@@ -174,20 +159,20 @@ export default function Login() {
       </form>
 
       {/* Divider */}
-      <div className="relative my-4 sm:my-5 flex items-center text-sm max-w-sm mx-auto">
+      <div className="relative mx-auto my-4 flex max-w-sm items-center text-sm sm:my-5">
         <div className="flex-1 border-t border-gray-300"></div>
-        <span className="px-3 sm:px-4 text-gray-400">hoặc</span>
+        <span className="px-3 text-gray-400 sm:px-4">hoặc</span>
         <div className="flex-1 border-t border-gray-300"></div>
       </div>
 
       {/* Register Button */}
-      <div className="max-w-sm mx-auto">
+      <div className="mx-auto max-w-sm">
         <Button
           variant="secondary"
           icon={UserPlus}
           size="fit"
           onClick={() => navigate('/auth/register')}
-          >
+        >
           Đăng ký tài khoản
         </Button>
       </div>
