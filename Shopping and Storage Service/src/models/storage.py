@@ -71,12 +71,11 @@ class StorableUnit(Base):
         )
     )
 
-
-class RegisteredMeal(Base):
-    __tablename__ = "registered_meals"
+class MealReservation(Base):
+    __tablename__ = "meal_reservations"
 
     meal_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    unit_id: Mapped[int] = mapped_column(ForeignKey("storable_units.unit_id"), primary_key=True)
-    date: Mapped[date] = mapped_column(Date, nullable=False)
-    meal_type: Mapped[int] = mapped_column(Integer, nullable=False)
-    registered_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    component_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    reserved_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    meal_type: Mapped[int] = mapped_column(Integer, nullable=True)  # breakfast=1, lunch=2, dinner=3
