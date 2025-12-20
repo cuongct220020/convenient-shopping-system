@@ -1,6 +1,7 @@
 from datetime import date
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
+from enums.meal_action import MealAction
 from enums.meal_type import MealType
 
 class RecipeBase(BaseModel):
@@ -18,26 +19,21 @@ class UnitBase(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-
-class MealCreate(BaseModel):
-    date: date
-    group_id: int = Field(gt=0)
-    meal_type: MealType
-    recipe_list: List[RecipeBase] = []
-    storable_unit_list: List[UnitBase] = []
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class MealUpdate(BaseModel):
-    date: Optional[date] = None
-    group_id: Optional[int] = Field(None, gt=0)
-    meal_type: Optional[MealType] = None
+class MealCommand(BaseModel):
+    action: MealAction
     recipe_list: Optional[List[RecipeBase]] = None
     storable_unit_list: Optional[List[UnitBase]] = None
 
     model_config = ConfigDict(extra="forbid")
 
+class DailyMealsCommand(BaseModel):
+    date: date
+    group_id: int = Field(gt=0)
+    breakfast: MealCommand
+    lunch: MealCommand
+    dinner: MealCommand
+
+    model_config = ConfigDict(extra="forbid")
 
 class MealResponse(BaseModel):
     meal_id: int
