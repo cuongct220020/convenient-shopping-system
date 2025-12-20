@@ -51,11 +51,6 @@ class StorableUnit(Base):
         foreign_keys=[storage_id]
     )
 
-    registered_meals: Mapped[list["RegisteredMeal"]] = relationship(
-        back_populates="storable_unit",
-        cascade="all, delete-orphan"
-    )
-
     __table_args__ = (
         CheckConstraint(
             "(component_id IS NULL AND content_type IS NULL) "
@@ -85,8 +80,3 @@ class RegisteredMeal(Base):
     date: Mapped[date] = mapped_column(Date, nullable=False)
     meal_type: Mapped[int] = mapped_column(Integer, nullable=False)
     registered_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    storable_unit: Mapped["StorableUnit"] = relationship(
-        back_populates="registered_meals",
-        foreign_keys=[unit_id]
-    )
