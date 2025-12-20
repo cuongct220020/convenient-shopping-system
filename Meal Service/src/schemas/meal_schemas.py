@@ -3,6 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
 from enums.meal_action import MealAction
 from enums.meal_type import MealType
+from enums.meal_status import MealStatus
 
 class RecipeBase(BaseModel):
     recipe_id: int = Field(gt=0)
@@ -40,6 +41,7 @@ class MealResponse(BaseModel):
     date: date
     group_id: int
     meal_type: MealType
+    status: MealStatus
     recipe_list: List[RecipeBase] = []
     storable_unit_list: List[UnitBase] = []
 

@@ -3,6 +3,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from services.meal_crud import MealCRUD, MealCommandHandler
+from services.meal_transition import MealTransition
 from schemas.meal_schemas import DailyMealsCommand, MealResponse
 from models.meal import Meal
 from messaging.producers.meal_content_updated_producer import produce_meal_content_updated
@@ -11,6 +12,7 @@ from shared.shopping_shared.schemas.response_schema import PaginationResponse
 
 meal_crud = MealCRUD(Meal)
 meal_command_handler = MealCommandHandler()
+meal_transition = MealTransition()
 
 meal_router = APIRouter(
     prefix="/v1/meals",
@@ -57,4 +59,46 @@ def process_daily_meal_command(daily_command: DailyMealsCommand, background_task
     for event in events:
         background_tasks.add_task(produce_meal_content_updated, event)
     return responses
+
+
+@meal_router.post(
+    "/{id}/cancel",
+    response_model=MealResponse,
+    status_code=status.HTTP_200_OK,
+    description=(
+        "Cancel a meal. "
+        "The meal status must be CREATED. "
+        "After cancellation, the meal status will be CANCELLED."
+    )
+)
+def cancel_meal(id: int, db: Session = Depends(get_db)):
+    return meal_transition.cancel(db, id)
+
+
+@meal_router.post(
+    "/{id}/reopen",
+    response_model=MealResponse,
+    status_code=status.HTTP_200_OK,
+    description=(
+        "Reopen a cancelled meal. "
+        "The meal status must be CANCELLED. "
+        "After reopening, the meal status will be CREATED."
+    )
+)
+def reopen_meal(id: int, db: Session = Depends(get_db)):
+    return meal_transition.reopen(db, id)
+
+
+@meal_router.post(
+    "/{id}/finish",
+    response_model=MealResponse,
+    status_code=status.HTTP_200_OK,
+    description=(
+        "Finish a meal. "
+        "The meal status must be CREATED. "
+        "After finishing, the meal status will be DONE."
+    )
+)
+def finish_meal(id: int, db: Session = Depends(get_db)):
+    return meal_transition.finish(db, id)
 
