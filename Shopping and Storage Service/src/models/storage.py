@@ -1,11 +1,12 @@
-from sqlalchemy import Integer, String, Float, DateTime, Enum, ForeignKey, CheckConstraint, event, update
+from sqlalchemy import Integer, String, Float, DateTime, Enum, ForeignKey, CheckConstraint, Date, event, update
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 from enums.uc_measurement_unit import UCMeasurementUnit
 from enums.storage_type import StorageType
 from database import Base
+
 class Storage(Base):
     __tablename__ = "storages"
 
@@ -50,6 +51,11 @@ class StorableUnit(Base):
         foreign_keys=[storage_id]
     )
 
+    registered_meals: Mapped[list["RegisteredMeal"]] = relationship(
+        back_populates="storable_unit",
+        cascade="all, delete-orphan"
+    )
+
     __table_args__ = (
         CheckConstraint(
             "(component_id IS NULL AND content_type IS NULL) "
@@ -68,4 +74,19 @@ class StorableUnit(Base):
             "reserved_quantity <= package_quantity",
             name="reserved_le_package"
         )
+    )
+
+
+class RegisteredMeal(Base):
+    __tablename__ = "registered_meals"
+
+    meal_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    unit_id: Mapped[int] = mapped_column(ForeignKey("storable_units.unit_id"), primary_key=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    meal_type: Mapped[int] = mapped_column(Integer, nullable=False)
+    registered_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    storable_unit: Mapped["StorableUnit"] = relationship(
+        back_populates="registered_meals",
+        foreign_keys=[unit_id]
     )
