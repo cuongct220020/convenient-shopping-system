@@ -25,10 +25,6 @@ class Meal(Base):
         back_populates="meal",
         cascade="all, delete-orphan"
     )
-    storable_unit_list: Mapped[list["StorableUnitList"]] = relationship(
-        back_populates="meal",
-        cascade="all, delete-orphan"
-    )
 
 
 class RecipeList(Base):
@@ -43,18 +39,3 @@ class RecipeList(Base):
         back_populates="recipe_list",
         foreign_keys=[meal_id]
     )
-
-
-class StorableUnitList(Base):
-    __tablename__ = "storable_unit_lists"
-
-    unit_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    meal_id: Mapped[int] = mapped_column(ForeignKey("meals.meal_id"), primary_key=True)
-    unit_name: Mapped[str] = mapped_column(String, nullable=False)
-    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    meal: Mapped["Meal"] = relationship(
-        back_populates="storable_unit_list",
-        foreign_keys=[meal_id]
-    )
-

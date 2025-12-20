@@ -6,7 +6,7 @@ from sqlalchemy import select
 from datetime import date
 from enums.meal_type import MealType
 from shared.shopping_shared.crud.crud_base import CRUDBase
-from models.meal import Meal, RecipeList, StorableUnitList
+from models.meal import Meal, RecipeList
 from schemas.meal_schemas import MealCommand, DailyMealsCommand
 from utils.list_diff import list_diff
 
@@ -40,17 +40,11 @@ class MealCommandHandler:
             meal = Meal(date=date, group_id=group_id, meal_type=meal_type)
             db.add(meal)
         old_recipe_list = meal.recipe_list if meal.recipe_list else []
-        old_unit_list = meal.storable_unit_list if meal.storable_unit_list else []
         if meal_command.recipe_list is not None:
             meal.recipe_list = [RecipeList(recipe_id=recipe.recipe_id,
                                            recipe_name=recipe.recipe_name,
                                            servings=recipe.servings)
                                 for recipe in meal_command.recipe_list]
-        if meal_command.storable_unit_list is not None:
-            meal.storable_unit_list = [StorableUnitList(unit_id=unit.unit_id,
-                                                       unit_name=unit.unit_name,
-                                                       quantity=unit.quantity)
-                                       for unit in meal_command.storable_unit_list]
 
         try:
             with httpx.Client(timeout=30) as client:
@@ -77,8 +71,7 @@ class MealCommandHandler:
                 "meal_id": meal.meal_id,
                 "date": str(meal.date),
                 "meal_type": {MealType.BREAKFAST: 1, MealType.LUNCH: 2, MealType.DINNER: 3}[meal.meal_type],                # type: ignore
-                "recipe_diff": list_diff(old_recipe_list, meal.recipe_list, "recipe_id", "servings"),
-                "unit_diff": list_diff(old_unit_list, meal.storable_unit_list, "unit_id", "quantity")
+                "recipe_diff": list_diff(old_recipe_list, meal.recipe_list, "recipe_id", "servings")
             }
         }
 
