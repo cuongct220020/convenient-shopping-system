@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
 from datetime import date
 from enums.meal_type import MealType
 from shared.shopping_shared.crud.crud_base import CRUDBase
@@ -28,7 +29,9 @@ class MealCommandHandler:
         return responses
 
     def upsert(self, db: Session, date: date, group_id: int, meal_type: MealType, meal_command: MealCommand) -> Meal:
-        meal: Meal | None = db.query(Meal).filter_by(date=date, group_id=group_id, meal_type=meal_type).first()
+        meal: Meal | None = db.execute(
+            select(Meal).where(date=date, group_id=group_id, meal_type=meal_type)
+        ).scalars().first()
         if not meal:
             meal = Meal(date=date, group_id=group_id, meal_type=meal_type)
             db.add(meal)
@@ -51,7 +54,9 @@ class MealCommandHandler:
         return meal
 
     def delete(self, db: Session, date: date, group_id: int, meal_type: MealType):
-        meal: Meal | None = db.query(Meal).filter_by(date=date, group_id=group_id, meal_type=meal_type).first()
+        meal: Meal | None = db.execute(
+            select(Meal).where(date=date, group_id=group_id, meal_type=meal_type)
+        ).scalars().first()
         if not meal:
             raise HTTPException(status_code=404, detail=f"Meal {meal_type} on {date} for group {group_id} not found")
         db.delete(meal)
