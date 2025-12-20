@@ -11,7 +11,7 @@ async def sufficiency_updated_consumer():
         async for msg in consumer:
             event = msg.value
             if event.get("event_type") == "meal_sufficiency_updated":
-                await sufficiency_updated_handler(event["data"])
+                sufficiency_updated_handler(event["data"])
     finally:
         await consumer.stop()
 
