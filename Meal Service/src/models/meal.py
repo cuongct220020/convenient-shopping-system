@@ -1,5 +1,5 @@
 from datetime import date
-from sqlalchemy import Integer, Float, String, Date, ForeignKey, Enum, UniqueConstraint
+from sqlalchemy import Integer, Float, String, Boolean, Date, JSON, ForeignKey, Enum, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 from enums.meal_type import MealType
@@ -12,6 +12,8 @@ class Meal(Base):
     date: Mapped[date] = mapped_column(Date, nullable=False)
     group_id: Mapped[int] = mapped_column(Integer, nullable=False)
     meal_type: Mapped[MealType] = mapped_column(Enum(MealType), nullable=False)
+    all_ingredients: Mapped[list] = mapped_column(JSON, nullable=False)
+    is_sufficient: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     __table_args__ = (
         UniqueConstraint("date", "meal_type", name="unique_meal_date_type"),
