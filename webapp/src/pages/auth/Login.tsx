@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth'
 import { ok, Result } from 'neverthrow'
 import { i18n } from '../../utils/i18n/i18n'
 import { i18nKeys } from '../../utils/i18n/keys'
+import { LoadingOverlay } from '../../components/Loading'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -27,6 +28,7 @@ export default function Login() {
     email: false,
     password: false
   })
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -88,97 +90,101 @@ export default function Login() {
     // If no errors, proceed with login
     if (emailError.isOk() && passwordError.isOk()) {
       console.log('Login attempt with:', email)
+      setIsLoading(true)
+      return
       // Add actual login logic here
       navigate('/auth/login-authentication')
     }
   }
 
   return (
-    <>
-      {/* Logo & Header: ShopSense above Đăng nhập */}
-      <div className="mb-6 text-center sm:mb-8">
-        {/* ShopSense Text with precise S coloring */}
-        <h1 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-3xl md:text-4xl">
-          <span className="text-[#C3485C]">S</span>
-          <span className="text-[#f7b686]">hop</span>
-          <span className="text-[#C3485C]">S</span>
-          <span className="text-[#f7b686]">ense</span>
-        </h1>
+    <LoadingOverlay isLoading={isLoading}>
+      <div className="flex flex-1 flex-col items-center ">
+        {/* Logo & Header: ShopSense above Đăng nhập */}
+        <div className="mb-6 text-center sm:mb-8">
+          {/* ShopSense Text with precise S coloring */}
+          <h1 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-3xl md:text-4xl">
+            <span className="text-[#C3485C]">S</span>
+            <span className="text-[#f7b686]">hop</span>
+            <span className="text-[#C3485C]">S</span>
+            <span className="text-[#f7b686]">ense</span>
+          </h1>
 
-        {/* Đăng nhập Text */}
-        <h2 className="text-2xl font-bold text-[#C3485C] sm:text-2xl md:text-3xl">
-          Đăng nhập
-        </h2>
-      </div>
-
-      {/* Login Form with max-width constraint */}
-      <form
-        onSubmit={handleSubmit}
-        className="mx-auto max-w-sm space-y-4 sm:space-y-5"
-      >
-        <div>
-          <InputField
-            id="email-username"
-            label="Email"
-            subLabel="Tên đăng nhập"
-            placeholder="Nhập email hoặc tên đăng nhập"
-            value={email}
-            onChange={handleEmailChange}
-            onBlur={handleEmailBlur}
-            error={errors.email.isErr() ? i18n.t(errors.email.error) : null}
-          />
+          {/* Đăng nhập Text */}
+          <h2 className="text-2xl font-bold text-[#C3485C] sm:text-2xl md:text-3xl">
+            Đăng nhập
+          </h2>
         </div>
 
-        <div>
-          <InputField
-            id="password"
-            type="password"
-            label="Mật khẩu"
-            placeholder="Nhập mật khẩu"
-            value={password}
-            onChange={handlePasswordChange}
-            onBlur={handlePasswordBlur}
-            error={
-              errors.password.isErr() ? i18n.t(errors.password.error) : null
-            }
-          />
-        </div>
-
-        <div className="text-right">
-          <Link
-            to="/auth/forgot-password-email"
-            className="text-xs font-bold text-[#C3485C] hover:underline sm:text-sm"
-          >
-            Quên mật khẩu?
-          </Link>
-        </div>
-
-        <Button variant="primary" icon={LogIn} size="fit" type="submit">
-          Đăng nhập
-        </Button>
-      </form>
-
-      {/* Divider */}
-      <div className="relative mx-auto my-4 flex max-w-sm items-center text-sm sm:my-5">
-        <div className="flex-1 border-t border-gray-300"></div>
-        <span className="px-3 text-gray-400 sm:px-4">hoặc</span>
-        <div className="flex-1 border-t border-gray-300"></div>
-      </div>
-
-      {/* Register Button */}
-      <div className="mx-auto max-w-sm">
-        <Button
-          variant="secondary"
-          icon={UserPlus}
-          size="fit"
-          onClick={() => navigate('/auth/register')}
+        {/* Login Form with max-width constraint */}
+        <form
+          onSubmit={handleSubmit}
+          className="w-full max-w-sm space-y-4 px-3 sm:space-y-5"
         >
-          Đăng ký tài khoản
-        </Button>
-      </div>
+          <div>
+            <InputField
+              id="email-username"
+              label="Email"
+              subLabel="Tên đăng nhập"
+              placeholder="Nhập email hoặc tên đăng nhập"
+              value={email}
+              onChange={handleEmailChange}
+              onBlur={handleEmailBlur}
+              error={errors.email.isErr() ? i18n.t(errors.email.error) : null}
+            />
+          </div>
 
-      {/* Bottom Spacer for scrolling over background */}
-      <div className="h-16 sm:h-20"></div>
-    </>
+          <div>
+            <InputField
+              id="password"
+              type="password"
+              label="Mật khẩu"
+              placeholder="Nhập mật khẩu"
+              value={password}
+              onChange={handlePasswordChange}
+              onBlur={handlePasswordBlur}
+              error={
+                errors.password.isErr() ? i18n.t(errors.password.error) : null
+              }
+            />
+          </div>
+
+          <div className="text-right">
+            <Link
+              to="/auth/forgot-password-email"
+              className="text-xs font-bold text-[#C3485C] hover:underline sm:text-sm"
+            >
+              Quên mật khẩu?
+            </Link>
+          </div>
+
+          <Button variant="primary" icon={LogIn} size="fit" type="submit">
+            Đăng nhập
+          </Button>
+        </form>
+
+        {/* Divider */}
+        <div className="relative mx-auto my-4 flex max-w-sm items-center text-sm sm:my-5">
+          <div className="flex-1 border-t border-gray-300"></div>
+          <span className="px-3 text-gray-400 sm:px-4">hoặc</span>
+          <div className="flex-1 border-t border-gray-300"></div>
+        </div>
+
+        {/* Register Button */}
+        <div className="mx-auto max-w-sm">
+          <Button
+            variant="secondary"
+            icon={UserPlus}
+            size="fit"
+            onClick={() => navigate('/auth/register')}
+          >
+            Đăng ký tài khoản
+          </Button>
+        </div>
+
+        {/* Bottom Spacer for scrolling over background */}
+        <div className="h-16 sm:h-20"></div>
+      </div>
+    </LoadingOverlay>
   )
 }
