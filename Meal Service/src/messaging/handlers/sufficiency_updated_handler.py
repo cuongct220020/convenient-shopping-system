@@ -2,7 +2,7 @@ from sqlalchemy import update
 from database import get_db
 from models.meal import Meal
 
-def sufficiency_updated_handler(data: list):
+def handle_sufficiency_update(data: list):
     db = next(get_db())
     try:
         for item in data:

@@ -1,5 +1,5 @@
 from messaging.manager import kafka_manager
-from messaging.handlers.sufficiency_updated_handler import sufficiency_updated_handler
+from messaging.handlers.sufficiency_updated_handler import handle_sufficiency_update
 
 async def sufficiency_updated_consumer():
     consumer = kafka_manager.create_consumer(
@@ -11,7 +11,7 @@ async def sufficiency_updated_consumer():
         async for msg in consumer:
             event = msg.value
             if event.get("event_type") == "meal_sufficiency_updated":
-                sufficiency_updated_handler(event["data"])
+                handle_sufficiency_update(event["data"])
     finally:
         await consumer.stop()
 

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Query, status, HTTPException
+from fastapi import APIRouter, Depends, Query, status, HTTPException, BackgroundTasks
 from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from services.meal_crud import MealCRUD, MealCommandHandler
-from schemas.meal_schemas import MealCommand, DailyMealsCommand, MealResponse
+from schemas.meal_schemas import DailyMealsCommand, MealResponse
 from models.meal import Meal
+from messaging.producers.meal_content_updated_producer import produce_meal_content_updated
 from database import get_db
 from shared.shopping_shared.schemas.response_schema import PaginationResponse
 
@@ -51,6 +52,9 @@ def get_many_meals(Cursor: Optional[int] = Query(None, ge=0), limit: int = Query
     status_code=status.HTTP_200_OK,
     description="Process daily meal commands for upserting, deleting, or skipping meals."
 )
-def process_daily_meal_command(daily_command: DailyMealsCommand, db: Session = Depends(get_db)):
-    return meal_command_handler.handle(db, daily_command)
+def process_daily_meal_command(daily_command: DailyMealsCommand, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    responses, events =  meal_command_handler.handle(db, daily_command)
+    for event in events:
+        background_tasks.add_task(produce_meal_content_updated, event)
+    return responses
 
