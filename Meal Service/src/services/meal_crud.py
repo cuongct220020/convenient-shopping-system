@@ -34,7 +34,7 @@ class MealCommandHandler:
 
     def upsert(self, db: Session, date: date, group_id: int, meal_type: MealType, meal_command: MealCommand):
         meal: Meal | None = db.execute(
-            select(Meal).where(date=date, group_id=group_id, meal_type=meal_type)
+            select(Meal).where(Meal.date == date, Meal.group_id == group_id, Meal.meal_type == meal_type)
         ).scalars().first()
         if not meal:
             meal = Meal(date=date, group_id=group_id, meal_type=meal_type)
@@ -93,7 +93,7 @@ class MealCommandHandler:
 
     def delete(self, db: Session, date: date, group_id: int, meal_type: MealType):
         meal: Meal | None = db.execute(
-            select(Meal).where(date=date, group_id=group_id, meal_type=meal_type)
+            select(Meal).where(Meal.date == date, Meal.group_id == group_id, Meal.meal_type == meal_type)
         ).scalars().first()
         if not meal:
             raise HTTPException(status_code=404, detail=f"Meal {meal_type} on {date} for group {group_id} not found")
