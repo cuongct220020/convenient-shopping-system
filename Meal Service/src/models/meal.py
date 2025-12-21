@@ -13,7 +13,6 @@ class Meal(Base):
     date: Mapped[date] = mapped_column(Date, nullable=False)
     group_id: Mapped[int] = mapped_column(Integer, nullable=False)
     meal_type: Mapped[MealType] = mapped_column(Enum(MealType), nullable=False)
-    all_ingredients: Mapped[list] = mapped_column(JSON, nullable=False)
     meal_status: Mapped[MealStatus] = mapped_column(Enum(MealStatus), nullable=False, default=MealStatus.CREATED)
 
     __table_args__ = (

@@ -1,4 +1,3 @@
-import httpx
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -45,26 +44,6 @@ class MealCommandHandler:
                                            recipe_name=recipe.recipe_name,
                                            servings=recipe.servings)
                                 for recipe in meal_command.recipe_list]
-
-        try:
-            with httpx.Client(timeout=30) as client:
-                payload = [
-                    {
-                        "recipe_id": recipe.recipe_id,
-                        "servings": recipe.servings
-                    }
-                    for recipe in meal_command.recipe_list
-                ]
-                response = client.post(
-                    "http://localhost:8001/v2/recipes/flattened",
-                    json=payload
-                )
-                response.raise_for_status()
-                meal.all_ingredients = response.json().get("all_ingredients", [])
-        except httpx.HTTPError as e:
-            db.rollback()
-            raise HTTPException(status_code=500, detail=f"Failed to fetch all_ingredients: {str(e)}")
-
         event = {
             "event_type": "meal_upserted",
             "data": {
@@ -74,7 +53,6 @@ class MealCommandHandler:
                 "recipe_diff": list_diff(old_recipe_list, meal.recipe_list, "recipe_id", "servings")
             }
         }
-
         try:
             db.commit()
             db.refresh(meal)
