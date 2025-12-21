@@ -54,12 +54,11 @@ def get_many_meals(Cursor: Optional[int] = Query(None, ge=0), limit: int = Query
     status_code=status.HTTP_200_OK,
     description="Process daily meal commands for upserting, deleting, or skipping meals."
 )
-def process_daily_meal_command(daily_command: DailyMealsCommand, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    responses, events =  meal_command_handler.handle(db, daily_command)
+async def process_daily_meal_command(daily_command: DailyMealsCommand, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    responses, events = await meal_command_handler.handle(db, daily_command)
     for event in events:
         background_tasks.add_task(produce_meal_event, event)
     return responses
-
 
 @meal_router.post(
     "/{id}/cancel",
