@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 from typing import List
 from services.recipe_crud import RecipeCRUD
 from models.recipe_component import Recipe
-from schemas.recipe_flattened_schemas import RecipeId, RecipeFlattenedResponse
+from schemas.recipe_flattened_schemas import AggregatedIngredientsResponse, RecipeQuantityInput
 from schemas.recipe_schemas import (
     RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 )
 from .crud_router_base import create_crud_router
 from database import get_db
-from utils.custom_mapping import recipe_detailed_mapping
+from utils.custom_mapping import recipe_detailed_mapping, recipes_flattened_aggregated_mapping
 
 recipe_crud = RecipeCRUD(Recipe)
 
@@ -29,12 +29,22 @@ def search_recipes(keyword: str = Query(...), limit: int = Query(10), db: Sessio
 
 @recipe_router.post(
     "/flattened",
-    response_model=List[RecipeFlattenedResponse],
+    response_model=AggregatedIngredientsResponse,
     status_code=status.HTTP_200_OK,
     description=f"Aggregate ingredients from multiple recipes with quantity. Returns 404 if at least one of the Recipes does not exist."
 )
-def get_recipe_flattened(recipe_ids: List[RecipeId], db: Session = Depends(get_db)):
-    return recipe_crud.get_flattened(db, recipe_ids)
+def get_recipe_flattened(recipes_with_quantity: list[RecipeQuantityInput], db: Session = Depends(get_db)):
+    recipe_ids = [r.recipe_id for r in recipes_with_quantity]
+    db_recipes = recipe_crud.get_detail(db, recipe_ids)
+
+    if len(db_recipes) != len(recipe_ids):
+        missing_ids = set(recipe_ids) - {r.component_id for r in db_recipes}
+        raise HTTPException(status_code=404, detail=f"Recipes with ids={missing_ids} not found")
+
+    recipe_map = {r.component_id: r for r in db_recipes}
+    db_recipes_with_quantity = [(r.quantity, recipe_map[r.recipe_id]) for r in recipes_with_quantity]
+    return recipes_flattened_aggregated_mapping(db_recipes_with_quantity)
+
 
 @recipe_router.put(
     "/{id}",
