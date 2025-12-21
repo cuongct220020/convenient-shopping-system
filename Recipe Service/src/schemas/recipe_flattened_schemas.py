@@ -1,9 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, conint
 from .ingredient_schemas import IngredientResponse
 
-class RecipeQuantityInput(BaseModel):
-    recipe_id: int
-    quantity: int = Field(1, ge=1)
+RecipeId = conint(ge=1)
 
-class AggregatedIngredientsResponse(BaseModel):
+class RecipeFlattenedResponse(BaseModel):
+    recipe_id: int
     all_ingredients: dict[int, tuple[float, IngredientResponse]]

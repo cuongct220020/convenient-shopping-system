@@ -1,5 +1,4 @@
 from typing import Type
-from schemas.recipe_flattened_schemas import AggregatedIngredientsResponse
 from schemas.recipe_schemas import RecipeDetailedResponse, ComponentDetailedBase
 from schemas.ingredient_schemas import CountableIngredientResponse, UncountableIngredientResponse, IngredientResponse
 from models.recipe_component import Recipe, ComponentList, RecipeComponent, CountableIngredient, UncountableIngredient
@@ -49,7 +48,7 @@ def recipe_detailed_mapping(recipe: Recipe) -> RecipeDetailedResponse:
 
     return build_recipe_detail(recipe)
 
-def recipes_flattened_aggregated_mapping(recipes: list[tuple[float, Recipe]]) -> AggregatedIngredientsResponse:
+def recipe_flattened_aggregated_mapping(recipe: Recipe) -> dict[int, tuple[float, IngredientResponse]]:
     all_ingredients: dict[int, tuple[float, IngredientResponse]] = {}
 
     def process_component(component: RecipeComponent, multiplier: float):
@@ -68,7 +67,5 @@ def recipes_flattened_aggregated_mapping(recipes: list[tuple[float, Recipe]]) ->
                 ing_resp = cls.model_validate(component, from_attributes=True)          # type: ignore
                 all_ingredients[component.component_id] = (multiplier, ing_resp)
 
-    for quantity, recipe in recipes:
-        process_component(recipe, quantity)
-
-    return AggregatedIngredientsResponse(all_ingredients=all_ingredients)
+    process_component(recipe, 1)
+    return all_ingredients
