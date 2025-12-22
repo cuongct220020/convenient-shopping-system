@@ -38,11 +38,11 @@ services:
       - app-network
     restart: unless-stopped
 
-  kafka:
-    image: apache/kafka:latest
+  kafka-broker:
+    image: confluentinc/cp-kafka:7.4.0
     container_name: shopping-kafka-broker
     environment:
-      KAFKA_NODE_ID: 1
+      KAFKA_NODE_ID: "1"
       KAFKA_PROCESS_ROLES: broker,controller
       # Cổng 9092 cho nội bộ Docker, 9094 cho bên ngoài (localhost)
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094, CONTROLLER://kafka:9093
@@ -57,9 +57,23 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_NUM_PARTITIONS: 1
     ports:
       - "9094:9094"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  kafka-ui:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: shopping-kafka-ui
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker:9092
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
     networks:
       - app-network
     restart: unless-stopped
@@ -97,10 +111,10 @@ services:
   user-service:
     build:
       context: .
-      dockerfile: microservices/user-service/Dockerfile
+      dockerfile: user-service/Dockerfile
     container_name: user-service
     profiles:
-      - app # Sẽ chỉ chạy khi bạn gõ --profile app
+      - user-service
     depends_on:
       - postgres
       - redis

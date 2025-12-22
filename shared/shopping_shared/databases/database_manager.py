@@ -1,6 +1,6 @@
 # shared/shopping_shared/databases/database_manager.py
 from contextlib import asynccontextmanager
-from typing import TypeAlias, Any, AsyncGenerator, Optional
+from typing import TypeAlias, Any, AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,

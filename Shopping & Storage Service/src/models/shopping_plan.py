@@ -1,5 +1,5 @@
 
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Enum, JSON
+from sqlalchemy import Integer, DateTime, ForeignKey, Enum, JSON
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime

@@ -14,7 +14,6 @@ from alembic import context
 
 # Import models for 'autogenerate' support
 from shopping_shared.databases.base_model import Base
-import app.models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

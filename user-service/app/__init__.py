@@ -1,5 +1,4 @@
 # microservices/user-service/app/__init__.py
-from urllib import response
 
 from sanic import Sanic
 from sanic_cors import CORS
@@ -11,7 +10,7 @@ logger = get_logger(__name__)
 def register_extensions(sanic_app: Sanic):
     from app import extensions
 
-    extensions.cors = CORS(sanic_app,resources={r"/*": {"origins": "*"}})
+    extensions.cors = CORS(sanic_app, resources={r"/*": {"origins": "*"}})
 
 
 def register_listeners(sanic_app: Sanic):

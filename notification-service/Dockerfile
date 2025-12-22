@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 COPY requirements.txt .
 # The -e ../../shopping_shared in requirements.txt requires the shared folder to be present
 # We will copy the whole project context for the build stage
-COPY ../../ /
+COPY .. /
 RUN pip wheel --no-cache-dir --wheel-dir /api/wheels -r requirements.txt
 
 
