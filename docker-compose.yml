@@ -4,7 +4,7 @@ networks:
     driver: bridge
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Service
   postgres-db:
     image: postgres:15-alpine
     container_name: postgres-db
@@ -25,9 +25,9 @@ services:
       retries: 5
 
 
-  # Redis
+  # Redis Caching Service
   redis-caching:
-    image: redis:7-alpine
+    image: redis:8.4.0
     container_name: redis-caching
     ports:
       - "6379:6379"
@@ -37,11 +37,28 @@ services:
     networks:
       - shopping-network
 
+  # Redis Insight for monitoring Redis
+  redis-insight:
+    image: redis/redisinsight:2.70
+    container_name: redis-insight
+    environment:
+      - RI_APP_ACCEPT_EULA=yes
+      - RI_APP_LOGIN_REQUIRED=false
+    ports:
+      - "5540:5540"
+    volumes:
+      - redis-insight-data:/data
+    networks:
+      - shopping-network
+    depends_on:
+      - redis-caching
 
+  # Kafka Broker Service
   kafka-broker:
     image: confluentinc/cp-kafka:7.7.7
     container_name: kafka-broker
     environment:
+      # Basic Kafka Settings
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_NODE_ID: 1
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-broker:9093"
@@ -52,6 +69,7 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
 
+      # Kraft Mode Settings
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -59,9 +77,8 @@ services:
       KAFKA_LOG_RETENTION_HOURS: 24
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
     ports:
-      - "9092:9092"
-      - "9094:9094"
-      - "9093:9093"
+      - "9092:9092" # Internal communication
+      - "9094:9094" # External communication (Debug)
     volumes:
       - kafka-data:/var/lib/kafka/data
     networks:
@@ -73,9 +90,7 @@ services:
       retries: 5
       start_period: 10s
 
- # ------------------------------------------------------------
-  # KAFKA UI
-  # ------------------------------------------------------------
+  # Kafka UI for managing and monitoring Kafka
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
@@ -99,16 +114,17 @@ services:
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
-      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
     ports:
-      - "8000:8000"    # Proxy
-      - "8001:8001"    # Admin
-      - "8002:8002"    # Admin GUI (if available)
+      - "80:8000"         # HTTP Public
+      - "443:8443"        # HTTPS Public
+      - "8000:8000"       # Kong Proxy (HTTP Debug)
+      - "8444:8001"       # Admin API cho decK (Debug)
     volumes:
       - ./api-gateway/kong.yml:/usr/local/kong/declarative/kong.yml
     networks:
@@ -153,7 +169,7 @@ services:
       - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
       - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:9092
     ports:
-      - "1337:8000"  # Expose for direct access if needed
+      - "9001:8000" # Access via localhost:9001
     volumes:
       - ./microservices/user-service:/api
       - /api/.venv  # Exclude virtual environment
@@ -162,21 +178,49 @@ services:
     restart: unless-stopped
 
 
-  shopping-storage-service:
-    build: ./shopping-storage-service
+  recipe-service:
+    build:
+      context: .
+      dockerfile: recipe-service/Dockerfile
+    container_name: recipe-service
+    profiles:
+      - recipe-service
     ports:
-      - "9995:8000"
+      - "9002:8000"
+
+  meal-service:
+    build:
+      context: .
+      dockerfile: meal-service/Dockerfile
+    container_name: meal-service
+    profiles:
+      - meal-service
+    ports:
+      - "9003:8000"
+
+  shopping-storage-service:
+    build:
+      context: .
+      dockerfile: shopping-storage-service/Dockerfile
+    container_name: shopping-storage-service
+    ports:
+      - "9004:8000"
     profiles:
       - shopping-storage
     depends_on:
       - recipe-service
 
-  recipe-service:
-    build: ./recipe-service
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
     profiles:
-      - recipe-service
+      - notification-service
     ports:
-      - "9996:8001"
+      - "9005:8000"
+
 
 volumes:
   postgres-data:
@@ -185,3 +229,5 @@ volumes:
     name: redis-data
   kafka-data:
     name: kafka-data
+  redis-insight-data:
+    name: redis-insight-data
