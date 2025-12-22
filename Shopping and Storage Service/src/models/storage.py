@@ -37,7 +37,6 @@ class StorableUnit(Base):
     unit_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     storage_id: Mapped[int] = mapped_column(ForeignKey("storages.storage_id"), nullable=False)
     package_quantity: Mapped[int] = mapped_column(Integer, default=1)
-    reserved_quantity: Mapped[int] = mapped_column(Integer, default=0)
     unit_name: Mapped[str] = mapped_column(String, nullable=False)
     component_id: Mapped[Optional[int]] = mapped_column(Integer)
     content_type: Mapped[Optional[str]] = mapped_column(String)
@@ -64,18 +63,5 @@ class StorableUnit(Base):
             "(content_type = 'uncountable_ingredient' AND "
             " content_quantity IS NOT NULL AND content_unit IS NOT NULL)",
             name="quantity_unit_required_for_measurable"
-        ),
-        CheckConstraint(
-            "reserved_quantity <= package_quantity",
-            name="reserved_le_package"
         )
     )
-
-class MealReservation(Base):
-    __tablename__ = "meal_reservations"
-
-    meal_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    component_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    reserved_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
-    date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    meal_type: Mapped[int] = mapped_column(Integer, nullable=True)  # breakfast=1, lunch=2, dinner=3
