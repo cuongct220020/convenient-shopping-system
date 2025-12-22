@@ -135,6 +135,22 @@ services:
     restart: unless-stopped
 
 
+  shopping-storage-service:
+    build: ./microservices/shopping-storage-service
+    ports:
+      - "9995:8000"
+    profiles:
+      - shopping-storage
+    depends_on:
+      - recipe-service
+
+  recipe-service:
+    build: ./micorservices/recipe-service
+    profiles:
+      - recipe-service
+    ports:
+      - "9996:8001"
+
 volumes:
   postgres_data:
   redis_data:
