@@ -2,7 +2,7 @@
 
 # Ghi đè dịch vụ 'kong'
 services:
-  kong:
+  kong-gateway:
     volumes:
       # Ghi đè 'volumes' để trỏ đến tệp config local
       - ./api-gateway/kong.local.yml:/usr/local/kong/declarative/kong.yml
