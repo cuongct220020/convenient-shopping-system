@@ -1,5 +1,5 @@
 # Virtual environments
-venv/
+.venv/
 
 # Python bytecode
 __pycache__/
@@ -11,3 +11,9 @@ __pycache__/
 
 # VSCode
 .vscode/
+.DS_Store
+
+shopping_shared.egg-info
+
+.env/
+.env

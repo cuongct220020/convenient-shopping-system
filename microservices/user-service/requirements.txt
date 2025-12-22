@@ -1,0 +1,18 @@
+sanic
+sanic-ext
+sqlalchemy
+asyncpg
+redis
+pydantic
+alembic
+gunicorn
+python-dotenv
+passlib[bcrypt]
+PyJWT
+pydantic[email]
+greenlet
+black
+ruff
+pytest
+
+-e ../../shared

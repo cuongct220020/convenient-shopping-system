@@ -1,0 +1,46 @@
+# kong.yml.local.yml - Declarative Kong Configuration
+_format_version: "3.0"
+
+services:
+- name: user-service
+  url: http://host.docker.internal:8000
+  routes:
+  - name: user-service-auth
+    paths:
+    - /api/v1/user-service/auth
+    strip_path: true
+    preserve_host: true
+  - name: user-service-users
+    paths:
+    - /api/v1/user-service/users
+    strip_path: true
+    preserve_host: true
+  - name: user-service-groups
+    paths:
+    - /api/v1/user-service/groups
+    strip_path: true
+    preserve_host: true
+  - name: user-service-admin
+    paths:
+    - /api/v1/user-service/admin
+    strip_path: true
+    preserve_host: true
+  plugins:
+  - name: rate-limiting
+    config:
+      minute: 100
+      hour: 1000
+      policy: redis
+      redis_host: redis
+      redis_port: 6379
+      limit_by: ip
+
+- name: health-check
+  url: http://host.docker.internal:8000/
+  routes:
+  - name: user-service-health
+    paths:
+    - /health
+    - /ready
+    strip_path: true
+    preserve_host: true
