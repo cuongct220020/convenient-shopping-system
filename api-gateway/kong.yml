@@ -12,7 +12,7 @@ services:
       - name: user-service-auth
         paths:
           - /api/v1/user-service/auth
-        strip_path: true
+        strip_path: false
         preserve_host: true
         # Apply rate limiting specifically to auth endpoints to prevent brute force
         plugins:
@@ -21,7 +21,7 @@ services:
               minute: 60
               hour: 1000
               policy: redis
-              redis_host: redis
+              redis_host: redis-caching
               redis_port: 6379
               limit_by: ip
 
@@ -29,21 +29,21 @@ services:
       - name: user-service-users
         paths:
           - /api/v1/user-service/users
-        strip_path: true
+        strip_path: false
         preserve_host: true
 
       # Group management routes (requires authentication)
       - name: user-service-groups
         paths:
           - /api/v1/user-service/groups
-        strip_path: true
+        strip_path: false
         preserve_host: true
 
       # Admin routes (requires admin role)
       - name: user-service-admin
         paths:
           - /api/v1/user-service/admin
-        strip_path: true
+        strip_path: false
         preserve_host: true
         # Restrict access to admin role only
         plugins:
@@ -57,7 +57,7 @@ services:
         paths:
           - /health
           - /ready
-        strip_path: true
+        strip_path: false
         preserve_host: true
 
     # Apply plugins to all routes in this service
@@ -81,7 +81,7 @@ services:
           minute: 100
           hour: 1000
           policy: redis
-          redis_host: redis
+          redis_host: redis-caching
           redis_port: 6379
           limit_by: ip
 
