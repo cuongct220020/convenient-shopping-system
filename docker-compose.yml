@@ -1,12 +1,16 @@
 services:
-  ingredient-service:
-    build: ./Ingredient Service
+  shopping-storage-service:
+    build: ./microservices/shopping-storage-service
     ports:
-      - "8000:8000"
+      - "9995:8000"
+    profiles:
+      - shopping-storage
     depends_on:
       - recipe-service
 
   recipe-service:
-    build: ./Recipe Service
+    build: ./micorservices/recipe-service
+    profiles:
+        - recipe-service
     ports:
-      - "8001:8001"
+      - "9996:8001"

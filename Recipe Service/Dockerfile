@@ -12,7 +12,7 @@ COPY src/ ./src/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose port (adjust if needed)
-EXPOSE 8001
+EXPOSE 9996
 
 # Run the service (adjust entrypoint if needed)
 CMD ["python", "src/main.py"]
