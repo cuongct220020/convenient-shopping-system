@@ -1,14 +1,14 @@
-# microservices/user-service/app/hooks/caching.py
+# user-service/app/hooks/caching.py
 from sanic import Sanic, Request
-
 from shopping_shared.caching.redis_manager import redis_manager
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.exceptions import CacheError
 
-logger = get_logger(__name__)
+logger = get_logger("Caching Middleware")
 
 
 async def setup_redis(app: Sanic):
-    """Hook to initialize the Redis connection pool."""
+    """Hook to initialize the Redis connection pool with graceful handling."""
     logger.info("Initializing Redis connection pool...")
 
     # Redis Configuration
@@ -18,18 +18,23 @@ async def setup_redis(app: Sanic):
     redis_password = app.config.REDIS.REDIS_PASSWORD
     decode_responses = app.config.REDIS.REDIS_DECODE_RESPONSES
 
-    # Redis setup
-    redis_manager.setup(
+    # Await setup and allow the manager to handle retries and availability flag.
+    await redis_manager.setup(
         host=redis_host,
         port=redis_port,
         db=redis_db,
         password=redis_password,
-        decode_responses=decode_responses
+        decode_responses=decode_responses,
+        max_retries=getattr(app.config.REDIS, "REDIS_MAX_RETRIES", 3),
+        retry_delay=getattr(app.config.REDIS, "REDIS_RETRY_DELAY", 1.0),
+        backoff=getattr(app.config.REDIS, "REDIS_RETRY_BACKOFF", 2.0),
     )
 
-    # Ping to check connection
-    await redis_manager.client.ping()
-    logger.info(f"Redis connection pool successfully created at {redis_host}:{redis_port}.")
+    if redis_manager.is_available():
+        logger.info(f"Redis connection pool successfully created at {redis_host}:{redis_port}.")
+    else:
+        # Do not raise here; allow application to start without Redis.
+        logger.warning("Redis is unavailable. The application will continue in degraded mode.")
 
 
 async def close_redis(_app: Sanic):
@@ -42,6 +47,12 @@ async def close_redis(_app: Sanic):
 async def inject_redis_client(request: Request):
     """
     Injects the shared Redis client into the request context.
-    The connection pool handles the actual connection management.
+    If Redis is unavailable, inject None so handlers can handle fallback logic.
     """
-    request.ctx.redis_client = redis_manager.client
+    try:
+        if redis_manager.is_available():
+            request.ctx.redis_client = redis_manager.client
+        else:
+            request.ctx.redis_client = None
+    except CacheError:
+        request.ctx.redis_client = None

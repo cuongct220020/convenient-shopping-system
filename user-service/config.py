@@ -9,11 +9,13 @@ class Config:
     """ Service-specific configurations for User-Service. """
     RUN_SETTING = {
         'host': os.getenv('APP_HOST', 'localhost'),
-        'port': int(os.getenv('APP_PORT', '1337')),
+        'port': int(os.getenv('APP_PORT', '8000')),
         'debug': os.getenv('DEBUG', True).lower() == 'true',
         "access_log": False,
         "auto_reload": True,
         'workers': int(os.getenv('WORKERS', 1)),
+        'proxies_count': 1, # Thêm để tin tưởng header từ Gateway
+        'forwarded_for_header': 'x-forwarded-for',
     }
 
     # JWT Settings

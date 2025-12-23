@@ -1,17 +1,14 @@
-# microservices/user-service/app/repositories/user_repository.py
+# user-service/app/repositories/user_repository.py
 from typing import Optional
 from uuid import UUID
-
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shopping_shared.databases.base_repository import BaseRepository
 
 from app.models.user import User
-from app.schemas import (
-    UserCreateSchema,
-    UserInfoUpdateSchema
-)
+from app.schemas import UserCreateSchema, UserInfoUpdateSchema
+from shopping_shared.databases.base_repository import BaseRepository
+
 
 
 class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema]):
@@ -39,4 +36,30 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
         """Updates the user's password with the hashed value."""
         return await self.update_field(user_id, "password_hash", hashed_password)
 
+    async def update_email(self, user_id: UUID, new_email: str) -> Optional[User]:
+        """
+        Updates the user's email address. Should be called after OTP verification.
+        """
+        return await self.update_fields(user_id, {
+            "email": new_email,
+            "email_verified": True  # Mark as verified after successful change
+        })
+
+    async def verify_email(self, user_id: UUID) -> Optional[User]:
+        """Marks user's email as verified."""
+        return await self.update_field(user_id, "email_verified", True)
+
+    async def get_user_with_profiles(self, user_id: UUID) -> Optional[User]:
+        """
+        Gets user with eager-loaded identity and health profiles.
+        Useful for /users/me endpoint to return complete user data.
+        """
+        from sqlalchemy.orm import selectinload
+        from app.models.user_profile import UserIdentityProfile, UserHealthProfile
+
+        load_options = [
+            selectinload(User.identity_profile),
+            selectinload(User.health_profile)
+        ]
+        return await self.get_by_id(user_id, load_options=load_options)
 

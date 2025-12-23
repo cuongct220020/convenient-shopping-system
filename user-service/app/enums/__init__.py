@@ -1,4 +1,4 @@
-# microservices/user-service/app/constants/__init__.py
+# microservices/user-service/app/enums/__init__.py
 from .auth import OtpAction
 from .tags import (
     AgeTag,

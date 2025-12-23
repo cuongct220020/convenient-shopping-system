@@ -1,7 +1,6 @@
 # app/apis/auth_bp.py
 from sanic import Blueprint
 
-# --- Import tất cả các Views cho blueprint này ---
 from app.views.auth.register_view import RegisterView
 from app.views.auth.login_view import LoginView
 from app.views.auth.logout_view import LogoutView
@@ -10,8 +9,7 @@ from app.views.auth.reset_password_view import ResetPasswordView
 from app.views.auth.otp_request_view import OTPRequestView
 from app.views.auth.otp_verification_view import OTPVerificationView
 
-# --- Khởi tạo Blueprint ---
-# Toàn bộ các đường dẫn này sẽ có tiền tố là /api/v1/auth
+
 auth_bp = Blueprint('auth_blueprint', url_prefix='/auth')
 
 # --- Đăng ký các đường dẫn (Routes) ---

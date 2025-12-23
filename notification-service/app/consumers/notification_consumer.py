@@ -1,37 +1,43 @@
 from shopping_shared.messaging.kafka_manager import kafka_manager
-from shopping_shared.messaging.topics import NOTIFICATION_TOPIC
 from shopping_shared.utils.logger_utils import get_logger
 from app.services.email_service import email_service
 
-logger = get_logger(__name__)
+logger = get_logger("Notification Consumer")
 
 async def consume_notifications():
     """
-    A long-running task that consumes messages from the NOTIFICATION_TOPIC
+    A long-running task that consumes messages from the 'user_registration_otp' topic
     and processes them.
     """
+    # Topic must match what user-service is producing to
+    topic = "user_registration_otp"
+    
     consumer = kafka_manager.create_consumer(
-        NOTIFICATION_TOPIC,
-        group_id="notification_service_group" # A unique groups ID for this service
+        topic,
+        group_id="notification_service_group" 
     )
     await consumer.start()
-    logger.info("Notification consumer started and listening for messages...")
+    logger.info(f"Notification consumer started and listening on '{topic}'...")
     try:
         async for msg in consumer:
             logger.info(f"Received message: {msg.value}")
             try:
+                # User service sends a flat JSON structure: {"email": "...", "otp_code": "...", "action": "..."}
                 message_data = msg.value
-                message_type = message_data.get("type")
-                payload = message_data.get("payload")
+                
+                email = message_data.get("email")
+                otp_code = message_data.get("otp_code")
+                action = message_data.get("action")
 
-                if message_type == "send_otp" and payload:
+                if email and otp_code:
+                    logger.info(f"Processing OTP email for {email} (Action: {action})")
                     await email_service.send_otp(
-                        email=payload.get("email"),
-                        otp_code=payload.get("otp_code"),
-                        action=payload.get("action")
+                        email=email,
+                        otp_code=otp_code,
+                        action=action
                     )
                 else:
-                    logger.warning(f"Received unknown message type: {message_type}")
+                    logger.warning(f"Received invalid message format: {message_data}")
 
             except Exception as e:
                 logger.error(f"Failed to process message: {msg.value}. Error: {e}", exc_info=True)

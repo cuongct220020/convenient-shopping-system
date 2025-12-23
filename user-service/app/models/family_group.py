@@ -1,3 +1,4 @@
+# user-service/app/models/family_group.py
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
@@ -7,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
 from shopping_shared.databases.base_model import Base
-from app.constants import GroupRole
+from app.enums import GroupRole
 
 
 class FamilyGroup(Base):

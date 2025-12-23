@@ -5,7 +5,7 @@ from app import create_app
 from shopping_shared.utils.logger_utils import get_logger
 from config import Config
 
-logger = get_logger(__name__)
+logger = get_logger("User Service Entrypoint")
 
 # Create the Sanic app instance as a module-level constant
 app = create_app(Config)

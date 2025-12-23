@@ -3,7 +3,7 @@ from sanic import Sanic
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("Message Broker Hooks")
 
 
 async def setup_kafka(app: Sanic):

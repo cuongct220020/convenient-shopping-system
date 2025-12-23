@@ -2,7 +2,9 @@
 from sanic import Sanic, Request
 
 from shopping_shared.databases.database_manager import database_manager as postgres_db
+from shopping_shared.utils.logger_utils import get_logger
 
+logger = get_logger("Database Middleware")
 
 async def setup_db(app: Sanic):
     """

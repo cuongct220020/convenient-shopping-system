@@ -1,15 +1,28 @@
+# user-service/app/models/user_profile.py
 from datetime import date, datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
-
-from sqlalchemy import (
-    String, Date, DateTime, ForeignKey, SmallInteger, Numeric, func
-)
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Integer, Date, DateTime, ForeignKey, SmallInteger, Numeric, func
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.enums import UserGender, ActivityLevel, HealthCondition, HealthGoal
 from shopping_shared.databases.base_model import Base
-from app.constants import UserGender, ActivityLevel, HealthCondition, HealthGoal
+
+class Address(Base):
+    __tablename__ = "addresses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ward: Mapped[str] = mapped_column(String(100), nullable=True)
+    district: Mapped[str] = mapped_column(String(100), nullable=True)
+    city: Mapped[str] = mapped_column(String(100), nullable=False)
+    province: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    # --- Relationships ---
+    user_profiles: Mapped[List["UserIdentityProfile"]] = relationship(back_populates="address")
+
+    def __repr__(self) -> str:
+        return f"<Address id={self.id}, {self.district}, {self.city}>"
 
 
 class UserIdentityProfile(Base):

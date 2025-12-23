@@ -1,4 +1,4 @@
-# microservices/user-service/app/constants/tags.py
+# microservices/user-service/app/enums/tags.py
 from enum import Enum
 
 
@@ -91,3 +91,4 @@ class TastePreferenceTag(str, Enum):
     SPICY_PREF = "0505"  # Thích cay
     LIGHT_PREF = "0506"  # Thích thanh đạm
     RICH_PREF = "0507"  # Thích béo
+

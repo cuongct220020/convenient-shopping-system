@@ -5,25 +5,30 @@ and serialization in the User Service.
 
 The schemas are organized by resource type.
 """
-from .auth import (
+
+from .auth_schema import (
     RegisterRequestSchema,
     LoginRequestSchema,
     AccessTokenSchema,
     ResetPasswordRequestSchema,
 )
-from .otp import (
+
+
+from .otp_schema import (
     OTPRequestSchema,
     OTPVerifyRequestSchema
 )
 
-from .user_profile import (
-    AddressSchema,
-    UserIdentityProfileSchema,
+from .user_profile_schema import (
+    # Identity Profile
+    UserIdentityProfileCreateSchema,
     UserIdentityProfileUpdateSchema,
-    UserHealthProfileSchema,
+    # Health Profile
+    UserHealthProfileCreateSchema,
     UserHealthProfileUpdateSchema,
 )
-from .user import (
+
+from .user_schema import (
     UserInfoSchema,
     UserInfoUpdateSchema,
     UserCreateSchema,
@@ -32,7 +37,7 @@ from .user import (
     UserAdminViewSchema,
     UserAdminUpdateSchema,
 )
-from .family_group import (
+from .family_group_schema import (
     FamilyGroupMemberSchema,
     FamilyGroupCreateSchema,
     FamilyGroupUpdateSchema,
@@ -50,11 +55,15 @@ __all__ = [
     "OTPRequestSchema",
     "OTPVerifyRequestSchema",
 
-    # Profile
+    # Profile - Identity
     "AddressSchema",
-    "UserIdentityProfileSchema",
+    "UserIdentityProfileCreateSchema",
+    "UserIdentityProfileResponseSchema",
     "UserIdentityProfileUpdateSchema",
-    "UserHealthProfileSchema",
+
+    # Profile - Health
+    "UserHealthProfileCreateSchema",
+    "UserHealthProfileResponseSchema",
     "UserHealthProfileUpdateSchema",
 
     # User

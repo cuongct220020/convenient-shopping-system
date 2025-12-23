@@ -1,13 +1,13 @@
-# /microservices/user-service/app/schemas/user.py
+# user-service/app/schemas/user_schema.py
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 from pydantic import Field, EmailStr
 from shopping_shared.schemas.base_schema import BaseSchema
-from app.constants import UserRole
-from .user_profile import UserIdentityProfileSchema, UserHealthProfileSchema, UserIdentityProfileUpdateSchema, UserHealthProfileUpdateSchema
+from app.enums import UserRole
+from .user_profile_schema import UserIdentityProfileSchema, UserHealthProfileSchema, UserIdentityProfileUpdateSchema, UserHealthProfileUpdateSchema
 
-# --- Base User Schemas ---
+
 class UserInfoSchema(BaseSchema):
     """Publicly available user information."""
     id: UUID
@@ -31,7 +31,7 @@ class UserInfoUpdateSchema(BaseSchema):
 
 class UserCreateSchema(BaseSchema):
     """Schema for creating a new user, used internally."""
-    user_name: str = Field(..., max_length=255)
+    username: str = Field(..., max_length=255)
     email: EmailStr
     password: str  # This will be the hashed password
     first_name: Optional[str] = Field(None, max_length=255)
@@ -39,16 +39,15 @@ class UserCreateSchema(BaseSchema):
     is_active: bool = False
 
 
-class UserAdminCreateSchema(UserCreateSchema):
-    """Schema for admins to create a new user."""
-    system_role: UserRole = UserRole.USER
 
 
-# --- Detailed and Admin Schemas ---
+
+
 class UserDetailedProfileSchema(UserInfoSchema):
     """Full user profile including identity and health info."""
     identity_profile: Optional[UserIdentityProfileSchema] = None
     health_profile: Optional[UserHealthProfileSchema] = None
+
 
 
 class UserAdminViewSchema(UserDetailedProfileSchema):
@@ -56,6 +55,7 @@ class UserAdminViewSchema(UserDetailedProfileSchema):
     system_role: UserRole
     created_at: datetime
     last_login: Optional[datetime] = None
+
 
 
 class UserAdminUpdateSchema(UserInfoUpdateSchema):

@@ -3,16 +3,17 @@ from sanic.request import Request
 from sanic.response import json, HTTPResponse
 from sanic.views import HTTPMethodView
 
-from shopping_shared.exceptions import Unauthorized
+from shopping_shared.exceptions import Forbidden, Unauthorized
 from shopping_shared.schemas.response_schema import GenericResponse
 
 from app.services.auth_service import AuthService
 from app.repositories.user_repository import UserRepository
-from shopping_shared.exceptions import Forbidden
+
 
 class RefreshView(HTTPMethodView):
 
-    async def post(self, request: Request) -> HTTPResponse:
+    @staticmethod
+    async def post(request: Request) -> HTTPResponse:
         """
         Xử lý token refresh
         """

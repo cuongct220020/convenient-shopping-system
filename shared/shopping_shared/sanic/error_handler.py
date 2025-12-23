@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from shopping_shared import exceptions as shared_exceptions
 from shopping_shared.utils.logger_utils import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("Error Handler")
 
 def register_shared_error_handlers(app: Sanic):
     """

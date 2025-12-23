@@ -2,9 +2,13 @@
 import random
 from datetime import timedelta
 
+from shopping_shared.utils.logger_utils import get_logger
+
 from app.utils.password_utils import hash_password, verify_password
 from app.services.redis_service import RedisService
 
+
+logger = get_logger("OTP Service")
 
 class OTPService:
     _TTL = timedelta(minutes=5)  # OTPs are valid for 5 minutes

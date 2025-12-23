@@ -1,15 +1,15 @@
+# user-service/app/models/user.py
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
-
 from sqlalchemy import String, DateTime, func, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
+
+from app.enums import UserRole
+
 from shopping_shared.databases.base_model import Base
-
-from app.constants import UserRole
-
 
 class User(Base):
     __tablename__ = "users"
@@ -37,8 +37,9 @@ class User(Base):
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
 
-    # --- Relationships ---
+    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # --- Relationships ---
     # 1-1 tới UserIdentityProfile
     identity_profile: Mapped["UserIdentityProfile"] = relationship(
         back_populates="user", cascade="all, delete-orphan"
@@ -65,4 +66,4 @@ class User(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<User user_name={self.user_name}, email={self.email}>"
+        return f"<User username={self.username}, email={self.email}>"

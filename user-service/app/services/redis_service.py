@@ -3,7 +3,9 @@ import json
 from datetime import datetime, UTC
 
 from shopping_shared.caching.redis_manager import redis_manager
+from shopping_shared.utils.logger_utils import get_logger
 
+logger = get_logger("OTP Service")
 
 class RedisService:
 
@@ -14,6 +16,7 @@ class RedisService:
     _blocklist_object = "jwt-blocklist"
     _otp_object = "otp"
     _global_revoke_object = "global_revoke_ts"
+    _idempotency_object = "idempotency"
     # ---------------------------
 
     @classmethod
@@ -27,6 +30,13 @@ class RedisService:
         Format: <service_prefix>:<object_type>:<identifier>
         """
         return f"{cls._service_prefix}:{object_type}:{identifier}"
+
+    @classmethod
+    def _get_idempotency_key(cls, user_id: str, idem_key: str) -> str:
+        """Generates the Redis key for idempotency storage."""
+        return cls._generate_key(cls._idempotency_object, f"{user_id}:{idem_key}")
+
+    # ... (Keep existing _get_allowlist_key, _get_blocklist_key, _get_otp_key, _get_global_revoke_key methods) ...
 
     @classmethod
     def _get_allowlist_key(cls, user_id: str) -> str:
@@ -49,6 +59,48 @@ class RedisService:
         """Generates the key for storing the user's global token revocation timestamp."""
         return cls._generate_key(cls._global_revoke_object, user_id)
 
+    # --- Idempotency Methods ---
+
+    @classmethod
+    async def acquire_idempotency_lock(cls, user_id: str, idem_key: str, lock_ttl: int = 30) -> bool:
+        """
+        Tries to acquire a processing lock for the idempotency key.
+        Returns True if acquired (first request), False if already processing or completed.
+        Uses SETNX (set if not exists) behavior via `set(..., nx=True)`.
+        """
+        key = cls._get_idempotency_key(user_id, idem_key)
+        # Value 'PROCESSING' indicates the request is currently being handled.
+        # nx=True ensures we only set it if the key doesn't exist.
+        return await redis_manager.client.set(key, "PROCESSING", ex=lock_ttl, nx=True)
+
+    @classmethod
+    async def save_idempotency_result(cls, user_id: str, idem_key: str, response_data: dict, ttl_seconds: int):
+        """
+        Saves the successful response payload to Redis, overwriting the 'PROCESSING' lock.
+        """
+        key = cls._get_idempotency_key(user_id, idem_key)
+        await redis_manager.client.set(key, json.dumps(response_data), ex=ttl_seconds)
+
+    @classmethod
+    async def get_idempotency_result(cls, user_id: str, idem_key: str) -> str | None:
+        """
+        Retrieves the stored idempotency result or status.
+        Returns:
+            - None: Key does not exist.
+            - "PROCESSING": Request is currently in progress.
+            - JSON String: The cached response data.
+        """
+        key = cls._get_idempotency_key(user_id, idem_key)
+        return await redis_manager.client.get(key)
+
+    @classmethod
+    async def release_idempotency_lock(cls, user_id: str, idem_key: str):
+        """
+        Removes the idempotency key (used if processing failed/crashed).
+        """
+        key = cls._get_idempotency_key(user_id, idem_key)
+        await redis_manager.client.delete(key)
+
     # --- Session/Token Methods ---
 
     @classmethod
@@ -63,8 +115,8 @@ class RedisService:
         Ghi đè bất kỳ phiên cũ nào (support for /login endpoint).
         """
         allowlist_key = cls._get_allowlist_key(user_id)
-        # SỬA: Gọi redis_manager.client() tại đây
-        await redis_manager.client().set(
+        # SỬA: Gọi redis_manager.client (property, không có ngoặc)
+        await redis_manager.client.set(
             allowlist_key,
             new_refresh_jti,
             ex=ttl_seconds
@@ -81,7 +133,7 @@ class RedisService:
         (support for /refresh-token endpoint).
         """
         allowlist_key = cls._get_allowlist_key(user_id)
-        stored_jti = await redis_manager.client().get(allowlist_key)
+        stored_jti = await redis_manager.client.get(allowlist_key)
 
         if stored_jti is None:
             return False
@@ -97,7 +149,7 @@ class RedisService:
         Xóa Refresh Token JTI khỏi Allowlist khi user logout.
         """
         allowlist_key = cls._get_allowlist_key(user_id)
-        await redis_manager.client().delete(allowlist_key)
+        await redis_manager.client.delete(allowlist_key)
 
     @classmethod
     async def add_token_to_blocklist(
@@ -110,8 +162,8 @@ class RedisService:
         """
         blocklist_key = cls._get_blocklist_key(access_token_jti)
         if remaining_ttl_seconds > 0:
-            # SỬA: Gọi redis_manager.client() tại đây
-            await redis_manager.client().set(
+            # SỬA: Gọi redis_manager.client (property, không có ngoặc)
+            await redis_manager.client.set(
                 blocklist_key,
                 "true",
                 ex=remaining_ttl_seconds
@@ -126,7 +178,7 @@ class RedisService:
         Kiểm tra JTI của Access Token có nằm trong Blocklist không.
         """
         blocklist_key = cls._get_blocklist_key(access_token_jti)
-        is_blocked = await redis_manager.client().get(blocklist_key)
+        is_blocked = await redis_manager.client.get(blocklist_key)
         return bool(is_blocked)
 
     # ---  Global Revoke ---
@@ -139,7 +191,7 @@ class RedisService:
         key = cls._get_global_revoke_key(user_id)
         current_timestamp = int(datetime.now(UTC).timestamp())
 
-        await redis_manager.client().set(key, current_timestamp)
+        await redis_manager.client.set(key, current_timestamp)
 
     @classmethod
     async def get_global_revoke_timestamp(cls, user_id: str) -> int | None:
@@ -148,22 +200,22 @@ class RedisService:
         (Được gọi bởi Auth Middleware trên mọi request)
         """
         key = cls._get_global_revoke_key(user_id)
-        ts_str = await redis_manager.client().get(key)
+        ts_str = await redis_manager.client.get(key)
 
         return int(ts_str) if ts_str else None
 
-    # --- OTP Methods (SỬA LOGIC) ---
+    # --- OTP Methods ---
     @classmethod
     async def set_otp(cls, email: str, action: str, otp_data: dict, ttl_seconds: int):
-        """SỬA: Lưu trữ dữ liệu OTP (dưới dạng JSON) vào Redis với TTL."""
+        """Lưu trữ dữ liệu OTP (dưới dạng JSON) vào Redis với TTL."""
         key = cls._get_otp_key(email, action)
-        await redis_manager.client().set(key, json.dumps(otp_data), ex=ttl_seconds)
+        await redis_manager.client.set(key, json.dumps(otp_data), ex=ttl_seconds)
 
     @classmethod
     async def get_otp(cls, email: str, action: str) -> dict | None:
-        """SỬA: Lấy dữ liệu OTP (dưới dạng JSON) từ Redis."""
+        """Lấy dữ liệu OTP (dưới dạng JSON) từ Redis."""
         key = cls._get_otp_key(email, action)
-        data_str = await redis_manager.client().get(key)
+        data_str = await redis_manager.client.get(key)
         if data_str:
             return json.loads(data_str)
         return None
@@ -172,7 +224,7 @@ class RedisService:
     async def delete_otp(cls, email: str, action: str):
         """Deletes an OTP from Redis."""
         key = cls._get_otp_key(email, action)
-        await redis_manager.client().delete(key)
+        await redis_manager.client.delete(key)
 
 
 redis_service = RedisService()

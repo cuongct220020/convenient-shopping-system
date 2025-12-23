@@ -4,8 +4,9 @@ from pydantic import EmailStr, ValidationError
 from sqlalchemy import func
 
 from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError
+from shopping_shared.utils.logger_utils import get_logger
 
-from app.constants import OtpAction
+from app.enums import OtpAction
 from app.repositories.user_repository import UserRepository
 from app.utils.password_utils import verify_password, hash_password
 from app.utils.jwt_utils import jwt_handler, TokenData
@@ -24,6 +25,8 @@ from app.schemas import (
 )
 
 
+logger = get_logger("Auth Service")
+
 class AuthService:
 
     @classmethod
@@ -41,7 +44,7 @@ class AuthService:
             hashed_password = hash_password(reg_data.password.get_secret_value())
             # Use the new UserCreateSchema
             user_create_data = UserCreateSchema(
-                user_name=reg_data.user_name,
+                username=reg_data.username,
                 email=reg_data.email,
                 password=hashed_password,
                 first_name=reg_data.first_name,

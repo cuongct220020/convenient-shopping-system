@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch
 from app.models.user import User
-from app.constants import UserRole
+from app.enums import UserRole
 
 
 # 1. Test API Đăng ký (Register)
@@ -14,7 +14,7 @@ async def test_register_success(test_client):
     - Kafka service được gọi để gửi OTP.
     """
     payload = {
-        "user_name": "testuser",
+        "username": "testuser",
         "email": "test@example.com",
         "password": "StrongPassword123!",
         "first_name": "Test",

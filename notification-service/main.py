@@ -1,11 +1,11 @@
 from app import create_app
-from config import Config, EmailConfig
+from config import Config
 from shared.shopping_shared.utils.logger_utils import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("Notification Service")
 
 # Create the Sanic app instance
-app = create_app(Config, EmailConfig)
+app = create_app(Config)
 
 def main() -> None:
     """Checks configuration and runs the application."""

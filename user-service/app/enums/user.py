@@ -1,4 +1,4 @@
-# microservices/user-service/app/constants/user.py
+# user-service/app/enums/user_schema.py
 from enum import Enum
 
 

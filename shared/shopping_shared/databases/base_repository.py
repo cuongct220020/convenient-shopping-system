@@ -46,12 +46,12 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.pk_name = inspect(self.model).primary_key[0].name
 
     def _apply_filters_and_sort(
-            self,
-            stmt,
-            filters: Optional[Dict[str, Any]] = None,
-            sort_by: Optional[List[str]] = None,
-            load_options: Optional[List[Any]] = None,
-            include_deleted: bool = False
+        self,
+        stmt,
+        filters: Optional[Dict[str, Any]] = None,
+        sort_by: Optional[List[str]] = None,
+        load_options: Optional[List[Any]] = None,
+        include_deleted: bool = False
     ):
         """Applies filtering, sorting, and soft-delete logic to a statement."""
         # 1. Apply soft-delete filter by default

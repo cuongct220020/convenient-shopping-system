@@ -9,7 +9,7 @@ from aiokafka.errors import KafkaError as AIOKafkaError
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.exceptions import MessageBrokerError, KafkaConnectionError
 
-logger = get_logger(__name__)
+logger = get_logger("Kafka Manager")
 
 
 class KafkaManager:

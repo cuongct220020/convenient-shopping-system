@@ -14,5 +14,6 @@ greenlet
 black
 ruff
 pytest
+aiokafka
 
--e ../../shared
+-e ../shared

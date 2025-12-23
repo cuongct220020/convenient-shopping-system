@@ -1,20 +1,71 @@
-# kong.yml - Declarative Kong Configuration
-# Improved configuration for Convenient Shopping System
 _format_version: "3.0"
 
-# Services configuration
+# ===========================
+# Consumers (JWT Issuers)
+# ===========================
+consumers:
+  - username: user-service-issuer
+    jwt_secrets:
+      - key: user-service-jwt
+        algorithm: RS256
+        rsa_public_key: ${JWT_PUBLIC_KEY}
+        # openssl genrsa -out private_key.pem 2048
+        # openssl rsa -in private_key.pem -pubout -out public_key.pem
+
+# ===========================
+# Global Plugins
+# ===========================
+plugins:
+  # 1. CORS
+  - name: cors
+    config:
+      origins:
+        - http://localhost:5173
+      credentials: true
+      max_age: 3600
+      exposed_headers:
+        - Authorization
+
+  # 2. Request Size Limiting
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 10
+      size_unit: megabytes
+
+  # 3. File Logging
+  - name: file-log
+    config:
+      path: /var/log/kong/access.log
+
+# 4. Prometheus Monitoring (Advanced);
+#  - name: prometheus
+#    config:
+#      include_status_codes: true
+
+# ===========================
+# Services
+# ===========================
 services:
-  # User Service - handles authentication, user management, and admin functions
+  # User Service
   - name: user-service
     url: http://user-service:8000
+    healthchecks:
+      active:
+        healthy:
+          interval: 10
+          successes: 2
+        http_path: /health
+
     routes:
-      # Authentication routes (public, no authentication required)
-      - name: user-service-auth
+      # Public routes (không cần JWT)
+      - name: user-service-public
         paths:
-          - /api/v1/user-service/auth
+          - /api/v1/user-service/auth/register
+          - /api/v1/user-service/auth/login
+          - /api/v1/user-service/auth/refresh-token
+          - /api/v1/user-service/auth/otp/send
+          - /api/v1/user-service/auth/otp/verify
         strip_path: false
-        preserve_host: true
-        # Apply rate limiting specifically to auth endpoints to prevent brute force
         plugins:
           - name: rate-limiting
             config:
@@ -23,173 +74,60 @@ services:
               policy: redis
               redis_host: redis-caching
               redis_port: 6379
-              limit_by: ip
+              redis_password: ${REDIS_PASSWORD}
 
-      # User profile routes (requires authentication)
-      - name: user-service-users
+
+      # Protected routes (cần JWT)
+      - name: user-service-protected
         paths:
           - /api/v1/user-service/users
-        strip_path: false
-        preserve_host: true
-
-      # Group management routes (requires authentication)
-      - name: user-service-groups
-        paths:
           - /api/v1/user-service/groups
         strip_path: false
-        preserve_host: true
+        plugins:
+          - name: jwt
+            config:
+              uri_param_names: [jwt]
+              cookie_names: [jwt_token]
+              claims_to_verify: [exp, nbf]
+              key_claim_name: iss
+              algorithm: RS256
 
-      # Admin routes (requires admin role)
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-User-ID:$(jwt.user_id)
+                  - X-User-Role:$(jwt.system_role)
+                  - X-User-Email:$(jwt.email)
+
+
+      # Admin routes (cần JWT + check role ở service layer)
       - name: user-service-admin
         paths:
           - /api/v1/user-service/admin
         strip_path: false
-        preserve_host: true
-        # Restrict access to admin role only
         plugins:
-          - name: acl
+          - name: jwt
             config:
-              allow:
-                - admin
+              uri_param_names: [jwt]
+              cookie_names: [jwt_token]
+              claims_to_verify: [exp, nbf]
+              key_claim_name: iss
+              algorithm: RS256
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-User-ID:$(jwt.user_id)
+                  - X-User-Role:$(jwt.system_role)
 
-      # Health check routes
-      - name: user-service-health
-        paths:
-          - /health
-          - /ready
-        strip_path: false
-        preserve_host: true
 
-    # Apply plugins to all routes in this service
-    plugins:
-      # JWT authentication for all endpoints except auth routes
-      - name: jwt
-        config:
-          uri_param_names:
-            - jwt
-          claims_to_verify:
-            - exp
-            - nbf
-          key_claim_name: kid
-          header_names:
-            - authorization
-          algorithms:
-            - RS256
-      # Rate limiting for general protection
-      - name: rate-limiting
-        config:
-          minute: 100
-          hour: 1000
-          policy: redis
-          redis_host: redis-caching
-          redis_port: 6379
-          limit_by: ip
+  # Recipe Service (tương tự)
+  - name: recipe-service
+    url: http://recipe-service:8000
+    # ... (áp dụng tương tự JWT plugin)
 
-# Consumer definitions for role-based access control
-consumers:
-  # Consumer for regular users
-  - username: user
-    custom_id: user-role
-    tags:
-      - user-tier
-    # Optionally apply specific rate limits or other configurations for users
-
-  # Consumer for admin users
-  - username: admin
-    custom_id: admin-role
-    tags:
-      - admin-tier
-    # Optionally apply higher rate limits or other admin-specific configurations
-
-# Global plugins - apply to all services/routes
-plugins:
-  # SSL/TLS with ACME for automatic certificate management
-  - name: acme
-    config:
-      account_email: admin@convenientsystem.com
-      domains:
-        - "convenientsystem.com"
-        - "*.convenientsystem.com"
-      tos_accepted: true
-      storage: redis
-      storage_config:
-        redis:
-          host: redis
-          port: 6379
-          password: null
-          database: 0
-      # Enable HTTP-01 and TLS-ALPN-01 challenges
-      http_challenge_port: 80
-      https_challenge_port: 443
-
-  # Bot detection for security
-  - name: bot-detection
-    config:
-      allow: []
-      deny: []
-
-  # Access control list to restrict groups
-  - name: acl
-    config:
-      hide_groups_header: false
-      allow:
-        - user
-        - admin
-
-  # Proxy cache for appropriate responses (only GET requests to cacheable endpoints)
-  - name: proxy-cache
-    config:
-      response_code:
-        - 200
-      request_method:
-        - GET
-      content_type:
-        - application/json
-      cache_ttl: 300  # 5 minutes - appropriate for user data that may change
-      strategy: redis
-      storage_config:
-        redis:
-          host: redis
-          port: 6379
-          database: 1
-
-  # Request transformation - add security and identification headers
-  - name: request-transformer
-    config:
-      add:
-        headers:
-          - X-Forwarded-Proto: https
-          - X-Real-IP: $remote_addr
-          - X-Forwarded-For: $proxy_add_x_forwarded_for
-
-  # Response transformation - remove potentially revealing headers
-  - name: response-transformer
-    config:
-      remove:
-        headers:
-          - Server
-          - X-Powered-By
-          - X-Runtime
-          - X-Version
-
-  # CORS plugin to handle cross-origin requests properly
-  - name: cors
-    config:
-      origins:
-        - "https://convenientsystem.com"
-        - "https://www.convenientsystem.com"
-        - "http://localhost:3000"  # for development
-      methods:
-        - GET
-        - POST
-        - PUT
-        - PATCH
-        - DELETE
-        - OPTIONS
-      headers:
-        - Accept
-        - Authorization
-        - Content-Type
-        - X-Requested-With
-      max_age: 3600
-      credentials: true
+  # Shopping Storage Service
+  - name: shopping-storage-service
+    url: http://shopping-storage-service:8000
+    # ... (áp dụng tương tự JWT plugin)

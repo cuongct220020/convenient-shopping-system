@@ -1,16 +1,9 @@
-# microservices/user-service/app/__init__.py
+# user-service/app/__init__.py
 
 from sanic import Sanic
-from sanic_cors import CORS
-
 from shopping_shared.utils.logger_utils import get_logger
 
-logger = get_logger(__name__)
-
-def register_extensions(sanic_app: Sanic):
-    from app import extensions
-
-    extensions.cors = CORS(sanic_app, resources={r"/*": {"origins": "*"}})
+logger = get_logger("Initialize User Service Application")
 
 
 def register_listeners(sanic_app: Sanic):
@@ -68,7 +61,7 @@ def register_hooks(sanic_app: Sanic):
 def create_app(*config_cls) -> Sanic:
     logger.info(f"Sanic application initialized with { ', '.join([config.__name__ for config in config_cls]) }")
 
-    sanic_app = Sanic(__name__)
+    sanic_app = Sanic("User Service Application")
 
     for config in config_cls:
         sanic_app.update_config(config)

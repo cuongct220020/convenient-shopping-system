@@ -4,7 +4,7 @@ from shopping_shared.messaging.kafka_manager import kafka_manager
 from app.services.email_service import email_service
 from app.consumers.notification_consumer import consume_notifications
 
-logger = get_logger(__name__)
+logger = get_logger("Initialize Notification Service")
 
 def setup_listeners(app: Sanic):
     """Initializes services and sets up background tasks."""

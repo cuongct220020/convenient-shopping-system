@@ -1,14 +1,15 @@
-# /microservices/user-service/app/schemas/otp.py
+# user-service/app/schemas/otp_schema.py
 from pydantic import Field, EmailStr, SecretStr
 from shopping_shared.schemas.base_schema import BaseSchema
-from app.constants.auth import OtpAction
+from app.enums.auth import OtpAction
 
 
-# --- OTP Schemas ---
+
 class OTPRequestSchema(BaseSchema):
     """Schema to request a verification OTP."""
     email: EmailStr
     action: OtpAction
+
 
 
 class OTPVerifyRequestSchema(BaseSchema):

@@ -54,7 +54,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /auth/otp/verify:
@@ -74,7 +74,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
   /auth/login:
@@ -108,7 +108,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
   /auth/refresh-token:
     post:
       tags: [Authentication]
@@ -151,7 +151,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
   /users/me:
     get:
       tags: [Profile]
@@ -272,7 +272,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -295,7 +295,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -318,7 +318,95 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users/me/tags:
+    get:
+      tags: [Profile - Tags]
+      summary: Lấy tất cả tags của user hiện tại
+      description: Trả về danh sách tags được nhóm theo category (age, medical, allergy, diet, taste)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Danh sách tags của user"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserTagsByCategoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Profile - Tags]
+      summary: Thêm tags mới cho user
+      description: Thêm một hoặc nhiều tags vào profile của user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTagBulkAddRequest'
+      responses:
+        '201':
+          description: "Tags đã được thêm thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      added_count:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Profile - Tags]
+      summary: Xóa tags của user
+      description: Xóa một hoặc nhiều tags khỏi profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tag_values:
+                  type: array
+                  items:
+                    type: string
+                  description: "Danh sách tag codes cần xóa (e.g., ['0212', '0300'])"
+              required: [tag_values]
+      responses:
+        '200':
+          description: "Tags đã được xóa"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      deleted_count:
+                        type: integer
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -358,7 +446,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -377,7 +465,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -426,7 +514,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -590,7 +678,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -677,7 +765,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -726,7 +814,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -833,11 +921,15 @@ components:
     UserRole:
       type: string
       enum: [USER, ADMIN]
+    OtpAction:
+      type: string
+      enum: [register, reset_password, change_email]
+      description: "Loại hành động yêu cầu OTP"
     # --- Request Schemas ---
     RegisterRequest:
       type: object
       properties:
-        user_name:
+        username:
           type: string
         email:
           type: string
@@ -848,7 +940,7 @@ components:
           type: string
         last_name:
           type: string
-      required: [user_name, email, password, first_name, last_name]
+      required: [username, email, password, first_name, last_name]
     LoginRequest:
       type: object
       properties:
@@ -872,7 +964,9 @@ components:
         email:
           type: string
           format: email
-      required: [email]
+        action:
+          $ref: '#/components/schemas/OtpAction'
+      required: [email, action]
     VerifyAccountRequest:
       type: object
       properties:
@@ -881,7 +975,13 @@ components:
           format: email
         otp:
           type: string
-      required: [email, otp]
+          minLength: 6
+          maxLength: 6
+          pattern: '^[0-9]{6}$'
+          description: "Mã OTP 6 chữ số"
+        action:
+          $ref: '#/components/schemas/OtpAction'
+      required: [email, otp, action]
     RequestEmailChangeRequest:
       type: object
       properties:
@@ -897,6 +997,10 @@ components:
           format: email
         otp:
           type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^[0-9]{6}$'
+          description: "Mã OTP 6 chữ số"
       required: [new_email, otp]
     GroupCreate:
       type: object
@@ -950,7 +1054,7 @@ components:
         - $ref: '#/components/schemas/UserUpdate'
         - type: object
           properties:
-            user_name:
+            username:
               type: string
             email:
               type: string
@@ -1010,13 +1114,75 @@ components:
           $ref: '#/components/schemas/HealthCondition'
         health_goal:
           $ref: '#/components/schemas/HealthGoal'
+
+    # --- Tag Schemas ---
+    UserTagBulkAddRequest:
+      type: object
+      properties:
+        tag_values:
+          type: array
+          items:
+            type: string
+          description: "Danh sách tag codes (e.g., ['0212', '0300', '0505'])"
+          example: ["0212", "0300", "0402"]
+      required: [tag_values]
+
+    UserTagUpdateByCategoryRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          enum: [age, medical, allergy, diet, taste]
+          description: "Category của tags cần cập nhật"
+        tag_values:
+          type: array
+          items:
+            type: string
+          description: "Danh sách tag codes mới cho category này"
+          example: ["0212", "0213"]
+      required: [category, tag_values]
+
+    UserTagsByCategoryResponse:
+      type: object
+      properties:
+        age:
+          type: array
+          items:
+            type: string
+          description: "Age group tags (01xx)"
+          example: ["0102"]
+        medical:
+          type: array
+          items:
+            type: string
+          description: "Medical condition tags (02xx)"
+          example: ["0212", "0201"]
+        allergy:
+          type: array
+          items:
+            type: string
+          description: "Allergy tags (03xx)"
+          example: ["0300", "0302"]
+        diet:
+          type: array
+          items:
+            type: string
+          description: "Special diet tags (04xx)"
+          example: ["0402"]
+        taste:
+          type: array
+          items:
+            type: string
+          description: "Taste preference tags (05xx)"
+          example: ["0505", "0501"]
+
     UserPublicProfile:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        user_name:
+        username:
           type: string
         first_name:
           type: string
@@ -1092,6 +1258,7 @@ components:
         message:
           type: string
           nullable: true
+          example: "Thao tác thành công."
         data:
           nullable: true
     PaginationResponse:
@@ -1107,14 +1274,6 @@ components:
               type: integer
             total_pages:
               type: integer
-    SuccessResponse:
-      allOf:
-        - $ref: '#/components/schemas/GenericResponse'
-        - type: object
-          properties:
-            message:
-              type: string
-              example: "Thao tác thành công."
     TokenDataResponse:
       allOf:
         - $ref: '#/components/schemas/GenericResponse'

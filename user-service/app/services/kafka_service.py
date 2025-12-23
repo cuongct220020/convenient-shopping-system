@@ -6,7 +6,7 @@ from shopping_shared.utils.logger_utils import get_logger
 
 USER_REGISTRATION_OTP_TOPIC = "user_registration_otp"
 
-logger = get_logger(__name__)
+logger = get_logger("Kafka Service")
 
 class KafkaService:
 
