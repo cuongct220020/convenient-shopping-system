@@ -1,24 +1,19 @@
+# user-service/app/views/users/me_email_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
 
-from shopping_shared.schemas.response_schema import GenericResponse, SuccessResponse
-from shopping_shared.exceptions import BadRequest
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
+from app.schemas import RequestEmailChangeSchema, ConfirmEmailChangeSchema
 from app.services.auth_service import AuthService
 from app.services.otp_service import otp_service
 from app.enums import OtpAction
-# Assuming you have schemas for these or use Generic ones
-from pydantic import BaseModel, EmailStr
 
-class RequestEmailChangeSchema(BaseModel):
-    new_email: EmailStr
+from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.exceptions import BadRequest
 
-class ConfirmEmailChangeSchema(BaseModel):
-    new_email: EmailStr
-    otp_code: str
 
 
 class MeRequestChangeEmailView(HTTPMethodView):
@@ -37,9 +32,20 @@ class MeRequestChangeEmailView(HTTPMethodView):
         
         # Publish to Kafka for notification service to send email
         from app.services.kafka_service import kafka_service
+
+        # Sau can sua lai ten ham de phu hop hon
         await kafka_service.publish_user_registration_otp(new_email, otp_code) # Reusing existing method for now
 
-        return json(SuccessResponse(message="OTP sent to your new email address.").model_dump(), status=200)
+
+        response = GenericResponse(
+            status="success",
+            message="OTP sent to your new email address.",
+            data=None
+        )
+
+        return json(response.model_dump(), status=200)
+
+
 
 
 class MeConfirmChangeEmailView(HTTPMethodView):
@@ -59,11 +65,18 @@ class MeConfirmChangeEmailView(HTTPMethodView):
         
         if not is_valid:
             raise BadRequest("Invalid or expired OTP code.")
-            
+
         # Update User Email
         repo = UserRepository(request.ctx.db_session)
         user = await repo.get_by_id(user_id)
         user.email = data.new_email
-        await repo.update(user)
+        await repo.update(user.id, user)
 
-        return json(SuccessResponse(message="Email updated successfully.").model_dump(), status=200)
+s==dsa==dsasdafsd
+        response = GenericResponse(
+            status="success",
+            message="Email updated successfully.",
+            data=None
+        )
+
+        return json(response.model_dump(), status=200)

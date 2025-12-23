@@ -3,9 +3,8 @@
 import jwt
 import uuid
 
-from typing import Optional, Tuple, Literal
+from typing import Tuple, Literal
 from datetime import datetime, timedelta, UTC
-
 from sanic import Sanic
 
 from shopping_shared.exceptions import Unauthorized
@@ -15,8 +14,8 @@ from shopping_shared.schemas.base_schema import BaseSchema
 class TokenData(BaseSchema):
     access_token: str
     refresh_token: str
-    access_jti: uuid.UUID
-    refresh_jti: uuid.UUID
+    access_jti: str
+    refresh_jti: str
     at_expires_in_minutes: int
     rt_ttl_seconds: int
 
@@ -24,33 +23,20 @@ class JWTHandler:
     """
     Handles JWT creation
     """
+    def __init__(self, app: Sanic):
+        self.app = app
+        self.access_token_expire_minutes = self.app.config["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"]
+        self.secret_key = self.app.config["JWT_SECRET"]
+        self.algorithm = self.app.config["JWT_ALGORITHM"]
+        self.refresh_token_expire_days = self.app.config["REFRESH_TOKEN_EXPIRE_DAYS"]
 
-    def __init__(self, app: Optional[Sanic] = None):
-        if app:
-            self.init_app(app)
 
-    def init_app(self, app: Sanic):
-        self.config = app.config
-        # Cache các giá trị config
-        self.secret_key = self._get_config_value('JWT_SECRET')
-        self.algorithm = self._get_config_value('JWT_ALGORITHM', 'HS256')
-
-        self.access_token_expire_minutes = int(
-            self._get_config_value('JWT_ACCESS_TOKEN_EXPIRES_MINUTES', 15)
-        )
-        self.refresh_token_expire_days = int(
-            self._get_config_value('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 30)
-        )
-
-    def _get_config_value(self, key: str, default=None):
-        return self.config.get(key, default)
-
+    @staticmethod
     def _create_token_payload(
-            self,
-            user_id: str,
-            token_type: str,
-            expiry_delta: timedelta,
-            user_role: str | None = None
+        user_id: str,
+        token_type: str,
+        expiry_delta: timedelta,
+        user_role: str | None = None
     ) -> Tuple[dict, str]:
         """
         Tạo payload chung và JTI cho token.

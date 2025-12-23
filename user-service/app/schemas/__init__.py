@@ -20,10 +20,15 @@ from .otp_schema import (
 )
 
 from .user_profile_schema import (
+    AddressSchema,
+
     # Identity Profile
+    UserIdentityProfileSchema,
     UserIdentityProfileCreateSchema,
     UserIdentityProfileUpdateSchema,
+
     # Health Profile
+    UserHealthProfileSchema,
     UserHealthProfileCreateSchema,
     UserHealthProfileUpdateSchema,
 )
@@ -32,11 +37,15 @@ from .user_schema import (
     UserInfoSchema,
     UserInfoUpdateSchema,
     UserCreateSchema,
-    UserAdminCreateSchema,
     UserDetailedProfileSchema,
     UserAdminViewSchema,
     UserAdminUpdateSchema,
+    RequestEmailChangeSchema,
+    ConfirmEmailChangeSchema
 )
+
+
+
 from .family_group_schema import (
     FamilyGroupMemberSchema,
     FamilyGroupCreateSchema,
@@ -57,23 +66,24 @@ __all__ = [
 
     # Profile - Identity
     "AddressSchema",
+    "UserIdentityProfileSchema",
     "UserIdentityProfileCreateSchema",
-    "UserIdentityProfileResponseSchema",
     "UserIdentityProfileUpdateSchema",
 
     # Profile - Health
+    "UserHealthProfileSchema",
     "UserHealthProfileCreateSchema",
-    "UserHealthProfileResponseSchema",
     "UserHealthProfileUpdateSchema",
 
     # User
     "UserInfoSchema",
     "UserInfoUpdateSchema",
     "UserCreateSchema",
-    "UserAdminCreateSchema",
     "UserDetailedProfileSchema",
     "UserAdminViewSchema",
     "UserAdminUpdateSchema",
+    "RequestEmailChangeSchema",
+    "ConfirmEmailChangeSchema",
 
     # Group
     "FamilyGroupMemberSchema",

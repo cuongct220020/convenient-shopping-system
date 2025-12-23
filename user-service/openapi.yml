@@ -373,10 +373,11 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-    delete:
+  /users/me/tags/delete:
+    post:
       tags: [Profile - Tags]
       summary: Xóa tags của user
-      description: Xóa một hoặc nhiều tags khỏi profile
+      description: Xóa một hoặc nhiều tags khỏi profile (sử dụng POST để gửi body)
       security:
         - bearerAuth: []
       requestBody:
@@ -1126,21 +1127,6 @@ components:
           description: "Danh sách tag codes (e.g., ['0212', '0300', '0505'])"
           example: ["0212", "0300", "0402"]
       required: [tag_values]
-
-    UserTagUpdateByCategoryRequest:
-      type: object
-      properties:
-        category:
-          type: string
-          enum: [age, medical, allergy, diet, taste]
-          description: "Category của tags cần cập nhật"
-        tag_values:
-          type: array
-          items:
-            type: string
-          description: "Danh sách tag codes mới cho category này"
-          example: ["0212", "0213"]
-      required: [category, tag_values]
 
     UserTagsByCategoryResponse:
       type: object

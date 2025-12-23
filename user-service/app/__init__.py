@@ -66,7 +66,6 @@ def create_app(*config_cls) -> Sanic:
     for config in config_cls:
         sanic_app.update_config(config)
 
-    register_extensions(sanic_app)
     register_listeners(sanic_app)
     register_views(sanic_app)
     register_hooks(sanic_app)

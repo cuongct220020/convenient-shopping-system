@@ -1,4 +1,4 @@
-# microservices/user-service/app/services/otp_service.py
+# user-service/app/services/otp_service.py
 import random
 from datetime import timedelta
 

@@ -15,6 +15,14 @@ class AddressSchema(BaseSchema):
 
 
 # User Identity Profile Schemas
+class UserIdentityProfileSchema(BaseSchema):
+    user_id: UUID
+    gender: UserGender
+    date_of_birth: Optional[date] = Field(None, max_length=100)
+    occupation: Optional[str] = Field(None, max_length=255)
+    address: Optional[AddressSchema] = None
+
+
 class UserIdentityProfileCreateSchema(BaseSchema):
     user_id: UUID
     gender: Optional[UserGender] = None
@@ -30,11 +38,16 @@ class UserIdentityProfileUpdateSchema(BaseSchema):
     address: Optional[AddressSchema] = None
 
 
-class UserIdentityProfileResponseSchema(BaseSchema):
-    pass
-
-
 # User Health Profile Schemas
+class UserHealthProfileSchema(BaseSchema):
+    user_id: UUID
+    height_cm: Optional[int] = None
+    weight_kg: Optional[float] = None
+    activity_level: Optional[ActivityLevel] = None
+    curr_condition: Optional[HealthCondition] = None
+    health_goal: Optional[HealthGoal] = None
+
+
 class UserHealthProfileCreateSchema(BaseSchema):
     user_id: UUID
     height_cm: Optional[int] = Field(None, gt=0)
@@ -50,7 +63,3 @@ class UserHealthProfileUpdateSchema(BaseSchema):
     activity_level: Optional[ActivityLevel] = None
     curr_condition: Optional[HealthCondition] = None
     health_goal: Optional[HealthGoal] = None
-
-
-class UserHealthProfileResponseSchema(BaseSchema):
-    pass

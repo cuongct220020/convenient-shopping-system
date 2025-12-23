@@ -1,10 +1,12 @@
 # shopping_shared/sanic/error_handler.py
-from sanic import Sanic, Request, response
+from sanic import Sanic, Request
+from sanic.response import json
 from pydantic import ValidationError
 
 # Import the shared exceptions
 from shopping_shared import exceptions as shared_exceptions
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.schemas.response_schema import GenericResponse
 
 logger = get_logger("Error Handler")
 
@@ -27,11 +29,13 @@ def register_shared_error_handlers(app: Sanic):
         # Log the handled exception for visibility, but at a lower level (e.g., INFO or WARNING)
         logger.info(f"Handled exception for request {request.path}: {exc.__class__.__name__} (Status: {exc.status_code}) - {exc}")
 
-        return response.json(
-            {"status": "fail", "message": str(exc)},
-            status=exc.status_code,
-            headers=headers
+        response = GenericResponse(
+            status="fail",
+            message=str(exc)
         )
+
+        return json(response.model_dump(), status=exc.status_code, headers=headers)
+
 
     @app.exception(ValidationError)
     async def handle_pydantic_validation_error(request: Request, exc: ValidationError):
@@ -40,14 +44,15 @@ def register_shared_error_handlers(app: Sanic):
         Returns a 422 Unprocessable Entity response.
         """
         logger.warning(f"Validation error for request {request.path}: {exc.errors()}")
-        return response.json(
-            {
-                "status": "fail",
-                "message": "Request validation failed.",
-                "data": exc.errors()
-            },
-            status=422
+
+        response = GenericResponse(
+            status="fail",
+            message="Request validation failed.",
+            data=exc.errors()
         )
+
+        return json(response.model_dump(), status=422)
+
 
     @app.exception(Exception)
     async def handle_generic_exception(request: Request, exc: Exception):
@@ -57,12 +62,11 @@ def register_shared_error_handlers(app: Sanic):
         """
         logger.error(f"Unexpected server error on request {request.path}: {exc}", exc_info=exc)
 
-        return response.json(
-            {
-                "status": "error",
-                "message": "An internal server error occurred. The technical team has been notified."
-            },
-            status=500
+        response = GenericResponse(
+            status="error",
+            message="An internal server error occurred. The technical team has been notified."
         )
+
+        return json(response.model_dump(), status=500)
 
     logger.info("Shared error handlers have been registered.")

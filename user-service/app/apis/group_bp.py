@@ -1,4 +1,4 @@
-# microservices/user-service/app/apis/group_bp.py
+# user-service/app/apis/group_bp.py
 from sanic import Blueprint
 
 from app.views.groups.group_view import (

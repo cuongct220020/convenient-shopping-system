@@ -36,8 +36,8 @@ class MeView(HTTPMethodView):
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
         
-        repo = UserRepository(request.ctx.db_session)
-        service = UserService(repo)
+        user_repo = UserRepository(session=request.ctx.db_session)
+        service = UserService(user_repo=user_repo)
         
         updated_user = await service.update(user_id, validated_data)
         

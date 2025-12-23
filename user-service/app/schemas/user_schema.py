@@ -19,6 +19,7 @@ class UserInfoSchema(BaseSchema):
     avatar_url: Optional[str] = None
 
 
+
 class UserInfoUpdateSchema(BaseSchema):
     """Schema for update user core information."""
     username: Optional[str] = None
@@ -37,9 +38,6 @@ class UserCreateSchema(BaseSchema):
     first_name: Optional[str] = Field(None, max_length=255)
     last_name: Optional[str] = Field(None, max_length=255)
     is_active: bool = False
-
-
-
 
 
 
@@ -63,3 +61,14 @@ class UserAdminUpdateSchema(UserInfoUpdateSchema):
     system_role: Optional[UserRole] = None
     identity_profile: Optional[UserIdentityProfileUpdateSchema] = None
     health_profile: Optional[UserHealthProfileUpdateSchema] = None
+
+
+
+class RequestEmailChangeSchema(BaseSchema):
+    new_email: EmailStr
+
+
+
+class ConfirmEmailChangeSchema(BaseSchema):
+    new_email: EmailStr
+    otp_code: str

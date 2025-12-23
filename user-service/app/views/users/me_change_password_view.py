@@ -1,4 +1,4 @@
-# app/views/auth/me_change_password_view.py
+# app/views/me_change_password_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
