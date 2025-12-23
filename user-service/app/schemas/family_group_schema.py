@@ -31,12 +31,12 @@ class GroupMembershipCreateSchema(BaseSchema):
 class GroupMembershipUpdateSchema(BaseSchema):
     role: Optional[GroupRole] = None
 
+
 class AddMemberRequestSchema(BaseSchema):
     email: EmailStr
 
-class UpdateMemberRoleRequestSchema(BaseSchema):
-    role: GroupRole
 
+# Family Group Detailed Schemas
 class GroupMembershipSchema(BaseSchema):
     """Schema representing a member within a groups."""
     user: UserInfoSchema

@@ -1,4 +1,4 @@
-# /microservices/user-service/app/schemas/__init__.py
+# user-service/app/schemas/__init__.py
 """
 This package contains all the Pydantic schemas used for data validation
 and serialization in the User Service.
@@ -20,7 +20,11 @@ from .otp_schema import (
     OTPVerifyRequestSchema
 )
 
-from .user_admin_schema import UserAdminCreateSchema
+from .user_admin_schema import (
+    UserAdminCreateSchema,
+    UserAdminViewSchema,
+    UserAdminUpdateSchema
+)
 
 from .user_profile_schema import (
     AddressSchema,
@@ -41,21 +45,19 @@ from .user_schema import (
     UserInfoUpdateSchema,
     UserCreateSchema,
     UserDetailedProfileSchema,
-    UserAdminViewSchema,
-    UserAdminUpdateSchema,
     RequestEmailChangeSchema,
     ConfirmEmailChangeSchema
 )
 
 
-
 from .family_group_schema import (
-    FamilyGroupMemberSchema,
     FamilyGroupCreateSchema,
     FamilyGroupUpdateSchema,
     FamilyGroupDetailedSchema,
-    AddMemberRequestSchema,
-    UpdateMemberRoleRequestSchema
+    GroupMembershipSchema,
+    GroupMembershipCreateSchema,
+    GroupMembershipUpdateSchema,
+    AddMemberRequestSchema
 )
 
 from .family_group_admin_schema import (
@@ -98,12 +100,12 @@ __all__ = [
     "ConfirmEmailChangeSchema",
 
     # Group
-    "FamilyGroupMemberSchema",
     "FamilyGroupCreateSchema",
     "FamilyGroupUpdateSchema",
     "FamilyGroupDetailedSchema",
     "FamilyGroupAdminCreateSchema",
     "FamilyGroupAdminUpdateSchema",
+    "GroupMembershipCreateSchema",
+    "GroupMembershipUpdateSchema",
     "AddMemberRequestSchema",
-    "UpdateMemberRoleRequestSchema"
 ]

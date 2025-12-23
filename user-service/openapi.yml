@@ -471,84 +471,76 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /groups/{groupId}/members:
-    post:
-      tags: [Groups]
-      summary: Thêm thành viên vào nhóm (HeadChef only)
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/GroupId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
-      responses:
-        '201':
-          description: "Thêm thành viên thành công."
+      /groups/{groupId}/members:
+      post:
+        tags: [Groups]
+        summary: Thêm thành viên vào nhóm (HeadChef only)
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/GroupId'
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupMemberResponse'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /groups/{groupId}/members/{userId}:
-    delete:
-      tags: [Groups]
-      summary: Xóa thành viên khỏi nhóm (HeadChef only)
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/GroupId'
-        - $ref: '#/components/parameters/UserId'
-      responses:
-        '200':
-          description: "Xóa thành viên thành công."
+                $ref: '#/components/schemas/AddMemberRequest'
+        responses:
+          '201':
+            description: "Thêm thành viên thành công."
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GroupMemberResponse'
+          '403':
+            $ref: '#/components/responses/Forbidden'
+          '404':
+            $ref: '#/components/responses/NotFound'
+    /groups/{groupId}/members/{userId}:
+      delete:
+        tags: [Groups]
+        summary: Xóa thành viên khỏi nhóm (HeadChef only)
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/GroupId'
+          - $ref: '#/components/parameters/UserId'
+        responses:
+          '200':
+            description: "Xóa thành viên thành công."
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GenericResponse'
+          '403':
+            $ref: '#/components/responses/Forbidden'
+          '404':
+            $ref: '#/components/responses/NotFound'
+      patch:
+        tags: [Groups]
+        summary: Cập nhật vai trò của thành viên trong nhóm (HeadChef only)
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/GroupId'
+          - $ref: '#/components/parameters/UserId'
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      tags: [Groups]
-      summary: Cập nhật vai trò của thành viên trong nhóm (HeadChef only)
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/GroupId'
-        - $ref: '#/components/parameters/UserId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                role:
-                  $ref: '#/components/schemas/GroupRole'
-      responses:
-        '200':
-          description: "Cập nhật vai trò thành công."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GroupMemberResponse'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /groups/{groupId}/members/{userId}/identity-profile:
+                $ref: '#/components/schemas/GroupMembershipUpdate'
+        responses:
+          '200':
+            description: "Cập nhật vai trò thành công."
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GroupMemberResponse'
+          '403':
+            $ref: '#/components/responses/Forbidden'
+          '404':
+            $ref: '#/components/responses/NotFound'  /groups/{groupId}/members/{userId}/identity-profile:
     get:
       tags: [Groups]
       summary: Xem hồ sơ định danh của thành viên trong nhóm
@@ -833,10 +825,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                role:
-                  $ref: '#/components/schemas/GroupRole'
+              $ref: '#/components/schemas/GroupMembershipUpdate'
       responses:
         '200':
           description: "Cập nhật vai trò thành công."
@@ -1003,6 +992,18 @@ components:
           pattern: '^[0-9]{6}$'
           description: "Mã OTP 6 chữ số"
       required: [new_email, otp]
+    AddMemberRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required: [email]
+    GroupMembershipUpdate:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/GroupRole'
     GroupCreate:
       type: object
       properties:

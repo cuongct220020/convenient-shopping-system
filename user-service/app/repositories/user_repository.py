@@ -45,9 +45,11 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
             "email_verified": True  # Mark as verified after successful change
         })
 
+
     async def verify_email(self, user_id: UUID) -> Optional[User]:
         """Marks user's email as verified."""
         return await self.update_field(user_id, "email_verified", True)
+
 
     async def create_user(self, user_data: dict) -> User:
         """
@@ -60,13 +62,13 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
         await self.session.refresh(user)
         return user
 
+
     async def get_user_with_profiles(self, user_id: UUID) -> Optional[User]:
         """
         Gets user with eager-loaded identity and health profiles.
         Useful for /users/me endpoint to return complete user data.
         """
         from sqlalchemy.orm import selectinload
-        from app.models.user_profile import UserIdentityProfile, UserHealthProfile
 
         load_options = [
             selectinload(User.identity_profile),

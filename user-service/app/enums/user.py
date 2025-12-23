@@ -2,16 +2,29 @@
 from enum import Enum
 
 
-class UserRole(str, Enum):
+class SystemRole(str, Enum):
     """Enum for system-level user roles."""
     ADMIN = "admin"
     USER = "user"
 
 
 class GroupRole(str, Enum):
-    """Enum for user roles within a family groups."""
-    HEAD_CHEF = "head_chef"
-    MEMBER = "member"
+    """
+    Enum for user roles within a family group.
+
+    HEAD_CHEF: Người tạo nhóm và có quyền cao nhất trong nhóm.
+               - Thêm/xóa thành viên
+               - Cập nhật thông tin nhóm
+               - Xóa nhóm
+               - Chuyển quyền HEAD_CHEF cho thành viên khác
+
+    MEMBER: Thành viên thông thường.
+            - Xem thông tin nhóm
+            - Xem profile các thành viên khác
+            - Rời nhóm
+    """
+    HEAD_CHEF = "head_chef"  # Chủ nhóm - quyền cao nhất
+    MEMBER = "member"        # Thành viên thông thường
 
 
 class UserGender(str, Enum):

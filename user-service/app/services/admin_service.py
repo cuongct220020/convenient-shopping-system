@@ -2,7 +2,7 @@
 from uuid import UUID
 
 from app.repositories.user_repository import UserRepository
-from app.schemas.user_schema import UserCreateSchema, UserAdminUpdateSchema
+from app.schemas.user_admin_schema import UserAdminUpdateSchema
 from app.utils.password_utils import hash_password
 from shopping_shared.exceptions import Conflict, NotFound
 from shopping_shared.utils.logger_utils import get_logger
@@ -13,7 +13,6 @@ class AdminService:
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
 
-
     async def get_user_by_admin(self, user_id):
         """Fetch a user by ID for admin."""
         user = await self.user_repository.get_by_id(user_id)
@@ -21,9 +20,11 @@ class AdminService:
             raise NotFound(f"User with id {user_id} not found")
         return user
 
+
     async def get_all_users(self, page: int = 1, page_size: int = 20):
         """Fetch all users with pagination."""
         return await self.user_repository.get_paginated(page=page, page_size=page_size)
+
 
     async def create_user_by_admin(self, user_data):
         """Creates a new user by an admin."""

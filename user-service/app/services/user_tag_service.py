@@ -13,7 +13,7 @@ from app.schemas.user_tag_schema import (
     UserTagsByCategoryResponseSchema
 )
 
-logger = get_logger("UserTagService")
+logger = get_logger("User Tag Service")
 
 
 class UserTagService:

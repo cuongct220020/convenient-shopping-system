@@ -1,9 +1,5 @@
-# microservices/user-service/app/services/family_group_service.py
-from typing import List
+# user-service/app/services/family_group_service.py
 from uuid import UUID
-
-from shopping_shared.exceptions import Forbidden, NotFound, Conflict
-from shopping_shared.utils.logger_utils import get_logger
 
 from app.models import FamilyGroup, GroupMembership
 from app.enums import GroupRole
@@ -13,6 +9,10 @@ from app.schemas import (
 )
 from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
+
+from shopping_shared.exceptions import Forbidden, NotFound, Conflict
+from shopping_shared.utils.logger_utils import get_logger
+
 
 logger = get_logger("Family Group Service")
 

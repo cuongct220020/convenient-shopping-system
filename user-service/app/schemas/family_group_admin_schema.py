@@ -2,6 +2,7 @@ from typing import Optional
 from uuid import UUID
 from app.schemas.family_group_schema import FamilyGroupCreateSchema, FamilyGroupUpdateSchema
 
+
 class FamilyGroupAdminCreateSchema(FamilyGroupCreateSchema):
     """
     Schema for admin to create a group.

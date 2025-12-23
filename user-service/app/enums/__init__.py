@@ -12,7 +12,7 @@ from .user import (
     HealthCondition,
     HealthGoal,
     UserGender,
-    UserRole,
+    SystemRole,
     GroupRole,
 )
 
@@ -30,6 +30,6 @@ __all__ = [
     "HealthCondition",
     "HealthGoal",
     "UserGender",
-    "UserRole",
+    "SystemRole",
     "GroupRole",
 ]

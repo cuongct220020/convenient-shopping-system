@@ -3,11 +3,9 @@ from typing import List, Dict
 from uuid import UUID
 from sqlalchemy import select, delete, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from shopping_shared.databases.base_repository import BaseRepository
 from app.models.user_tag import Tag, UserTag
-from app.models.user import User
 
 
 class TagRepository(BaseRepository[Tag, None, None]):

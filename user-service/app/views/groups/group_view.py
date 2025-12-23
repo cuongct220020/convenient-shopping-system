@@ -7,8 +7,8 @@ from sanic.views import HTTPMethodView
 from shopping_shared.exceptions import Forbidden, NotFound
 from shopping_shared.schemas.response_schema import GenericResponse
 
-from app.decorators.validate_request import validate_request
-from app.decorators.idempotency import idempotent
+from app.decorators import validate_request, idempotent, require_group_role
+from app.enums import GroupRole
 from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.repositories.user_profile_repository import UserIdentityProfileRepository, UserHealthProfileRepository
@@ -19,10 +19,9 @@ from app.schemas.family_group_schema import (
     FamilyGroupDetailedSchema,
     GroupMembershipSchema,
     AddMemberRequestSchema,
-    UpdateMemberRoleRequestSchema
+    GroupMembershipUpdateSchema
 )
 from app.schemas.user_profile_schema import UserIdentityProfileSchema, UserHealthProfileSchema
-from app.models import GroupMembership
 
 
 class BaseGroupView(HTTPMethodView):
@@ -39,7 +38,10 @@ class BaseGroupView(HTTPMethodView):
 
 
 class GroupView(BaseGroupView):
-    """Handles /groups"""
+    """
+    Handles /groups
+    - POST: Create new group (authenticated user becomes HEAD_CHEF)
+    """
 
     @validate_request(FamilyGroupCreateSchema)
     @idempotent()
@@ -60,51 +62,76 @@ class GroupView(BaseGroupView):
 
 
 class GroupDetailView(BaseGroupView):
-    """Handles /groups/{groupId}"""
+    """
+    Handles /groups/{group_id}
+    - GET: View group details (any member)
+    - DELETE: Delete group (HEAD_CHEF only)
+    """
 
-    async def delete(self, request: Request, group_id: UUID):
-        """Deletes a family group."""
-        user_id = request.ctx.auth_payload["sub"]
+    @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
+    async def get(self, request: Request, group_id: UUID):
+        """Gets group details. Requires membership in the group."""
         service = self._get_service(request)
-        
-        # Uses business logic that checks ownership
-        await service.delete_group_by_creator(user_id, group_id)
+        group = await service.get(group_id)
+
+        response = GenericResponse(
+            status="success",
+            data=FamilyGroupDetailedSchema.model_validate(group)
+        )
+        return json(response.model_dump(exclude_none=True), status=200)
+
+    @require_group_role(GroupRole.HEAD_CHEF)
+    async def delete(self, request: Request, group_id: UUID):
+        """Deletes a family group. Requires HEAD_CHEF role."""
+        service = self._get_service(request)
+        await service.delete(group_id)
 
         response = GenericResponse(status="success", message="Group deleted successfully.")
         return json(response.model_dump(), status=200)
 
 
 class GroupMembersView(BaseGroupView):
-    """Handles /groups/{groupId}/members"""
+    """
+    Handles /groups/{group_id}/members
+    - GET: List all members (any member)
+    - POST: Add new member (HEAD_CHEF only)
+    """
 
+    def _get_service(request) -> FamilyGroupService:
+        session = request.ctx.db_session
+        return FamilyGroupService(
+            FamilyGroupRepository(session),
+            GroupMembershipRepository(session),
+            UserRepository(session)
+        )
+
+    @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
+    async def get(self, request: Request, group_id: UUID):
+        """Lists all members of the group. Requires membership."""
+        service = self._get_service(request)
+        members = await service.get_group_members(group_id)
+
+        response = GenericResponse(
+            status="success",
+            data=[GroupMembershipSchema.model_validate(m) for m in members]
+        )
+        return json(response.model_dump(exclude_none=True), status=200)
+
+
+    @require_group_role(GroupRole.HEAD_CHEF)
     @validate_request(AddMemberRequestSchema)
     async def post(self, request: Request, group_id: UUID):
-        """Adds a member to the group (Head Chef only)."""
+        """Adds a member to the group. Requires HEAD_CHEF role."""
         requester_id = request.ctx.auth_payload["sub"]
         email = request.ctx.validated_data.email
         
         service = self._get_service(request)
         membership = await service.add_member_by_email(requester_id, group_id, email)
         
-        # We need to construct the response data properly. 
-        # membership.user might not be loaded if lazy. 
-        # But let's assume service/repo logic handles loading or we re-fetch.
-        # For this refactor, I'll rely on what's returned.
-        # If membership.user is missing, I might need to fetch it.
-        # FamilyGroupService.add_member_by_email returns the membership object.
-        
-        # Force load user if needed or assume it's there/loaded by repo? 
-        # BaseRepository doesn't auto-load relationships unless configured.
-        # I'll rely on schema validation to fail if data is missing, or better, 
-        # fetch the user details to return 'GroupMemberSchema'.
-        
-        # For now, let's assume we can construct the response.
-        
-        # Fetching user details for response
+        # Fetch user details for response
         user_repo = UserRepository(request.ctx.db_session)
         user = await user_repo.get_by_id(membership.user_id)
         
-        # Construct explicit dict to avoid lazy loading issues if user relationship isn't loaded on membership
         response_data = {
             "user": user,
             "role": membership.role
@@ -119,10 +146,15 @@ class GroupMembersView(BaseGroupView):
 
 
 class GroupMemberDetailView(BaseGroupView):
-    """Handles /groups/{groupId}/members/{userId}"""
+    """
+    Handles /groups/{group_id}/members/{user_id}
+    - PATCH: Update member role (HEAD_CHEF only - chuyển quyền HEAD_CHEF)
+    - DELETE: Remove member (HEAD_CHEF only)
+    """
 
+    @require_group_role(GroupRole.HEAD_CHEF)
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):
-        """Removes a member (Head Chef only)."""
+        """Removes a member from the group. Requires HEAD_CHEF role."""
         requester_id = request.ctx.auth_payload["sub"]
         service = self._get_service(request)
         
@@ -131,16 +163,18 @@ class GroupMemberDetailView(BaseGroupView):
         response = GenericResponse(status="success", message="Member removed successfully.")
         return json(response.model_dump(), status=200)
 
-    @validate_request(UpdateMemberRoleRequestSchema)
+
+    @require_group_role(GroupRole.HEAD_CHEF)
+    @validate_request(GroupMembershipUpdateSchema)
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
-        """Updates member role (Head Chef only)."""
+        """Updates member role (chuyển quyền HEAD_CHEF). Requires HEAD_CHEF role."""
         requester_id = request.ctx.auth_payload["sub"]
         new_role = request.ctx.validated_data.role
         
         service = self._get_service(request)
         membership = await service.update_member_role(requester_id, group_id, user_id, new_role)
         
-        # Fetch user for response similar to POST
+        # Fetch user for response
         user_repo = UserRepository(request.ctx.db_session)
         user = await user_repo.get_by_id(membership.user_id)
 
@@ -158,10 +192,14 @@ class GroupMemberDetailView(BaseGroupView):
 
 
 class GroupMemberMeView(BaseGroupView):
-    """Handles /groups/{groupId}/members/me"""
-    
+    """
+    Handles /groups/{group_id}/members/me
+    - DELETE: Leave the group (any member, nhưng HEAD_CHEF phải chuyển quyền trước)
+    """
+
+    @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
     async def delete(self, request: Request, group_id: UUID):
-        """Member leaves the group."""
+        """Member leaves the group. Requires membership."""
         requester_id = request.ctx.auth_payload["sub"]
         service = self._get_service(request)
         
@@ -173,21 +211,23 @@ class GroupMemberMeView(BaseGroupView):
 
 
 class MemberIdentityProfileView(HTTPMethodView):
+    """
+    Handles /groups/{group_id}/members/{user_id}/identity-profile
+    Allows members of the same group to view identity profiles.
+    """
 
+    @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
-        """Allows members of the same group to view identity profiles."""
-        requester_id = request.ctx.auth_payload["sub"]
-        
+        """View member's identity profile. Requires membership in the group."""
         session = request.ctx.db_session
         member_repo = GroupMembershipRepository(session)
         
-        # Ensure both are in the same group
-        requester_membership = await member_repo.get_membership(requester_id, group_id)
+        # Ensure target user is also in the same group
         target_membership = await member_repo.get_membership(user_id, group_id)
         
-        if not requester_membership or not target_membership:
-            raise Forbidden("You must be in the same group to view this profile.")
-            
+        if not target_membership:
+            raise Forbidden("Target user is not a member of this group.")
+
         service = UserIdentityProfileService(UserIdentityProfileRepository(session))
         profile = await service.get(user_id)
         
@@ -199,19 +239,23 @@ class MemberIdentityProfileView(HTTPMethodView):
 
 
 class MemberHealthProfileView(HTTPMethodView):
+    """
+    Handles /groups/{group_id}/members/{user_id}/health-profile
+    Allows members of the same group to view health profiles.
+    """
+
+    @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
-        """Allows members of the same group to view health profiles."""
-        requester_id = request.ctx.auth_payload["sub"]
-        
+        """View member's health profile. Requires membership in the group."""
         session = request.ctx.db_session
         member_repo = GroupMembershipRepository(session)
         
-        requester_membership = await member_repo.get_membership(requester_id, group_id)
+        # Ensure target user is also in the same group
         target_membership = await member_repo.get_membership(user_id, group_id)
         
-        if not requester_membership or not target_membership:
-            raise Forbidden("You must be in the same group to view this profile.")
-            
+        if not target_membership:
+            raise Forbidden("Target user is not a member of this group.")
+
         service = UserHealthProfileService(UserHealthProfileRepository(session))
         profile = await service.get(user_id)
         

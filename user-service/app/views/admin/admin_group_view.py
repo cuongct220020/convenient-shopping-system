@@ -4,27 +4,28 @@ from sanic import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
 
-from app.decorators.validate_request import validate_request
+from app.decorators import validate_request, require_system_role
+from app.enums import SystemRole, GroupRole
 from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.services.family_group_service import FamilyGroupService
 from app.schemas.family_group_schema import FamilyGroupDetailedSchema
 from app.schemas.family_group_admin_schema import FamilyGroupAdminUpdateSchema
-from app.enums import GroupRole
 
-from shopping_shared.exceptions import Forbidden, BadRequest
+from shopping_shared.exceptions import BadRequest
 from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 
 
 class AdminGroupsView(HTTPMethodView):
+    """
+    Admin endpoints for listing all family groups. Requires ADMIN role.
+    """
+
+    decorators = [require_system_role(SystemRole.ADMIN)]
+
     @staticmethod
     async def get(request: Request):
-        """
-        Lists all family groups in the system with pagination.
-        """
-        if getattr(request.ctx, 'role', None) != 'admin':
-            raise Forbidden("You do not have permission to access this resource.")
-
+        """Lists all family groups in the system with pagination."""
         try:
             page = int(request.args.get("page", 1))
             page_size = int(request.args.get("page_size", 20))
@@ -52,8 +53,13 @@ class AdminGroupsView(HTTPMethodView):
         return json(response.model_dump(exclude_none=True), status=200)
 
 
-
 class AdminGroupDetailView(HTTPMethodView):
+    """
+    Admin endpoints for managing a specific family group. Requires ADMIN role.
+    """
+
+    decorators = [require_system_role(SystemRole.ADMIN)]
+
     @staticmethod
     def _get_service(request: Request) -> FamilyGroupService:
         session = request.ctx.db_session
@@ -64,12 +70,7 @@ class AdminGroupDetailView(HTTPMethodView):
         )
 
     async def get(self, request: Request, group_id: UUID):
-        """
-        Retrieves detailed information about a specific family group.
-        """
-        if getattr(request.ctx, 'role', None) != 'admin':
-            raise Forbidden("You do not have permission to access this resource.")
-        
+        """Retrieves detailed information about a specific family group."""
         service = self._get_service(request)
         group = await service.get(group_id)
 
@@ -82,12 +83,7 @@ class AdminGroupDetailView(HTTPMethodView):
 
     @validate_request(FamilyGroupAdminUpdateSchema)
     async def patch(self, request: Request, group_id: UUID):
-        """
-        Updates information of a specific family group.
-        """
-        if getattr(request.ctx, 'role', None) != 'admin':
-            raise Forbidden("You do not have permission to access this resource.")
-
+        """Updates information of a specific family group."""
         validated_data = request.ctx.validated_data
 
         service = self._get_service(request)
@@ -101,12 +97,7 @@ class AdminGroupDetailView(HTTPMethodView):
         return json(response.model_dump(exclude_none=True), status=200)
 
     async def delete(self, request: Request, group_id: UUID):
-        """
-        Deletes a specific family group.
-        """
-        if getattr(request.ctx, 'role', None) != 'admin':
-            raise Forbidden("You do not have permission to access this resource.")
-            
+        """Deletes a specific family group."""
         service = self._get_service(request)
         await service.delete(group_id)
 
@@ -120,6 +111,12 @@ class AdminGroupDetailView(HTTPMethodView):
 
 
 class AdminGroupMembersView(HTTPMethodView):
+    """
+    Admin endpoints for adding members to a group. Requires ADMIN role.
+    """
+
+    decorators = [require_system_role(SystemRole.ADMIN)]
+
     @staticmethod
     def _get_service(request: Request) -> FamilyGroupService:
         session = request.ctx.db_session
@@ -131,10 +128,6 @@ class AdminGroupMembersView(HTTPMethodView):
 
     async def post(self, request: Request, group_id: UUID):
         """Adds a user to a family group."""
-
-        if getattr(request.ctx, 'role', None) != 'admin':
-            raise Forbidden("You do not have permission to access this resource.")
-            
         email = request.json.get("email")
         if not email:
             raise BadRequest("Email is required.")
@@ -150,7 +143,11 @@ class AdminGroupMembersView(HTTPMethodView):
 
 
 class AdminGroupMembersManageView(HTTPMethodView):
-    """View to manage existing members (Delete/Update) by Admin."""
+    """
+    Admin endpoints for managing existing members (Delete/Update). Requires ADMIN role.
+    """
+
+    decorators = [require_system_role(SystemRole.ADMIN)]
 
     @staticmethod
     def _get_service(request: Request) -> FamilyGroupService:
@@ -162,12 +159,7 @@ class AdminGroupMembersManageView(HTTPMethodView):
         )
 
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):
-        """
-        Removes a member from a family group.
-        """
-        if getattr(request.ctx, 'role', None) != 'admin':
-            raise Forbidden("You do not have permission to access this resource.")
-            
+        """Removes a member from a family group."""
         service = self._get_service(request)
         await service.remove_member_by_admin(group_id, user_id)
 
@@ -181,12 +173,7 @@ class AdminGroupMembersManageView(HTTPMethodView):
 
 
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
-        """
-        Updates the role of a member in a family group.
-        """
-        if getattr(request.ctx, 'role', None) != 'admin':
-            raise Forbidden("You do not have permission to access this resource.")
-            
+        """Updates the role of a member in a family group."""
         role_str = request.json.get("role")
         if not role_str or role_str not in [r.value for r in GroupRole]:
              raise BadRequest("Valid role is required.")
