@@ -6,8 +6,7 @@ from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.schemas import RequestEmailChangeSchema, ConfirmEmailChangeSchema
-from app.services.auth_service import AuthService
+from app.schemas import RequestEmailChangeSchema, ConfirmEmailChangeSchema, UserInfoUpdateSchema
 from app.services.otp_service import otp_service
 from app.enums import OtpAction
 
@@ -21,7 +20,7 @@ class MeRequestChangeEmailView(HTTPMethodView):
     @validate_request(RequestEmailChangeSchema)
     async def post(self, request: Request):
         """Step 1: Request an OTP to change email."""
-        user_id = request.ctx.auth_payload["sub"]
+        # user_id = request.ctx.auth_payload["sub"]
         new_email = request.ctx.validated_data.new_email
         
         # We can reuse OTP service
@@ -54,25 +53,23 @@ class MeConfirmChangeEmailView(HTTPMethodView):
     async def post(self, request: Request):
         """Step 2: Confirm email change with OTP."""
         user_id = request.ctx.auth_payload["sub"]
-        data = request.ctx.validated_data
+        new_email = request.ctx.validated_data.new_email
+        summited_otp_code = request.ctx.validated_data.otp_code
         
         # Verify OTP
         is_valid = await otp_service.verify_otp(
-            email=data.new_email,
+            email=new_email,
             action=OtpAction.CHANGE_EMAIL.value,
-            submitted_code=data.otp_code
+            submitted_code=summited_otp_code
         )
         
         if not is_valid:
             raise BadRequest("Invalid or expired OTP code.")
 
         # Update User Email
-        repo = UserRepository(request.ctx.db_session)
-        user = await repo.get_by_id(user_id)
-        user.email = data.new_email
-        await repo.update(user.id, user)
+        user_repo = UserRepository(request.ctx.db_session)
+        await user_repo.update(user_id, UserInfoUpdateSchema(email=new_email))
 
-s==dsa==dsasdafsd
         response = GenericResponse(
             status="success",
             message="Email updated successfully.",

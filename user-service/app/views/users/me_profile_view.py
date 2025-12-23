@@ -33,17 +33,18 @@ class MeIdentityProfileView(HTTPMethodView):
         """Retrieves the identity profile of the authenticated user."""
         user_id = request.ctx.auth_payload["sub"]
         
-        identity_profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
-        identity_profile_service = UserIdentityProfileService(identity_profile_repo)
+        user_identity_profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
+        user_identity_profile_service = UserIdentityProfileService(user_identity_profile_repo)
 
         try:
-            profile = await identity_profile_service.get(user_id)
+            profile = await user_identity_profile_service.get(user_id)
             data = UserIdentityProfileSchema.model_validate(profile)
         except NotFound:
             raise NotFound("Identity profile not found.")
 
         response = GenericResponse(
             status="success",
+            message="Identity profile found",
             data=data
         )
 
@@ -80,15 +81,15 @@ class MeIdentityProfileView(HTTPMethodView):
 class MeHealthProfileView(HTTPMethodView):
 
     @staticmethod
-    async def get(self, request: Request):
+    async def get(request: Request):
         """Retrieves the health profile of the authenticated user."""
         user_id = request.ctx.auth_payload["sub"]
 
-        repo = UserHealthProfileRepository(request.ctx.db_session)
-        service = UserHealthProfileService(repo)
+        user_health_profile_repo = UserHealthProfileRepository(request.ctx.db_session)
+        user_health_service = UserHealthProfileService(user_health_profile_repo)
 
         try:
-            profile = await service.get(user_id)
+            profile = await user_health_service.get(user_id)
             data = UserHealthProfileSchema.model_validate(profile)
         except NotFound:
             raise NotFound("Health profile not found.")
@@ -99,26 +100,28 @@ class MeHealthProfileView(HTTPMethodView):
         )
         return json(response.model_dump(exclude_none=True), status=200)
 
+
     @validate_request(UserHealthProfileUpdateSchema)
     async def patch(self, request: Request):
         """Updates the health profile of the authenticated user."""
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
 
-        repo = UserHealthProfileRepository(request.ctx.db_session)
-        service = UserHealthProfileService(repo)
+        user_health_profile_repo = UserHealthProfileRepository(request.ctx.db_session)
+        user_health_service = UserHealthProfileService(user_health_profile_repo)
 
         try:
-            updated_profile = await service.update(user_id, validated_data)
+            updated_profile = await user_health_service.update(user_id, validated_data)
         except NotFound:
             # Upsert logic
             create_data = validated_data.model_dump()
             create_data['user_id'] = user_id
-            updated_profile = await repo.create(create_data)
+            updated_profile = await user_health_profile_repo.create(create_data)
 
         response = GenericResponse(
             status="success",
             message="Health profile updated.",
             data=UserHealthProfileSchema.model_validate(updated_profile)
         )
+
         return json(response.model_dump(exclude_none=True), status=200)

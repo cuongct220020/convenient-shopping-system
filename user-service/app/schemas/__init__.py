@@ -11,6 +11,7 @@ from .auth_schema import (
     LoginRequestSchema,
     AccessTokenSchema,
     ResetPasswordRequestSchema,
+    ChangePasswordRequestSchema
 )
 
 
@@ -59,6 +60,7 @@ __all__ = [
     "LoginRequestSchema",
     "AccessTokenSchema",
     "ResetPasswordRequestSchema",
+    "ChangePasswordRequestSchema",
 
     # OTP
     "OTPRequestSchema",

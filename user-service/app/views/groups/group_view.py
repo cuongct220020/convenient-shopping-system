@@ -72,6 +72,8 @@ class GroupMemberView(HTTPMethodView):
     # ... (giữ nguyên các method cũ) ...
     pass # placeholder for existing GroupMemberView
 
+
+
 class MemberIdentityProfileView(HTTPMethodView):
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Allows members of the same group to view identity profiles."""

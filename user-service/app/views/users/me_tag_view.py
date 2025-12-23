@@ -1,11 +1,9 @@
 # user-service/app/views/users/me_tag_view.py
-from uuid import UUID
 from sanic import Request
 from sanic.views import HTTPMethodView
 from sanic.response import json
 
 from app.decorators import validate_request
-from shopping_shared.exceptions import BadRequest
 
 from app.schemas.user_tag_schema import (
     UserTagBulkAddSchema,
@@ -74,12 +72,12 @@ class MeTagsDeleteView(HTTPMethodView):
         """Remove tags from current user."""
         user_id = request.ctx.auth_payload["sub"]
 
-        data = request.ctx.validated_data
+        validated_data = request.ctx.validated_data
 
         user_tag_repo = UserTagRepository(session=request.ctx.db_session)
         user_tag_service = UserTagService(user_tag_repo)
 
-        result = await user_tag_service.remove_tags(user_id, data)
+        result = await user_tag_service.remove_tags(user_id, validated_data)
 
         response = GenericResponse(
             status="success",

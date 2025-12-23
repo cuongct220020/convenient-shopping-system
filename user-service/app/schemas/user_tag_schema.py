@@ -52,7 +52,6 @@ class UserTagDeleteSchema(BaseSchema):
 
 
 
-
 # class UserTagsByCategoryResponseSchema(BaseSchema):
 #     """Schema for grouping user tags by category."""
 #     age: List[str] = Field(

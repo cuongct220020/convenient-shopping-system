@@ -11,26 +11,21 @@ from app.services.user_service import UserService
 
 
 class ChangePasswordView(HTTPMethodView):
-    decorators = [validate_request(ChangePasswordRequestSchema)]
 
-    @staticmethod
+    @validate_request(ChangePasswordRequestSchema)
     async def post(self, request: Request):
         """Handles changing the password for the authenticated user."""
-        auth_payload = request.ctx.auth_payload
-        user_id = auth_payload["sub"]
+        user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
 
         user_repo = UserRepository(session=request.ctx.db_session)
+        user_service = UserService(user_repo=user_repo)
 
-        await UserService.change_password(
-            user_id=user_id,
-            data=validated_data,
-            user_repo=user_repo,
-        )
+        await user_service.change_password(user_id=user_id, data=validated_data)
 
         response = GenericResponse(
             status="success",
             message="Password changed successfully. All sessions have been logged out."
         )
+
         return json(response.model_dump(), status=200)
-    pass

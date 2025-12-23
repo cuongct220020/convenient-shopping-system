@@ -45,3 +45,9 @@ class ResetPasswordRequestSchema(BaseSchema):
     new_password: SecretStr
     email: EmailStr
     otp_code: str
+
+
+class ChangePasswordRequestSchema(BaseSchema):
+    """Schema for change password requests."""
+    current_password: SecretStr
+    new_password: SecretStr

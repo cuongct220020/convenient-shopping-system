@@ -15,7 +15,6 @@ class FamilyGroupRepository(
 ):
     def __init__(self, session: AsyncSession):
         super.__init__(FamilyGroup, session)
-    pass
 
 
 
@@ -27,4 +26,6 @@ class GroupMembershipRepository(
         GroupMembershipUpdateSchema
     ]
 ):
-    de
+    def __init__(self, session: AsyncSession):
+        super.__init__(GroupMembership, session)
+

@@ -1,11 +1,11 @@
-# microservices/user-service/app/views/admin/admin_group_view.py
+# user-service/app/views/admin/admin_group_view.py
 from uuid import UUID
 from sanic import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
 
 from shopping_shared.exceptions import Forbidden, BadRequest, NotFound, Conflict
-from shopping_shared.schemas.response_schema import GenericResponse, SuccessResponse, PaginationResponse
+from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 
 from app.decorators.validate_request import validate_request
 from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
@@ -58,21 +58,25 @@ class AdminGroupsView(HTTPMethodView):
 class AdminGroupDetailView(HTTPMethodView):
 
     @staticmethod
-    async def _get_service(request):
-        session = request.ctx.db_session
-        return FamilyGroupService(
-            FamilyGroupRepository(session),
-            GroupMembershipRepository(session),
-            UserRepository(session)
-        )
-
-    async def get(self, request: Request, group_id: UUID):
+    async def get(request: Request, group_id: UUID):
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
         
-        service = await self._get_service(request)
-        group = await service.get(group_id)
-        
+
+        session = request.ctx.db_session
+        family_group_repo = FamilyGroupRepository(session)
+        group_membership_repo = GroupMembershipRepository(session)
+        user_repo = UserRepository(session)
+
+
+        family_group_service = FamilyGroupService(
+            repo=family_group_repo,
+            member_repo=group_membership_repo,
+            user_repo=user_repo
+        )
+
+        group = await family_group_service.get(group_id)
+
         response = GenericResponse(
             status="success",
             data=FamilyGroupDetailedSchema.model_validate(group)
@@ -102,8 +106,13 @@ class AdminGroupDetailView(HTTPMethodView):
         service = await self._get_service(request)
         # BaseService.delete does not check ownership, so safe to use for admin
         await service.delete(group_id)
-        
-        response = SuccessResponse(message="Group deleted successfully.")
+
+        resposne = GenericResponse(
+            status="success",
+            message="Group deleted successfully.",
+            data=None
+        )
+
         return json(response.model_dump(), status=200)
 
 
@@ -183,7 +192,12 @@ class AdminGroupMembersManageView(HTTPMethodView):
             
         membership.role = new_role
         await member_repo.session.flush()
-        
-        response = SuccessResponse(message="Member role updated successfully by admin.")
+
+        response = GenericResponse(
+            status="success",
+            message="Member role updated successfully by admin.",
+            data=None,
+        )
+
         return json(response.model_dump(), status=200)
 

@@ -66,9 +66,9 @@ class UserService:
     # --- Business logic methods ---
 
     async def change_password(
-            self,
-            user_id: UUID,
-            data: ChangePasswordRequestSchema
+        self,
+        user_id: UUID,
+        data: ChangePasswordRequestSchema
     ) -> None:
         """Changes a user's password and invalidates all their tokens."""
         # Local import to avoid circular dependency

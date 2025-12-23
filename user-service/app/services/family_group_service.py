@@ -14,15 +14,15 @@ from app.schemas import (
 from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 
-logger = get_logger("FamilyGroupService")
+logger = get_logger("Family Group Service")
 
 
 class FamilyGroupService:
     def __init__(
-            self, 
-            repo: FamilyGroupRepository,
-            member_repo: GroupMembershipRepository,
-            user_repo: UserRepository
+        self,
+        repo: FamilyGroupRepository,
+        member_repo: GroupMembershipRepository,
+        user_repo: UserRepository
     ):
         self.repository = repo
         self.member_repo = member_repo
