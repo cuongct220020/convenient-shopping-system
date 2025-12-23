@@ -4,18 +4,16 @@ from sanic import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
 
-from shopping_shared.exceptions import Forbidden, BadRequest
-from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
-
 from app.decorators.validate_request import validate_request
 from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.services.family_group_service import FamilyGroupService
-from app.schemas.family_group_schema import (
-    FamilyGroupUpdateSchema,
-    FamilyGroupDetailedSchema
-)
+from app.schemas.family_group_schema import FamilyGroupDetailedSchema
+from app.schemas.family_group_admin_schema import FamilyGroupAdminUpdateSchema
 from app.enums import GroupRole
+
+from shopping_shared.exceptions import Forbidden, BadRequest
+from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 
 
 class AdminGroupsView(HTTPMethodView):
@@ -56,10 +54,6 @@ class AdminGroupsView(HTTPMethodView):
 
 
 class AdminGroupDetailView(HTTPMethodView):
-    """
-    View for admin to manage a specific family group (Get, Update, Delete).
-    """
-
     @staticmethod
     def _get_service(request: Request) -> FamilyGroupService:
         session = request.ctx.db_session
@@ -86,16 +80,18 @@ class AdminGroupDetailView(HTTPMethodView):
 
         return json(response.model_dump(exclude_none=True), status=200)
 
-    @validate_request(FamilyGroupUpdateSchema)
+    @validate_request(FamilyGroupAdminUpdateSchema)
     async def patch(self, request: Request, group_id: UUID):
         """
         Updates information of a specific family group.
         """
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
-            
+
+        validated_data = request.ctx.validated_data
+
         service = self._get_service(request)
-        updated_group = await service.update(group_id, request.ctx.validated_data)
+        updated_group = await service.update(group_id, validated_data)
         
         response = GenericResponse(
             status="success",
@@ -124,8 +120,6 @@ class AdminGroupDetailView(HTTPMethodView):
 
 
 class AdminGroupMembersView(HTTPMethodView):
-    """View to add members to a group by Admin."""
-    
     @staticmethod
     def _get_service(request: Request) -> FamilyGroupService:
         session = request.ctx.db_session
@@ -136,9 +130,8 @@ class AdminGroupMembersView(HTTPMethodView):
         )
 
     async def post(self, request: Request, group_id: UUID):
-        """
-        Adds a user to a family group.
-        """
+        """Adds a user to a family group."""
+
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
             

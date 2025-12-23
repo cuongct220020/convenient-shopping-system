@@ -4,7 +4,6 @@ from sanic.response import json
 from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
-# from app.decorators.rate_limit_by_email import rate_limit_by_email
 from app.repositories.user_repository import UserRepository
 from app.schemas import OTPRequestSchema
 from app.services.auth_service import AuthService
@@ -14,10 +13,6 @@ from shopping_shared.schemas.response_schema import GenericResponse
 class OTPRequestView(HTTPMethodView):
     """View to handle the generation and sending of a new OTP."""
 
-    # Decorators are applied from bottom up.
-    # 1. @validate_request runs first to validate email and action.
-    # 2. @rate_limit_by_email runs second to prevent spam.
-    # @rate_limit_by_email(limit=15, period=300)  # 15 requests per 5 minutes per email
     @validate_request(OTPRequestSchema)
     async def post(self, request: Request):
         """Handles the logic to request and send an OTP for a specific action."""

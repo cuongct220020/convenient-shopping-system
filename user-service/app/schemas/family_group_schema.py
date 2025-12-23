@@ -1,18 +1,17 @@
-# user-service/app/schemas/groups.py
+# user-service/app/schemas/family_group_schema.py
 from typing import Optional, List
 from uuid import UUID
-from pydantic import Field
+from pydantic import Field, EmailStr
 from shopping_shared.schemas.base_schema import BaseSchema
 from app.enums import GroupRole
 from .user_schema import UserInfoSchema
 
 
-
+# Family Group Schemas
 class FamilyGroupCreateSchema(BaseSchema):
     """Schema for creating a new groups."""
     group_name: str = Field(..., min_length=1, max_length=255)
     group_avatar_url: Optional[str] = None
-
 
 
 class FamilyGroupUpdateSchema(BaseSchema):
@@ -21,20 +20,27 @@ class FamilyGroupUpdateSchema(BaseSchema):
     group_avatar_url: Optional[str] = None
 
 
+# Group Membership Schemas
+class GroupMembershipCreateSchema(BaseSchema):
+    user_id: UUID
+    group_id: UUID
+    role: GroupRole = GroupRole.MEMBER
+    added_by_user_id: Optional[UUID] = None
+
+
+class GroupMembershipUpdateSchema(BaseSchema):
+    role: Optional[GroupRole] = None
+
+class AddMemberRequestSchema(BaseSchema):
+    email: EmailStr
+
+class UpdateMemberRoleRequestSchema(BaseSchema):
+    role: GroupRole
 
 class GroupMembershipSchema(BaseSchema):
     """Schema representing a member within a groups."""
     user: UserInfoSchema
     role: GroupRole
-
-
-class GroupMembershipCreateSchema(BaseSchema):
-    user_id: UUID
-    role: GroupRole = GroupRole.MEMBER
-
-
-class GroupMembershipUpdateSchema(BaseSchema):
-
 
 
 class FamilyGroupDetailedSchema(BaseSchema):
@@ -43,4 +49,4 @@ class FamilyGroupDetailedSchema(BaseSchema):
     group_name: str
     group_avatar_url: Optional[str] = None
     creator: Optional[UserInfoSchema] = None
-    members: List[FamilyGroupMemberSchema] = []
+    members: List[GroupMembershipSchema] = []

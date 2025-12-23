@@ -1,4 +1,4 @@
-# app/views/auth/logout_view.py
+# user-service/app/views/auth/logout_view.py
 from datetime import datetime, UTC
 from sanic.request import Request
 from sanic.response import json

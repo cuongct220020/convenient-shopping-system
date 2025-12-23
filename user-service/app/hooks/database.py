@@ -1,4 +1,4 @@
-# microservices/user-service/app/hooks/database.py
+# user-service/app/hooks/database.py
 from sanic import Sanic, Request
 
 from shopping_shared.databases.database_manager import database_manager as postgres_db

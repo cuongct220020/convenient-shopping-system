@@ -25,7 +25,7 @@ class AdminService:
         """Fetch all users with pagination."""
         return await self.user_repository.get_paginated(page=page, page_size=page_size)
 
-    async def create_user_by_admin(self, user_data: UserCreateSchema):
+    async def create_user_by_admin(self, user_data):
         """Creates a new user by an admin."""
         existing_user = await self.user_repository.get_by_username(user_data.username)
         if existing_user:

@@ -1,4 +1,4 @@
-# app/views/admin/admin_user_view.py
+# user-service/app/views/admin/admin_user_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
@@ -6,9 +6,9 @@ from sanic.views import HTTPMethodView
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
 from app.schemas import (
+    UserAdminCreateSchema,
     UserAdminUpdateSchema,
     UserAdminViewSchema,
-    RegisterRequestSchema
 )
 from app.services.admin_service import AdminService
 from shopping_shared.exceptions import Forbidden, BadRequest
@@ -50,7 +50,7 @@ class AdminUsersView(HTTPMethodView):
         return json(response.model_dump(exclude_none=True), status=200)
 
 
-    @validate_request(RegisterRequestSchema)
+    @validate_request(UserAdminCreateSchema)
     async def post(self, request: Request):
         """Creates a new user account by admin."""
         if getattr(request.ctx, 'role', None) != 'admin':

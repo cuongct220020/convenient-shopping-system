@@ -1,3 +1,4 @@
+# user-service/app/views/auth/register_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView

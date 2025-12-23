@@ -20,6 +20,8 @@ from .otp_schema import (
     OTPVerifyRequestSchema
 )
 
+from .user_admin_schema import UserAdminCreateSchema
+
 from .user_profile_schema import (
     AddressSchema,
 
@@ -51,7 +53,14 @@ from .family_group_schema import (
     FamilyGroupMemberSchema,
     FamilyGroupCreateSchema,
     FamilyGroupUpdateSchema,
-    FamilyGroupDetailedSchema
+    FamilyGroupDetailedSchema,
+    AddMemberRequestSchema,
+    UpdateMemberRoleRequestSchema
+)
+
+from .family_group_admin_schema import (
+    FamilyGroupAdminCreateSchema,
+    FamilyGroupAdminUpdateSchema
 )
 
 __all__ = [
@@ -83,6 +92,7 @@ __all__ = [
     "UserCreateSchema",
     "UserDetailedProfileSchema",
     "UserAdminViewSchema",
+    "UserAdminCreateSchema",
     "UserAdminUpdateSchema",
     "RequestEmailChangeSchema",
     "ConfirmEmailChangeSchema",
@@ -91,5 +101,9 @@ __all__ = [
     "FamilyGroupMemberSchema",
     "FamilyGroupCreateSchema",
     "FamilyGroupUpdateSchema",
-    "FamilyGroupDetailedSchema"
+    "FamilyGroupDetailedSchema",
+    "FamilyGroupAdminCreateSchema",
+    "FamilyGroupAdminUpdateSchema",
+    "AddMemberRequestSchema",
+    "UpdateMemberRoleRequestSchema"
 ]

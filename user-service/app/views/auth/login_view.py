@@ -12,10 +12,9 @@ from shopping_shared.schemas.response_schema import GenericResponse
 
 
 class LoginView(HTTPMethodView):
-    decorators = [validate_request(LoginRequestSchema)]
 
-    @staticmethod
-    async def post(request: Request):
+    @validate_request(LoginRequestSchema)
+    async def post(self, request: Request):
         """Handles user login and token generation."""
         validated_data = request.ctx.validated_data
 

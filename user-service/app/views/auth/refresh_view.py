@@ -1,4 +1,4 @@
-# app/views/auth/refresh_view.py
+# user-service/app/views/auth/refresh_view.py
 from sanic.request import Request
 from sanic.response import json, HTTPResponse
 from sanic.views import HTTPMethodView

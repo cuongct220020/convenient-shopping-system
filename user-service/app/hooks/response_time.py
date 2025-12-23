@@ -1,46 +1,70 @@
 # user-service/app/hooks/response_time.py
 import time
-from typing import Any, Optional
+from typing import Optional, Any
 
 from sanic import Request
+from sanic.response import BaseHTTPResponse
 from shopping_shared.utils.logger_utils import get_logger
 
-logger = get_logger('Response Time Middleware')
 
+class ResponseTimeMiddleware:
+    """
+    Track request processing time and log structured metrics.
+    Provides service-level performance monitoring after Kong Gateway.
+    """
 
-async def add_start_time(request: Request) -> None:
-    # Store start time in request context to avoid mutating headers
-    request.ctx.start_time = time.time()
+    def __init__(self, logger_name: str = 'UserServiceMetrics', slow_request_threshold_ms: float = 1000.0):
+        """
+        Initialize middleware with custom logger and performance threshold.
 
+        Args:
+            logger_name: Logger name for structured logging
+            slow_request_threshold_ms: Threshold in milliseconds to warn about slow requests
+        """
+        self.logger = get_logger(logger_name)
+        self.slow_threshold_ms = slow_request_threshold_ms
 
-async def add_spent_time(request: Request, response: Any) -> None:
-    # Compute elapsed time from ctx and log with appropriate level
-    try:
-        timestamp: Optional[float] = getattr(request.ctx, "start_time", None)
-        if timestamp is None:
+    async def before_request(self, request: Request) -> None:
+        """Store request start time using high-precision timer"""
+        request.ctx.start_time = time.perf_counter()
+
+    async def after_request(self, request: Request, response: BaseHTTPResponse) -> None:
+        """Calculate latency and add structured logging with performance alerts"""
+        start_time: Optional[float] = getattr(request.ctx, "start_time", None)
+        if start_time is None:
             return
 
-        spend_time = round((time.time() - float(timestamp)), 3)
-        # Ensure header values are strings
-        response.headers['latency'] = str(spend_time)
+        try:
+            # Calculate latency in milliseconds
+            latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
-        # Build a concise log message
-        msg = "{status} {method} {path} {query} {latency}s".format(
-            status=response.status,
-            method=request.method,
-            path=request.path,
-            query=request.query_string,
-            latency=spend_time
-        )
+            # Add latency header for debugging
+            response.headers['X-Response-Time'] = f"{latency_ms}ms"
 
-        # Log according to response status
-        if response.status >= 400:
-            logger.error(msg)
-        elif response.status >= 300:
-            logger.warning(msg)
-        else:
-            logger.info(msg)
+            # Extract user context for logging (injected by auth middleware)
+            user_context = getattr(request.ctx, 'user', {})
+            user_id = user_context.get('user_id', 'anonymous')
 
-    except Exception as ex:
-        # Log exception but do not raise to avoid interrupting request response flow
-        logger.exception("Failed to compute or log response time: %s", ex)
+            # Build structured log data
+            log_data = {
+                'method': request.method,
+                'path': request.path,
+                'status': response.status,
+                'latency_ms': latency_ms,
+                'user_id': user_id,
+                'query': request.query_string or '',
+            }
+
+            # Log based on status code and performance
+            if response.status >= 500:
+                self.logger.error("Server error occurred", extra=log_data)
+            elif response.status >= 400:
+                self.logger.warning("Client error", extra=log_data)
+            elif latency_ms > self.slow_threshold_ms:
+                self.logger.warning("Slow request detected", extra=log_data)
+            else:
+                self.logger.info("Request completed", extra=log_data)
+
+        except Exception as ex:
+            # Don't let logging failures interrupt response flow
+            self.logger.exception("Failed to compute response time: %s", ex)

@@ -1,14 +1,14 @@
-# user-service/repositories/family_group_repository.py
+# user-service/app/repositories/family_group_repository.py
 from typing import Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models import FamilyGroup, GroupMembership
 from app.enums import GroupRole
 from app.schemas import (
     FamilyGroupCreateSchema, 
     FamilyGroupUpdateSchema,
-    # Assuming these are exported from app.schemas.family_group_schema
     GroupMembershipCreateSchema,
     GroupMembershipUpdateSchema
 )
@@ -25,6 +25,19 @@ class FamilyGroupRepository(
     def __init__(self, session: AsyncSession):
         super().__init__(FamilyGroup, session)
 
+    async def get_with_details(self, group_id: UUID) -> Optional[FamilyGroup]:
+        """
+        Get group with eager loaded members and creator.
+        Useful for detailed views where we need to show member lists and the creator.
+        """
+        return await self.get_by_id(
+            group_id, 
+            load_options=[
+                selectinload(FamilyGroup.members),
+                selectinload(FamilyGroup.creator)
+            ]
+        )
+
 
 class GroupMembershipRepository(
     BaseRepository[
@@ -33,6 +46,16 @@ class GroupMembershipRepository(
         GroupMembershipUpdateSchema
     ]
 ):
+    """
+    Repository for GroupMembership.
+    
+    Note on Schemas:
+    GroupMembershipCreateSchema and GroupMembershipUpdateSchema are required
+    for the BaseRepository generic typing and can be used if we switch to 
+    using the standard .create() or .update() methods. 
+    However, due to the composite primary key nature of this table, 
+    custom methods like add_membership and get_membership are often more practical.
+    """
     def __init__(self, session: AsyncSession):
         super().__init__(GroupMembership, session)
 
@@ -42,6 +65,8 @@ class GroupMembershipRepository(
 
     async def add_membership(self, user_id: UUID, group_id: UUID, role: GroupRole) -> GroupMembership:
         """Adds a user to a group with a specific role."""
+        # We could use self.create(GroupMembershipCreateSchema(...)) here,
+        # but direct model instantiation is also fine and slightly more performant for simple join tables.
         membership = GroupMembership(user_id=user_id, group_id=group_id, role=role)
         self.session.add(membership)
         await self.session.flush()

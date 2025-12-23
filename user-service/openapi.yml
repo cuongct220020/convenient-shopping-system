@@ -613,7 +613,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: '#/components/schemas/UserAdminCreateRequest'
       responses:
         '201':
           description: "Tạo người dùng thành công."
@@ -741,7 +741,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GroupCreate'
+              $ref: '#/components/schemas/GroupAdminUpdateRequest'
       responses:
         '200':
           description: "Cập nhật nhóm thành công."
@@ -1012,6 +1012,31 @@ components:
           type: string
           format: uri
       required: [group_name]
+    GroupUpdate:
+      type: object
+      properties:
+        group_name:
+          type: string
+        group_avatar_url:
+          type: string
+          format: uri
+    GroupAdminCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/GroupCreate'
+        - type: object
+          properties:
+            creator_id:
+              type: string
+              format: uuid
+          required: [creator_id]
+    GroupAdminUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/GroupUpdate'
+        - type: object
+          properties:
+            creator_id:
+              type: string
+              format: uuid
     UserUpdate:
       type: object
       properties:
@@ -1062,10 +1087,25 @@ components:
               format: email
             system_role:
               $ref: '#/components/schemas/UserRole'
+            is_active:
+              type: boolean
             identity_profile:
               $ref: '#/components/schemas/UserIdentityProfileUpdate'
             health_profile:
               $ref: '#/components/schemas/UserHealthProfileUpdate'
+    UserAdminCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/RegisterRequest'
+        - type: object
+          properties:
+            system_role:
+              $ref: '#/components/schemas/UserRole'
+              default: USER
+            is_active:
+              type: boolean
+              default: true
+            phone_num:
+              type: string
     # --- Data Schemas ---
     TokenResponse:
       type: object
