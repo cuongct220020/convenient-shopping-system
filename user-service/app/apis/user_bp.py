@@ -1,4 +1,4 @@
-# app/apis/user_bp.py
+# user-service/app/apis/user_bp.py
 from sanic import Blueprint
 
 from app.views.users.me_change_password_view import ChangePasswordView

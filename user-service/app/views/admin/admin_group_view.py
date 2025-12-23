@@ -4,7 +4,7 @@ from sanic import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
 
-from shopping_shared.exceptions import Forbidden, BadRequest, NotFound, Conflict
+from shopping_shared.exceptions import Forbidden, BadRequest
 from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 
 from app.decorators.validate_request import validate_request
@@ -12,19 +12,18 @@ from app.repositories.family_group_repository import FamilyGroupRepository, Grou
 from app.repositories.user_repository import UserRepository
 from app.services.family_group_service import FamilyGroupService
 from app.schemas.family_group_schema import (
-    FamilyGroupCreateSchema,
-    FamilyGroupDetailedSchema,
-    FamilyGroupMemberSchema
+    FamilyGroupUpdateSchema,
+    FamilyGroupDetailedSchema
 )
 from app.enums import GroupRole
-from app.models import GroupMembership
 
 
 class AdminGroupsView(HTTPMethodView):
-
     @staticmethod
     async def get(request: Request):
-        """Lists all groups with pagination."""
+        """
+        Lists all family groups in the system with pagination.
+        """
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
 
@@ -55,27 +54,30 @@ class AdminGroupsView(HTTPMethodView):
         return json(response.model_dump(exclude_none=True), status=200)
 
 
+
 class AdminGroupDetailView(HTTPMethodView):
+    """
+    View for admin to manage a specific family group (Get, Update, Delete).
+    """
 
     @staticmethod
-    async def get(request: Request, group_id: UUID):
+    def _get_service(request: Request) -> FamilyGroupService:
+        session = request.ctx.db_session
+        return FamilyGroupService(
+            FamilyGroupRepository(session),
+            GroupMembershipRepository(session),
+            UserRepository(session)
+        )
+
+    async def get(self, request: Request, group_id: UUID):
+        """
+        Retrieves detailed information about a specific family group.
+        """
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
         
-
-        session = request.ctx.db_session
-        family_group_repo = FamilyGroupRepository(session)
-        group_membership_repo = GroupMembershipRepository(session)
-        user_repo = UserRepository(session)
-
-
-        family_group_service = FamilyGroupService(
-            repo=family_group_repo,
-            member_repo=group_membership_repo,
-            user_repo=user_repo
-        )
-
-        group = await family_group_service.get(group_id)
+        service = self._get_service(request)
+        group = await service.get(group_id)
 
         response = GenericResponse(
             status="success",
@@ -84,12 +86,15 @@ class AdminGroupDetailView(HTTPMethodView):
 
         return json(response.model_dump(exclude_none=True), status=200)
 
-    @validate_request(FamilyGroupCreateSchema)
+    @validate_request(FamilyGroupUpdateSchema)
     async def patch(self, request: Request, group_id: UUID):
+        """
+        Updates information of a specific family group.
+        """
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
             
-        service = await self._get_service(request)
+        service = self._get_service(request)
         updated_group = await service.update(group_id, request.ctx.validated_data)
         
         response = GenericResponse(
@@ -100,14 +105,16 @@ class AdminGroupDetailView(HTTPMethodView):
         return json(response.model_dump(exclude_none=True), status=200)
 
     async def delete(self, request: Request, group_id: UUID):
+        """
+        Deletes a specific family group.
+        """
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
             
-        service = await self._get_service(request)
-        # BaseService.delete does not check ownership, so safe to use for admin
+        service = self._get_service(request)
         await service.delete(group_id)
 
-        resposne = GenericResponse(
+        response = GenericResponse(
             status="success",
             message="Group deleted successfully.",
             data=None
@@ -119,7 +126,19 @@ class AdminGroupDetailView(HTTPMethodView):
 class AdminGroupMembersView(HTTPMethodView):
     """View to add members to a group by Admin."""
     
+    @staticmethod
+    def _get_service(request: Request) -> FamilyGroupService:
+        session = request.ctx.db_session
+        return FamilyGroupService(
+            FamilyGroupRepository(session),
+            GroupMembershipRepository(session),
+            UserRepository(session)
+        )
+
     async def post(self, request: Request, group_id: UUID):
+        """
+        Adds a user to a family group.
+        """
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
             
@@ -127,26 +146,8 @@ class AdminGroupMembersView(HTTPMethodView):
         if not email:
             raise BadRequest("Email is required.")
             
-        # Direct Logic for Admin (Bypass Service's Head Chef Check)
-        session = request.ctx.db_session
-        user_repo = UserRepository(session)
-        member_repo = GroupMembershipRepository(session)
-        
-        user_to_add = await user_repo.get_by_email(email)
-        if not user_to_add:
-            raise NotFound(f"User with email {email} not found.")
-            
-        existing = await member_repo.session.get(GroupMembership, (user_to_add.id, group_id))
-        if existing:
-            raise Conflict("User is already a member of this group.")
-            
-        membership = GroupMembership(
-            user_id=user_to_add.id,
-            group_id=group_id,
-            role=GroupRole.MEMBER
-        )
-        member_repo.session.add(membership)
-        await member_repo.session.flush()
+        service = self._get_service(request)
+        await service.add_member_by_admin(group_id, email)
         
         response = GenericResponse(
             status="success",
@@ -158,23 +159,38 @@ class AdminGroupMembersView(HTTPMethodView):
 class AdminGroupMembersManageView(HTTPMethodView):
     """View to manage existing members (Delete/Update) by Admin."""
 
+    @staticmethod
+    def _get_service(request: Request) -> FamilyGroupService:
+        session = request.ctx.db_session
+        return FamilyGroupService(
+            FamilyGroupRepository(session),
+            GroupMembershipRepository(session),
+            UserRepository(session)
+        )
+
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):
+        """
+        Removes a member from a family group.
+        """
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
             
-        session = request.ctx.db_session
-        member_repo = GroupMembershipRepository(session)
-        
-        membership = await member_repo.session.get(GroupMembership, (user_id, group_id))
-        if not membership:
-            raise NotFound("Membership not found.")
-            
-        await member_repo.session.delete(membership)
-        
-        response = SuccessResponse(message="Member removed successfully by admin.")
+        service = self._get_service(request)
+        await service.remove_member_by_admin(group_id, user_id)
+
+        response = GenericResponse(
+            status="success",
+            message="Member removed successfully by admin.",
+            data=None
+        )
+
         return json(response.model_dump(), status=200)
 
+
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
+        """
+        Updates the role of a member in a family group.
+        """
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
             
@@ -183,15 +199,8 @@ class AdminGroupMembersManageView(HTTPMethodView):
              raise BadRequest("Valid role is required.")
         new_role = GroupRole(role_str)
         
-        session = request.ctx.db_session
-        member_repo = GroupMembershipRepository(session)
-        
-        membership = await member_repo.session.get(GroupMembership, (user_id, group_id))
-        if not membership:
-            raise NotFound("Membership not found.")
-            
-        membership.role = new_role
-        await member_repo.session.flush()
+        service = self._get_service(request)
+        await service.update_member_role_by_admin(group_id, user_id, new_role)
 
         response = GenericResponse(
             status="success",
@@ -200,4 +209,3 @@ class AdminGroupMembersManageView(HTTPMethodView):
         )
 
         return json(response.model_dump(), status=200)
-

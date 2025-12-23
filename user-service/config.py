@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from shopping_shared.configs import PostgreSQLConfig, RedisConfig, KafkaConfig
 
@@ -19,10 +21,40 @@ class Config:
     }
 
     # JWT Settings
-    JWT_SECRET = os.getenv('JWT_SECRET', '85c145a16bd6f6e1f3e104ca78c6a102')
     JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
     JWT_EXPIRATION_MINUTES = os.getenv('JWT_EXPIRATION_MINUTES', 5)
     REFRESH_TOKEN_EXPIRE_DAYS = os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7)
+
+    # Load RSA keys
+    @staticmethod
+    def _load_rsa_key(env_key: str, env_path_key: str) -> str:
+        """Load RSA key from env variable or file path."""
+        # Try inline key first
+        key = os.getenv(env_key)
+        if key:
+            return key.replace('\\n', '\n')  # Handle escaped newlines
+
+        # Try file path
+        key_path = os.getenv(env_path_key)
+        if key_path:
+            return Path(key_path).read_text()
+
+        raise ValueError(f"Missing {env_key} or {env_path_key} in environment")
+
+    # For RS256
+    JWT_PRIVATE_KEY = _load_rsa_key.__func__(
+        'JWT_PRIVATE_KEY',
+        'JWT_PRIVATE_KEY_PATH'
+    ) if os.getenv('JWT_ALGORITHM', 'RS256').startswith('RS') else None
+
+    JWT_PUBLIC_KEY = _load_rsa_key.__func__(
+        'JWT_PUBLIC_KEY',
+        'JWT_PUBLIC_KEY_PATH'
+    ) if os.getenv('JWT_ALGORITHM', 'RS256').startswith('RS') else None
+
+    # For HS256 (fallback)
+    JWT_SECRET = os.getenv('JWT_SECRET', 'e3dc8799821e1035ff0decd11ee02750f4740783b620e5f9c1c92020056ec10e')
+
 
     # PostgreSQL Settings
     POSTGRESQL = PostgreSQLConfig(
@@ -45,12 +77,8 @@ class Config:
 
     # Kafka Setting
     KAFKA = KafkaConfig(
-        bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9094'),
+        bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9094')
     )
-
-
-
-
 
 
 

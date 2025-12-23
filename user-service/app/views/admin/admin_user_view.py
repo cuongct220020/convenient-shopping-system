@@ -10,7 +10,7 @@ from app.schemas import (
     UserAdminViewSchema,
     RegisterRequestSchema
 )
-from app.services.user_service import UserService
+from app.services.admin_service import AdminService
 from shopping_shared.exceptions import Forbidden, BadRequest
 from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 
@@ -18,7 +18,11 @@ from shopping_shared.schemas.response_schema import GenericResponse, PaginationR
 class AdminUsersView(HTTPMethodView):
 
     @staticmethod
-    async def get(request: Request):
+    def _get_service(request: Request) -> AdminService:
+        repo = UserRepository(request.ctx.db_session)
+        return AdminService(repo)
+
+    async def get(self, request: Request):
         """Lists all users with pagination for admin purposes."""
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
@@ -30,11 +34,10 @@ class AdminUsersView(HTTPMethodView):
         except ValueError:
             raise BadRequest("Invalid pagination parameters.")
 
-        repo = UserRepository(request.ctx.db_session)
-        service = UserService(repo)
+        service = self._get_service(request)
 
         # BaseService.get_all returns PaginationResult object
-        paginated_result = await service.get_all(page=page, page_size=page_size)
+        paginated_result = await service.get_all_users(page=page, page_size=page_size)
 
         response = PaginationResponse(
             status="success",
@@ -53,14 +56,8 @@ class AdminUsersView(HTTPMethodView):
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
 
-        user_repo = UserRepository(request.ctx.db_session)
-        user_service = UserService(user_repo)
-
-        # Convert RegisterRequestSchema to UserAdminCreateSchema format if needed,
-        # or update create_user_by_admin to accept RegisterRequestSchema.
-        # Assuming we can pass the validated data directly or map it.
-        # Here we rely on the service to handle the creation logic.
-        new_user = await user_service.create_user_by_admin(request.ctx.validated_data)
+        service = self._get_service(request)
+        new_user = await service.create_user_by_admin(request.ctx.validated_data)
 
         response = GenericResponse(
             status="success",
@@ -73,15 +70,18 @@ class AdminUsersView(HTTPMethodView):
 
 class AdminUserDetailView(HTTPMethodView):
 
+    @staticmethod
+    def _get_service(request: Request) -> AdminService:
+        repo = UserRepository(request.ctx.db_session)
+        return AdminService(repo)
+
     async def get(self, request: Request, user_id: int):
         """Retrieves details of a specific user."""
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
 
-        user_repo = UserRepository(request.ctx.db_session)
-        user_service = UserService(user_repo)
-
-        user = await user_service.get(user_id)
+        service = self._get_service(request)
+        user = await service.get_user_by_admin(user_id)
 
         response = GenericResponse(
             status="success",
@@ -95,10 +95,8 @@ class AdminUserDetailView(HTTPMethodView):
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
 
-        user_repo = UserRepository(request.ctx.db_session)
-        user_service = UserService(user_repo)
-
-        updated_user = await user_service.update_user_by_admin(user_id, request.ctx.validated_data)
+        service = self._get_service(request)
+        updated_user = await service.update_user_by_admin(user_id, request.ctx.validated_data)
 
         response = GenericResponse(
             status="success",
@@ -113,10 +111,8 @@ class AdminUserDetailView(HTTPMethodView):
         if getattr(request.ctx, 'role', None) != 'admin':
             raise Forbidden("You do not have permission to access this resource.")
 
-        user_repo = UserRepository(request.ctx.db_session)
-        user_service = UserService(user_repo)
-
-        await user_service.delete_user_by_admin(user_id)
+        service = self._get_service(request)
+        await service.delete_user_by_admin(user_id)
 
         response = GenericResponse(
             status="success",

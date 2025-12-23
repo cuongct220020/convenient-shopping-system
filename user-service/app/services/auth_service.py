@@ -9,7 +9,7 @@ from shopping_shared.utils.logger_utils import get_logger
 from app.enums import OtpAction
 from app.repositories.user_repository import UserRepository
 from app.utils.password_utils import verify_password, hash_password
-from app.utils.jwt_utils import jwt_handler, TokenData
+from app.utils.jwt_utils import JWTHandler, TokenData
 from app.services.otp_service import otp_service
 from app.services.redis_service import RedisService, redis_service
 from app.services.kafka_service import kafka_service
@@ -88,6 +88,7 @@ class AuthService:
             raise Forbidden("Account is not active. Please verify your email.")
 
         # Generate new tokens
+        jwt_handler = JWTHandler.get_instance()
         token_data = jwt_handler.create_tokens(
             user_id=str(user.id),
             user_role=user.system_role.value
@@ -151,6 +152,8 @@ class AuthService:
         try:
             # Bạn cần một hàm trong jwt_handler chỉ giải mã,
             # không kiểm tra stateful (blocklist/allowlist)
+            jwt_handler = JWTHandler.get_instance()
+
             payload = await jwt_handler.decode_token_stateless(
                 token=old_refresh_token,
                 token_type="refresh"

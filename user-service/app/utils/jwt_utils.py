@@ -1,9 +1,7 @@
-# microservices/user-service/app/utils/jwt_utils.py
-
+# user-service/app/utils/jwt_utils.py
 import jwt
 import uuid
-
-from typing import Tuple, Literal
+from typing import Tuple, Literal, Optional
 from datetime import datetime, timedelta, UTC
 from sanic import Sanic
 
@@ -19,33 +17,55 @@ class TokenData(BaseSchema):
     at_expires_in_minutes: int
     rt_ttl_seconds: int
 
-class JWTHandler:
-    """
-    Handles JWT creation
-    """
-    def __init__(self, app: Sanic):
-        self.app = app
-        self.access_token_expire_minutes = self.app.config["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"]
-        self.secret_key = self.app.config["JWT_SECRET"]
-        self.algorithm = self.app.config["JWT_ALGORITHM"]
-        self.refresh_token_expire_days = self.app.config["REFRESH_TOKEN_EXPIRE_DAYS"]
 
+class JWTHandler:
+    """Singleton JWT Handler for creating and validating tokens."""
+
+    _instance: Optional['JWTHandler'] = None
+
+    def __init__(self, app: Sanic):
+        if JWTHandler._instance is not None:
+            raise RuntimeError("JWTHandler already initialized. Use get_instance().")
+
+        self.app = app
+        self.access_token_expire_minutes = app.config["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"]
+        self.refresh_token_expire_days = app.config["REFRESH_TOKEN_EXPIRE_DAYS"]
+        self.algorithm = app.config["JWT_ALGORITHM"]
+
+        # Load keys based on algorithm
+        if self.algorithm.startswith("RS"):
+            self.private_key = app.config["JWT_PRIVATE_KEY"]
+            self.public_key = app.config["JWT_PUBLIC_KEY"]
+        else:
+            self.secret_key = app.config["JWT_SECRET"]
+
+    @classmethod
+    def initialize(cls, app: Sanic) -> 'JWTHandler':
+        """Initialize singleton instance with Sanic app."""
+        if cls._instance is None:
+            cls._instance = cls(app)
+        return cls._instance
+
+    @classmethod
+    def get_instance(cls) -> 'JWTHandler':
+        """Get singleton instance."""
+        if cls._instance is None:
+            raise RuntimeError("JWTHandler not initialized. Call initialize() first.")
+        return cls._instance
 
     @staticmethod
     def _create_token_payload(
-        user_id: str,
-        token_type: str,
-        expiry_delta: timedelta,
-        user_role: str | None = None
+            user_id: str,
+            token_type: str,
+            expiry_delta: timedelta,
+            user_role: str | None = None
     ) -> Tuple[dict, str]:
-        """
-        Tạo payload chung và JTI cho token.
-        """
+        """Create common token payload and JTI."""
         jti = str(uuid.uuid4())
         issued_at_time = datetime.now(UTC)
 
         payload = {
-            'iss': 'app-user-consumer',  # Issuer claim for Kong
+            'iss': 'shopping-user-service',
             'token_type': token_type,
             'exp': issued_at_time + expiry_delta,
             'iat': issued_at_time,
@@ -54,20 +74,15 @@ class JWTHandler:
         }
 
         if user_role:
-            payload['user_role'] = user_role
+            payload['system_role'] = user_role
 
         return payload, jti
-
 
     def _build_access_token(
             self, user_id: str, user_role: str | None = None
     ) -> Tuple[str, str, int]:
-        """
-        Xây dựng Access Token với thời gian hết hạn ngắn.
-        Trả về: (token_str, jti, expires_in_minutes)
-        """
+        """Build Access Token with short expiry."""
         expiry_delta = timedelta(minutes=self.access_token_expire_minutes)
-
         payload, jti = self._create_token_payload(
             user_id=user_id,
             token_type='access',
@@ -75,18 +90,16 @@ class JWTHandler:
             user_role=user_role
         )
 
-        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        # Encode with appropriate key
+        key = self.private_key if self.algorithm.startswith("RS") else self.secret_key
+        token = jwt.encode(payload, key, algorithm=self.algorithm)
         return token, jti, self.access_token_expire_minutes
 
     def _build_refresh_token(
             self, user_id: str, user_role: str | None = None
     ) -> Tuple[str, str, int]:
-        """
-        Xây dựng Refresh Token với thời gian hết hạn dài.
-        Trả về: (token_str, jti, ttl_seconds)
-        """
+        """Build Refresh Token with long expiry."""
         expiry_delta = timedelta(days=self.refresh_token_expire_days)
-
         payload, jti = self._create_token_payload(
             user_id=user_id,
             token_type='refresh',
@@ -94,32 +107,18 @@ class JWTHandler:
             user_role=user_role
         )
 
-        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        key = self.private_key if self.algorithm.startswith("RS") else self.secret_key
+        token = jwt.encode(payload, key, algorithm=self.algorithm)
         ttl_seconds = int(expiry_delta.total_seconds())
         return token, jti, ttl_seconds
 
-
     def create_tokens(
-            self,
-            user_id: str,
-            user_role: str | None = None
+            self, user_id: str, user_role: str | None = None
     ) -> TokenData:
-        """
-        Tạo cả access và refresh token.
-        Trả về: (
-            access_token,
-            refresh_token,
-            access_jti,
-            refresh_jti,
-            at_expires_in_minutes, (cho client)
-            rt_ttl_seconds (cho Redis)
-        )
-        """
-        # Gọi 2 hàm chuyên biệt
+        """Create both access and refresh tokens."""
         access_token, access_jti, at_expires_in_minutes = self._build_access_token(
             user_id, user_role
         )
-
         refresh_token, refresh_jti, rt_ttl_seconds = self._build_refresh_token(
             user_id, user_role
         )
@@ -138,40 +137,25 @@ class JWTHandler:
         token: str,
         expected_token_type: Literal['access', 'refresh']
     ) -> dict:
-        """
-        Giải mã token và thực hiện kiểm tra STATELESS.
-        Chỉ kiểm tra Chữ ký, Thời gian hết hạn (exp), và loại token.
-        KHÔNG kiểm tra Redis (Allowlist/Blocklist).
-
-        Raise Unauthorized nếu thất bại.
-        Trả về payload nếu thành công.
-        """
+        """Decode token with stateless validation (signature, expiry, type)."""
         try:
-            payload = jwt.decode(
-                token,
-                self.secret_key,
-                algorithms=[self.algorithm]
-            )
+            key = self.public_key if self.algorithm.startswith("RS") else self.secret_key
+            payload = jwt.decode(token, key, algorithms=[self.algorithm])
 
         except jwt.ExpiredSignatureError:
             raise Unauthorized("Token has expired")
         except jwt.InvalidTokenError:
             raise Unauthorized("Invalid token")
         except Exception as e:
-            # Bắt các lỗi JWT khác
             raise Unauthorized(f"Token decoding error: {e}")
 
-        # Kiểm tra loại token
+        # Validate token type
         token_type = payload.get('token_type')
         if token_type != expected_token_type:
             raise Unauthorized(f"Invalid token type. Expected '{expected_token_type}'.")
 
-        # Kiểm tra các trường bắt buộc
+        # Validate required fields
         if not payload.get('sub') or not payload.get('jti'):
             raise Unauthorized("Invalid token payload (missing 'sub' or 'jti').")
 
         return payload
-
-
-# Singleton instance
-jwt_handler = JWTHandler()

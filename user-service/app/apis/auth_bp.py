@@ -1,4 +1,4 @@
-# app/apis/auth_bp.py
+# user-service/app/apis/auth_bp.py
 from sanic import Blueprint
 
 from app.views.auth.register_view import RegisterView

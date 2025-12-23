@@ -37,10 +37,9 @@ class FamilyGroupService:
             raise NotFound(f"Family group with id {group_id} not found")
         return group
 
-    async def get_all(self, page: int = 1, page_size: int = 100) -> List[FamilyGroup]:
+    async def get_all(self, page: int = 1, page_size: int = 100):
         """Get paginated list of family groups."""
-        result = await self.repository.get_paginated(page=page, page_size=page_size)
-        return result.items
+        return await self.repository.get_paginated(page=page, page_size=page_size)
 
     async def update(self, group_id: UUID, update_data: FamilyGroupUpdateSchema) -> FamilyGroup:
         """Update a family group."""
@@ -49,6 +48,10 @@ class FamilyGroupService:
             raise NotFound(f"Family group with id {group_id} not found")
         logger.info(f"Updated family group {group_id}")
         return group
+
+    async def delete(self, group_id: UUID) -> None:
+        """Deletes a group (Admin/Internal use)."""
+        await self.repository.delete(group_id)
 
     # --- Business logic methods ---
     async def create_group(self, user_id: UUID, group_data: FamilyGroupCreateSchema) -> FamilyGroup:
@@ -59,22 +62,13 @@ class FamilyGroupService:
         group = await self.repository.create(FamilyGroupCreateSchema(**data))
 
         # 2. Add Creator as HEAD_CHEF member
-        membership_data = {
-            "user_id": user_id,
-            "group_id": group.id,
-            "role": GroupRole.HEAD_CHEF
-        }
-
-        # Direct create via session for association table
-        membership = GroupMembership(**membership_data)
-        self.member_repo.session.add(membership)
-        await self.member_repo.session.flush()
+        await self.member_repo.add_membership(user_id, group.id, GroupRole.HEAD_CHEF)
         
         logger.info(f"Created family group {group.id} with HEAD_CHEF {user_id}")
         return group
 
 
-    async def delete_group(self, user_id: UUID, group_id: UUID) -> None:
+    async def delete_group_by_creator(self, user_id: UUID, group_id: UUID) -> None:
         """Deletes a group. Only the creator (Head Chef) can delete."""
         group = await self.get(group_id)
         if str(group.created_by_user_id) != str(user_id):
@@ -96,18 +90,12 @@ class FamilyGroupService:
             raise NotFound(f"User with email {email} not found.")
 
         # 3. Check existing membership
-        existing = await self.member_repo.session.get(GroupMembership, (user_to_add.id, group_id))
+        existing = await self.member_repo.get_membership(user_to_add.id, group_id)
         if existing:
             raise Conflict("User is already a member of this group.")
 
         # 4. Add Member
-        membership = GroupMembership(
-            user_id=user_to_add.id,
-            group_id=group_id,
-            role=GroupRole.MEMBER
-        )
-        self.member_repo.session.add(membership)
-        await self.member_repo.session.flush()
+        membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER)
 
         logger.info(f"Added user {user_to_add.id} to group {group_id}")
         return membership
@@ -124,11 +112,11 @@ class FamilyGroupService:
         if not is_self and not is_head_chef:
             raise Forbidden("You do not have permission to remove this member.")
 
-        membership = await self.member_repo.session.get(GroupMembership, (target_user_id, group_id))
-        if not membership:
-            raise NotFound("Membership not found.")
-            
-        await self.member_repo.session.delete(membership)
+        existing = await self.member_repo.get_membership(target_user_id, group_id)
+        if not existing:
+             raise NotFound("Membership not found.")
+
+        await self.member_repo.remove_membership(target_user_id, group_id)
         logger.info(f"Removed user {target_user_id} from group {group_id}")
 
     async def update_member_role(self, requester_id: UUID, group_id: UUID, target_user_id: UUID, new_role: GroupRole) -> GroupMembership:
@@ -136,17 +124,43 @@ class FamilyGroupService:
         if not await self._is_head_chef(requester_id, group_id):
             raise Forbidden("Only Head Chef can update roles.")
 
-        membership = await self.member_repo.session.get(GroupMembership, (target_user_id, group_id))
+        membership = await self.member_repo.update_role(target_user_id, group_id, new_role)
         if not membership:
             raise NotFound("Membership not found.")
-
-        membership.role = new_role
-        await self.member_repo.session.flush()
 
         logger.info(f"Updated role for user {target_user_id} in group {group_id} to {new_role}")
         return membership
 
     async def _is_head_chef(self, user_id: UUID, group_id: UUID) -> bool:
         """Helper to check if user is HEAD_CHEF of the group."""
-        membership = await self.member_repo.session.get(GroupMembership, (user_id, group_id))
+        membership = await self.member_repo.get_membership(user_id, group_id)
         return membership and membership.role == GroupRole.HEAD_CHEF
+
+    # --- Admin Logic ---
+
+    async def add_member_by_admin(self, group_id: UUID, email: str) -> GroupMembership:
+        """Admin adds member directly."""
+        user_to_add = await self.user_repo.get_by_email(email)
+        if not user_to_add:
+            raise NotFound(f"User with email {email} not found.")
+
+        existing = await self.member_repo.get_membership(user_to_add.id, group_id)
+        if existing:
+            raise Conflict("User is already a member of this group.")
+
+        membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER)
+        return membership
+
+    async def remove_member_by_admin(self, group_id: UUID, user_id: UUID):
+        """Admin removes member directly."""
+        existing = await self.member_repo.get_membership(user_id, group_id)
+        if not existing:
+             raise NotFound("Membership not found.")
+        await self.member_repo.remove_membership(user_id, group_id)
+
+    async def update_member_role_by_admin(self, group_id: UUID, user_id: UUID, new_role: GroupRole):
+        """Admin updates member role directly."""
+        membership = await self.member_repo.update_role(user_id, group_id, new_role)
+        if not membership:
+             raise NotFound("Membership not found.")
+        return membership

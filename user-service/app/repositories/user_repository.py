@@ -49,6 +49,17 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
         """Marks user's email as verified."""
         return await self.update_field(user_id, "email_verified", True)
 
+    async def create_user(self, user_data: dict) -> User:
+        """
+        Creates a new user from a dictionary.
+        Useful when the service has pre-processed data (e.g. hashed password).
+        """
+        user = User(**user_data)
+        self.session.add(user)
+        await self.session.flush()
+        await self.session.refresh(user)
+        return user
+
     async def get_user_with_profiles(self, user_id: UUID) -> Optional[User]:
         """
         Gets user with eager-loaded identity and health profiles.

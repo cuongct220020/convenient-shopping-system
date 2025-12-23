@@ -10,6 +10,13 @@ def register_listeners(sanic_app: Sanic):
     from app.hooks.database import setup_db, close_db
     from app.hooks.caching import setup_redis, close_redis
     from app.hooks.message_broker import setup_kafka, close_kafka
+    from app.utils.jwt_utils import JWTHandler
+
+    async def setup_jwt(app, loop):
+        JWTHandler.initialize(app)
+        logger.info("JWT Handler initialized.")
+
+    sanic_app.register_listener(setup_jwt, "before_server_start")
 
     # Register database hooks
     sanic_app.register_listener(setup_db, "before_server_start")

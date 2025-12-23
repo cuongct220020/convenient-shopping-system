@@ -5,7 +5,6 @@ from sanic.response import json
 from sanic.views import HTTPMethodView
 
 from shopping_shared.schemas.response_schema import GenericResponse, SuccessResponse
-from shopping_shared.exceptions import BadRequest
 
 from app.decorators.validate_request import validate_request
 from app.decorators.idempotency import idempotent
@@ -14,7 +13,6 @@ from app.schemas.family_group_schema import (
     FamilyGroupDetailedSchema,
     FamilyGroupMemberSchema
 )
-from app.enums import GroupRole
 from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.services.family_group_service import FamilyGroupService
