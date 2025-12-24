@@ -1,16 +1,13 @@
-from fastapi import APIRouter, Depends, Query, status, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, status
 from typing import Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import inspect
-from services.meal_crud import MealCRUD, MealCommandHandler
+from datetime import date
+from services.meal_command_handler import MealCommandHandler
 from services.meal_transition import MealTransition
 from schemas.meal_schemas import DailyMealsCommand, MealResponse
-from models.meal import Meal
-from messaging.producers.meal_event_producer import produce_meal_event
+from enums.meal_type import MealType
 from database import get_db
-from shared.shopping_shared.schemas.response_schema import PaginationResponse
 
-meal_crud = MealCRUD(Meal)
 meal_command_handler = MealCommandHandler()
 meal_transition = MealTransition()
 
@@ -20,33 +17,13 @@ meal_router = APIRouter(
 )
 
 @meal_router.get(
-    "/{id}",
-    response_model=MealResponse,
-    status_code=status.HTTP_200_OK,
-    description="Retrieve a Meal by its unique ID. Returns 404 if the Meal does not exist."
-)
-def get_meal(id: int, db: Session = Depends(get_db)):
-    meal = meal_crud.get(db, id)
-    if meal is None:
-        raise HTTPException(status_code=404, detail=f"Meal with id={id} not found")
-    return meal
-
-@meal_router.get(
     "/",
-    response_model=PaginationResponse[MealResponse],
+    response_model=list[MealResponse],
     status_code=status.HTTP_200_OK,
-    description="Retrieve a list of Meals. Supports pagination with cursor and limit."
+    description="Get meals by date and optionally by meal_type. If meal_type is not provided, returns all meals for that date."
 )
-def get_many_meals(Cursor: Optional[int] = Query(None, ge=0), limit: int = Query(100, ge=1), db: Session = Depends(get_db)):
-    meals = meal_crud.get_many(db, cursor=Cursor, limit=limit)
-    pk = inspect(Meal).primary_key[0]
-    next_cursor = getattr(meals[-1], pk.name) if meals and len(meals) == limit else None
-    return PaginationResponse(
-        data=list(meals),
-        next_cursor=next_cursor,
-        size=len(meals),
-        has_more=len(meals) == limit
-    )
+def get_meals(meal_date: date, meal_type: Optional[MealType], db: Session = Depends(get_db)):
+    return meal_command_handler.get(db, meal_date, meal_type)
 
 @meal_router.post(
     "/command",
@@ -54,10 +31,8 @@ def get_many_meals(Cursor: Optional[int] = Query(None, ge=0), limit: int = Query
     status_code=status.HTTP_200_OK,
     description="Process daily meal commands for upserting, deleting, or skipping meals."
 )
-async def process_daily_meal_command(daily_command: DailyMealsCommand, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    responses, events = await meal_command_handler.handle(db, daily_command)
-    for event in events:
-        background_tasks.add_task(produce_meal_event, event)
+async def process_daily_meal_command(daily_command: DailyMealsCommand, db: Session = Depends(get_db)):
+    responses = await meal_command_handler.handle(db, daily_command)
     return responses
 
 @meal_router.post(

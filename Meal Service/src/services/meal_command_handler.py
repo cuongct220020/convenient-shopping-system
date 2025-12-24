@@ -3,13 +3,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from datetime import date
+from typing import Optional, Sequence
 from enums.meal_type import MealType
-from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.meal import Meal, RecipeList
 from schemas.meal_schemas import MealCommand, DailyMealsCommand
-
-class MealCRUD(CRUDBase[Meal, MealCommand, MealCommand]):
-    pass
 
 class MealCommandHandler:
     async def handle(self, db: Session, daily_command: DailyMealsCommand) -> list[Meal | str]:
@@ -60,5 +57,13 @@ class MealCommandHandler:
         db.delete(meal)
         db.commit()
         return "Deleted"
+
+    def get(self, db: Session, date: date, meal_type: Optional[MealType] = None) -> Sequence[Meal]:
+        stmt = select(Meal).where(Meal.date == date)
+
+        if meal_type is not None:
+            stmt = stmt.where(Meal.meal_type == meal_type)
+
+        return db.execute(stmt).scalars().all()
 
 
