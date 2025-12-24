@@ -2,16 +2,19 @@ import os
 from dotenv import load_dotenv
 from shopping_shared.configs import KafkaConfig
 
+# Load environment variables
 load_dotenv()
 
 class Config:
     """ General application configuration for Notification-Service. """
+
     RUN_SETTING = {
         'host': os.getenv('APP_HOST', 'localhost'),
-        'port': int(os.getenv('APP_PORT', 8005)),
-        'debug': os.getenv('DEBUG', 'True').lower() == 'true',
+        'port': int(os.getenv('APP_PORT', '8000')),
+        'debug': os.getenv('DEBUG', True).lower() == 'true',
         "access_log": False,
         "auto_reload": True,
+        'workers': int(os.getenv('WORKERS', 1)),
     }
 
     KAFKA = KafkaConfig(

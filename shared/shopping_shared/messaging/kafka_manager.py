@@ -22,6 +22,11 @@ class KafkaManager:
         self._producer: Optional[AIOKafkaProducer] = None
         self._bootstrap_servers: str = ""
 
+    @property
+    def bootstrap_servers(self) -> Optional[str]:
+        """Returns the configured bootstrap servers, or None if not configured."""
+        return self._bootstrap_servers if self._bootstrap_servers else None
+
     def setup(self, bootstrap_servers: str):
         """
         Stores the Kafka bootstrap servers configuration.
