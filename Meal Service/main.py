@@ -3,22 +3,16 @@ from database import engine, Base
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apis.v1.meal_api import meal_router
-from messaging.manager import kafka_manager
+from tasks.scheduler import setup_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    #Startup
-    kafka_manager.setup("localhost:9092")
-    tasks = [
-
-    ]
+    scheduler = setup_scheduler()
+    scheduler.start()
 
     yield
 
-    #Shutdown
-    for task in tasks:
-        task.cancel()
-    await kafka_manager.close()
+    scheduler.shutdown()
 
 app = FastAPI(
     title="Meal Service",
