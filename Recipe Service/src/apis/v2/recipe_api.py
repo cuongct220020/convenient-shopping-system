@@ -13,7 +13,7 @@ from schemas.recipe_schemas import (
     RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 )
 from .crud_router_base import create_crud_router
-from database import get_db
+from core.database import get_db
 from utils.custom_mapping import recipe_detailed_mapping, recipes_flattened_aggregated_mapping
 
 recipe_crud = RecipeCRUD(Recipe)
@@ -62,8 +62,6 @@ async def get_recipe_flattened(
     ]
     
     return FlattenedIngredientsResponse(ingredients=ingredients)
-
-
 @recipe_router.put(
     "/{id}",
     response_model=RecipeResponse,

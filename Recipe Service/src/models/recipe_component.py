@@ -4,7 +4,7 @@ from enums.c_measurement_unit import CMeasurementUnit
 from enums.uc_measurement_unit import UCMeasurementUnit
 from enums.category import Category
 from enums.level import Level
-from database import Base
+from core.database import Base
 
 class RecipeComponent(Base):
     __tablename__ = "recipe_components"
