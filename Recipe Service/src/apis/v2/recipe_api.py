@@ -1,9 +1,14 @@
 from fastapi import APIRouter, status, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from services.recipe_crud import RecipeCRUD
 from models.recipe_component import Recipe
-from schemas.recipe_flattened_schemas import AggregatedIngredientsResponse, RecipeQuantityInput
+from schemas.recipe_flattened_schemas import (
+    AggregatedIngredientsResponse, 
+    RecipeQuantityInput,
+    FlattenedIngredientsResponse,
+    FlattenedIngredientItem
+)
 from schemas.recipe_schemas import (
     RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 )
@@ -29,21 +34,34 @@ def search_recipes(keyword: str = Query(...), limit: int = Query(10), db: Sessio
 
 @recipe_router.post(
     "/flattened",
-    response_model=AggregatedIngredientsResponse,
+    response_model=FlattenedIngredientsResponse,
     status_code=status.HTTP_200_OK,
     description=f"Aggregate ingredients from multiple recipes with quantity. Returns 404 if at least one of the Recipes does not exist."
 )
-def get_recipe_flattened(recipes_with_quantity: list[RecipeQuantityInput], db: Session = Depends(get_db)):
-    recipe_ids = [r.recipe_id for r in recipes_with_quantity]
-    db_recipes = recipe_crud.get_detail(db, recipe_ids)
+async def get_recipe_flattened(
+    recipes_with_quantity: list[RecipeQuantityInput],
+    check_existence: bool = Query(False),
+    group_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    if check_existence and group_id is None:
+        raise HTTPException(
+            status_code=400,
+            detail="group_id is required when check_existence is True"
+        )
+    
+    result = await recipe_crud.get_flattened(recipes_with_quantity, group_id, check_existence, db)
 
-    if len(db_recipes) != len(recipe_ids):
-        missing_ids = set(recipe_ids) - {r.component_id for r in db_recipes}
-        raise HTTPException(status_code=404, detail=f"Recipes with ids={missing_ids} not found")
-
-    recipe_map = {r.component_id: r for r in db_recipes}
-    db_recipes_with_quantity = [(r.quantity, recipe_map[r.recipe_id]) for r in recipes_with_quantity]
-    return recipes_flattened_aggregated_mapping(db_recipes_with_quantity)
+    ingredients = [
+        FlattenedIngredientItem(
+            quantity=quantity,
+            ingredient=ingredient_response,
+            available=available
+        )
+        for quantity, ingredient_response, available in result
+    ]
+    
+    return FlattenedIngredientsResponse(ingredients=ingredients)
 
 
 @recipe_router.put(

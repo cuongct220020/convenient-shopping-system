@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 from .ingredient_schemas import IngredientResponse
 
 class RecipeQuantityInput(BaseModel):
@@ -7,3 +8,11 @@ class RecipeQuantityInput(BaseModel):
 
 class AggregatedIngredientsResponse(BaseModel):
     all_ingredients: dict[int, tuple[float, IngredientResponse]]
+
+class FlattenedIngredientItem(BaseModel):
+    quantity: float
+    ingredient: IngredientResponse
+    available: Optional[list] = None
+
+class FlattenedIngredientsResponse(BaseModel):
+    ingredients: list[FlattenedIngredientItem]
