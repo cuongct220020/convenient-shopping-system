@@ -28,9 +28,9 @@ class JWTHandler:
             raise RuntimeError("JWTHandler already initialized. Use get_instance().")
 
         self.app = app
-        self.access_token_expire_minutes = app.config["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"]
-        self.refresh_token_expire_days = app.config["REFRESH_TOKEN_EXPIRE_DAYS"]
-        self.algorithm = app.config["JWT_ALGORITHM"]
+        self.access_token_expire_minutes = app.config.get("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", 15)
+        self.refresh_token_expire_days = app.config.get("REFRESH_TOKEN_EXPIRE_DAYS", 7)
+        self.algorithm = app.config.get("JWT_ALGORITHM", "HS256")
 
         # Load keys based on algorithm
         if self.algorithm.startswith("RS"):

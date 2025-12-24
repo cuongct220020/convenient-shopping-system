@@ -42,10 +42,10 @@ plugins:
       allowed_payload_size: 10
       size_unit: megabytes
 
-  # 3. File Logging
-  - name: file-log
-    config:
-      path: /var/log/kong/access.log
+  # 3. File Logging (disabled - using stdout instead)
+  # - name: file-log
+  #   config:
+  #     path: /var/log/kong/access.log
 
 # 4. Prometheus Monitoring (Advanced);
 #  - name: prometheus
@@ -58,13 +58,7 @@ plugins:
 services:
   # User Service
   - name: user-service
-    url: http://host.docker.internal:8000
-    health-checks:
-      active:
-        healthy:
-          interval: 10
-          successes: 2
-        http_path: /health
+    url: http://host.docker.internal:9000
 
     routes:
       # Public routes (không cần JWT)
@@ -75,6 +69,10 @@ services:
           - /api/v1/user-service/auth/refresh-token
           - /api/v1/user-service/auth/otp/send
           - /api/v1/user-service/auth/otp/verify
+          - /api/v1/user-service/docs
+          - /api/v1/user-service/openapi.json
+          - /api/v1/user-service/openapi.yml
+          - /api/v1/user-service/redoc
         strip_path: false
         plugins:
           - name: rate-limiting
@@ -82,9 +80,11 @@ services:
               minute: 60
               hour: 1000
               policy: redis
-              redis_host: redis-caching
-              redis_port: 6379
-              redis_password: ${REDIS_PASSWORD}
+              redis:
+                host: redis-caching
+                port: 6379
+                password: ${REDIS_PASSWORD}
+                database: 0
 
 
       # Protected routes (cần JWT)

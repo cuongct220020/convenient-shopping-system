@@ -74,6 +74,12 @@ def _is_auth_required(request: Request) -> bool:
     ignore_paths = {
         "/",                  # Trang chủ service (trong run.py)
         "/favicon.ico",        # Favicon (trong run.py)
+        "/docs",               # Swagger UI
+        "/docs/",              # Swagger UI with trailing slash
+        "/swagger",            # Alternative swagger path
+        "/swagger/",
+        "/openapi.json",       # OpenAPI spec
+        "/redoc",              # ReDoc (if enabled)
         f"{prefix}/auth/login",
         f"{prefix}/auth/register",
         f"{prefix}/auth/otp/send",

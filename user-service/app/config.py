@@ -23,9 +23,10 @@ class Config:
     }
 
     # JWT Settings
-    JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
-    JWT_EXPIRATION_MINUTES = os.getenv('JWT_EXPIRATION_MINUTES', 5)
-    REFRESH_TOKEN_EXPIRE_DAYS = os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7)
+    JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'RS256')
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('JWT_ACCESS_TOKEN_EXPIRE_MINUTES', 15))
+    REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7))
+
 
     # Load RSA keys
     @staticmethod
