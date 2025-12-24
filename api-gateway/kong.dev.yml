@@ -83,7 +83,7 @@ services:
               redis:
                 host: redis-caching
                 port: 6379
-                password: ${REDIS_PASSWORD}
+                password: myredis
                 database: 0
 
 

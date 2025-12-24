@@ -120,11 +120,12 @@ services:
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
+      REDIS_PASSWORD: myredis
     ports:
       - "80:8000"         # HTTP Public
       - "443:8443"        # HTTPS Public
       - "8000:8000"       # Kong Proxy (HTTP Debug)
-      - "8444:8001"       # Admin API cho decK (Debug)
+      - "8001:8001"       # Admin API cho decK (Debug)
     volumes:
       - ${KONG_CONFIG_FILE}:/usr/local/kong/declarative/kong.yml
       - ./user-service/secrets:/user-service/secrets
