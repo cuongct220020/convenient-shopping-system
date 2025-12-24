@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import select
+from sqlalchemy import update
 from enums.plan_status import PlanStatus
 from models.shopping_plan import ShoppingPlan
 from database import get_db
@@ -7,21 +7,15 @@ from database import get_db
 def expire_plans():
     db = next(get_db())
     now = datetime.now()
-    expired_count = 0
 
     with db.begin():
-        plans = db.execute(
-            select(ShoppingPlan)
+        result = db.execute(
+            update(ShoppingPlan)
             .where(
                 ShoppingPlan.plan_status.in_([PlanStatus.CREATED, PlanStatus.IN_PROGRESS]),
                 ShoppingPlan.deadline < now
             )
-            .with_for_update()
-        ).scalars().all()
-
-        for plan in plans:
-            plan.plan_status = PlanStatus.EXPIRED
-            expired_count += 1
+            .values(plan_status=PlanStatus.EXPIRED)
+        )
 
     db.close()
-    return expired_count
