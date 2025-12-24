@@ -1,4 +1,3 @@
-import httpx
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -13,23 +12,21 @@ class MealCRUD(CRUDBase[Meal, MealCommand, MealCommand]):
     pass
 
 class MealCommandHandler:
-    async def handle(self, db: Session, daily_command: DailyMealsCommand) -> tuple[list[Meal], list[dict]]:
+    async def handle(self, db: Session, daily_command: DailyMealsCommand) -> list[Meal | str]:
         responses = []
-        events = []
         for meal_type, meal_command in [(MealType.BREAKFAST, daily_command.breakfast),
                                         (MealType.LUNCH, daily_command.lunch),
                                         (MealType.DINNER, daily_command.dinner)]:
             if meal_command.action == "upsert":
-                response, event = await self.upsert(db, daily_command.date, daily_command.group_id, meal_type, meal_command)
+                response = await self.upsert(db, daily_command.date, daily_command.group_id, meal_type, meal_command)
             elif meal_command.action == "delete":
-                response, event = self.delete(db, daily_command.date, daily_command.group_id, meal_type)
+                response = self.delete(db, daily_command.date, daily_command.group_id, meal_type)
             elif meal_command.action == "skip":
                 continue
             else:
                 raise HTTPException(status_code=400, detail=f"Invalid action {meal_command.action} for meal {meal_type}")
             responses.append(response)
-            events.append(event)
-        return responses, events
+        return responses
 
     async def upsert(self, db: Session, date: date, group_id: int, meal_type: MealType, meal_command: MealCommand):
         meal: Meal | None = db.execute(
@@ -44,27 +41,6 @@ class MealCommandHandler:
                                            servings=recipe.servings)
                                 for recipe in meal_command.recipe_list]
 
-        payload = [
-            {"recipe_id": recipe.recipe_id, "quantity": recipe.servings}
-            for recipe in meal_command.recipe_list
-        ]
-        all_ingredients = {}
-        async with httpx.AsyncClient(timeout=15) as client:
-            response = await client.post(
-                "http://localhost:8001/v2/recipes/flattened",
-                json=payload
-            )
-            all_ingredients = response.json().get("all_ingredients", {})
-        event = {
-            "event_type": "meal_upserted",
-            "data": {
-                "meal_id": meal.meal_id,
-                "date": str(meal.date),
-                "group_id": meal.group_id,
-                "meal_type": {MealType.BREAKFAST: 1, MealType.LUNCH: 2, MealType.DINNER: 3}[meal.meal_type],                # type: ignore
-                "all_ingredients": all_ingredients
-            }
-        }
         try:
             db.commit()
             db.refresh(meal)
@@ -72,7 +48,7 @@ class MealCommandHandler:
             db.rollback()
             raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
 
-        return meal, event
+        return meal
 
     def delete(self, db: Session, date: date, group_id: int, meal_type: MealType):
         meal: Meal | None = db.execute(
@@ -81,17 +57,8 @@ class MealCommandHandler:
         if not meal:
             raise HTTPException(status_code=404, detail=f"Meal {meal_type} on {date} for group {group_id} not found")
 
-        event = {
-            "event_type": "meal_deleted",
-            "data": {
-                "meal_id": meal.meal_id,
-                "date": str(meal.date),
-                "meal_type": {MealType.BREAKFAST: 1, MealType.LUNCH: 2, MealType.DINNER: 3}[meal.meal_type]
-            }
-        }
-
         db.delete(meal)
         db.commit()
-        return "Deleted", event
+        return "Deleted"
 
 
