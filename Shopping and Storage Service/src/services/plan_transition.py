@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Any
+from typing import Optional, Any, List
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -7,12 +7,13 @@ from models.shopping_plan import ShoppingPlan
 from schemas.plan_schemas import PlanReport
 
 class PlanTransition:
-    def _preconditions_check(self, plan: Optional[ShoppingPlan], allowed_status: PlanStatus | Literal["active"]):
+    def _preconditions_check(self, plan: Optional[ShoppingPlan], allowed_status: PlanStatus | List[PlanStatus]):
         if plan is None:
             raise HTTPException(status_code=404, detail=f"ShoppingPlan not found")
-        if allowed_status == "active":
-            if not plan.plan_status.is_active():
-                raise HTTPException(status_code=400, detail="Operation not allowed: plan is not active")
+        if isinstance(allowed_status, list):
+            if plan.plan_status not in allowed_status:
+                raise HTTPException(status_code=400,
+                                    detail=f"Operation not allowed: plan status must be one of {allowed_status}, got {plan.plan_status}")
         else:
             if plan.plan_status != allowed_status:
                 raise HTTPException(status_code=400,
@@ -61,7 +62,7 @@ class PlanTransition:
                 .with_for_update()
             ).scalar_one_or_none()
 
-            self._preconditions_check(plan, "active")
+            self._preconditions_check(plan, [PlanStatus.CREATED, PlanStatus.IN_PROGRESS])
 
             if plan.assignee_id != assigner_id:
                 raise HTTPException(status_code=403,
@@ -166,9 +167,9 @@ class PlanTransition:
                 .with_for_update()
             ).scalar_one_or_none()
 
-            self._preconditions_check(plan, "active")
+            self._preconditions_check(plan, [PlanStatus.CREATED, PlanStatus.IN_PROGRESS])
 
             plan.plan_status = PlanStatus.EXPIRED
-            
+
             db.refresh(plan)
             return plan
