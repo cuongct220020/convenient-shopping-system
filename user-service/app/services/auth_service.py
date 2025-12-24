@@ -1,10 +1,9 @@
-# microservices/user-service/app/services/auth_service.py
+# user-service/app/services/auth_service.py
 from typing import Tuple
+from uuid import UUID
+
 from pydantic import EmailStr, ValidationError
 from sqlalchemy import func
-
-from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError
-from shopping_shared.utils.logger_utils import get_logger
 
 from app.enums import OtpAction
 from app.repositories.user_repository import UserRepository
@@ -13,17 +12,19 @@ from app.utils.jwt_utils import JWTHandler, TokenData
 from app.services.otp_service import otp_service
 from app.services.redis_service import RedisService, redis_service
 from app.services.kafka_service import kafka_service
-
+from app.models.user import User
 from app.schemas import (
     UserCreateSchema,
     LoginRequestSchema,
     RegisterRequestSchema,
-    AccessTokenSchema,
+    TokenResponseSchema,
     OTPVerifyRequestSchema,
     OTPRequestSchema,
     ResetPasswordRequestSchema
 )
 
+from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Auth Service")
 
@@ -34,13 +35,14 @@ class AuthService:
         cls,
         reg_data: RegisterRequestSchema,
         user_repo: UserRepository
-    ):
+    ) -> User:
         """Handles the first step of registration: creating an inactive user and sending a verification OTP."""
         existing_user = await user_repo.get_by_username(reg_data.username)
         if existing_user and existing_user.is_active:
             raise Conflict("An account with this email already exists.")
 
-        if not existing_user:
+        user = existing_user
+        if not user:
             hashed_password = hash_password(reg_data.password.get_secret_value())
             # Use the new UserCreateSchema
             user_create_data = UserCreateSchema(
@@ -51,11 +53,13 @@ class AuthService:
                 last_name=reg_data.last_name,
                 is_active=False
             )
-            await user_repo.create(user_create_data)
+            user = await user_repo.create(user_create_data)
 
         # Proceed to send OTP for the new or existing inactive user
         otp_request_data = OTPRequestSchema(email=reg_data.email, action=OtpAction.REGISTER)
         await cls.request_otp(otp_request_data, user_repo)
+        
+        return user
 
 
     @classmethod
@@ -63,7 +67,7 @@ class AuthService:
         cls,
         login_data: LoginRequestSchema,
         user_repo: UserRepository
-    ) -> Tuple[AccessTokenSchema, str]:
+    ) -> Tuple[TokenResponseSchema, str]:
         """
         Handles user login, creates JWTs, and saves the refresh token JTI
         to enforce a single session.
@@ -71,9 +75,10 @@ class AuthService:
         user_identifier = login_data.identifier
 
         try:
-            EmailStr(user_identifier)
+            # Check if identifier looks like an email
+            EmailStr._validate(user_identifier)
             is_email = True
-        except ValidationError:
+        except (ValidationError, ValueError):
             is_email = False
 
         if is_email:
@@ -81,7 +86,7 @@ class AuthService:
         else:
             user = await user_repo.get_by_username(user_identifier)
 
-        if not user or not verify_password(login_data.password.get_secret_value(), user.password_hash):
+        if not user or not await verify_password(login_data.password, str(user.password_hash)):
             raise Unauthorized("Invalid username or password")
 
         if not user.is_active:
@@ -94,7 +99,7 @@ class AuthService:
             user_role=user.system_role.value
         )
 
-        access_token = AccessTokenSchema(
+        access_token = TokenResponseSchema(
             access_token=token_data.access_token,
             token_type=token_data.token_type,
             expires_in_minutes=token_data.expires_in_minutes
@@ -105,7 +110,7 @@ class AuthService:
         # Cập nhật refresh token JTI cho user để thực hiện single session
         try:
             await RedisService.add_session_to_allowlist(
-                user_id=user.id,
+                user_id=str(user.id),
                 new_refresh_jti=token_data.refresh_jti,
                 ttl_seconds=token_data.rt_ttl_seconds
             )
@@ -190,6 +195,13 @@ class AuthService:
             user_id=str(user.id),
             user_role=user.system_role.value
         )
+        
+        # Update session
+        await RedisService.add_session_to_allowlist(
+            user_id=str(user.id),
+            new_refresh_jti=token_data.refresh_jti,
+            ttl_seconds=token_data.rt_ttl_seconds
+        )
 
         return token_data
 
@@ -201,8 +213,9 @@ class AuthService:
         user_repo: UserRepository
     ):
         """Handles the business logic for requesting an OTP using Redis."""
-        if otp_data.action == OtpAction.RESET_PASSWORD and otp_data.action == OtpAction.CHANGE_EMAIL:
-            user = await user_repo.get_user_by_email(otp_data.email)
+        if otp_data.action == OtpAction.RESET_PASSWORD or otp_data.action == OtpAction.CHANGE_EMAIL:
+            # Using get_by_email since get_user_by_email is not defined in provided repo code, assuming get_by_email
+            user = await user_repo.get_by_email(str(otp_data.email))
             if not user:
                 raise NotFound("No account found with this email address.")
         elif otp_data.action == OtpAction.REGISTER:
@@ -212,7 +225,7 @@ class AuthService:
 
         otp_code = await otp_service.generate_and_store_otp(otp_data.email, otp_data.action.value)
 
-        if otp_data.action.value == OtpAction.REGISTER:
+        if otp_data.action.value == OtpAction.REGISTER.value:
             await kafka_service.publish_user_registration_otp(
                 email=otp_data.email,
                 otp_code=otp_code
@@ -232,15 +245,23 @@ class AuthService:
         is_valid = await otp_service.verify_otp(
             email=data.email,
             action=data.action.value,
-            submitted_code=data.otp
+            submitted_code=data.otp_code # schema uses otp_code, not otp
         )
 
         if not is_valid:
             raise Unauthorized("Invalid or expired OTP code.")
 
-        user = await user_repo.get_by_username(data.email, include_deleted=True)
+        # Corrected: use get_by_email for email lookup
+        user = await user_repo.get_by_email(data.email)
+        if not user and data.action != OtpAction.REGISTER: # For register, user might exist but be inactive.
+             # Actually logic: if register, user MUST exist (created in step 1).
+             # If user not found, it's weird.
+             pass
+        
         if not user:
-            raise NotFound("User account not found.")
+             # In registration flow 1 -> register (creates user) -> request otp. 
+             # So user should exist.
+             raise NotFound("User account not found.")
 
         match data.action:
             case OtpAction.REGISTER:
@@ -284,7 +305,7 @@ class AuthService:
             raise Unauthorized("Invalid or expired OTP code.")
 
         # Get user by email
-        user = await user_repo.get_by_email(reset_pw_data.email)
+        user = await user_repo.get_by_email(str(reset_pw_data.email))
         if not user or not user.is_active:
             raise NotFound("User account not found.")
 
@@ -292,13 +313,13 @@ class AuthService:
         hashed_new_password = hash_password(reset_pw_data.new_password.get_secret_value())
 
         # Update the user's password
-        await user_repo.update_password(user.id, hashed_new_password)
+        await user_repo.update_password(UUID(user.id), str(hashed_new_password))
 
         # Delete the OTP from Redis after successful verification
         await otp_service.delete_otp(reset_pw_data.email, OtpAction.RESET_PASSWORD.value)
 
         # Optionally revoke all existing tokens for security
-        await redis_service.remove_session_from_allowlist(user.id)
-        await redis_service.revoke_all_tokens_for_user(user.id)
+        await redis_service.remove_session_from_allowlist(str(user.id))
+        await redis_service.revoke_all_tokens_for_user(str(user.id))
 
         return True

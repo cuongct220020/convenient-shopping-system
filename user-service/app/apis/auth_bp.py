@@ -6,8 +6,7 @@ from app.views.auth.login_view import LoginView
 from app.views.auth.logout_view import LogoutView
 from app.views.auth.refresh_view import RefreshView
 from app.views.auth.reset_password_view import ResetPasswordView
-from app.views.auth.otp_request_view import OTPRequestView
-from app.views.auth.otp_verification_view import OTPVerificationView
+from app.views.auth.otp_view import OTPRequestView, OTPVerificationView
 
 auth_bp = Blueprint('auth_blueprint', url_prefix='/auth')
 

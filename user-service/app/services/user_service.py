@@ -7,16 +7,12 @@ from shopping_shared.utils.logger_utils import get_logger
 
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas import (
-    UserCreateSchema,
-    UserInfoUpdateSchema,
-    UserAdminCreateSchema,
-    UserAdminUpdateSchema,
-)
+from app.schemas import UserCreateSchema, UserInfoUpdateSchema
+
 from app.schemas.auth_schema import ChangePasswordRequestSchema
 from app.utils.password_utils import hash_password, verify_password
 
-logger = get_logger("UserService")
+logger = get_logger("User Service")
 
 
 class UserService:
@@ -44,7 +40,7 @@ class UserService:
     async def create(self, user_data: UserCreateSchema) -> User:
         """Create a new user."""
         # Check if user already exists
-        existing_user = await self.repository.get_by_email(user_data.email)
+        existing_user = await self.repository.get_by_email(str(user_data.email))
         if existing_user:
             raise Conflict(f"User with email {user_data.email} already exists.")
 
@@ -78,7 +74,7 @@ class UserService:
         if not user:
             raise NotFound("Authenticated user not found.")
 
-        if not verify_password(data.current_password.get_secret_value(), user.password_hash):
+        if not verify_password(data.current_password, user.password_hash):
             raise Unauthorized("Invalid old password.")
 
         hashed_new_password = hash_password(data.new_password.get_secret_value())

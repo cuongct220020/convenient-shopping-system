@@ -1,11 +1,11 @@
-# microservices/user-service/app/services/redis_service.py
+# user-service/app/services/redis_service.py
 import json
 from datetime import datetime, UTC
 
 from shopping_shared.caching.redis_manager import redis_manager
 from shopping_shared.utils.logger_utils import get_logger
 
-logger = get_logger("OTP Service")
+logger = get_logger("Redis Service")
 
 class RedisService:
 
@@ -21,9 +21,9 @@ class RedisService:
 
     @classmethod
     def _generate_key(
-            cls,
-            object_type: str,
-            identifier: str
+        cls,
+        object_type: str,
+        identifier: str
     ) -> str:
         """
         Generates a standardized Redis key based on the service's convention.

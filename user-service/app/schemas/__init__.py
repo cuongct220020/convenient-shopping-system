@@ -9,7 +9,7 @@ The schemas are organized by resource type.
 from .auth_schema import (
     RegisterRequestSchema,
     LoginRequestSchema,
-    AccessTokenSchema,
+    TokenResponseSchema,
     ResetPasswordRequestSchema,
     ChangePasswordRequestSchema
 )
@@ -42,6 +42,7 @@ from .user_profile_schema import (
 
 from .user_schema import (
     UserInfoSchema,
+    UserPublicProfileSchema,
     UserInfoUpdateSchema,
     UserCreateSchema,
     UserDetailedProfileSchema,
@@ -69,7 +70,7 @@ __all__ = [
     # Auth
     "RegisterRequestSchema",
     "LoginRequestSchema",
-    "AccessTokenSchema",
+    "TokenResponseSchema",
     "ResetPasswordRequestSchema",
     "ChangePasswordRequestSchema",
 
@@ -90,6 +91,7 @@ __all__ = [
 
     # User
     "UserInfoSchema",
+    "UserPublicProfileSchema",
     "UserInfoUpdateSchema",
     "UserCreateSchema",
     "UserDetailedProfileSchema",
@@ -98,6 +100,7 @@ __all__ = [
     "UserAdminUpdateSchema",
     "RequestEmailChangeSchema",
     "ConfirmEmailChangeSchema",
+
 
     # Group
     "FamilyGroupCreateSchema",

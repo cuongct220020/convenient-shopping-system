@@ -21,7 +21,7 @@ class LoginView(HTTPMethodView):
         # Instantiate required repositories with the request's DB session
         user_repo = UserRepository(session=request.ctx.db_session)
 
-        access_token, refresh_token = await AuthService.login_account(
+        token_response, refresh_token = await AuthService.login_account(
             login_data=validated_data,
             user_repo=user_repo
         )
@@ -29,7 +29,7 @@ class LoginView(HTTPMethodView):
         response_data = GenericResponse(
             status="success",
             message="Login successful",
-            data=access_token
+            data=token_response
         )
 
         response = json(response_data.model_dump(by_alias=True), status=200)

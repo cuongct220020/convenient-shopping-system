@@ -1,4 +1,4 @@
-# microservices/user-service/app/enums/auth_schema.py
+# user-service/app/enums/auth_schema.py
 from enum import Enum
 
 

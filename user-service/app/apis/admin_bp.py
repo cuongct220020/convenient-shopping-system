@@ -19,5 +19,4 @@ admin_bp.add_route(AdminGroupMembersManageView.as_view(), '/groups/<group_id:uui
 
 # Admin User Management Routes
 admin_bp.add_route(AdminUsersView.as_view(), '/users')
-# Update int -> uuid
 admin_bp.add_route(AdminUserDetailView.as_view(), '/users/<user_id:uuid>')

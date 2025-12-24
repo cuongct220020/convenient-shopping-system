@@ -255,7 +255,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         )
         result = await self.session.execute(stmt)
 
-        if result.rowcount > 0:
+        if getattr(result, "rowcount", 0) > 0:
             await self.session.flush()
             return True
         return False

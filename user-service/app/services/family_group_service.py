@@ -1,6 +1,8 @@
 # user-service/app/services/family_group_service.py
 from uuid import UUID
 
+from pydantic import EmailStr
+
 from app.models import FamilyGroup, GroupMembership
 from app.enums import GroupRole
 from app.schemas import (
@@ -78,7 +80,7 @@ class FamilyGroupService:
         logger.info(f"Deleted family group {group_id} by user {user_id}")
 
 
-    async def add_member_by_email(self, requester_id: UUID, group_id: UUID, email: str) -> GroupMembership:
+    async def add_member_by_email(self, requester_id: UUID, group_id: UUID, email: EmailStr) -> GroupMembership:
         """Adds a user to the group by email."""
         # 1. Check permission (Only HEAD_CHEF can add)
         if not await self._is_head_chef(requester_id, group_id):
@@ -135,32 +137,3 @@ class FamilyGroupService:
         """Helper to check if user is HEAD_CHEF of the group."""
         membership = await self.member_repo.get_membership(user_id, group_id)
         return membership and membership.role == GroupRole.HEAD_CHEF
-
-    # --- Admin Logic ---
-
-    async def add_member_by_admin(self, group_id: UUID, email: str) -> GroupMembership:
-        """Admin adds member directly."""
-        user_to_add = await self.user_repo.get_by_email(email)
-        if not user_to_add:
-            raise NotFound(f"User with email {email} not found.")
-
-        existing = await self.member_repo.get_membership(user_to_add.id, group_id)
-        if existing:
-            raise Conflict("User is already a member of this group.")
-
-        membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER)
-        return membership
-
-    async def remove_member_by_admin(self, group_id: UUID, user_id: UUID):
-        """Admin removes member directly."""
-        existing = await self.member_repo.get_membership(user_id, group_id)
-        if not existing:
-             raise NotFound("Membership not found.")
-        await self.member_repo.remove_membership(user_id, group_id)
-
-    async def update_member_role_by_admin(self, group_id: UUID, user_id: UUID, new_role: GroupRole):
-        """Admin updates member role directly."""
-        membership = await self.member_repo.update_role(user_id, group_id, new_role)
-        if not membership:
-             raise NotFound("Membership not found.")
-        return membership

@@ -1,4 +1,5 @@
 # user-service/app/repositories/user_repository.py
+# from datetime import time, UTC
 from typing import Optional
 from uuid import UUID
 from pydantic import EmailStr
@@ -24,7 +25,7 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
         """Fetches user by username."""
         return await self.get_by_field_case_insensitive("username", username)
 
-    async def get_by_email(self, email: EmailStr) -> Optional[User]:
+    async def get_by_email(self, email: str) -> Optional[User]:
         """Fetch user record by email."""
         return await self.get_by_field_case_insensitive("email", email)
 
@@ -42,7 +43,7 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
         """
         return await self.update_fields(user_id, {
             "email": new_email,
-            "email_verified": True  # Mark as verified after successful change
+            # "updated_at": time(UTC)
         })
 
 

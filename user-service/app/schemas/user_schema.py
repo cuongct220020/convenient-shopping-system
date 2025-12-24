@@ -19,6 +19,16 @@ class UserInfoSchema(BaseSchema):
     avatar_url: Optional[str] = None
 
 
+class UserPublicProfileSchema(BaseSchema):
+    """Public profile schema for general display (e.g. comments, group members)."""
+    id: UUID
+    username: str
+    first_name: str
+    last_name: str
+    avatar_url: Optional[str] = None
+
+
+
 
 class UserInfoUpdateSchema(BaseSchema):
     """Schema for update user core information."""

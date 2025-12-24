@@ -1,8 +1,7 @@
 # user-service/app/services/user_tag_service.py
-from typing import List, Dict
+from typing import Dict
 from uuid import UUID
 
-from shopping_shared.exceptions import NotFound, BadRequest
 from shopping_shared.utils.logger_utils import get_logger
 
 from app.repositories.user_tag_repository import UserTagRepository
@@ -28,9 +27,6 @@ class UserTagService:
     ) -> UserTagsByCategoryResponseSchema:
         """
         Get user's tags grouped by category.
-
-        Returns:
-            UserTagsByCategoryResponseSchema with tags grouped by category
         """
         grouped_dict = await self.repository.get_tags_grouped_by_category(user_id)
 
@@ -52,9 +48,6 @@ class UserTagService:
     ) -> Dict[str, int]:
         """
         Add tags to user.
-
-        Returns:
-            Dict with 'added_count' key
         """
         added_count = await self.repository.add_tags(user_id, data.tag_values)
 
@@ -110,4 +103,3 @@ class UserTagService:
             "category": data.category,
             "updated_count": updated_count
         }
-

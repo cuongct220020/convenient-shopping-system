@@ -27,17 +27,12 @@ class LoginRequestSchema(BaseSchema):
     password: SecretStr
 
 
-class AccessTokenSchema(BaseSchema):
+class TokenResponseSchema(BaseSchema):
     """Schema for token responses."""
     access_token: str
     token_type: str = "Bearer"
+    refresh_token: Optional[str] = None
     expires_in_minutes: int
-
-
-class LoginResponseSchema(BaseSchema):
-    """Schema for user login responses."""
-    access_token: AccessTokenSchema
-    user_info: Optional[UserInfoSchema] = None
 
 
 class ResetPasswordRequestSchema(BaseSchema):

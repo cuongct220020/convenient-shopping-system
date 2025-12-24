@@ -20,14 +20,20 @@ class RegisterView(HTTPMethodView):
 
         user_repo = UserRepository(session=request.ctx.db_session)
 
-        await AuthService.register_account(
+        # Service now returns the created User object
+        user = await AuthService.register_account(
             reg_data=validated_data,
             user_repo=user_repo
         )
+        
+        # Prepare response data matching UserPublicProfileSchema
+        from app.schemas import UserPublicProfileSchema
+        user_profile = UserPublicProfileSchema.model_validate(user)
 
         response = GenericResponse(
             status="success",
-            message="Registration successful. Please check your email for a verification OTP."
+            message="Registration successful. Please check your email for a verification OTP.",
+            data=user_profile
         )
 
         return json(response.model_dump(), status=201)

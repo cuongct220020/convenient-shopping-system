@@ -1,4 +1,4 @@
-# microservices/user-service/app/enums/tags.py
+# user-service/app/enums/tags.py
 from enum import Enum
 
 

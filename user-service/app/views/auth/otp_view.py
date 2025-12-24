@@ -1,11 +1,11 @@
-# microservices/user-service/app/views/auth/otp_request_view.py
+# user-service/app/views/auth/otp_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.schemas import OTPRequestSchema
+from app.schemas import OTPRequestSchema, OTPVerifyRequestSchema
 from app.services.auth_service import AuthService
 from shopping_shared.schemas.response_schema import GenericResponse
 
@@ -30,7 +30,35 @@ class OTPRequestView(HTTPMethodView):
 
         # For security, always return a generic success message.
         response = GenericResponse(
+            status="success",
             message="If your request was valid, an OTP has been sent to the specified email address."
         )
 
         return json(response.model_dump(exclude_none=True), status=200)
+
+
+class OTPVerificationView(HTTPMethodView):
+    """Handles the verification of an OTP for various actions (e.g., registration, password reset, email change)."""
+
+    @validate_request(OTPVerifyRequestSchema)
+    async def post(self, request: Request):
+        """
+        Verifies the submitted OTP and performs the corresponding action based on the OTP type.
+        """
+        validated_data = request.ctx.validated_data
+
+        user_repo = UserRepository(session=request.ctx.db_session)
+
+        await AuthService.verify_submitted_otp(
+            data=validated_data,
+            user_repo=user_repo
+        )
+
+        response = GenericResponse(
+            status="success",
+            message="OTP verified successfully and action performed."
+        )
+
+        return json(response.model_dump(), status=200)
+
+

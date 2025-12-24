@@ -1,21 +1,30 @@
 # user-service/app/services/admin_service.py
 from uuid import UUID
 
+from pydantic import EmailStr
+
 from app.repositories.user_repository import UserRepository
+from app.repositories.family_group_repository import GroupMembershipRepository
 from app.schemas.user_admin_schema import UserAdminUpdateSchema
+from app.models.family_group import GroupMembership
 from app.utils.password_utils import hash_password
+from app.enums import GroupRole
+
 from shopping_shared.exceptions import Conflict, NotFound
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Admin Service")
 
 class AdminService:
-    def __init__(self, user_repository: UserRepository):
-        self.user_repository = user_repository
+    def __init__(self, user_repository: UserRepository, member_repo: GroupMembershipRepository):
+        self.user_repo = user_repository
+        self.member_repo = member_repo
+
+    # ===== User Management by Admin =====
 
     async def get_user_by_admin(self, user_id):
         """Fetch a user by ID for admin."""
-        user = await self.user_repository.get_by_id(user_id)
+        user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise NotFound(f"User with id {user_id} not found")
         return user
@@ -23,12 +32,12 @@ class AdminService:
 
     async def get_all_users(self, page: int = 1, page_size: int = 20):
         """Fetch all users with pagination."""
-        return await self.user_repository.get_paginated(page=page, page_size=page_size)
+        return await self.user_repo.get_paginated(page=page, page_size=page_size)
 
 
     async def create_user_by_admin(self, user_data):
         """Creates a new user by an admin."""
-        existing_user = await self.user_repository.get_by_username(user_data.username)
+        existing_user = await self.user_repo.get_by_username(user_data.username)
         if existing_user:
             raise Conflict(f"User with username {user_data.username} already exists.")
 
@@ -41,14 +50,14 @@ class AdminService:
         new_user_data['password_hash'] = hashed_password
 
         # Create user via repository
-        user = await self.user_repository.create_user(new_user_data)
+        user = await self.user_repo.create_user(new_user_data)
 
         logger.info(f"Admin created user: {user.username}")
         return user
 
     async def update_user_by_admin(self, user_id: UUID, update_data: UserAdminUpdateSchema):
         """Updates a user's information by an admin."""
-        user = await self.user_repository.update(user_id, update_data)
+        user = await self.user_repo.update(user_id, update_data)
         if not user:
             raise NotFound(f"User with id {user_id} not found")
 
@@ -56,22 +65,42 @@ class AdminService:
         return user
 
     async def delete_user_by_admin(self, user_id: UUID):
-        """Deletes (soft delete) a user by an admin."""
-        # Using soft_delete if supported, or delete
-        # Assuming BaseRepository has soft_delete and User model supports it
-        # If not, use delete. BaseRepository.delete is hard delete.
-        # But BaseRepository has soft_delete. Let's assume User model has is_deleted.
-        # Safe fallback:
-        deleted = await self.user_repository.soft_delete(user_id)
+        """Delete a user by an admin. Using soft_delete if supported, or delete"""
+        deleted = await self.user_repo.soft_delete(user_id)
         if not deleted:
-             # Try hard delete if soft delete failed (e.g. model doesn't support it logic in repo threw error? No, returns False if not found)
-             # But if it threw AttributeError, we might want hard delete?
-             # For now, let's assume soft_delete works or we fallback to something else if needed.
-             # If user not found, deleted is False.
-             # Check existence first?
-             user = await self.user_repository.get_by_id(user_id)
+             user = await self.user_repo.get_by_id(user_id)
              if not user:
                  raise NotFound(f"User with id {user_id} not found")
-             await self.user_repository.delete(user_id) # Hard delete fallback or actual delete
+             await self.user_repo.delete(user_id) # Hard delete fallback or actual delete
 
         logger.info(f"Admin deleted user: {user_id}")
+
+
+    # ===== Group Membership Management by Admin =====
+
+    async def add_member_by_admin(self, group_id: UUID, email: EmailStr) -> GroupMembership:
+        """Admin adds member directly."""
+        user_to_add = await self.user_repo.get_by_email(email)
+        if not user_to_add:
+            raise NotFound(f"User with email {email} not found.")
+
+        existing = await self.member_repo.get_membership(user_to_add.id, group_id)
+        if existing:
+            raise Conflict("User is already a member of this group.")
+
+        membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER)
+        return membership
+
+    async def remove_member_by_admin(self, group_id: UUID, user_id: UUID):
+        """Admin removes member directly."""
+        existing = await self.member_repo.get_membership(user_id, group_id)
+        if not existing:
+             raise NotFound("Membership not found.")
+        await self.member_repo.remove_membership(user_id, group_id)
+
+    async def update_member_role_by_admin(self, group_id: UUID, user_id: UUID, new_role: GroupRole):
+        """Admin updates member role directly."""
+        membership = await self.member_repo.update_role(user_id, group_id, new_role)
+        if not membership:
+             raise NotFound("Membership not found.")
+        return membership

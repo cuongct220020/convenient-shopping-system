@@ -15,5 +15,5 @@ class OTPRequestSchema(BaseSchema):
 class OTPVerifyRequestSchema(BaseSchema):
     """Schema to verify an account using an OTP."""
     email: EmailStr
-    otp: str = Field(..., min_length=6, max_length=6)
+    otp_code: str = Field(..., min_length=6, max_length=6)
     action: OtpAction

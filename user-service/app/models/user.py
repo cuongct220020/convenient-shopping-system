@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
 
-from app.enums import UserRole
+from app.enums import SystemRole
 
 from shopping_shared.databases.base_model import Base
 
@@ -20,8 +20,8 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
-    system_role: Mapped[UserRole] = mapped_column(
-        SQLEnum(UserRole), nullable=False, default=UserRole.USER
+    system_role: Mapped[SystemRole] = mapped_column(
+        SQLEnum(SystemRole), nullable=False, default=SystemRole.USER
     )
 
     phone_num: Mapped[Optional[str]] = mapped_column(String(20), unique=True, nullable=True)

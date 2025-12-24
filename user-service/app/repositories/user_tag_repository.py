@@ -35,8 +35,7 @@ class TagRepository(BaseRepository[Tag, None, None]):
 
 class UserTagRepository:
     """
-    Repository for managing User ←→ Tag Many-to-Many relationship.
-    Uses junction table user_tags.
+    Repository for managing User ←→ Tag Many-to-Many relationship. Uses junction table user_tags.
     """
 
     def __init__(self, session: AsyncSession):
@@ -153,14 +152,14 @@ class UserTagRepository:
         result = await self.session.execute(query)
         await self.session.flush()
 
-        return result.rowcount
+        return getattr(result, "rowcount", 0)
 
     async def remove_all_tags(self, user_id: UUID) -> int:
         """Remove all tags for a user."""
         query = delete(UserTag).where(UserTag.user_id == user_id)
         result = await self.session.execute(query)
         await self.session.flush()
-        return result.rowcount
+        return getattr(result, "rowcount", 0)
 
     async def replace_tags_by_category(
         self,

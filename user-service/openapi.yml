@@ -134,20 +134,16 @@ paths:
   /auth/reset-password:
     post:
       tags: [Authentication]
-      summary: Yêu cầu reset mật khẩu
+      summary: Đặt lại mật khẩu mới bằng mã OTP
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
+              $ref: '#/components/schemas/ResetPasswordRequest'
       responses:
         '200':
-          description: "Nếu email tồn tại, yêu cầu reset đã được gửi đi."
+          description: "Mật khẩu đã được thay đổi thành công."
           content:
             application/json:
               schema:
@@ -385,14 +381,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                tag_values:
-                  type: array
-                  items:
-                    type: string
-                  description: "Danh sách tag codes cần xóa (e.g., ['0212', '0300'])"
-              required: [tag_values]
+              $ref: '#/components/schemas/UserTagDeleteRequest'
       responses:
         '200':
           description: "Tags đã được xóa"
@@ -471,7 +460,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-      /groups/{groupId}/members:
+    /groups/{groupId}/members:
       post:
         tags: [Groups]
         summary: Thêm thành viên vào nhóm (HeadChef only)
@@ -496,6 +485,7 @@ paths:
             $ref: '#/components/responses/Forbidden'
           '404':
             $ref: '#/components/responses/NotFound'
+
     /groups/{groupId}/members/{userId}:
       delete:
         tags: [Groups]
@@ -540,7 +530,8 @@ paths:
           '403':
             $ref: '#/components/responses/Forbidden'
           '404':
-            $ref: '#/components/responses/NotFound'  /groups/{groupId}/members/{userId}/identity-profile:
+            $ref: '#/components/responses/NotFound'
+  /groups/{groupId}/members/{userId}/identity-profile:
     get:
       tags: [Groups]
       summary: Xem hồ sơ định danh của thành viên trong nhóm
@@ -934,12 +925,26 @@ components:
     LoginRequest:
       type: object
       properties:
+        identifier:
+          type: string
+          description: "Username or Email"
+        password:
+          type: string
+      required: [identifier, password]
+    ResetPasswordRequest:
+      type: object
+      properties:
         email:
           type: string
           format: email
-        password:
+        new_password:
           type: string
-      required: [email, password]
+        otp_code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^[0-9]{6}$'
+      required: [email, new_password, otp_code]
     ChangePasswordRequest:
       type: object
       properties:
@@ -963,7 +968,7 @@ components:
         email:
           type: string
           format: email
-        otp:
+        otp_code:
           type: string
           minLength: 6
           maxLength: 6
@@ -971,7 +976,7 @@ components:
           description: "Mã OTP 6 chữ số"
         action:
           $ref: '#/components/schemas/OtpAction'
-      required: [email, otp, action]
+      required: [email, otp_code, action]
     RequestEmailChangeRequest:
       type: object
       properties:
@@ -985,13 +990,13 @@ components:
         new_email:
           type: string
           format: email
-        otp:
+        otp_code:
           type: string
           minLength: 6
           maxLength: 6
           pattern: '^[0-9]{6}$'
           description: "Mã OTP 6 chữ số"
-      required: [new_email, otp]
+      required: [new_email, otp_code]
     AddMemberRequest:
       type: object
       properties:
@@ -1041,6 +1046,11 @@ components:
     UserUpdate:
       type: object
       properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
         phone_num:
           type: string
         first_name:
@@ -1129,10 +1139,12 @@ components:
           type: string
         province:
           type: string
-      required: [city, province]
     UserIdentityProfile:
       type: object
       properties:
+        user_id:
+          type: string
+          format: uuid
         gender:
           $ref: '#/components/schemas/UserGender'
         date_of_birth:
@@ -1142,9 +1154,13 @@ components:
           type: string
         address:
           $ref: '#/components/schemas/Address'
+      required: [gender]
     UserHealthProfile:
       type: object
       properties:
+        user_id:
+          type: string
+          format: uuid
         height_cm:
           type: integer
         weight_kg:
@@ -1168,7 +1184,15 @@ components:
           description: "Danh sách tag codes (e.g., ['0212', '0300', '0505'])"
           example: ["0212", "0300", "0402"]
       required: [tag_values]
-
+    UserTagDeleteRequest:
+      type: object
+      properties:
+        tag_values:
+          type: array
+          items:
+            type: string
+          description: "Danh sách tag codes cần xóa (e.g., ['0212', '0300'])"
+      required: [tag_values]
     UserTagsByCategoryResponse:
       type: object
       properties:
@@ -1226,7 +1250,7 @@ components:
             email:
               type: string
               format: email
-            phone_num:
+            phone_number:
               type: string
     UserDetailedProfile:
       allOf:
