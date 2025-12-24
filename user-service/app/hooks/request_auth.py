@@ -72,8 +72,8 @@ def _is_auth_required(request: Request) -> bool:
     
     # Các đường dẫn không cần xác thực
     ignore_paths = {
-        "/",                  # Trang chủ service (trong main.py)
-        "/favicon.ico",        # Favicon (trong main.py)
+        "/",                  # Trang chủ service (trong run.py)
+        "/favicon.ico",        # Favicon (trong run.py)
         f"{prefix}/auth/login",
         f"{prefix}/auth/register",
         f"{prefix}/auth/otp/send",

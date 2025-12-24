@@ -1,9 +1,9 @@
-# microservices/user-service/main.py
+# user-service/run.py
 
 from sanic import response
 from app import create_app
 from shopping_shared.utils.logger_utils import get_logger
-from config import Config
+from app.config import Config
 
 logger = get_logger("User Service Entrypoint")
 
@@ -44,7 +44,7 @@ async def favicon(request):
 def main() -> None:
     """Checks configuration and runs the application."""
     # Warn if the default secret key is being used in a non-debug environment
-    if not app.config.get('DEBUG') and app.config.get('JWT_SECRET') == '85c145a16bd6f6e1f3e104ca78c6a102':
+    if not app.config.get('DEBUG') and app.config.get('JWT_SECRET') == None:
         logger.warning(
             'JWT_SECRET is using the insecure default value in a production environment. '
             'Please set a strong secret key in your environment variables.'

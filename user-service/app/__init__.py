@@ -43,10 +43,7 @@ def register_hooks(sanic_app: Sanic):
     from app.hooks.request_auth import auth_middleware
 
     # Initialize middleware instances
-    response_time_middleware = ResponseTimeMiddleware(
-        logger_name='UserServiceMetrics',
-        slow_request_threshold_ms=1000.0  # 1 second threshold
-    )
+    response_time_middleware = ResponseTimeMiddleware(slow_request_threshold_ms=1000.0)  # 1 second threshold
     security_headers_middleware = SecurityHeadersMiddleware()
 
     # IMPORTANT: The order of middleware execution follows onion-layer model
@@ -77,7 +74,7 @@ def register_hooks(sanic_app: Sanic):
 def create_app(*config_cls) -> Sanic:
     logger.info(f"Sanic application initialized with { ', '.join([config.__name__ for config in config_cls]) }")
 
-    sanic_app = Sanic("User Service Application")
+    sanic_app = Sanic(__name__)
 
     for config in config_cls:
         sanic_app.update_config(config)

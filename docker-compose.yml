@@ -126,7 +126,8 @@ services:
       - "8000:8000"       # Kong Proxy (HTTP Debug)
       - "8444:8001"       # Admin API cho decK (Debug)
     volumes:
-      - ./api-gateway/kong.yml:/usr/local/kong/declarative/kong.yml
+      - ${KONG_CONFIG_FILE}:/usr/local/kong/declarative/kong.yml
+      - ./user-service/secrets:/user-service/secrets
     networks:
       - shopping-network
     restart: unless-stopped

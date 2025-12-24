@@ -35,6 +35,12 @@ class KafkaManager:
         """
         Initializes and returns a singleton AIOKafkaProducer instance.
         The producer is started on its first retrieval.
+
+        Performance optimizations:
+        - linger_ms: Batch messages for 5ms before sending (reduces network calls)
+        - batch_size: Max bytes per batch (default 16KB, increased to 32KB)
+        - compression_type: gzip compression reduces network bandwidth
+        - acks='all': Ensures durability (can use acks=1 for higher throughput)
         """
         if not self._bootstrap_servers:
             raise MessageBrokerError("KafkaManager is not configured. Call setup() first.")
@@ -45,7 +51,17 @@ class KafkaManager:
                 self._producer = AIOKafkaProducer(
                     bootstrap_servers=self._bootstrap_servers,
                     value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                    # Durability settings
                     acks='all',  # Ensure messages are acknowledged by all in-sync replicas
+
+                    # Performance optimizations
+                    linger_ms=5,  # Wait 5ms to batch messages (reduces network calls)
+                    batch_size=32768,  # 32KB batch size (default 16KB)
+                    compression_type='gzip',  # Compress messages to reduce bandwidth
+
+                    # Retry settings
+                    retries=3,
+                    retry_backoff_ms=100,
                 )
                 await self._producer.start()
                 logger.info("Kafka producer started successfully.")

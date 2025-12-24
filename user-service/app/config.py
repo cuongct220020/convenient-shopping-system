@@ -9,6 +9,10 @@ load_dotenv() # Load .env
 
 class Config:
     """ Service-specific configurations for User-Service. """
+    # Proxy Configuration (Sanic v22+)
+    PROXIES_COUNT = 1
+    PROXIES_OR_NETWORKS = "*" 
+
     RUN_SETTING = {
         'host': os.getenv('APP_HOST', 'localhost'),
         'port': int(os.getenv('APP_PORT', '8000')),
@@ -16,8 +20,6 @@ class Config:
         "access_log": False,
         "auto_reload": True,
         'workers': int(os.getenv('WORKERS', 1)),
-        'proxies_count': 1, # Thêm để tin tưởng header từ Gateway
-        'forwarded_for_header': 'x-forwarded-for',
     }
 
     # JWT Settings

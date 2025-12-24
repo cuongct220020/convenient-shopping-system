@@ -8,7 +8,7 @@ consumers:
     jwt_secrets:
       - key: shopping-user-service
         algorithm: RS256
-        secret: ./user-service/secrets/jwt-private.pem
+        secret: /user-service/secrets/jwt-private.pem
         rsa_public_key: |
           -----BEGIN PUBLIC KEY-----
           MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4dVZKqN4CQXZ8nW1tlH+
@@ -58,7 +58,7 @@ plugins:
 services:
   # User Service
   - name: user-service
-    url: http://user-service:8000
+    url: http://host.docker.internal:8000
     health-checks:
       active:
         healthy:
@@ -100,7 +100,6 @@ services:
               cookie_names: [jwt_token]
               claims_to_verify: [exp, nbf]
               key_claim_name: iss
-              algorithm: RS256
 
           - name: request-transformer
             config:
@@ -123,7 +122,6 @@ services:
               cookie_names: [jwt_token]
               claims_to_verify: [exp, nbf]
               key_claim_name: iss
-              algorithm: RS256
           - name: request-transformer
             config:
               add:
