@@ -1,0 +1,141 @@
+_format_version: "3.0"
+
+# ===========================
+# Consumers (JWT Issuers)
+# ===========================
+consumers:
+  - username: shipping-user-service
+    jwt_secrets:
+      - key: shopping-user-service
+        algorithm: RS256
+        secret: /user-service/secrets/jwt-private.pem
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4dVZKqN4CQXZ8nW1tlH+
+          iwzafzLeIfKQNxaTASJH7JUt2w5/hEmKZeE0U3l+5MLqoF/7BBQkc6LUDPq5nBaH
+          K+J21fUwowBJKTKo/PbqUXdFBk1hzUkVxWvL3gfLRou2r4kipenAdlqrWiJrlGU1
+          TH1252Sp9ir2WyJ0ycF/EyTdKYAsqZSnHlR5yLA09P0VRDtLvqX/SyMK4S5S6rv4
+          WWiFXgOcqoQcItXXN/NxTP1q5d6rDUzIouxJeYah84fTeRE7qscPiLuui/b+BKMS
+          OyFEZNALiNNxeOi3369z9HVoFi1Ijg+gzqq73xYmskaZNfC399hU0maT5Oo4r2sg
+          lwIDAQAB
+          -----END PUBLIC KEY-----
+        # openssl genrsa -out private_key.pem 2048
+        # openssl rsa -in private_key.pem -pubout -out public_key.pem
+
+# ===========================
+# Global Plugins
+# ===========================
+plugins:
+  # 1. CORS
+  - name: cors
+    config:
+      origins:
+        - http://localhost:5173
+      credentials: true
+      max_age: 3600
+      exposed_headers:
+        - Authorization
+
+  # 2. Request Size Limiting
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 10
+      size_unit: megabytes
+
+  # 3. File Logging (disabled - using stdout instead)
+  # - name: file-log
+  #   config:
+  #     path: /var/log/kong/access.log
+
+# 4. Prometheus Monitoring (Advanced);
+#  - name: prometheus
+#    config:
+#      include_status_codes: true
+
+# ===========================
+# Services
+# ===========================
+services:
+  # User Service
+  - name: user-service
+    url: http://host.docker.internal:9000
+
+    routes:
+      # Public routes (không cần JWT)
+      - name: user-service-public
+        paths:
+          - /api/v1/user-service/auth/register
+          - /api/v1/user-service/auth/login
+          - /api/v1/user-service/auth/refresh-token
+          - /api/v1/user-service/auth/otp/send
+          - /api/v1/user-service/auth/otp/verify
+          - /api/v1/user-service/docs
+          - /api/v1/user-service/openapi.json
+          - /api/v1/user-service/openapi.yml
+          - /api/v1/user-service/redoc
+        strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 60
+              hour: 1000
+              policy: redis
+              redis:
+                host: redis-caching
+                port: 6379
+                password: myredis
+                database: 0
+
+
+      # Protected routes (cần JWT)
+      - name: user-service-protected
+        paths:
+          - /api/v1/user-service/users
+          - /api/v1/user-service/groups
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              uri_param_names: [jwt]
+              cookie_names: [jwt_token]
+              claims_to_verify: [exp, nbf]
+              key_claim_name: iss
+
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-User-ID:$(jwt.user_id)
+                  - X-User-Role:$(jwt.system_role)
+                  - X-User-Email:$(jwt.email)
+
+
+      # Admin routes (cần JWT + check role ở service layer)
+      - name: user-service-admin
+        paths:
+          - /api/v1/user-service/admin
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              uri_param_names: [jwt]
+              cookie_names: [jwt_token]
+              claims_to_verify: [exp, nbf]
+              key_claim_name: iss
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - X-User-ID:$(jwt.user_id)
+                  - X-User-Role:$(jwt.system_role)
+
+
+  # Recipe Service (tương tự)
+  - name: recipe-service
+    url: http://recipe-service:8000
+    # ... (áp dụng tương tự JWT plugin)
+
+  # Shopping Storage Service
+  - name: shopping-storage-service
+    url: http://shopping-storage-service:8000
+    # ... (áp dụng tương tự JWT plugin)

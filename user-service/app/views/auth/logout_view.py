@@ -1,4 +1,4 @@
-# app/views/auth/logout_view.py
+# user-service/app/views/auth/logout_view.py
 from datetime import datetime, UTC
 from sanic.request import Request
 from sanic.response import json
@@ -10,7 +10,8 @@ from shopping_shared.schemas.response_schema import GenericResponse
 
 class LogoutView(HTTPMethodView):
 
-    async def post(self, request: Request):
+    @staticmethod
+    async def post(request: Request):
         """Handles user logout by revoking tokens and clearing the session from the database."""
         # 1. Lấy thông tin từ context (đã được set bởi middleware)
         auth_payload = request.ctx.auth_payload

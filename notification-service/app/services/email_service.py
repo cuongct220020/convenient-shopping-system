@@ -1,47 +1,42 @@
-# microservices/notification-service/app/services/email_service.py
-import smtplib
+# app/services/email_service.py
+import aiosmtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from sanic import Sanic
+from shopping_shared.utils.logger_utils import get_logger
 from typing import Optional
 
-from sanic import Sanic
+from jinja2 import Environment, PackageLoader, select_autoescape
 
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger(__name__)
-
+logger = get_logger("Email Service")
 
 class EmailService:
-    """
-    Service to send emails via an SMTP server (configured for Gmail).
-    """
     def __init__(self, app: Optional[Sanic] = None):
         self.app = app
         self.config = None
         if app:
             self.init_app(app)
 
+        self.jinja_env = Environment(
+            loader=PackageLoader("app", "templates"),
+            autoescape=select_autoescape()
+        )
+
     def init_app(self, app: Sanic):
-        """Initializes the service with Sanic app configuration."""
         self.app = app
         self.config = app.config
-        logger.info("EmailService initialized.")
+        logger.info("EmailService initialized (Async).")
 
     async def _send_email(self, to_email: str, subject: str, html_content: str):
-        """
-        Connects to the SMTP server and sends the email.
-        """
-        if not all([
-            self.config.get("EMAIL_HOST"),
-            self.config.get("EMAIL_PORT"),
-            self.config.get("EMAIL_SENDER"),
-            self.config.get("EMAIL_PASSWORD"),
-        ]):
-            logger.error("[EMAIL] Email service is not configured. Please set EMAIL_* environment variables.")
+        if not self.config:
+            logger.error("Email service not initialized.")
             return
 
         sender_email = self.config.EMAIL_SENDER
         password = self.config.EMAIL_PASSWORD
+        host = self.config.EMAIL_HOST
+        port = self.config.EMAIL_PORT
+        use_tls = getattr(self.config, 'EMAIL_USE_TLS', True)
 
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
@@ -50,53 +45,64 @@ class EmailService:
         message.attach(MIMEText(html_content, "html"))
 
         try:
-            # smtplib is blocking, so it should be run in a separate thread in an async app
-            # For simplicity here, we call it directly, but for production, consider `asyncio.to_thread`
-            with smtplib.SMTP(self.config.EMAIL_HOST, self.config.EMAIL_PORT) as server:
-                server.starttls()
-                server.login(sender_email, password)
-                server.sendmail(sender_email, to_email, message.as_string())
-            logger.info(f"Successfully sent email to {to_email} with subject '{subject}'")
-        except smtplib.SMTPAuthenticationError:
-            logger.error(f"[EMAIL] Authentication failed for {sender_email}. Check EMAIL_SENDER and EMAIL_PASSWORD.")
+            # Sử dụng aiosmtplib để gửi mail bất đồng bộ
+            # Mailpit (port 1025) không yêu cầu xác thực
+            # Gmail thường dùng start_tls=True ở port 587
+            if port == 1025:  # Mailpit port - không cần xác thực
+                await aiosmtplib.send(
+                    message,
+                    hostname=host,
+                    port=port
+                    # Không cần username và password cho Mailpit
+                )
+            elif port == 587:
+                await aiosmtplib.send(
+                    message,
+                    hostname=host,
+                    port=port,
+                    username=sender_email,
+                    password=password,
+                    start_tls=True  # For port 587
+                )
+            else:
+                await aiosmtplib.send(
+                    message,
+                    hostname=host,
+                    port=port,
+                    username=sender_email,
+                    password=password,
+                    use_tls=use_tls  # For other ports like 465
+                )
+            logger.info(f"Successfully sent email to {to_email}")
         except Exception as e:
-            logger.error(f"[EMAIL] Failed to send email to {to_email}. Error: {e}")
+            logger.error(f"Failed to send email to {to_email}. Error: {e}")
 
     async def send_otp(self, email: str, otp_code: str, action: str):
         """
         Constructs and sends an OTP email based on the action.
         """
-        if action == "register":
-            subject = "Welcome! Your Verification Code"
-            body_html = f"""
-            <html>
-            <body>
-                <h2>Welcome to Our Service!</h2>
-                <p>Thank you for registering. Please use the following One-Time Password (OTP) to activate your account:</p>
-                <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">{otp_code}</p>
-                <p>This code will expire in 5 minutes.</p>
-                <p>If you did not request this, please ignore this email.</p>
-            </body>
-            </html>
-            """
-        elif action == "reset_password":
-            subject = "Your Password Reset Code"
-            body_html = f"""
-            <html>
-            <body>
-                <h2>Password Reset Request</h2>
-                <p>We received a request to reset your password. Use the following One-Time Password (OTP):</p>
-                <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">{otp_code}</p>
-                <p>This code will expire in 5 minutes.</p>
-                <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
-            </body>
-            </html>
-            """
-        else:
+        # Map action to template and subject
+        action_config = {
+            "register": {
+                "template": "register_otp.html",
+                "subject": "Welcome! Your Verification Code"
+            },
+            "reset_password": {
+                "template": "reset_password_otp.html",
+                "subject": "Your Password Reset Code"
+            },
+            "change_email": {
+                "template": "change_email_otp.html",
+                "subject": "Your Email Change Verification Code"
+            }
+        }
+
+        if action not in action_config:
             logger.warning(f"Attempted to send OTP for unknown action: {action}")
             return
 
-        await self._send_email(to_email=email, subject=subject, html_content=body_html)
+        config = action_config[action]
+        template = self.jinja_env.get_template(config["template"])
+        body_html = template.render(otp_code=otp_code)
 
-# Create a singleton instance for the application to use
-email_service = EmailService()
+        await self._send_email(to_email=email, subject=config["subject"], html_content=body_html)

@@ -46,12 +46,12 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.pk_name = inspect(self.model).primary_key[0].name
 
     def _apply_filters_and_sort(
-            self,
-            stmt,
-            filters: Optional[Dict[str, Any]] = None,
-            sort_by: Optional[List[str]] = None,
-            load_options: Optional[List[Any]] = None,
-            include_deleted: bool = False
+        self,
+        stmt,
+        filters: Optional[Dict[str, Any]] = None,
+        sort_by: Optional[List[str]] = None,
+        load_options: Optional[List[Any]] = None,
+        include_deleted: bool = False
     ):
         """Applies filtering, sorting, and soft-delete logic to a statement."""
         # 1. Apply soft-delete filter by default
@@ -125,14 +125,14 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return result.scalars().first()
 
     async def get_many(
-            self,
-            *,
-            filters: Optional[Dict[str, Any]] = None,
-            sort_by: Optional[List[str]] = None,
-            load_options: Optional[List[Any]] = None,
-            skip: int = 0,
-            limit: int = 100,
-            include_deleted: bool = False
+        self,
+        *,
+        filters: Optional[Dict[str, Any]] = None,
+        sort_by: Optional[List[str]] = None,
+        load_options: Optional[List[Any]] = None,
+        skip: int = 0,
+        limit: int = 100,
+        include_deleted: bool = False
     ) -> List[ModelType]:
         """Gets multiple records with filtering, sorting, and limit/offset."""
         stmt = self._apply_filters_and_sort(
@@ -147,14 +147,14 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return list(result.scalars().all())
 
     async def get_paginated(
-            self,
-            *,
-            page: int = 1,
-            page_size: int = 10,
-            filters: Optional[Dict[str, Any]] = None,
-            sort_by: Optional[List[str]] = None,
-            load_options: Optional[List[Any]] = None,
-            include_deleted: bool = False,
+        self,
+        *,
+        page: int = 1,
+        page_size: int = 10,
+        filters: Optional[Dict[str, Any]] = None,
+        sort_by: Optional[List[str]] = None,
+        load_options: Optional[List[Any]] = None,
+        include_deleted: bool = False,
     ) -> PaginationResult[ModelType]:
         """Gets a paginated list of records with optional eager loading."""
         if page < 1: page = 1
@@ -255,7 +255,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         )
         result = await self.session.execute(stmt)
 
-        if result.rowcount > 0:
+        if getattr(result, "rowcount", 0) > 0:
             await self.session.flush()
             return True
         return False

@@ -54,7 +54,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '404':
           $ref: '#/components/responses/NotFound'
   /auth/otp/verify:
@@ -74,7 +74,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
   /auth/login:
@@ -108,7 +108,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
   /auth/refresh-token:
     post:
       tags: [Authentication]
@@ -134,24 +134,20 @@ paths:
   /auth/reset-password:
     post:
       tags: [Authentication]
-      summary: Yêu cầu reset mật khẩu
+      summary: Đặt lại mật khẩu mới bằng mã OTP
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
+              $ref: '#/components/schemas/ResetPasswordRequest'
       responses:
         '200':
-          description: "Nếu email tồn tại, yêu cầu reset đã được gửi đi."
+          description: "Mật khẩu đã được thay đổi thành công."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
   /users/me:
     get:
       tags: [Profile]
@@ -272,7 +268,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -295,7 +291,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -318,7 +314,89 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users/me/tags:
+    get:
+      tags: [Profile - Tags]
+      summary: Lấy tất cả tags của user hiện tại
+      description: Trả về danh sách tags được nhóm theo category (age, medical, allergy, diet, taste)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Danh sách tags của user"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserTagsByCategoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Profile - Tags]
+      summary: Thêm tags mới cho user
+      description: Thêm một hoặc nhiều tags vào profile của user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTagBulkAddRequest'
+      responses:
+        '201':
+          description: "Tags đã được thêm thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      added_count:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users/me/tags/delete:
+    post:
+      tags: [Profile - Tags]
+      summary: Xóa tags của user
+      description: Xóa một hoặc nhiều tags khỏi profile (sử dụng POST để gửi body)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTagDeleteRequest'
+      responses:
+        '200':
+          description: "Tags đã được xóa"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      deleted_count:
+                        type: integer
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -358,7 +436,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -377,88 +455,82 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /groups/{groupId}/members:
-    post:
-      tags: [Groups]
-      summary: Thêm thành viên vào nhóm (HeadChef only)
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/GroupId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
-      responses:
-        '201':
-          description: "Thêm thành viên thành công."
+    /groups/{groupId}/members:
+      post:
+        tags: [Groups]
+        summary: Thêm thành viên vào nhóm (HeadChef only)
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/GroupId'
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupMemberResponse'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /groups/{groupId}/members/{userId}:
-    delete:
-      tags: [Groups]
-      summary: Xóa thành viên khỏi nhóm (HeadChef only)
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/GroupId'
-        - $ref: '#/components/parameters/UserId'
-      responses:
-        '200':
-          description: "Xóa thành viên thành công."
+                $ref: '#/components/schemas/AddMemberRequest'
+        responses:
+          '201':
+            description: "Thêm thành viên thành công."
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GroupMemberResponse'
+          '403':
+            $ref: '#/components/responses/Forbidden'
+          '404':
+            $ref: '#/components/responses/NotFound'
+
+    /groups/{groupId}/members/{userId}:
+      delete:
+        tags: [Groups]
+        summary: Xóa thành viên khỏi nhóm (HeadChef only)
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/GroupId'
+          - $ref: '#/components/parameters/UserId'
+        responses:
+          '200':
+            description: "Xóa thành viên thành công."
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GenericResponse'
+          '403':
+            $ref: '#/components/responses/Forbidden'
+          '404':
+            $ref: '#/components/responses/NotFound'
+      patch:
+        tags: [Groups]
+        summary: Cập nhật vai trò của thành viên trong nhóm (HeadChef only)
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/GroupId'
+          - $ref: '#/components/parameters/UserId'
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      tags: [Groups]
-      summary: Cập nhật vai trò của thành viên trong nhóm (HeadChef only)
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/GroupId'
-        - $ref: '#/components/parameters/UserId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                role:
-                  $ref: '#/components/schemas/GroupRole'
-      responses:
-        '200':
-          description: "Cập nhật vai trò thành công."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GroupMemberResponse'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: '#/components/schemas/GroupMembershipUpdate'
+        responses:
+          '200':
+            description: "Cập nhật vai trò thành công."
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/GroupMemberResponse'
+          '403':
+            $ref: '#/components/responses/Forbidden'
+          '404':
+            $ref: '#/components/responses/NotFound'
   /groups/{groupId}/members/{userId}/identity-profile:
     get:
       tags: [Groups]
@@ -524,7 +596,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: '#/components/schemas/UserAdminCreateRequest'
       responses:
         '201':
           description: "Tạo người dùng thành công."
@@ -590,7 +662,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -652,7 +724,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GroupCreate'
+              $ref: '#/components/schemas/GroupAdminUpdateRequest'
       responses:
         '200':
           description: "Cập nhật nhóm thành công."
@@ -677,7 +749,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -726,7 +798,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/GenericResponse'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -744,10 +816,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                role:
-                  $ref: '#/components/schemas/GroupRole'
+              $ref: '#/components/schemas/GroupMembershipUpdate'
       responses:
         '200':
           description: "Cập nhật vai trò thành công."
@@ -833,11 +902,15 @@ components:
     UserRole:
       type: string
       enum: [USER, ADMIN]
+    OtpAction:
+      type: string
+      enum: [register, reset_password, change_email]
+      description: "Loại hành động yêu cầu OTP"
     # --- Request Schemas ---
     RegisterRequest:
       type: object
       properties:
-        user_name:
+        username:
           type: string
         email:
           type: string
@@ -848,16 +921,30 @@ components:
           type: string
         last_name:
           type: string
-      required: [user_name, email, password, first_name, last_name]
+      required: [username, email, password, first_name, last_name]
     LoginRequest:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: "Username or Email"
+        password:
+          type: string
+      required: [identifier, password]
+    ResetPasswordRequest:
       type: object
       properties:
         email:
           type: string
           format: email
-        password:
+        new_password:
           type: string
-      required: [email, password]
+        otp_code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^[0-9]{6}$'
+      required: [email, new_password, otp_code]
     ChangePasswordRequest:
       type: object
       properties:
@@ -872,16 +959,24 @@ components:
         email:
           type: string
           format: email
-      required: [email]
+        action:
+          $ref: '#/components/schemas/OtpAction'
+      required: [email, action]
     VerifyAccountRequest:
       type: object
       properties:
         email:
           type: string
           format: email
-        otp:
+        otp_code:
           type: string
-      required: [email, otp]
+          minLength: 6
+          maxLength: 6
+          pattern: '^[0-9]{6}$'
+          description: "Mã OTP 6 chữ số"
+        action:
+          $ref: '#/components/schemas/OtpAction'
+      required: [email, otp_code, action]
     RequestEmailChangeRequest:
       type: object
       properties:
@@ -895,9 +990,25 @@ components:
         new_email:
           type: string
           format: email
-        otp:
+        otp_code:
           type: string
-      required: [new_email, otp]
+          minLength: 6
+          maxLength: 6
+          pattern: '^[0-9]{6}$'
+          description: "Mã OTP 6 chữ số"
+      required: [new_email, otp_code]
+    AddMemberRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required: [email]
+    GroupMembershipUpdate:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/GroupRole'
     GroupCreate:
       type: object
       properties:
@@ -907,9 +1018,39 @@ components:
           type: string
           format: uri
       required: [group_name]
+    GroupUpdate:
+      type: object
+      properties:
+        group_name:
+          type: string
+        group_avatar_url:
+          type: string
+          format: uri
+    GroupAdminCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/GroupCreate'
+        - type: object
+          properties:
+            creator_id:
+              type: string
+              format: uuid
+          required: [creator_id]
+    GroupAdminUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/GroupUpdate'
+        - type: object
+          properties:
+            creator_id:
+              type: string
+              format: uuid
     UserUpdate:
       type: object
       properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
         phone_num:
           type: string
         first_name:
@@ -950,17 +1091,32 @@ components:
         - $ref: '#/components/schemas/UserUpdate'
         - type: object
           properties:
-            user_name:
+            username:
               type: string
             email:
               type: string
               format: email
             system_role:
               $ref: '#/components/schemas/UserRole'
+            is_active:
+              type: boolean
             identity_profile:
               $ref: '#/components/schemas/UserIdentityProfileUpdate'
             health_profile:
               $ref: '#/components/schemas/UserHealthProfileUpdate'
+    UserAdminCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/RegisterRequest'
+        - type: object
+          properties:
+            system_role:
+              $ref: '#/components/schemas/UserRole'
+              default: USER
+            is_active:
+              type: boolean
+              default: true
+            phone_num:
+              type: string
     # --- Data Schemas ---
     TokenResponse:
       type: object
@@ -983,10 +1139,12 @@ components:
           type: string
         province:
           type: string
-      required: [city, province]
     UserIdentityProfile:
       type: object
       properties:
+        user_id:
+          type: string
+          format: uuid
         gender:
           $ref: '#/components/schemas/UserGender'
         date_of_birth:
@@ -996,9 +1154,13 @@ components:
           type: string
         address:
           $ref: '#/components/schemas/Address'
+      required: [gender]
     UserHealthProfile:
       type: object
       properties:
+        user_id:
+          type: string
+          format: uuid
         height_cm:
           type: integer
         weight_kg:
@@ -1010,13 +1172,68 @@ components:
           $ref: '#/components/schemas/HealthCondition'
         health_goal:
           $ref: '#/components/schemas/HealthGoal'
+
+    # --- Tag Schemas ---
+    UserTagBulkAddRequest:
+      type: object
+      properties:
+        tag_values:
+          type: array
+          items:
+            type: string
+          description: "Danh sách tag codes (e.g., ['0212', '0300', '0505'])"
+          example: ["0212", "0300", "0402"]
+      required: [tag_values]
+    UserTagDeleteRequest:
+      type: object
+      properties:
+        tag_values:
+          type: array
+          items:
+            type: string
+          description: "Danh sách tag codes cần xóa (e.g., ['0212', '0300'])"
+      required: [tag_values]
+    UserTagsByCategoryResponse:
+      type: object
+      properties:
+        age:
+          type: array
+          items:
+            type: string
+          description: "Age group tags (01xx)"
+          example: ["0102"]
+        medical:
+          type: array
+          items:
+            type: string
+          description: "Medical condition tags (02xx)"
+          example: ["0212", "0201"]
+        allergy:
+          type: array
+          items:
+            type: string
+          description: "Allergy tags (03xx)"
+          example: ["0300", "0302"]
+        diet:
+          type: array
+          items:
+            type: string
+          description: "Special diet tags (04xx)"
+          example: ["0402"]
+        taste:
+          type: array
+          items:
+            type: string
+          description: "Taste preference tags (05xx)"
+          example: ["0505", "0501"]
+
     UserPublicProfile:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        user_name:
+        username:
           type: string
         first_name:
           type: string
@@ -1033,7 +1250,7 @@ components:
             email:
               type: string
               format: email
-            phone_num:
+            phone_number:
               type: string
     UserDetailedProfile:
       allOf:
@@ -1092,6 +1309,7 @@ components:
         message:
           type: string
           nullable: true
+          example: "Thao tác thành công."
         data:
           nullable: true
     PaginationResponse:
@@ -1107,14 +1325,6 @@ components:
               type: integer
             total_pages:
               type: integer
-    SuccessResponse:
-      allOf:
-        - $ref: '#/components/schemas/GenericResponse'
-        - type: object
-          properties:
-            message:
-              type: string
-              example: "Thao tác thành công."
     TokenDataResponse:
       allOf:
         - $ref: '#/components/schemas/GenericResponse'

@@ -1,4 +1,4 @@
-# microservices/user-service/app/services/kafka_service.py
+# user-service/app/services/kafka_service.py
 from pydantic import EmailStr
 
 from shopping_shared.messaging.kafka_manager import kafka_manager
@@ -6,7 +6,7 @@ from shopping_shared.utils.logger_utils import get_logger
 
 USER_REGISTRATION_OTP_TOPIC = "user_registration_otp"
 
-logger = get_logger(__name__)
+logger = get_logger("Kafka Service")
 
 class KafkaService:
 
@@ -25,7 +25,7 @@ class KafkaService:
 
         try:
             producer = await kafka_manager.get_producer()
-            await producer.send_messages(topic, value=payload)
+            await producer.send_and_wait(topic, value=payload)
             logger.info("User registration otp published.")
 
         except Exception as e:

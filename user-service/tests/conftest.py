@@ -1,4 +1,3 @@
-pytest_plugins = [
-    "unit.fixtures.app_fixtures",
-    "unit.fixtures.db_fixtures",
-]
+from tests.fixtures.app_fixtures import *
+from tests.fixtures.db_fixtures import *
+

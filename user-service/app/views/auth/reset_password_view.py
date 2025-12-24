@@ -1,4 +1,4 @@
-# microservices/user-service/app/views/auth/reset_password_view.py
+# user-service/app/views/auth/reset_password_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView

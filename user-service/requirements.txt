@@ -1,18 +1,22 @@
-sanic
-sanic-ext
-sqlalchemy
-asyncpg
-redis
-pydantic
-alembic
-gunicorn
-python-dotenv
-passlib[bcrypt]
-PyJWT
-pydantic[email]
-greenlet
-black
-ruff
-pytest
+sanic==23.12.0
+sanic-ext==23.12.0
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+redis==5.2.1
+pydantic==2.10.6
+pydantic[email]==2.10.6
+alembic==1.14.0
+gunicorn==23.0.0
+python-dotenv==1.0.1
+passlib[bcrypt]==1.7.4
+PyJWT==2.10.1
+greenlet==3.1.1
+black==24.10.0
+ruff==0.8.4
+pytest==8.3.4
+pytest-asyncio==0.25.3
+pytest-mock==3.14.0
+sanic-testing==23.12.0
+aiokafka==0.11.0
 
--e ../../shared
+-e ../shared

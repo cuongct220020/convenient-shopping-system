@@ -1,10 +1,16 @@
-# microservices/user-service/app/services/otp_service.py
+# user-service/app/services/otp_service.py
 import random
 from datetime import timedelta
+
+from pydantic import SecretStr
+
+from shopping_shared.utils.logger_utils import get_logger
 
 from app.utils.password_utils import hash_password, verify_password
 from app.services.redis_service import RedisService
 
+
+logger = get_logger("OTP Service")
 
 class OTPService:
     _TTL = timedelta(minutes=5)  # OTPs are valid for 5 minutes
@@ -50,7 +56,7 @@ class OTPService:
             return None
 
         # The redis client is configured with decode_responses=True, so no .decode() needed
-        if await verify_password(submitted_code, stored_hash):
+        if await verify_password(SecretStr(submitted_code), stored_hash):
             # Correct OTP, delete it immediately to prevent reuse
             await RedisService.delete_otp(email, action)
             return stored_data

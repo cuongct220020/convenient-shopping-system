@@ -1,5 +1,11 @@
-sanic
-python-dotenv
-aiokafka
+sanic==23.12.0
+python-dotenv==1.0.1
+aiokafka==0.11.0
+pytest==8.3.4
+pytest-asyncio==0.25.3
+pytest-mock==3.14.0
+sanic-testing==23.12.0
+aiosmtplib==3.0.1
+jinja2==3.1.6
 
--e ../../shared
+-e ../shared

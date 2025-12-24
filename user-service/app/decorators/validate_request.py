@@ -8,8 +8,10 @@ from sanic.response import json
 
 # Import the standardized response schema
 from shopping_shared.schemas.response_schema import GenericResponse
-from shopping_shared.schemas.base_schema import BaseSchema # Import BaseSchema
+from shopping_shared.schemas.base_schema import BaseSchema
+from shopping_shared.utils.logger_utils import get_logger
 
+logger = get_logger("Validate Request Decorator")
 
 def validate_request(schema: Type[BaseSchema]):
     """

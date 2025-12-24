@@ -1,18 +1,20 @@
-# app/views/auth/refresh_view.py
+# user-service/app/views/auth/refresh_view.py
 from sanic.request import Request
 from sanic.response import json, HTTPResponse
 from sanic.views import HTTPMethodView
 
-from shopping_shared.exceptions import Unauthorized
+from shopping_shared.exceptions import Forbidden, Unauthorized
 from shopping_shared.schemas.response_schema import GenericResponse
 
 from app.services.auth_service import AuthService
 from app.repositories.user_repository import UserRepository
-from shopping_shared.exceptions import Forbidden
+from app.schemas import TokenResponseSchema
+
 
 class RefreshView(HTTPMethodView):
 
-    async def post(self, request: Request) -> HTTPResponse:
+    @staticmethod
+    async def post(request: Request) -> HTTPResponse:
         """
         Xử lý token refresh
         """
@@ -44,16 +46,18 @@ class RefreshView(HTTPMethodView):
             return response
 
         # 3. Chuẩn bị response chỉ chứa access token mới
-        access_token_data = {
-            "access_token": new_token_data.access_token,
-            "token_type": "Bearer", # Bạn có thể thêm vào TokenData DTO
-            "expires_in_minutes": new_token_data.at_expires_in_minutes
-        }
+        access_token_data = TokenResponseSchema(
+            access_token=new_token_data.access_token,
+            token_type="Bearer",
+            expires_in_minutes=new_token_data.at_expires_in_minutes
+        )
+
         response_data = GenericResponse(
             status="success",
             message="Tokens refreshed successfully",
             data=access_token_data
         )
+
         response = json(response_data.model_dump(by_alias=True), status=200)
 
         # 4. Đặt refresh token MỚI (đã được xoay vòng) vào cookie

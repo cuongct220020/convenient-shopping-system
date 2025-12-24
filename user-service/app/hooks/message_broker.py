@@ -1,9 +1,9 @@
-# microservices/user-service/app/hooks/message_broker.py
+# user-service/app/hooks/message_broker.py
 from sanic import Sanic
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("Message Broker Hooks")
 
 
 async def setup_kafka(app: Sanic):
@@ -17,6 +17,6 @@ async def setup_kafka(app: Sanic):
 
 async def close_kafka(_app: Sanic):
     """Hook to close the Kafka connection."""
-    logger.info("Closing Kafka producer...")
+    logger.info("Closing Kafka manager...")
     await kafka_manager.close()
-    logger.info("Kafka producer closed.")
+    logger.info("Kafka manager closed.")

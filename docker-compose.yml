@@ -107,6 +107,17 @@ services:
       - shopping-network
     restart: unless-stopped
 
+  # Mailpit - Email testing tool
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP server
+    networks:
+      - shopping-network
+    restart: unless-stopped
+
   # Kong Gateway (Declarative mode - no database needed)
   kong-gateway:
     image: kong:3.9.1
@@ -120,13 +131,15 @@ services:
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
+      REDIS_PASSWORD: myredis
     ports:
       - "80:8000"         # HTTP Public
       - "443:8443"        # HTTPS Public
       - "8000:8000"       # Kong Proxy (HTTP Debug)
-      - "8444:8001"       # Admin API cho decK (Debug)
+      - "8001:8001"       # Admin API cho decK (Debug)
     volumes:
-      - ./api-gateway/kong.yml:/usr/local/kong/declarative/kong.yml
+      - ${KONG_CONFIG_FILE}:/usr/local/kong/declarative/kong.yml
+      - ./user-service/secrets:/user-service/secrets
     networks:
       - shopping-network
     restart: unless-stopped
@@ -136,90 +149,90 @@ services:
       timeout: 5s
       retries: 5
 
-  # User Service
-  user-service:
-    build:
-      context: .
-      dockerfile: user-service/Dockerfile
-    container_name: user-service
-    profiles:
-      - user-service
-    depends_on:
-      - postgres-db
-      - redis-caching
-      - kafka-broker
-      - kong-gateway
-    environment:
-      - APP_HOST=${APP_HOST}
-      - APP_PORT=${APP_PORT}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_ALGORITHM=${JWT_ALGORITHM}
-      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
-      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS}
-      - POSTGRES_DB_DRIVER=${POSTGRES_DB_DRIVER}
-      - POSTGRES_DB_USER=${POSTGRES_DB_USER}
-      - POSTGRES_DB_PASSWORD=${POSTGRES_DB_PASSWORD}
-      - POSTGRES_DB_NAME=${POSTGRES_DB_NAME}
-      - POSTGRES_DB_HOST=${POSTGRES_DB_HOST}
-      - POSTGRES_DB_PORT=${POSTGRES_DB_PORT}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:9092
-    ports:
-      - "9001:8000" # Access via localhost:9001
-    volumes:
-      - ./microservices/user-service:/api
-      - /api/.venv  # Exclude virtual environment
-    networks:
-      - shopping-network
-    restart: unless-stopped
-
-
-  recipe-service:
-    build:
-      context: .
-      dockerfile: recipe-service/Dockerfile
-    container_name: recipe-service
-    profiles:
-      - recipe-service
-    ports:
-      - "9002:8000"
-
-  meal-service:
-    build:
-      context: .
-      dockerfile: meal-service/Dockerfile
-    container_name: meal-service
-    profiles:
-      - meal-service
-    ports:
-      - "9003:8000"
-
-  shopping-storage-service:
-    build:
-      context: .
-      dockerfile: shopping-storage-service/Dockerfile
-    container_name: shopping-storage-service
-    ports:
-      - "9004:8000"
-    profiles:
-      - shopping-storage
-    depends_on:
-      - recipe-service
-
-
-  notification-service:
-    build:
-      context: .
-      dockerfile: notification-service/Dockerfile
-    container_name: notification-service
-    profiles:
-      - notification-service
-    ports:
-      - "9005:8000"
+#  # User Service
+#  user-service:
+#    build:
+#      context: .
+#      dockerfile: user-service/Dockerfile
+#    container_name: user-service
+#    profiles:
+#      - user-service
+#    depends_on:
+#      - postgres-db
+#      - redis-caching
+#      - kafka-broker
+#      - kong-gateway
+#    environment:
+#      - APP_HOST=${APP_HOST}
+#      - APP_PORT=${APP_PORT}
+#      - JWT_SECRET=${JWT_SECRET}
+#      - JWT_ALGORITHM=${JWT_ALGORITHM}
+#      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
+#      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS}
+#      - POSTGRES_DB_DRIVER=${POSTGRES_DB_DRIVER}
+#      - POSTGRES_DB_USER=${POSTGRES_DB_USER}
+#      - POSTGRES_DB_PASSWORD=${POSTGRES_DB_PASSWORD}
+#      - POSTGRES_DB_NAME=${POSTGRES_DB_NAME}
+#      - POSTGRES_DB_HOST=${POSTGRES_DB_HOST}
+#      - POSTGRES_DB_PORT=${POSTGRES_DB_PORT}
+#      - REDIS_HOST=${REDIS_HOST}
+#      - REDIS_PORT=${REDIS_PORT}
+#      - REDIS_DB=${REDIS_DB}
+#      - REDIS_PASSWORD=${REDIS_PASSWORD}
+#      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+#      - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:9092
+#    ports:
+#      - "9001:8000" # Access via localhost:9001
+#    volumes:
+#      - ./microservices/user-service:/api
+#      - /api/.venv  # Exclude virtual environment
+#    networks:
+#      - shopping-network
+#    restart: unless-stopped
+#
+#
+#  recipe-service:
+#    build:
+#      context: .
+#      dockerfile: recipe-service/Dockerfile
+#    container_name: recipe-service
+#    profiles:
+#      - recipe-service
+#    ports:
+#      - "9002:8000"
+#
+#  meal-service:
+#    build:
+#      context: .
+#      dockerfile: meal-service/Dockerfile
+#    container_name: meal-service
+#    profiles:
+#      - meal-service
+#    ports:
+#      - "9003:8000"
+#
+#  shopping-storage-service:
+#    build:
+#      context: .
+#      dockerfile: shopping-storage-service/Dockerfile
+#    container_name: shopping-storage-service
+#    ports:
+#      - "9004:8000"
+#    profiles:
+#      - shopping-storage
+#    depends_on:
+#      - recipe-service
+#
+#
+#  notification-service:
+#    build:
+#      context: .
+#      dockerfile: notification-service/Dockerfile
+#    container_name: notification-service
+#    profiles:
+#      - notification-service
+#    ports:
+#      - "9005:8000"
 
 
 volumes:
