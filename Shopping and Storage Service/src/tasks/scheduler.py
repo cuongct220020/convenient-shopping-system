@@ -7,7 +7,7 @@ scheduler = AsyncIOScheduler()
 def setup_scheduler():
     scheduler.add_job(
         expire_plans,
-        trigger=CronTrigger(hour="*", minute=0),
+        trigger=CronTrigger(hour="*", minute=1),
         id="expire_plans",
         name="Expire expired shopping plans",
         replace_existing=True
