@@ -73,3 +73,34 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
             stmt = stmt.where(subq.c.row_num > cursor)
         stmt = stmt.limit(limit)
         return db.execute(stmt).mappings().all()
+
+    def filter(
+        self,
+        db: Session,
+        group_id: Optional[int] = None,
+        storage_id: Optional[int] = None,
+        unit_name: Optional[List[str]] = None,
+        cursor: Optional[int] = None,
+        limit: int = 100
+    ) -> Sequence[StorableUnit]:
+        stmt = select(StorableUnit)
+
+        if group_id is not None:
+            stmt = stmt.join(Storage, StorableUnit.storage_id == Storage.storage_id)
+            stmt = stmt.where(Storage.group_id == group_id)
+
+        if storage_id is not None:
+            stmt = stmt.where(StorableUnit.storage_id == storage_id)
+
+        if unit_name is not None:
+            if isinstance(unit_name, list) and len(unit_name) > 0:
+                stmt = stmt.where(StorableUnit.unit_name.in_(unit_name))
+            elif isinstance(unit_name, str):
+                stmt = stmt.where(StorableUnit.unit_name == unit_name)
+
+        pk = inspect(StorableUnit).primary_key[0]
+        stmt = stmt.order_by(pk.desc())
+        if cursor is not None:
+            stmt = stmt.where(pk < cursor)
+        stmt = stmt.limit(limit)
+        return db.execute(stmt).scalars().all()

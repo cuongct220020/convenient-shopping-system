@@ -74,6 +74,38 @@ def get_stacked_units(
     )
 
 
+@storable_unit_router.get(
+    "/filter",
+    response_model=PaginationResponse[StorableUnitResponse],
+    status_code=status.HTTP_200_OK,
+    description="Filter StorableUnits by group_id, storage_id, and/or unit_name. Supports pagination with cursor and limit."
+)
+def filter_units(
+    group_id: Optional[int] = Query(None),
+    storage_id: Optional[int] = Query(None),
+    unit_name: Optional[List[str]] = Query(None),
+    cursor: Optional[int] = Query(None, ge=0),
+    limit: int = Query(100, ge=1),
+    db: Session = Depends(get_db)
+):
+    storable_units = storable_unit_crud.filter(
+        db,
+        group_id=group_id,
+        storage_id=storage_id,
+        unit_name=unit_name,
+        cursor=cursor,
+        limit=limit
+    )
+    pk = inspect(StorableUnit).primary_key[0]
+    next_cursor = getattr(storable_units[-1], pk.name) if storable_units and len(storable_units) == limit else None
+    return PaginationResponse(
+        data=[StorableUnitResponse.model_validate(u) for u in storable_units],
+        next_cursor=next_cursor,
+        size=len(storable_units),
+        has_more=len(storable_units) == limit
+    )
+
+
 @storable_unit_router.post(
     "/",
     response_model=StorableUnitResponse,
