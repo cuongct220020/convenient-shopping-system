@@ -1,12 +1,12 @@
 from fastapi import HTTPException
-from typing import Optional, Sequence, Union, List, Dict, Any
+from typing import Optional, Sequence, List
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import select, func, desc, RowMapping
 from sqlalchemy.inspection import inspect
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.storage import StorableUnit, Storage
-from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitStackedResponse
+from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate
 
 
 class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUpdate]):
@@ -37,54 +37,8 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
         except IntegrityError as e:
             raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
 
-    def get(self, db: Session, id: int, stacked: bool = False) -> Optional[StorableUnit | StorableUnitStackedResponse]:
-        if not stacked:
-            return super().get(db, id)
-        ref1 = aliased(StorableUnit)
-        ref2 = aliased(StorableUnit)
-        unit = db.execute(
-            select(
-                ref1.unit_name,
-                ref1.storage_id,
-                ref1.component_id,
-                ref1.content_type,
-                ref1.content_quantity,
-                ref1.content_unit,
-                func.sum(ref1.package_quantity).label("package_quantity"),
-                func.json_agg(
-                    func.json_build_object(
-                        "unit_id", ref1.unit_id,
-                        "added_date", ref1.added_date,
-                        "expiration_date", ref1.expiration_date,
-                    ).order_by(ref1.added_date)
-                ).label("batch"),
-            )
-            .join(
-                ref2,
-                (ref2.storage_id == ref1.storage_id)
-                & (ref2.unit_name == ref1.unit_name)
-                & (ref2.component_id.is_not_distinct_from(ref1.component_id))                       # type: ignore
-                & (ref2.content_quantity.is_not_distinct_from(ref1.content_quantity))               # type: ignore
-                & (ref2.content_unit.is_not_distinct_from(ref1.content_unit))                       # type: ignore
-            )
-            .group_by(
-                ref1.unit_name,
-                ref1.storage_id,                                                            # type: ignore
-                ref1.component_id,                                                                  # type: ignore
-                ref1.content_type,
-                ref1.content_quantity,                                                              # type: ignore
-                ref1.content_unit,
-            )
-        ).mappings().one_or_none()
-        if unit is None:
-            return None
-        return StorableUnitStackedResponse(**unit)
-
-
-    def get_many(self, db: Session, cursor: Optional[int] = None, limit: int = 100, stacked: bool = False)\
-            -> Sequence[StorableUnit | RowMapping]:
-        if not stacked:
-            return super().get_many(db, cursor, limit)
+    def get_stacked(self, db: Session, storage_id: int, cursor: Optional[int] = None, limit: int = 100)\
+            -> Sequence[RowMapping]:
         ref = aliased(StorableUnit)
         subq = (
             select(
@@ -104,6 +58,7 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                 ).label("batch"),
                 func.row_number().over(order_by=desc(ref.added_date)).label("row_num")          # type: ignore
             )
+            .where(ref.storage_id == storage_id)                                                # type: ignore
             .group_by(
                 ref.unit_name,
                 ref1.storage_id,  # type: ignore
@@ -118,7 +73,3 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
             stmt = stmt.where(subq.c.row_num > cursor)
         stmt = stmt.limit(limit)
         return db.execute(stmt).mappings().all()
-
-
-
-
