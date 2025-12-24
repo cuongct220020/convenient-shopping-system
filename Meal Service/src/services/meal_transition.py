@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -10,8 +10,8 @@ class MealTransition:
     def _preconditions_check(self, meal: Optional[Meal], allowed_status: MealStatus):
         if meal is None:
             raise HTTPException(status_code=404, detail=f"Meal not found")
-        if meal.status != allowed_status:
-            raise HTTPException(status_code=400, detail=f"Operation not allowed: meal status must be {allowed_status}, got {meal.status}")
+        if meal.meal_status != allowed_status:
+            raise HTTPException(status_code=400, detail=f"Operation not allowed: meal status must be {allowed_status}, got {meal.meal_status}")
 
     def cancel(self, db: Session, id: int) -> Meal:
         with db.begin():
@@ -23,7 +23,7 @@ class MealTransition:
 
             self._preconditions_check(meal, MealStatus.CREATED)
 
-            meal.status = MealStatus.CANCELLED
+            meal.meal_status = MealStatus.CANCELLED
 
             db.refresh(meal)
             return meal
@@ -38,7 +38,7 @@ class MealTransition:
 
             self._preconditions_check(meal, MealStatus.CANCELLED)
 
-            meal.status = MealStatus.CREATED
+            meal.meal_status = MealStatus.CREATED
 
             db.refresh(meal)
             return meal
@@ -53,7 +53,7 @@ class MealTransition:
 
             self._preconditions_check(meal, MealStatus.CREATED)
 
-            meal.status = MealStatus.DONE
+            meal.meal_status = MealStatus.DONE
 
             db.refresh(meal)
             return meal
