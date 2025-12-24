@@ -2,7 +2,6 @@
 import asyncio
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
-from app.services.email_service import email_service
 
 logger = get_logger("Notification Consumer")
 
@@ -15,7 +14,7 @@ def request_shutdown():
     _shutdown_event.set()
 
 
-async def consume_notifications():
+async def consume_notifications(app=None):
     """
     A long-running task that consumes messages from the 'user_registration_otp' topic
     and processes them.
@@ -85,11 +84,16 @@ async def consume_notifications():
 
                 if email and otp_code:
                     logger.info(f"Processing OTP email for {email} (Action: {action})")
-                    await email_service.send_otp(
-                        email=email,
-                        otp_code=otp_code,
-                        action=action
-                    )
+                    # Use the email service from app context
+                    if app and hasattr(app.ctx, 'email_service'):
+                        email_service = app.ctx.email_service
+                        await email_service.send_otp(
+                            email=email,
+                            otp_code=otp_code,
+                            action=action
+                        )
+                    else:
+                        logger.error("Email service not available in app context")
                 else:
                     logger.warning(f"Received invalid message format: {message_data}")
 

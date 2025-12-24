@@ -22,10 +22,10 @@ class Config:
     )
 
     # Email Configuration
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_SENDER = os.getenv('EMAIL_SENDER', 'myemail')
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'true').lower() == 'true'
+    EMAIL_SENDER = os.getenv('EMAIL_SENDER', 'noreply@convenient-shopping-system.com')
     EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', 'mypassword')
 
 

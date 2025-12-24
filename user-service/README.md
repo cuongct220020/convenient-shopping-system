@@ -4,13 +4,12 @@
 ```bash
 curl -X POST http://localhost:8000/api/v1/user-service/auth/register \
   -H "Content-Type: application/json" \
-  -H "X-Idempotency-Key: $(uuidgen)" \
   -d '{
-    "username": "testuser123",
-    "email": "testuser@example.com",
-    "password": "SecurePassword123!",
-    "first_name": "Test",
-    "last_name": "User"
+    "username": "cuongfanmu20nam",
+    "email": "cuongct.ittnk67@gmail.com",
+    "password": "cuongdeptrai",
+    "first_name": "Cuong",
+    "last_name": "CT"
   }'
 ```
 
@@ -24,8 +23,8 @@ curl -X POST http://localhost:8000/api/v1/user-service/auth/register \
 curl -X POST http://localhost:8000/api/v1/user-service/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "identifier": "testuser123",
-    "password": "SecurePassword123!"
+    "identifier": "cuongfanmu20nam",
+    "password": "cuongdeptrai"
   }'
 ```
 
@@ -57,14 +56,6 @@ curl -X POST http://localhost:8000/api/v1/user-service/auth/refresh-token \
 
 ### Send OTP for various actions
 ```bash
-# For registration verification
-curl -X POST http://localhost:8000/api/v1/user-service/auth/otp/send \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "testuser@example.com",
-    "action": "register"
-  }'
-
 # For password reset
 curl -X POST http://localhost:8000/api/v1/user-service/auth/otp/send \
   -H "Content-Type: application/json" \

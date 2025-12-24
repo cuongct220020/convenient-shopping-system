@@ -7,15 +7,8 @@ logger = get_logger("Notification Service")
 
 app = create_app(Config)
 
-def main() -> None:
+def run():
     """Checks configuration and runs the application."""
-    # Warn if the default secret key is being used in a non-debug environment
-    if not app.config.get('DEBUG'):
-        logger.warning(
-            'JWT_SECRET is using the insecure default value in a production environment. '
-            'Please set a strong secret key in your environment variables.'
-        )
-
     try:
         app.run(**app.config['RUN_SETTING'])
     except KeyboardInterrupt:
@@ -32,4 +25,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    run()

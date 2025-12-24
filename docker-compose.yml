@@ -107,6 +107,17 @@ services:
       - shopping-network
     restart: unless-stopped
 
+  # Mailpit - Email testing tool
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP server
+    networks:
+      - shopping-network
+    restart: unless-stopped
+
   # Kong Gateway (Declarative mode - no database needed)
   kong-gateway:
     image: kong:3.9.1

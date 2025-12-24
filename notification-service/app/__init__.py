@@ -31,6 +31,15 @@ def register_listeners(sanic_app: Sanic):
     """Register lifecycle listeners for the Notification Service."""
     from app.hooks.message_broker import setup_kafka, close_kafka
     from app.consumers.notification_consumer import consume_notifications, request_shutdown
+    from app.services.email_service import EmailService
+
+    # Initialize email service with the app
+    @sanic_app.listener("before_server_start")
+    async def init_services(app, loop):
+        """Initialize services that require app context."""
+        # Attach email service to app context as requested
+        app.ctx.email_service = EmailService(app)
+        logger.info("Email Service attached to app.ctx")
 
     sanic_app.register_listener(setup_kafka, "before_server_start")
     sanic_app.register_listener(close_kafka, "after_server_stop")
@@ -39,7 +48,8 @@ def register_listeners(sanic_app: Sanic):
     async def start_consumer(app, loop):
         """Start Kafka consumer as background task after server starts."""
         logger.info("Starting Kafka consumer background task...")
-        app.add_task(consume_notifications())
+        # Pass the app instance to the consumer task so it can access app.ctx
+        app.add_task(consume_notifications(app))
 
     @sanic_app.listener("before_server_stop")
     async def stop_consumer(app, loop):

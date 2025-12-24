@@ -85,7 +85,7 @@ async def favicon(request):
     return response.empty()
 
 
-def main() -> None:
+def run():
     """Checks configuration and runs the application."""
     # Warn if the default secret key is being used in a non-debug environment
     if not app.config.get('DEBUG') and app.config.get('JWT_SECRET') == None:
@@ -101,4 +101,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    run()
