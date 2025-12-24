@@ -1,12 +1,14 @@
-from fastapi import APIRouter, status, Depends, Body, BackgroundTasks
+from fastapi import APIRouter, status, Depends, Body, BackgroundTasks, Query
 from sqlalchemy.orm import Session
-from typing import Any
+from sqlalchemy import inspect
+from typing import Any, Optional
 from services.plan_crud import PLanCRUD
 from services.plan_transition import PlanTransition
 from services.report_process import report_process
 from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse, PlanReport
 from models.shopping_plan import ShoppingPlan
-from shared.shopping_shared.schemas.response_schema import GenericResponse
+from enums.plan_status import PlanStatus
+from shared.shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 from .crud_router_base import create_crud_router
 from database import get_db
 
@@ -17,6 +19,39 @@ plan_router = APIRouter(
     prefix="/v1/shopping_plans",
     tags=["shopping_plans"]
 )
+
+@plan_router.get(
+    "/filter",
+    response_model=PaginationResponse[PlanResponse],
+    status_code=status.HTTP_200_OK,
+    description="Filter shopping plans by group_id and/or plan_status. Supports sorting by last_modified or deadline, and pagination with cursor and limit."
+)
+def filter_plans(
+    group_id: Optional[int] = Query(None, gt=0),
+    plan_status: Optional[PlanStatus] = Query(None),
+    sort_by: str = Query("last_modified", regex="^(last_modified|deadline)$"),
+    order: str = Query("desc", regex="^(asc|desc)$"),
+    cursor: Optional[int] = Query(None, ge=0),
+    limit: int = Query(100, ge=1),
+    db: Session = Depends(get_db)
+):
+    plans = plan_crud.filter(
+        db,
+        group_id=group_id,
+        plan_status=plan_status,
+        sort_by=sort_by,
+        order=order,
+        cursor=cursor,
+        limit=limit
+    )
+    pk = inspect(ShoppingPlan).primary_key[0]
+    next_cursor = getattr(plans[-1], pk.name) if plans and len(plans) == limit else None
+    return PaginationResponse(
+        data=[PlanResponse.model_validate(plan) for plan in plans],
+        next_cursor=next_cursor,
+        size=len(plans),
+        has_more=len(plans) == limit
+    )
 
 crud_router = create_crud_router(
     model=ShoppingPlan,
