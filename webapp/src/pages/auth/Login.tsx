@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { LogIn, UserPlus } from 'lucide-react'
+import { LogIn, UserPlus, XCircle, Check } from 'lucide-react'
 import { InputField } from '../../components/InputField'
 import { Button } from '../../components/Button'
-import { AuthService } from '../../services/auth'
+import { authService, AuthService } from '../../services/auth'
 import { ok, Result } from 'neverthrow'
 import { i18n } from '../../utils/i18n/i18n'
 import { i18nKeys } from '../../utils/i18n/keys'
 import { LoadingOverlay } from '../../components/Loading'
+import { NotificationCard } from '../../components/NotificationCard'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -29,6 +30,11 @@ export default function Login() {
     password: false
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [showPopup, setShowPopup] = useState({
+    yes: false,
+    title: '' as i18nKeys,
+    message: ''
+  })
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -91,9 +97,38 @@ export default function Login() {
     if (emailError.isOk() && passwordError.isOk()) {
       console.log('Login attempt with:', email)
       setIsLoading(true)
-      return
-      // Add actual login logic here
-      navigate('/auth/login-authentication')
+      const response = authService.logIn(email, password)
+      response
+        .map(() => {
+          setIsLoading(false)
+          navigate('/auth/login-authentication')
+        })
+        .mapErr((e) => {
+          setIsLoading(false)
+          console.error('Login: ', e)
+          switch (e.type) {
+            case 'network-error':
+              setShowPopup({
+                title: 'network_error',
+                message: e.desc ?? i18n.t('internal_error'),
+                yes: true
+              })
+              break
+            case 'incorrect-credentials':
+              setShowPopup({
+                title: 'incorrect_credentials',
+                message: i18n.t('recheck_credentials'),
+                yes: true
+              })
+              break
+            default:
+              setShowPopup({
+                title: 'error_occured',
+                message: i18n.t('internal_error'),
+                yes: true
+              })
+          }
+        })
     }
   }
 
@@ -185,6 +220,24 @@ export default function Login() {
         {/* Bottom Spacer for scrolling over background */}
         <div className="h-16 sm:h-20"></div>
       </div>
+      {showPopup.yes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <NotificationCard
+            message={showPopup.message}
+            title={i18n.t(showPopup.title)}
+            icon={XCircle}
+            iconBgColor="bg-red-500"
+            buttonText={i18n.t('confirm')}
+            buttonIcon={Check}
+            onButtonClick={() => {
+              setShowPopup({
+                ...showPopup,
+                yes: false
+              })
+            }}
+          ></NotificationCard>
+        </div>
+      )}
     </LoadingOverlay>
   )
 }

@@ -1,5 +1,12 @@
 export type i18nKeys =
+  | 'network_error'
+  | 'error_occured'
   | 'invalid_username_or_email'
   | 'empty_username'
   | 'invalid_password'
   | 'empty_password'
+  | 'incorrect_credentials'
+  | 'recheck_credentials'
+  | 'internal_error'
+  | 'confirm'
+  | 'decline'

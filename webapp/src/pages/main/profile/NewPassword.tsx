@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { NotificationCard } from 'components/NotificationCard';
-import { BackButton } from '../../../components/BackButton';
-import { Button } from '../../../components/Button';
-import { InputField } from '../../../components/InputField';
-import { Send, CheckCircle, LogIn, Home } from 'lucide-react'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { NotificationCard } from '../../../components/NotificationCard'
+import { BackButton } from '../../../components/BackButton'
+import { Button } from '../../../components/Button'
+import { InputField } from '../../../components/InputField'
+import { Send, CheckCircle, Home } from 'lucide-react'
 
 const OldPassword = () => {
   const navigate = useNavigate()
@@ -130,12 +130,14 @@ const OldPassword = () => {
     <div className="flex-1 p-5 bg-white overflow-y-auto max-w-sm mx-auto w-full">
       {/* Back Navigation */}
       {/* Assumes the previous route was LoginInformation */}
-      <BackButton to="/main/profile/authentication" text="Quay lại" className="mb-6" />
+      <BackButton
+        to="/main/profile/authentication"
+        text="Quay lại"
+        className="mb-6"
+      />
 
       {/* Screen Title */}
-      <h1 className="text-2xl font-bold text-black mb-2">
-        Đổi mật khẩu
-      </h1>
+      <h1 className="text-2xl font-bold text-black mb-2">Đổi mật khẩu</h1>
 
       {/* Description */}
       <p className="text-base text-gray-800 mb-8">
@@ -143,7 +145,10 @@ const OldPassword = () => {
       </p>
 
       {/* Form with max-width constraint */}
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 max-w-sm mx-auto">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 sm:space-y-5 max-w-sm mx-auto"
+      >
         <div>
           <InputField
             id="password"
@@ -180,7 +185,7 @@ const OldPassword = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <NotificationCard
             title="Mật khẩu đã thay đổi!"
-            message=''
+            message=""
             icon={CheckCircle}
             iconBgColor="bg-green-500"
             buttonText="Trang chủ"
@@ -193,7 +198,7 @@ const OldPassword = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default OldPassword;
+export default OldPassword

@@ -1,11 +1,21 @@
 import { err, ok, Result, ResultAsync } from 'neverthrow'
-import { AppUrl, Clients, httpPost, ResponseError } from '../client'
+import {
+  AppUrl,
+  Clients,
+  httpClients,
+  httpPost,
+  ResponseError
+} from '../client'
 import z from 'zod'
 import { parseZodObject } from '../../utils/zod-result'
 import { i18nKeys } from '../../utils/i18n/keys'
 
 const LogInResponseSchema = z.object({
-  jwt: z.string()
+  data: z.object({
+    access_token: z.string(),
+    refresh_token: z.string(),
+    token_type: z.string()
+  })
 })
 type LogInResponse = z.infer<typeof LogInResponseSchema>
 
@@ -43,13 +53,22 @@ export class AuthService {
     return httpPost(this.clients.pub, AppUrl.LOGIN, {
       email,
       password
-    }).andThen((e) =>
-      parseZodObject(LogInResponseSchema, e).mapErr(
-        (e): LogInError => ({
-          type: 'invalid-response-format',
-          desc: e
-        })
+    })
+      .mapErr(
+        (e): LogInError =>
+          e.type === 'unauthorized'
+            ? { ...e, type: 'incorrect-credentials' }
+            : e
       )
-    )
+      .andThen((e) =>
+        parseZodObject(LogInResponseSchema, e.body).mapErr(
+          (e): LogInError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
   }
 }
+
+export const authService = new AuthService(httpClients)

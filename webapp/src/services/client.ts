@@ -11,13 +11,13 @@ export type Clients = {
   pub: AxiosInstance
   auth: AxiosInstance
 }
-
-export function initClient(): Clients {
+function initClient(): Clients {
   axios.defaults.baseURL = AppUrl.BASE
   const pub = axios.create({ url: AppUrl.BASE })
   const auth = axios.create({ url: AppUrl.BASE })
   return { pub, auth }
 }
+export const httpClients = initClient()
 
 type RequestErrorType = 'network-error' | 'unauthorized' | 'path-not-found'
 type WithType<T extends string> = {
@@ -28,7 +28,7 @@ type WithType<T extends string> = {
 }[T]
 export type RequestError = WithType<RequestErrorType>
 export type RequestOk = {
-  body: string
+  body: unknown
 }
 export type ResponseError<Codes extends string> =
   | RequestError
@@ -40,24 +40,31 @@ export function httpPost<T>(
   url: string,
   other: T
 ): ResultAsync<RequestOk, RequestError> {
-  return ResultAsync.fromPromise(client.post(url, other), (e): RequestError => {
-    if (!axios.isAxiosError(e) || e.response === undefined) {
-      return {
-        type: 'network-error',
-        desc: null
-      }
-    }
-    const status = e.response.status
-    switch (status) {
-      case 401:
-        return { type: 'unauthorized', desc: null }
-      case 404:
-        return { type: 'path-not-found', desc: null }
-      default:
+  return ResultAsync.fromThrowable(
+    () => client.post(url, other),
+    (e): RequestError => {
+      if (!axios.isAxiosError(e) || e.response === undefined) {
         return {
           type: 'network-error',
-          desc: `HTTP ${status}`
+          desc: null
         }
+      }
+      const status = e.response.status
+      switch (status) {
+        case 401:
+          return { type: 'unauthorized', desc: null }
+        case 404:
+          return { type: 'path-not-found', desc: null }
+        default:
+          return {
+            type: 'network-error',
+            desc: `HTTP ${status}`
+          }
+      }
+    }
+  )().map((response) => {
+    return {
+      body: response.data
     }
   })
 }

@@ -6,7 +6,5 @@ export function parseZodObject<Z extends z.ZodType>(
   data: unknown
 ): Result<z.infer<Z>, string> {
   const res = type.safeParse(data)
-  return res.success
-    ? ok(res.data)
-    : err(z.treeifyError(res.error).errors.join(', '))
+  return res.success ? ok(res.data) : err(z.prettifyError(res.error))
 }
