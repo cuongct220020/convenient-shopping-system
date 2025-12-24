@@ -28,8 +28,9 @@ class Address(Base):
 class UserIdentityProfile(Base):
     __tablename__ = "user_identity_profiles"
 
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
     )
 
     gender: Mapped[UserGender] = mapped_column(
@@ -57,8 +58,9 @@ class UserIdentityProfile(Base):
 class UserHealthProfile(Base):
     __tablename__ = "user_health_profiles"
 
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
     )
 
     height_cm: Mapped[Optional[int]] = mapped_column(SmallInteger, nullable=True)

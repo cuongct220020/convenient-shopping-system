@@ -48,7 +48,7 @@ class AuthService:
             user_create_data = UserCreateSchema(
                 username=reg_data.username,
                 email=reg_data.email,
-                password=hashed_password,
+                password_hash=hashed_password,
                 first_name=reg_data.first_name,
                 last_name=reg_data.last_name,
                 is_active=False
@@ -223,9 +223,9 @@ class AuthService:
             # The OTP is sent regardless, but the user creation happens in register_user.
             pass
 
-        otp_code = await otp_service.generate_and_store_otp(otp_data.email, otp_data.action.value)
+        otp_code = await otp_service.generate_and_store_otp(otp_data.email, otp_data.action)
 
-        if otp_data.action.value == OtpAction.REGISTER.value:
+        if otp_data.action == OtpAction.REGISTER.value:
             await kafka_service.publish_user_registration_otp(
                 email=otp_data.email,
                 otp_code=otp_code
@@ -244,7 +244,7 @@ class AuthService:
 
         is_valid = await otp_service.verify_otp(
             email=data.email,
-            action=data.action.value,
+            action=data.action,
             submitted_code=data.otp_code # schema uses otp_code, not otp
         )
 
@@ -264,15 +264,15 @@ class AuthService:
              raise NotFound("User account not found.")
 
         match data.action:
-            case OtpAction.REGISTER:
+            case OtpAction.REGISTER.value:
                 if not user.is_active:
                     await user_repo.activate_user(user.id)
                 return True
-            case OtpAction.RESET_PASSWORD:
+            case OtpAction.RESET_PASSWORD.value:
                 # For reset password, successful OTP verification means the user is authorized to reset.
                 # The actual password reset happens in reset_password_with_otp, which is called separately.
                 return True
-            case OtpAction.CHANGE_EMAIL:
+            case OtpAction.CHANGE_EMAIL.value:
                 # This action would typically involve updating the user's email in the database
                 # after a successful OTP verification.
                 # For now, we'll just return True, assuming the calling context will handle the email change.
@@ -297,7 +297,7 @@ class AuthService:
         # Verify the OTP
         is_valid = await otp_service.verify_otp(
             email=reset_pw_data.email,
-            action=OtpAction.RESET_PASSWORD.value,
+            action=OtpAction.RESET_PASSWORD.value,  # Sử dụng giá trị enum trực tiếp
             submitted_code=reset_pw_data.otp_code
         )
 

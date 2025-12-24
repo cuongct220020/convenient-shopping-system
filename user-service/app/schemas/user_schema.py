@@ -19,7 +19,7 @@ class UserInfoSchema(BaseSchema):
 
 class UserPublicProfileSchema(BaseSchema):
     """Public profile schema for general display (e.g. comments, group members)."""
-    id: UUID
+    id: str
     username: str
     first_name: str
     last_name: str
@@ -42,7 +42,7 @@ class UserCreateSchema(BaseSchema):
     """Schema for creating a new user, used internally."""
     username: str = Field(..., max_length=255)
     email: EmailStr
-    password: str  # This will be the hashed password
+    password_hash: str  # This will be the hashed password
     first_name: Optional[str] = Field(None, max_length=255)
     last_name: Optional[str] = Field(None, max_length=255)
     is_active: bool = False

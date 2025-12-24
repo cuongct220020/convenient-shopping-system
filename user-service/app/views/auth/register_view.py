@@ -6,7 +6,7 @@ from sanic.views import HTTPMethodView
 from app.decorators.validate_request import validate_request
 from app.decorators.idempotency import idempotent
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth_schema import RegisterRequestSchema
+from app.schemas import UserPublicProfileSchema, RegisterRequestSchema
 from app.services.auth_service import AuthService
 from shopping_shared.schemas.response_schema import GenericResponse
 
@@ -25,10 +25,14 @@ class RegisterView(HTTPMethodView):
             reg_data=validated_data,
             user_repo=user_repo
         )
-        
-        # Prepare response data matching UserPublicProfileSchema
-        from app.schemas import UserPublicProfileSchema
-        user_profile = UserPublicProfileSchema.model_validate(user)
+
+        user_profile = UserPublicProfileSchema(
+            id=str(user.id),
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            avatar_url=user.avatar_url
+        )
 
         response = GenericResponse(
             status="success",

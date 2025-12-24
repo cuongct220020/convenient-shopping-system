@@ -56,11 +56,10 @@ class KafkaManager:
 
                     # Performance optimizations
                     linger_ms=5,  # Wait 5ms to batch messages (reduces network calls)
-                    batch_size=32768,  # 32KB batch size (default 16KB)
+                    max_batch_size=32768,  # 32KB batch size (default 16KB)
                     compression_type='gzip',  # Compress messages to reduce bandwidth
 
                     # Retry settings
-                    retries=3,
                     retry_backoff_ms=100,
                 )
                 await self._producer.start()

@@ -2,6 +2,7 @@
 from sanic import Sanic, Request
 from sanic.response import json
 from pydantic import ValidationError
+from sanic.exceptions import MethodNotAllowed, NotFound
 
 # Import the shared exceptions
 from shopping_shared import exceptions as shared_exceptions
@@ -52,6 +53,20 @@ def register_shared_error_handlers(app: Sanic):
         )
 
         return json(response.model_dump(), status=422)
+
+    @app.exception(MethodNotAllowed)
+    async def handle_method_not_allowed(request: Request, exc: MethodNotAllowed):
+        """Return 405 instead of 500 when method is not allowed."""
+        logger.warning(f"Method not allowed {request.method} for {request.path}")
+        response = GenericResponse(status="fail", message=str(exc))
+        return json(response.model_dump(), status=405)
+
+    @app.exception(NotFound)
+    async def handle_not_found(request: Request, exc: NotFound):
+        """Return 404 for unknown routes."""
+        logger.info(f"Route not found: {request.path}")
+        response = GenericResponse(status="fail", message="Route not found")
+        return json(response.model_dump(), status=404)
 
 
     @app.exception(Exception)

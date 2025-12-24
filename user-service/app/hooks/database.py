@@ -3,6 +3,7 @@ from sanic import Sanic, Request
 
 from shopping_shared.databases.database_manager import database_manager as postgres_db
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.databases.base_model import Base
 
 logger = get_logger("Database Middleware")
 
@@ -14,6 +15,13 @@ async def setup_db(app: Sanic):
     db_uri = app.config.POSTGRESQL.DATABASE_URI
     debug = app.config.get("DEBUG", False)
     await postgres_db.setup(database_uri=db_uri, debug=debug)
+
+    # Auto-create tables if they do not exist (useful for local dev). In production, prefer Alembic.
+    try:
+        await postgres_db.create_tables(Base)
+    except Exception as ex:
+        logger.error("Failed to ensure DB tables exist: %s", ex)
+        # Continue startup; explicit migrations may run separately
 
 
 async def close_db(_app: Sanic):

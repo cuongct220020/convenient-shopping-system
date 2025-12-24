@@ -1,6 +1,7 @@
 # user-service/app/__init__.py
 
 from sanic import Sanic
+from sanic_ext import Extend
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Initialize User Service Application")
@@ -82,6 +83,9 @@ def create_app(*config_cls) -> Sanic:
     register_listeners(sanic_app)
     register_views(sanic_app)
     register_hooks(sanic_app)
+    
+    # Configure Sanic Extensions to serve docs at the correct prefix
+    Extend(sanic_app, config={"oas_url_prefix": "/api/v1/user-service"})
     
     # Register shared error handlers
     from shopping_shared.sanic.error_handler import register_shared_error_handlers
