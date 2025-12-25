@@ -1,4 +1,5 @@
 # user-service/app/services/otp_service.py
+import json
 import random
 from datetime import timedelta
 
@@ -32,7 +33,7 @@ class OTPService:
         await RedisService.set_otp(
             email=str(email),
             action=str(action),
-            otp_data=str(stored_data),
+            otp_data=stored_data,  # Pass the dictionary directly, not as string
             ttl_seconds=int(cls._TTL.total_seconds())
         )
 
@@ -49,6 +50,15 @@ class OTPService:
         if not stored_data:
             # OTP does not exist or has expired
             return None
+
+        # Handle both string (old format) and dict (new format) cases
+        if isinstance(stored_data, str):
+            # Old format - stored as string, try to parse as JSON
+            try:
+                stored_data = json.loads(stored_data)
+            except (json.JSONDecodeError, TypeError):
+                # If parsing fails, data is corrupted
+                return None
 
         stored_hash = stored_data.get("otp_hash")
         if not stored_hash:

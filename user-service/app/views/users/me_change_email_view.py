@@ -33,7 +33,7 @@ class MeRequestChangeEmailView(HTTPMethodView):
         await kafka_service.publish_message(
             new_email=str(new_email),
             otp_code=str(otp_code),
-            action=str(action)
+            action=str(OtpAction.CHANGE_EMAIL.value)
         )
 
         response = GenericResponse(
