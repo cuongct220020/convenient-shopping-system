@@ -3,6 +3,18 @@ networks:
     name: shopping-network
     driver: bridge
 
+volumes:
+  postgres-data:
+    name: postgres-data
+  redis-data:
+    name: redis-data
+  kafka-data:
+    name: kafka-data
+  redis-insight-data:
+    name: redis-insight-data
+  es-data:
+    name: es-data
+
 services:
   # PostgreSQL Service
   postgres-db:
@@ -29,6 +41,7 @@ services:
   redis-caching:
     image: redis:8.4.0
     container_name: redis-caching
+    hostname: redis-caching
     ports:
       - "6379:6379"
     volumes:
@@ -41,6 +54,7 @@ services:
   redis-insight:
     image: redis/redisinsight:2.70
     container_name: redis-insight
+    hostname: redis-insight
     environment:
       - RI_APP_ACCEPT_EULA=yes
       - RI_APP_LOGIN_REQUIRED=false
@@ -57,6 +71,7 @@ services:
   kafka-broker:
     image: confluentinc/cp-kafka:7.7.7
     container_name: kafka-broker
+    hostname: kafka-broker
     environment:
       # Basic Kafka Settings
       KAFKA_PROCESS_ROLES: "broker,controller"
@@ -94,6 +109,7 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
+    hostname: kafka-ui
     ports:
       - "8080:8080"
     depends_on:
@@ -122,6 +138,7 @@ services:
   kong-gateway:
     image: kong:3.9.1
     container_name: kong-gateway
+    hostname: kong-gateway
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
@@ -147,6 +164,54 @@ services:
       test: ["CMD", "kong", "health"]
       interval: 10s
       timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
+    hostname: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.ml.enabled=false
+      - ingest.geoip.downloader.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - shopping-network
+    restart: unless-stopped
+    profiles:
+      - elasticsearch
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:9200 || exit 1" ]
+      interval: 30s
+      timeout: 10s
       retries: 5
 
 #  # User Service
@@ -233,14 +298,3 @@ services:
 #      - notification-service
 #    ports:
 #      - "9005:8000"
-
-
-volumes:
-  postgres-data:
-    name: postgres-data
-  redis-data:
-    name: redis-data
-  kafka-data:
-    name: kafka-data
-  redis-insight-data:
-    name: redis-insight-data
