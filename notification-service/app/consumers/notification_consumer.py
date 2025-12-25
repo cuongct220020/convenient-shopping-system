@@ -2,6 +2,11 @@
 import asyncio
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.messaging.kafka_topics import (
+    REGISTRATION_EVENTS_TOPIC,
+    PASSWORD_RESET_EVENTS_TOPIC,
+    EMAIL_CHANGE_EVENTS_TOPIC
+)
 
 logger = get_logger("Notification Consumer")
 
@@ -16,11 +21,15 @@ def request_shutdown():
 
 async def consume_notifications(app=None):
     """
-    A long-running task that consumes messages from the 'user_registration_otp' topic
+    A long-running task that consumes messages from OTP-related topics
     and processes them.
     """
-    # Topic must match what user-service is producing to
-    topic = "user_registration_otp"
+    # Topics must match what user-service is producing to
+    topics = [
+        REGISTRATION_EVENTS_TOPIC,
+        PASSWORD_RESET_EVENTS_TOPIC,
+        EMAIL_CHANGE_EVENTS_TOPIC
+    ]
 
     max_retries = 10
     retry_count = 0
@@ -35,7 +44,7 @@ async def consume_notifications(app=None):
     while retry_count < max_retries and not _shutdown_event.is_set():
         try:
             consumer = kafka_manager.create_consumer(
-                topic,
+                *topics,
                 group_id="notification_service_group",
                 # Add some consumer-specific configurations to handle connection issues
                 request_timeout_ms=30000,
@@ -43,7 +52,7 @@ async def consume_notifications(app=None):
                 heartbeat_interval_ms=10000,
             )
             await consumer.start()
-            logger.info(f"Notification consumer started and listening on '{topic}'...")
+            logger.info(f"Notification consumer started and listening on {topics}...")
             break
         except asyncio.CancelledError:
             logger.info("Consumer startup was cancelled.")
@@ -73,7 +82,7 @@ async def consume_notifications(app=None):
             if _shutdown_event.is_set():
                 break
 
-            logger.info(f"Received message: {msg.value}")
+            logger.info(f"Received message from topic {msg.topic}: {msg.value}")
             try:
                 # User service sends a flat JSON structure: {"email": "...", "otp_code": "...", "action": "..."}
                 message_data = msg.value
@@ -83,7 +92,7 @@ async def consume_notifications(app=None):
                 action = message_data.get("action")
 
                 if email and otp_code:
-                    logger.info(f"Processing OTP email for {email} (Action: {action})")
+                    logger.info(f"Processing OTP email for {email} (Topic: {msg.topic}, Action: {action})")
                     # Use the email service from app context
                     if app and hasattr(app.ctx, 'email_service'):
                         email_service = app.ctx.email_service
@@ -98,7 +107,7 @@ async def consume_notifications(app=None):
                     logger.warning(f"Received invalid message format: {message_data}")
 
             except Exception as e:
-                logger.error(f"Failed to process message: {msg.value}. Error: {e}", exc_info=True)
+                logger.error(f"Failed to process message from {msg.topic}: {msg.value}. Error: {e}", exc_info=True)
     except asyncio.CancelledError:
         logger.info("Consumer was cancelled.")
     except Exception as e:

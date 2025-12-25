@@ -90,6 +90,7 @@ services:
       # Protected routes (cần JWT)
       - name: user-service-protected
         paths:
+          - /api/v1/user-service/auth/logout
           - /api/v1/user-service/users
           - /api/v1/user-service/groups
         strip_path: false
@@ -98,7 +99,7 @@ services:
             config:
               uri_param_names: [jwt]
               cookie_names: [jwt_token]
-              claims_to_verify: [exp, nbf]
+              claims_to_verify: [exp]
               key_claim_name: iss
 
           - name: request-transformer
@@ -108,6 +109,10 @@ services:
                   - X-User-ID:$(jwt.user_id)
                   - X-User-Role:$(jwt.system_role)
                   - X-User-Email:$(jwt.email)
+                  - X-JTI:$(jwt.jti)
+                  - X-EXP:$(jwt.exp)
+                  - X-IAT:$(jwt.iat)
+                  - X-AUD:$(jwt.aud)
 
 
       # Admin routes (cần JWT + check role ở service layer)
@@ -128,14 +133,18 @@ services:
                 headers:
                   - X-User-ID:$(jwt.user_id)
                   - X-User-Role:$(jwt.system_role)
+#                  - X-JTI:$(jwt.jti)
+#                  - X-EXP:$(jwt.exp)
+#                  - X-IAT:$(jwt.iat)
+#                  - X-AUD:$(jwt.aud)
 
 
   # Recipe Service (tương tự)
   - name: recipe-service
-    url: http://recipe-service:8000
+    url: http://recipe-service:9001
     # ... (áp dụng tương tự JWT plugin)
 
   # Shopping Storage Service
   - name: shopping-storage-service
-    url: http://shopping-storage-service:8000
+    url: http://shopping-storage-service:9005
     # ... (áp dụng tương tự JWT plugin)

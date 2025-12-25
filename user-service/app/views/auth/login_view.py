@@ -39,7 +39,7 @@ class LoginView(HTTPMethodView):
         refresh_ttl_days = config.get("REFRESH_TOKEN_EXPIRE_DAYS", 7)
         refresh_ttl_seconds = refresh_ttl_days * 24 * 60 * 60
 
-        response.set_cookie(
+        response.add_cookie(
             key = "refresh_token",
             value = refresh_token,
             httponly = True,

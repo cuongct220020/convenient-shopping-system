@@ -55,10 +55,11 @@ class JWTHandler:
 
     @staticmethod
     def _create_token_payload(
-            user_id: str,
-            token_type: str,
-            expiry_delta: timedelta,
-            user_role: str | None = None
+        user_id: str,
+        token_type: str,
+        expiry_delta: timedelta,
+        user_role: str | None = None,
+        email: str | None = None
     ) -> Tuple[dict, str]:
         """Create common token payload and JTI."""
         jti = str(uuid.uuid4())
@@ -70,16 +71,22 @@ class JWTHandler:
             'exp': issued_at_time + expiry_delta,
             'iat': issued_at_time,
             'sub': str(user_id),
-            'jti': jti
+            'jti': jti,
+            'aud': 'shopping-system-users'
         }
 
         if user_role:
             payload['system_role'] = user_role
+        if email:
+            payload['email'] = email
 
         return payload, jti
 
     def _build_access_token(
-            self, user_id: str, user_role: str | None = None
+        self,
+        user_id: str,
+        user_role: str | None = None,
+        email: str | None = None
     ) -> Tuple[str, str, int]:
         """Build Access Token with short expiry."""
         expiry_delta = timedelta(minutes=self.access_token_expire_minutes)
@@ -87,7 +94,8 @@ class JWTHandler:
             user_id=user_id,
             token_type='access',
             expiry_delta=expiry_delta,
-            user_role=user_role
+            user_role=user_role,
+            email=email
         )
 
         # Encode with appropriate key
@@ -96,7 +104,7 @@ class JWTHandler:
         return token, jti, self.access_token_expire_minutes
 
     def _build_refresh_token(
-            self, user_id: str, user_role: str | None = None
+            self, user_id: str, user_role: str | None = None, email: str | None = None
     ) -> Tuple[str, str, int]:
         """Build Refresh Token with long expiry."""
         expiry_delta = timedelta(days=self.refresh_token_expire_days)
@@ -104,7 +112,8 @@ class JWTHandler:
             user_id=user_id,
             token_type='refresh',
             expiry_delta=expiry_delta,
-            user_role=user_role
+            user_role=user_role,
+            email=email
         )
 
         key = self.private_key if self.algorithm.startswith("RS") else self.secret_key
@@ -113,15 +122,14 @@ class JWTHandler:
         return token, jti, ttl_seconds
 
     def create_tokens(
-            self, user_id: str, user_role: str | None = None
+        self,
+        user_id: str,
+        user_role: str | None = None,
+        email: str | None = None
     ) -> TokenData:
         """Create both access and refresh tokens."""
-        access_token, access_jti, at_expires_in_minutes = self._build_access_token(
-            user_id, user_role
-        )
-        refresh_token, refresh_jti, rt_ttl_seconds = self._build_refresh_token(
-            user_id, user_role
-        )
+        access_token, access_jti, at_expires_in_minutes = self._build_access_token(user_id, user_role, email)
+        refresh_token, refresh_jti, rt_ttl_seconds = self._build_refresh_token(user_id, user_role, email)
 
         return TokenData(
             access_token=access_token,

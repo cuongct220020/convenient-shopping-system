@@ -28,8 +28,8 @@ class RefreshView(HTTPMethodView):
 
         try:
             # 2. Gọi service với token từ cookie
-            #    Hàm này giờ trả về TokenData DTO
-            new_token_data = await AuthService.refresh_tokens(
+            #    Hàm này giờ trả về (TokenData, is_active)
+            new_token_data, is_active = await AuthService.refresh_tokens(
                 old_refresh_token=old_refresh_token,
                 user_repo=user_repo,
             )
@@ -45,11 +45,12 @@ class RefreshView(HTTPMethodView):
             )
             return response
 
-        # 3. Chuẩn bị response chỉ chứa access token mới
+        # 3. Prepare response with access token and user status
         access_token_data = TokenResponseSchema(
             access_token=new_token_data.access_token,
             token_type="Bearer",
-            expires_in_minutes=new_token_data.at_expires_in_minutes
+            expires_in_minutes=new_token_data.at_expires_in_minutes,
+            is_active=is_active
         )
 
         response_data = GenericResponse(

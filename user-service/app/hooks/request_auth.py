@@ -18,13 +18,19 @@ async def auth_middleware(request: Request):
 
     user_id = request.headers.get("x-user-id")
     user_role = request.headers.get("x-user-role")
+    user_email = request.headers.get("x-user-email")
     access_jti = request.headers.get("x-jti")
     exp_str = request.headers.get("x-exp")
     iat_str = request.headers.get("x-iat")
+    aud_str = request.headers.get("x-aud")
 
     if not user_id:
         logger.warning("Missing x-user-id header")
         raise Unauthorized("Missing user identity from API Gateway.")
+
+    if access_jti is None:
+        logger.warning("Missing x-jti header")
+        raise Unauthorized("Missing token identifier from API Gateway.")
 
     try:
         if await RedisService.is_token_in_blocklist(access_token_jti=access_jti):
@@ -51,12 +57,20 @@ async def auth_middleware(request: Request):
         logger.info("Token iat older than global revoke for user %s", user_id)
         raise Unauthorized("Token has been revoked by a security event.")
 
+    try:
+        token_exp = int(exp_str) if exp_str else None
+    except (ValueError, TypeError):
+        logger.exception("Invalid exp header: %s", exp_str)
+        token_exp = None
+
     request.ctx.auth_payload = {
         "sub": user_id,
         "role": user_role,
+        "email": user_email,
         "jti": access_jti,
-        "exp": int(exp_str) if exp_str else None,
-        "iat": token_iat
+        "exp": token_exp,
+        "iat": token_iat,
+        "aud": aud_str,
     }
     logger.debug("Auth payload attached to request.ctx for user %s", user_id)
 

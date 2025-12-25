@@ -1,5 +1,5 @@
 # user-service/app/schemas/otp_schema.py
-from pydantic import Field, EmailStr, SecretStr
+from pydantic import Field, EmailStr
 from shopping_shared.schemas.base_schema import BaseSchema
 from app.enums.auth import OtpAction
 

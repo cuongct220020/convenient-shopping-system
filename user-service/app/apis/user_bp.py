@@ -4,7 +4,7 @@ from sanic import Blueprint
 from app.views.users.me_change_password_view import ChangePasswordView
 from app.views.users.me_core_view import MeView
 from app.views.users.me_profile_view import MeIdentityProfileView, MeHealthProfileView
-from app.views.users.me_email_view import MeRequestChangeEmailView, MeConfirmChangeEmailView
+from app.views.users.me_change_email_view import MeRequestChangeEmailView, MeConfirmChangeEmailView
 from app.views.users.me_tag_view import MeTagsView, MeTagsDeleteView
 
 user_bp = Blueprint('user_blueprint', url_prefix='/users')

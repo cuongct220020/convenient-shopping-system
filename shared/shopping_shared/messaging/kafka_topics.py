@@ -22,3 +22,7 @@ MEAL_EVENTS_TOPIC = "meal_events"
 # The recommendation-service can consume this to learn about pantry contents.
 # Example message: {'event_type': 'item_added_to_pantry', 'user_id': 123, 'item_id': 789}
 PANTRY_EVENTS_TOPIC = "pantry_events"
+
+REGISTRATION_EVENTS_TOPIC = "registration_events"
+PASSWORD_RESET_EVENTS_TOPIC = "password_reset_events"
+EMAIL_CHANGE_EVENTS_TOPIC = "email_change_events"

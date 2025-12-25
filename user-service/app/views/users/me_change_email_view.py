@@ -1,4 +1,4 @@
-# user-service/app/views/users/me_email_view.py
+# user-service/app/views/users/me_change_email_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
@@ -9,6 +9,7 @@ from app.repositories.user_repository import UserRepository
 from app.schemas import RequestEmailChangeSchema, ConfirmEmailChangeSchema, UserInfoUpdateSchema
 from app.services.otp_service import otp_service
 from app.enums import OtpAction
+from app.services.kafka_service import kafka_service
 
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.exceptions import BadRequest
@@ -20,21 +21,20 @@ class MeRequestChangeEmailView(HTTPMethodView):
     @validate_request(RequestEmailChangeSchema)
     async def post(self, request: Request):
         """Step 1: Request an OTP to change email."""
-        # user_id = request.ctx.auth_payload["sub"]
         new_email = request.ctx.validated_data.new_email
-        
+
         # We can reuse OTP service
         otp_code = await otp_service.generate_and_store_otp(
-            email=new_email, 
-            action=OtpAction.CHANGE_EMAIL.value
+            email=str(new_email),
+            action=str(OtpAction.CHANGE_EMAIL.value),
+            data=None
         )
-        
-        # Publish to Kafka for notification service to send email
-        from app.services.kafka_service import kafka_service
 
-        # Sau can sua lai ten ham de phu hop hon
-        await kafka_service.publish_user_registration_otp(new_email, otp_code) # Reusing existing method for now
-
+        await kafka_service.publish_message(
+            new_email=str(new_email),
+            otp_code=str(otp_code),
+            action=str(action)
+        )
 
         response = GenericResponse(
             status="success",
@@ -58,7 +58,7 @@ class MeConfirmChangeEmailView(HTTPMethodView):
         
         # Verify OTP
         is_valid = await otp_service.verify_otp(
-            email=new_email,
+            email=str(new_email),
             action=OtpAction.CHANGE_EMAIL.value,
             submitted_code=summited_otp_code
         )
