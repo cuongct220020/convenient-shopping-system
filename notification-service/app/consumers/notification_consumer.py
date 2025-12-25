@@ -1,5 +1,7 @@
 # notification-service/app/consumers/notification_consumer.py
 import asyncio
+from typing import Dict
+
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
@@ -7,6 +9,11 @@ from shopping_shared.messaging.kafka_topics import (
     PASSWORD_RESET_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC
 )
+
+# Import Handlers
+from app.consumers.handlers.base_handler import BaseMessageHandler
+from app.consumers.handlers.otp_handler import OTPMessageHandler
+from app.enums import OtpAction  # Ensure you have OtpAction available or use string literals
 
 logger = get_logger("Notification Consumer")
 
@@ -21,38 +28,40 @@ def request_shutdown():
 
 async def consume_notifications(app=None):
     """
-    A long-running task that consumes messages from OTP-related topics
-    and processes them.
+    A long-running task that consumes messages and dispatches them to appropriate handlers.
     """
-    # Topics must match what user-service is producing to
-    topics = [
-        REGISTRATION_EVENTS_TOPIC,
-        PASSWORD_RESET_EVENTS_TOPIC,
-        EMAIL_CHANGE_EVENTS_TOPIC
-    ]
+    
+    # 1. Define Topic -> Handler Mapping
+    # We use the same generic OTPMessageHandler but configured for specific actions validation
+    handlers: Dict[str, BaseMessageHandler] = {
+        REGISTRATION_EVENTS_TOPIC: OTPMessageHandler(expected_action="register"),
+        PASSWORD_RESET_EVENTS_TOPIC: OTPMessageHandler(expected_action="reset_password"),
+        EMAIL_CHANGE_EVENTS_TOPIC: OTPMessageHandler(expected_action="change_email"),
+    }
+    
+    topics = list(handlers.keys())
 
     max_retries = 10
     retry_count = 0
     consumer = None
 
-    # Check if kafka_manager is properly initialized
     if kafka_manager is None or kafka_manager.bootstrap_servers is None:
         logger.warning("Kafka is not configured. Consumer will not start.")
-        logger.info("To enable Kafka, set KAFKA_BOOTSTRAP_SERVERS environment variable.")
         return
 
+    # 2. Connect to Kafka
     while retry_count < max_retries and not _shutdown_event.is_set():
         try:
             consumer = kafka_manager.create_consumer(
                 *topics,
                 group_id="notification_service_group",
-                # Add some consumer-specific configurations to handle connection issues
                 request_timeout_ms=30000,
                 session_timeout_ms=30000,
                 heartbeat_interval_ms=10000,
+                enable_auto_commit=False # Explicitly disable auto-commit
             )
             await consumer.start()
-            logger.info(f"Notification consumer started and listening on {topics}...")
+            logger.info(f"Notification consumer started. Listening on: {topics}")
             break
         except asyncio.CancelledError:
             logger.info("Consumer startup was cancelled.")
@@ -61,62 +70,55 @@ async def consume_notifications(app=None):
             retry_count += 1
             logger.warning(f"Failed to start consumer (attempt {retry_count}/{max_retries}): {e}")
             if retry_count >= max_retries:
-                logger.warning(
-                    "Max retries reached. Consumer will not run. "
-                    "Please ensure Kafka is running and accessible."
-                )
+                logger.error("Max retries reached. Consumer failed to start.")
                 return
-            # Wait before retrying, but check for shutdown
             try:
                 await asyncio.wait_for(_shutdown_event.wait(), timeout=5.0)
-                logger.info("Shutdown requested during retry wait.")
                 return
             except asyncio.TimeoutError:
-                pass  # Continue to retry
+                pass
 
     if consumer is None:
         return
 
+    # 3. Main Loop
     try:
         async for msg in consumer:
             if _shutdown_event.is_set():
                 break
 
-            logger.info(f"Received message from topic {msg.topic}: {msg.value}")
             try:
-                # User service sends a flat JSON structure: {"email": "...", "otp_code": "...", "action": "..."}
-                message_data = msg.value
+                message_topic = msg.topic
+                message_value = msg.value # Already deserialized by KafkaManager (orjson/json)
+                
+                logger.debug(f"Received message on {message_topic}: {message_value}")
 
-                email = message_data.get("email")
-                otp_code = message_data.get("otp_code")
-                action = message_data.get("action")
-
-                if email and otp_code:
-                    logger.info(f"Processing OTP email for {email} (Topic: {msg.topic}, Action: {action})")
-                    # Use the email service from app context
-                    if app and hasattr(app.ctx, 'email_service'):
-                        email_service = app.ctx.email_service
-                        await email_service.send_otp(
-                            email=email,
-                            otp_code=otp_code,
-                            action=action
-                        )
-                    else:
-                        logger.error("Email service not available in app context")
+                # Dispatch to Handler
+                handler = handlers.get(message_topic)
+                if handler:
+                    await handler.handle(message_value, app)
                 else:
-                    logger.warning(f"Received invalid message format: {message_data}")
+                    logger.warning(f"No handler found for topic: {message_topic}")
 
             except Exception as e:
-                logger.error(f"Failed to process message from {msg.topic}: {msg.value}. Error: {e}", exc_info=True)
+                # Log error but don't crash the loop.
+                # In production, consider DLQ (Dead Letter Queue) logic here.
+                logger.error(f"Error processing message from {msg.topic}: {e}", exc_info=True)
+            
+            # 4. Manual Commit (At-Least-Once delivery)
+            # We commit even on error to avoid infinite loops (poison pill). 
+            # Ideally, failed messages should go to a DLQ before commit.
+            try:
+                await consumer.commit()
+            except Exception as commit_error:
+                logger.error(f"Failed to commit offset: {commit_error}")
+
     except asyncio.CancelledError:
-        logger.info("Consumer was cancelled.")
+        logger.info("Consumer task cancelled.")
     except Exception as e:
-        logger.error(f"Consumer error: {e}", exc_info=True)
+        logger.critical(f"Critical consumer error: {e}", exc_info=True)
     finally:
         logger.info("Stopping notification consumer...")
-        if consumer is not None:
-            try:
-                await consumer.stop()
-                logger.info("Consumer stopped successfully.")
-            except Exception as e:
-                logger.error(f"Error stopping consumer: {e}")
+        if consumer:
+            await consumer.stop()
+            logger.info("Consumer stopped.")
