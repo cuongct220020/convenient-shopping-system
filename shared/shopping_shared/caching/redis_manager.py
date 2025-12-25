@@ -1,6 +1,4 @@
-# python
-# File: `shared/shopping_shared/caching/redis_manager.py`
-import asyncio
+# shared/shopping_shared/caching/redis_manager.py`
 from typing import Optional
 
 from redis.asyncio import Redis, ConnectionPool
@@ -25,47 +23,43 @@ class RedisManager:
             db: int,
             password: Optional[str],
             decode_responses: bool = True,
-            max_retries: int = 3,
-            retry_delay: float = 1.0,
-            backoff: float = 2.0
+            max_connections: int = 10,
+            socket_timeout: float = 5.0
     ) -> None:
         """
-        Creates the connection pool and verifies connectivity with retries.
-        Does not raise on final failure; sets availability flag instead.
+        Creates the connection pool.
+        Tries to verify connectivity, but does NOT permanently disable Redis on failure.
+        Allows auto-reconnect attempts by the underlying client.
         """
         try:
-            # create connection pool and client
             self.pool = ConnectionPool(
                 host=host,
                 port=port,
                 db=db,
                 password=password,
-                decode_responses=decode_responses
+                decode_responses=decode_responses,
+                max_connections=max_connections,
+                socket_timeout=socket_timeout,
+                socket_keepalive=True,
+                health_check_interval=30  # Auto-ping every 30s when connection is idle
             )
             self._client = Redis(connection_pool=self.pool)
             logger.info(f"Redis connection pool initialized: {host}:{port}, db={db}")
         except Exception as e:
-            logger.error(f"Failed to initialize Redis connection pool: {e}")
-            # ensure we mark unavailable and return
+            logger.error(f"Failed to initialize Redis config: {e}")
             self._available = False
             return
 
-        # try pinging with retries
-        delay = retry_delay
-        for attempt in range(1, max_retries + 1):
-            try:
-                await self._client.ping()
-                self._available = True
-                logger.info("Redis ping successful; redis available.")
-                return
-            except Exception as e:
-                logger.warning(f"Redis ping attempt {attempt} failed: {e}")
-                if attempt < max_retries:
-                    await asyncio.sleep(delay)
-                    delay *= backoff
-                else:
-                    logger.error("All Redis ping attempts failed; continuing without Redis.")
-                    self._available = False
+        # Initial connectivity check (Soft check)
+        # We try to ping, if fail, we just log warning but keep client object alive
+        # so it can try to reconnect later (auto-healing).
+        try:
+            await self._client.ping()
+            self._available = True
+            logger.info("Redis initial ping successful.")
+        except Exception as e:
+            logger.warning(f"Redis initial ping failed: {e}. App will start in degraded mode, but will retry connection on demand.")
+            self._available = False  # Mark as currently unavailable, but client exists
 
     async def close(self) -> None:
         """Closes the connection pool."""
@@ -87,11 +81,11 @@ class RedisManager:
     def client(self) -> Redis:
         """
         Provides a cached, reusable Redis client from the connection pool.
-        Raises CacheError if Redis is not available.
+        Raises CacheError only if Redis client is not initialized (setup not called).
         """
-        if not self._available or not self._client:
-            logger.error("Redis not available. Call setup() and ensure successful connection first.")
-            raise CacheError("Redis not available.")
+        if not self._client:
+            logger.error("Redis client not initialized. Call setup() first.")
+            raise CacheError("Redis not initialized.")
         return self._client
 
     def is_available(self) -> bool:
