@@ -18,8 +18,14 @@ const LogInResponseSchema = z.object({
   })
 })
 type LogInResponse = z.infer<typeof LogInResponseSchema>
-
 type LogInError = ResponseError<'incorrect-credentials'>
+
+type FullnameValidationOk = {
+  firstName: string
+  lastName: string
+}
+type RegisterResponse = null
+type RegisterError = ResponseError<never>
 
 export class AuthService {
   constructor(private clients: Clients) {}
@@ -51,6 +57,50 @@ export class AuthService {
     return ok()
   }
 
+  private static validateFirstOrLastName(
+    input: string
+  ): Result<void, i18nKeys> {
+    const trimmed = input.trim()
+    if (!trimmed) {
+      return err('empty_name')
+    }
+    if (trimmed.length > 50) {
+      return err('invalid_name_length')
+    }
+    const nameRegex = /^[\p{L}\s]+$/u
+    if (!nameRegex.test(trimmed)) {
+      return err('invalid_name_format')
+    }
+    return ok()
+  }
+
+  public static validateFullName(
+    input: string
+  ): Result<FullnameValidationOk, i18nKeys> {
+    const trimmed = input.trim()
+    if (!trimmed) {
+      return err('empty_name')
+    }
+    if (trimmed.length > 100) {
+      return err('invalid_name_length')
+    }
+    const nameRegex = /^[\p{L}\s]+$/u
+    if (!nameRegex.test(trimmed)) {
+      return err('invalid_name_format')
+    }
+    // Split by spaces and filter out empty strings
+    const parts = trimmed.split(/\s+/)
+    if (parts.length < 2) {
+      return err('name_requires_two_parts')
+    }
+    const firstName = parts[0]
+    const lastName = parts.slice(1).join(' ')
+    return Result.combine([
+      this.validateFirstOrLastName(firstName),
+      this.validateFirstOrLastName(lastName)
+    ]).map(() => ({ firstName, lastName }))
+  }
+
   public static validatePassword(input: string): Result<void, i18nKeys> {
     if (!input.trim()) {
       return err('empty_password')
@@ -62,11 +112,11 @@ export class AuthService {
   }
 
   public logIn(
-    email: string,
+    identifier: string,
     password: string
   ): ResultAsync<LogInResponse, LogInError> {
     return httpPost(this.clients.pub, AppUrl.LOGIN, {
-      email,
+      identifier,
       password
     })
       .mapErr(
@@ -83,6 +133,22 @@ export class AuthService {
           })
         )
       )
+  }
+
+  public register(opts: {
+    email: string
+    username: string
+    password: string
+    firstName: string
+    lastName: string
+  }): ResultAsync<RegisterResponse, RegisterError> {
+    return httpPost(this.clients.pub, AppUrl.REGISTER, {
+      email: opts.email,
+      username: opts.username,
+      password: opts.password,
+      first_name: opts.firstName,
+      last_name: opts.lastName
+    }).map(() => null)
   }
 }
 

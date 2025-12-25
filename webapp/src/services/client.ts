@@ -5,6 +5,7 @@ export class AppUrl {
   static readonly BASE = import.meta.env.VITE_API_BASE_URL
   static readonly AUTH = 'user-service/auth'
   static readonly LOGIN = this.AUTH + '/login'
+  static readonly REGISTER = this.AUTH + '/register'
 }
 
 export type Clients = {
