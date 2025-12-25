@@ -25,9 +25,8 @@ async def setup_redis(app: Sanic):
         db=redis_db,
         password=redis_password,
         decode_responses=decode_responses,
-        max_retries=getattr(app.config.REDIS, "REDIS_MAX_RETRIES", 3),
-        retry_delay=getattr(app.config.REDIS, "REDIS_RETRY_DELAY", 1.0),
-        backoff=getattr(app.config.REDIS, "REDIS_RETRY_BACKOFF", 2.0),
+        max_connections=getattr(app.config.REDIS, "REDIS_MAX_CONNECTIONS", 10),
+        socket_timeout=getattr(app.config.REDIS, "REDIS_SOCKET_TIMEOUT", 5.0),
     )
 
     if redis_manager.is_available():
