@@ -35,7 +35,7 @@ async def consume_notifications(app=None):
     # We use the same generic OTPMessageHandler but configured for specific actions validation
     handlers: Dict[str, BaseMessageHandler] = {
         REGISTRATION_EVENTS_TOPIC: OTPMessageHandler(expected_action="register"),
-        PASSWORD_RESET_EVENTS_TOPIC: OTPMessageHandler(expected_action="reset_password"),
+        RESET_PASSWORD_EVENTS_TOPIC: OTPMessageHandler(expected_action="reset_password"),
         EMAIL_CHANGE_EVENTS_TOPIC: OTPMessageHandler(expected_action="change_email"),
     }
     
