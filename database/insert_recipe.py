@@ -110,7 +110,7 @@ def import_recipes_strict_check(json_data):
 # --- CHẠY THỬ ---
 if __name__ == "__main__":
     # Load file json recipes của bạn ở đây
-    file = '/mnt/disk1/hachi/convenient-shopping-system/crawler/data/recipe_v3.json'
+    file = './crawler/data/recipe_v3.json'
     with open(file, 'r', encoding='utf-8') as f:
         data = json.load(f)
         

@@ -84,7 +84,7 @@ def import_ingredients_text_per(json_data):
 
 # --- CHẠY THỬ VỚI DỮ LIỆU CỦA BẠN ---
 if __name__ == "__main__":
-    with open('/mnt/disk1/hachi/convenient-shopping-system/crawler/data/ingredient_v8.json', 'r', encoding='utf-8') as f:
+    with open('./crawler/data/ingredient_v8.json', 'r', encoding='utf-8') as f:
         raw_json = json.load(f)
     
     import_ingredients_text_per(raw_json)
