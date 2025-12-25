@@ -6,14 +6,14 @@ from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
-    PASSWORD_RESET_EVENTS_TOPIC,
+    RESET_PASSWORD_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC
 )
 
 # Import Handlers
 from app.consumers.handlers.base_handler import BaseMessageHandler
 from app.consumers.handlers.otp_handler import OTPMessageHandler
-from app.enums import OtpAction  # Ensure you have OtpAction available or use string literals
+# from app.enums.otp_action import OtpAction
 
 logger = get_logger("Notification Consumer")
 
@@ -35,7 +35,7 @@ async def consume_notifications(app=None):
     # We use the same generic OTPMessageHandler but configured for specific actions validation
     handlers: Dict[str, BaseMessageHandler] = {
         REGISTRATION_EVENTS_TOPIC: OTPMessageHandler(expected_action="register"),
-        PASSWORD_RESET_EVENTS_TOPIC: OTPMessageHandler(expected_action="reset_password"),
+        RESET_PASSWORD_EVENTS_TOPIC: OTPMessageHandler(expected_action="reset_password"),
         EMAIL_CHANGE_EVENTS_TOPIC: OTPMessageHandler(expected_action="change_email"),
     }
     
