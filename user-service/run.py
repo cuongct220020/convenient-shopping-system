@@ -1,5 +1,6 @@
 # user-service/run.py
 
+
 import yaml
 import aiofiles
 from pathlib import Path
@@ -98,6 +99,10 @@ def run():
         app.run(**app.config['RUN_SETTING'])
     except (KeyError, OSError) as error:
         raise error
+    except KeyboardInterrupt:
+        logger.info("Received interrupt signal. Shutting down gracefully...")
+        # Sanic handles shutdown gracefully by default with its listeners
+        logger.info("Application shutdown complete.")
 
 
 if __name__ == '__main__':

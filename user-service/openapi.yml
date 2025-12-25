@@ -983,7 +983,9 @@ components:
         new_email:
           type: string
           format: email
-      required: [new_email]
+        action:
+          $ref: '#/components/schemas/OtpAction'
+      required: [new_email, action]
     ConfirmEmailChangeRequest:
       type: object
       properties:
