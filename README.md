@@ -43,10 +43,24 @@ List the ready features here:
 
 
 ## Setup
-What are the project requirements/dependencies? Where are they listed? A requirements.txt or a Pipfile.lock file perhaps? Where is it located?
-
-Proceed to describe how to install / setup one's local environment / get started with the project.
-
+1. Create new .env file in the root directory, user-service, notification directory
+2. Copy the content of .env.example into the newly created .env files
+3. Run docker compose
+```bash
+docker compose up -d 
+```
+4. Run user-service
+```bash
+cd user-service
+pip install -r requirements.txt
+python3 run.py
+```
+5. Run notification service
+```bash
+cd notification-service
+pip install -r requirements.txt
+python3 run.py
+```
 
 ## Usage
 How does one go about using it?
