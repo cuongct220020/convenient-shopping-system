@@ -4,7 +4,7 @@ from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
-    PASSWORD_RESET_EVENTS_TOPIC,
+    RESET_PASSWORD_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC
 )
 
@@ -21,7 +21,7 @@ class KafkaService:
         if action == OtpAction.REGISTER.value:
             topic = REGISTRATION_EVENTS_TOPIC
         elif action == OtpAction.RESET_PASSWORD.value:
-            topic = PASSWORD_RESET_EVENTS_TOPIC
+            topic = RESET_PASSWORD_EVENTS_TOPIC
         elif action == OtpAction.CHANGE_EMAIL.value:
             topic = EMAIL_CHANGE_EVENTS_TOPIC
         else:
@@ -36,8 +36,13 @@ class KafkaService:
         }
 
         try:
-            producer = await kafka_manager.get_producer()
-            await producer.send_and_wait(topic, value=payload)
+            # Use safe send_message with idempotence and wait=True
+            await kafka_manager.send_message(
+                topic=topic, 
+                value=payload, 
+                key=email, # Ensure ordering by email
+                wait=True
+            )
             logger.info("User registration otp published.")
 
         except Exception as e:
