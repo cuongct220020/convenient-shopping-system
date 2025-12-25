@@ -27,7 +27,7 @@ class RegisterView(HTTPMethodView):
         )
 
         user_profile = UserPublicProfileSchema(
-            id=str(user.id),
+            id=user.id,
             username=user.username,
             first_name=user.first_name,
             last_name=user.last_name,
@@ -40,4 +40,4 @@ class RegisterView(HTTPMethodView):
             data=user_profile
         )
 
-        return json(response.model_dump(), status=201)
+        return json(response.model_dump(mode="json"), status=201)

@@ -20,7 +20,7 @@ class UserInfoSchema(BaseSchema):
 
 class UserPublicProfileSchema(BaseSchema):
     """Public profile schema for general display (e.g. comments, group members)."""
-    id: str
+    id: UUID
     username: str
     first_name: str
     last_name: str

@@ -28,4 +28,4 @@ class ResetPasswordView(HTTPMethodView):
             status="success",
             message="Password has been reset successfully."
         )
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode="json"), status=200)

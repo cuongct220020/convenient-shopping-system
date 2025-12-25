@@ -32,7 +32,7 @@ class LoginView(HTTPMethodView):
             data=token_response
         )
 
-        response = json(response_data.model_dump(by_alias=True), status=200)
+        response = json(response_data.model_dump(by_alias=True, mode="json"), status=200)
 
         # Attach Refresh Token to cookie
         config = request.app.config

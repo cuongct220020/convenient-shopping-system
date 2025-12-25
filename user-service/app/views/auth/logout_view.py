@@ -43,7 +43,7 @@ class LogoutView(HTTPMethodView):
 
         # 4. Trả response thành công
         response_data = GenericResponse(status="success", message="Logout successful.")
-        response = json(response_data.model_dump(), status=200)
+        response = json(response_data.model_dump(mode="json"), status=200)
 
         # 5. Xóa HttpOnly cookie
         response.delete_cookie("refresh_token")

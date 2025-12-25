@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import EmailStr
 
+from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.repositories.family_group_repository import GroupMembershipRepository
 from app.schemas.user_admin_schema import UserAdminUpdateSchema
@@ -24,7 +25,7 @@ class AdminService:
 
     async def get_user_by_admin(self, user_id):
         """Fetch a user by ID for admin."""
-        user = await self.user_repo.get_by_id(user_id)
+        user = await self.user_repo.get_user_with_profiles(user_id)
         if not user:
             raise NotFound(f"User with id {user_id} not found")
         return user
@@ -32,7 +33,16 @@ class AdminService:
 
     async def get_all_users(self, page: int = 1, page_size: int = 20):
         """Fetch all users with pagination."""
-        return await self.user_repo.get_paginated(page=page, page_size=page_size)
+        from sqlalchemy.orm import selectinload
+        load_options = [
+            selectinload(User.identity_profile),
+            selectinload(User.health_profile)
+        ]
+        return await self.user_repo.get_paginated(
+            page=page,
+            page_size=page_size,
+            load_options=load_options
+        )
 
 
     async def create_user_by_admin(self, user_data):
@@ -61,8 +71,10 @@ class AdminService:
         if not user:
             raise NotFound(f"User with id {user_id} not found")
 
+        # Get the updated user with profiles
+        updated_user = await self.user_repo.get_user_with_profiles(user_id)
         logger.info(f"Admin updated user: {user_id}")
-        return user
+        return updated_user
 
     async def delete_user_by_admin(self, user_id: UUID):
         """Delete a user by an admin. Using soft_delete if supported, or delete"""
@@ -80,7 +92,7 @@ class AdminService:
 
     async def add_member_by_admin(self, group_id: UUID, email: EmailStr) -> GroupMembership:
         """Admin adds member directly."""
-        user_to_add = await self.user_repo.get_by_email(email)
+        user_to_add = await self.user_repo.get_by_email(str(email))
         if not user_to_add:
             raise NotFound(f"User with email {email} not found.")
 

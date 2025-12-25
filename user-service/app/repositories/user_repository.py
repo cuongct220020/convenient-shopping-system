@@ -2,7 +2,6 @@
 # from datetime import time, UTC
 from typing import Optional
 from uuid import UUID
-from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 

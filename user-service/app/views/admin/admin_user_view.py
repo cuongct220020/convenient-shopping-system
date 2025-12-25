@@ -53,7 +53,7 @@ class AdminUsersView(HTTPMethodView):
             total_items=paginated_result.total_items,
             total_pages=paginated_result.total_pages
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
 
     @validate_request(UserAdminCreateSchema)
@@ -68,7 +68,7 @@ class AdminUsersView(HTTPMethodView):
             data=UserAdminViewSchema.model_validate(new_user)
         )
 
-        return json(response.model_dump(exclude_none=True), status=201)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=201)
 
 
 class AdminUserDetailView(HTTPMethodView):
@@ -93,7 +93,7 @@ class AdminUserDetailView(HTTPMethodView):
             status="success",
             data=UserAdminViewSchema.model_validate(user)
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
     @validate_request(UserAdminUpdateSchema)
     async def patch(self, request: Request, user_id: UUID):
@@ -106,7 +106,7 @@ class AdminUserDetailView(HTTPMethodView):
             message="User updated successfully.",
             data=UserAdminViewSchema.model_validate(updated_user)
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
 
     async def delete(self, request: Request, user_id: UUID):
@@ -118,4 +118,4 @@ class AdminUserDetailView(HTTPMethodView):
             status="success",
             message="User deactivated and sessions revoked successfully."
         )
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)

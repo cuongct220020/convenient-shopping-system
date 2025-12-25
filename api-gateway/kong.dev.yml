@@ -30,7 +30,7 @@ plugins:
   - name: cors
     config:
       origins:
-        - http://localhost:5173
+        - "*"
       credentials: true
       max_age: 3600
       exposed_headers:
@@ -125,7 +125,7 @@ services:
             config:
               uri_param_names: [jwt]
               cookie_names: [jwt_token]
-              claims_to_verify: [exp, nbf]
+              claims_to_verify: [exp]
               key_claim_name: iss
           - name: request-transformer
             config:
@@ -133,10 +133,10 @@ services:
                 headers:
                   - X-User-ID:$(jwt.user_id)
                   - X-User-Role:$(jwt.system_role)
-#                  - X-JTI:$(jwt.jti)
-#                  - X-EXP:$(jwt.exp)
-#                  - X-IAT:$(jwt.iat)
-#                  - X-AUD:$(jwt.aud)
+                  - X-JTI:$(jwt.jti)
+                  - X-EXP:$(jwt.exp)
+                  - X-IAT:$(jwt.iat)
+                  - X-AUD:$(jwt.aud)
 
 
   # Recipe Service (tương tự)

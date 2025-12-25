@@ -114,7 +114,7 @@ class AuthService:
             await RedisService.add_session_to_allowlist(
                 user_id=str(user.id),
                 new_refresh_jti=str(token_data.refresh_jti),
-                ttl_seconds=str(token_data.rt_ttl_seconds)
+                ttl_seconds=int(token_data.rt_ttl_seconds)
             )
         except CacheError:
             raise CacheError("Could not get a new refresh token.")
@@ -172,7 +172,7 @@ class AuthService:
 
             payload = await jwt_handler.decode_token_stateless(
                 token=old_refresh_token,
-                token_type="refresh"
+                expected_token_type="refresh"
             )
         except Exception as e:
             # (View nên bắt lỗi này và xóa cookie)
@@ -263,7 +263,7 @@ class AuthService:
             raise Unauthorized("Invalid or expired OTP code.")
 
         # Corrected: use get_by_email for email lookup
-        user = await user_repo.get_by_email(data.email)
+        user = await user_repo.get_by_email(str(data.email))
         if not user and data.action != OtpAction.REGISTER: # For register, user might exist but be inactive.
              # Actually logic: if register, user MUST exist (created in step 1).
              # If user not found, it's weird.

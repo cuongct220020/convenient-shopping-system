@@ -37,8 +37,8 @@ class RefreshView(HTTPMethodView):
         except (Unauthorized, Forbidden) as e:
             # --- QUAN TRỌNG: Xóa cookie hỏng/bị thu hồi ---
             response_data = GenericResponse(status="fail", message=str(e))
-            response = json(response_data.model_dump(), status=401)
-            response.set_cookie(
+            response = json(response_data.model_dump(mode='json'), status=401)
+            response.add_cookie(
                 "refresh_token", "", max_age=0, httponly=True,
                 secure=not config.get("DEBUG", False), samesite="Strict",
                 path="/api/v1/user-service/auth/refresh-token"
@@ -59,13 +59,13 @@ class RefreshView(HTTPMethodView):
             data=access_token_data
         )
 
-        response = json(response_data.model_dump(by_alias=True), status=200)
+        response = json(response_data.model_dump(by_alias=True, mode='json'), status=200)
 
         # 4. Đặt refresh token MỚI (đã được xoay vòng) vào cookie
         refresh_expires_days = int(config.get("REFRESH_TOKEN_EXPIRE_DAYS", 7))
         max_age = refresh_expires_days * 24 * 60 * 60
 
-        response.set_cookie(
+        response.add_cookie(
             "refresh_token",
             new_token_data.refresh_token,
             max_age=max_age,

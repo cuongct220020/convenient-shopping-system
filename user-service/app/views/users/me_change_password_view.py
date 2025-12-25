@@ -28,4 +28,4 @@ class ChangePasswordView(HTTPMethodView):
             message="Password changed successfully. All sessions have been logged out."
         )
 
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)
