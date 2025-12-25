@@ -1,9 +1,6 @@
 # user-service/app/schemas/auth_schema.py
-from typing import Optional
-
 from pydantic import Field, EmailStr, SecretStr
 
-from app.schemas.user_schema import UserInfoSchema
 from shopping_shared.schemas.base_schema import BaseSchema
 
 
@@ -31,8 +28,8 @@ class TokenResponseSchema(BaseSchema):
     """Schema for token responses."""
     access_token: str
     token_type: str = "Bearer"
-    refresh_token: Optional[str] = None
     expires_in_minutes: int
+    is_active: bool
 
 
 class ResetPasswordRequestSchema(BaseSchema):

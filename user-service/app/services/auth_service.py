@@ -96,13 +96,15 @@ class AuthService:
         jwt_handler = JWTHandler.get_instance()
         token_data = jwt_handler.create_tokens(
             user_id=str(user.id),
-            user_role=user.system_role.value
+            user_role=user.system_role.value,
+            email=str(user.email)
         )
 
         access_token = TokenResponseSchema(
             access_token=token_data.access_token,
-            token_type=token_data.token_type,
-            expires_in_minutes=token_data.expires_in_minutes
+            token_type="Bearer",
+            expires_in_minutes=token_data.at_expires_in_minutes,
+            is_active=bool(user.is_active)
         )
 
         refresh_token_str = token_data.refresh_token
@@ -111,35 +113,44 @@ class AuthService:
         try:
             await RedisService.add_session_to_allowlist(
                 user_id=str(user.id),
-                new_refresh_jti=token_data.refresh_jti,
-                ttl_seconds=token_data.rt_ttl_seconds
+                new_refresh_jti=str(token_data.refresh_jti),
+                ttl_seconds=str(token_data.rt_ttl_seconds)
             )
         except CacheError:
             raise CacheError("Could not get a new refresh token.")
 
-        user.last_login = func.now()
-        await user_repo.update(user)
+        await user_repo.update_field(user.id, "last_login", func.now())
 
         return access_token, refresh_token_str
 
     @classmethod
     async def logout_account(
-            cls,
-            user_id: str,
-            access_token_jti: str,
-            remaining_ttl_seconds: int  # ← ĐỔI TÊN: access_token_exp_timestamp → remaining_ttl_seconds
+        cls,
+        user_id: str,
+        access_token_jti: str,
+        remaining_ttl_seconds: int
     ) -> None:
         """Logs out a user by removing their session and blocking the access token."""
 
-        # 1. Xoá session khỏi allowlist để vô hiệu hoá refresh token
-        await RedisService.remove_session_from_allowlist(user_id=user_id)
+        try:
+            # 1. Xoá session khỏi allowlist để vô hiệu hoá refresh token
+            await RedisService.remove_session_from_allowlist(user_id=user_id)
+        except Exception as e:
+            # Log the error but continue with the next step to ensure best-effort logout
+            logger.error(f"Error removing session from allowlist for user {user_id}: {str(e)}")
+            # Don't raise the exception to allow the logout to continue
 
-        # 2. Thêm access token vào blocklist nếu nó vẫn còn hạn
-        if remaining_ttl_seconds > 0:
-            await RedisService.add_token_to_blocklist(
-                access_token_jti=access_token_jti,
-                remaining_ttl_seconds=remaining_ttl_seconds
-            )
+        try:
+            # 2. Thêm access token vào blocklist nếu nó vẫn còn hạn
+            if remaining_ttl_seconds > 0:
+                await RedisService.add_token_to_blocklist(
+                    access_token_jti=access_token_jti,
+                    remaining_ttl_seconds=remaining_ttl_seconds
+                )
+        except Exception as e:
+            # Log the error but continue
+            logger.error(f"Error adding token to blocklist for jti {access_token_jti}: {str(e)}")
+            # Don't raise the exception to allow the logout to complete
 
 
     @classmethod
@@ -147,7 +158,7 @@ class AuthService:
             cls,
             old_refresh_token: str,
             user_repo: UserRepository,
-    ) -> TokenData:
+    ) -> tuple[TokenData, bool]:  # Returns (token_data, is_active)
         """
         Xử lý token refresh với rotation, sử dụng Redis Allowlist.
         Endpoint này phải tự xác thực không tin tưởng Kong Gateway.
@@ -203,7 +214,7 @@ class AuthService:
             ttl_seconds=token_data.rt_ttl_seconds
         )
 
-        return token_data
+        return token_data, user.is_active
 
 
     @classmethod
@@ -223,13 +234,13 @@ class AuthService:
             # The OTP is sent regardless, but the user creation happens in register_user.
             pass
 
-        otp_code = await otp_service.generate_and_store_otp(otp_data.email, otp_data.action)
+        otp_code = await otp_service.generate_and_store_otp(str(otp_data.email), str(otp_data.action))
 
-        if otp_data.action == OtpAction.REGISTER.value:
-            await kafka_service.publish_user_registration_otp(
-                email=otp_data.email,
-                otp_code=otp_code
-            )
+        await kafka_service.publish_message(
+            email=str(otp_data.email),
+            otp_code=str(otp_code),
+            action=str(otp_data.action)
+        )
 
     @classmethod
     async def verify_submitted_otp(

@@ -51,7 +51,8 @@ class RedisService:
     @classmethod
     def _get_otp_key(cls, email: str, action: str) -> str:
         """Generates the Redis key for OTP storage."""
-        identifier = f"{action.lower()}:{email.lower()}"
+        normalized_email = email.strip().replace(" ", "").lower()
+        identifier = f"{action.lower()}:{normalized_email}"
         return cls._generate_key(cls._otp_object, identifier)
 
     @classmethod
@@ -208,23 +209,36 @@ class RedisService:
     @classmethod
     async def set_otp(cls, email: str, action: str, otp_data: dict, ttl_seconds: int):
         """Lưu trữ dữ liệu OTP (dưới dạng JSON) vào Redis với TTL."""
-        key = cls._get_otp_key(email, action)
-        await redis_manager.client.set(key, json.dumps(otp_data), ex=ttl_seconds)
+        try:
+            key = cls._get_otp_key(email, action)
+            await redis_manager.client.set(key, json.dumps(otp_data), ex=ttl_seconds)
+            logger.info(f"OTP stored successfully for {email} with key: {key}")
+        except Exception as e:
+            logger.error(f"Failed to set OTP for {email} in Redis: {str(e)}")
+            raise
 
     @classmethod
     async def get_otp(cls, email: str, action: str) -> dict | None:
         """Lấy dữ liệu OTP (dưới dạng JSON) từ Redis."""
-        key = cls._get_otp_key(email, action)
-        data_str = await redis_manager.client.get(key)
-        if data_str:
-            return json.loads(data_str)
-        return None
+        try:
+            key = cls._get_otp_key(email, action)
+            data_str = await redis_manager.client.get(key)
+            if data_str:
+                return json.loads(data_str)
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get OTP for {email} from Redis: {str(e)}")
+            return None
 
     @classmethod
     async def delete_otp(cls, email: str, action: str):
         """Deletes an OTP from Redis."""
-        key = cls._get_otp_key(email, action)
-        await redis_manager.client.delete(key)
+        try:
+            key = cls._get_otp_key(email, action)
+            await redis_manager.client.delete(key)
+        except Exception as e:
+            logger.error(f"Failed to delete OTP for {email} from Redis: {str(e)}")
+
 
 
 redis_service = RedisService()

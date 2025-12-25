@@ -30,9 +30,9 @@ class OTPService:
             stored_data.update(data)
 
         await RedisService.set_otp(
-            email=email,
-            action=action,
-            otp_data=stored_data,
+            email=str(email),
+            action=str(action),
+            otp_data=str(stored_data),
             ttl_seconds=int(cls._TTL.total_seconds())
         )
 
