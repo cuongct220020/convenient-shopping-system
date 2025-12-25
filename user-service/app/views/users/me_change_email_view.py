@@ -42,7 +42,7 @@ class MeRequestChangeEmailView(HTTPMethodView):
             data=None
         )
 
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)
 
 
 
@@ -76,4 +76,4 @@ class MeConfirmChangeEmailView(HTTPMethodView):
             data=None
         )
 
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)

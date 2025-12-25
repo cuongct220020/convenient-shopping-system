@@ -50,7 +50,7 @@ class AdminGroupsView(HTTPMethodView):
             total_items=paginated_result.total_items,
             total_pages=paginated_result.total_pages
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
 
 class AdminGroupDetailView(HTTPMethodView):
@@ -79,7 +79,7 @@ class AdminGroupDetailView(HTTPMethodView):
             data=FamilyGroupDetailedSchema.model_validate(group)
         )
 
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
     @validate_request(FamilyGroupAdminUpdateSchema)
     async def patch(self, request: Request, group_id: UUID):
@@ -94,7 +94,7 @@ class AdminGroupDetailView(HTTPMethodView):
             message="Group updated successfully.",
             data=FamilyGroupDetailedSchema.model_validate(updated_group)
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
     async def delete(self, request: Request, group_id: UUID):
         """Deletes a specific family group."""
@@ -107,7 +107,7 @@ class AdminGroupDetailView(HTTPMethodView):
             data=None
         )
 
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)
 
 
 class AdminGroupMembersView(HTTPMethodView):
@@ -139,7 +139,7 @@ class AdminGroupMembersView(HTTPMethodView):
             status="success",
             message="Member added successfully by admin."
         )
-        return json(response.model_dump(), status=201)
+        return json(response.model_dump(mode='json'), status=201)
 
 
 class AdminGroupMembersManageView(HTTPMethodView):
@@ -169,7 +169,7 @@ class AdminGroupMembersManageView(HTTPMethodView):
             data=None
         )
 
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)
 
 
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
@@ -188,4 +188,4 @@ class AdminGroupMembersManageView(HTTPMethodView):
             data=None,
         )
 
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)

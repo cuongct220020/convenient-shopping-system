@@ -31,10 +31,11 @@ class OTPRequestView(HTTPMethodView):
         # For security, always return a generic success message.
         response = GenericResponse(
             status="success",
-            message="If your request was valid, an OTP has been sent to the specified email address."
+            message="If your request was valid, an OTP has been sent to the specified email address.",
+            data=None
         )
 
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(mode="json"), status=200)
 
 
 class OTPVerificationView(HTTPMethodView):
@@ -56,9 +57,10 @@ class OTPVerificationView(HTTPMethodView):
 
         response = GenericResponse(
             status="success",
-            message="OTP verified successfully and action performed."
+            message="OTP verified successfully and action performed.",
+            data=None
         )
 
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode="json"), status=200)
 
 

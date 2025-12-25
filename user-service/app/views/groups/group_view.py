@@ -58,7 +58,7 @@ class GroupView(BaseGroupView):
             message="Group created successfully.",
             data=FamilyGroupDetailedSchema.model_validate(group)
         )
-        return json(response.model_dump(exclude_none=True), status=201)
+        return json(response.model_dump(exclude_none=True, mode="json'"), status=201)
 
 
 class GroupDetailView(BaseGroupView):
@@ -78,7 +78,7 @@ class GroupDetailView(BaseGroupView):
             status="success",
             data=FamilyGroupDetailedSchema.model_validate(group)
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
     @require_group_role(GroupRole.HEAD_CHEF)
     async def delete(self, request: Request, group_id: UUID):
@@ -87,7 +87,7 @@ class GroupDetailView(BaseGroupView):
         await service.delete(group_id)
 
         response = GenericResponse(status="success", message="Group deleted successfully.")
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)
 
 
 class GroupMembersView(BaseGroupView):
@@ -97,7 +97,7 @@ class GroupMembersView(BaseGroupView):
     - POST: Add new member (HEAD_CHEF only)
     """
 
-    def _get_service(request) -> FamilyGroupService:
+    def _get_service(self, request) -> FamilyGroupService:
         session = request.ctx.db_session
         return FamilyGroupService(
             FamilyGroupRepository(session),
@@ -115,7 +115,7 @@ class GroupMembersView(BaseGroupView):
             status="success",
             data=[GroupMembershipSchema.model_validate(m) for m in members]
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
 
     @require_group_role(GroupRole.HEAD_CHEF)
@@ -142,7 +142,7 @@ class GroupMembersView(BaseGroupView):
             message="Member added successfully.",
             data=GroupMembershipSchema.model_validate(response_data)
         )
-        return json(response.model_dump(exclude_none=True), status=201)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=201)
 
 
 class GroupMemberDetailView(BaseGroupView):
@@ -161,7 +161,7 @@ class GroupMemberDetailView(BaseGroupView):
         await service.remove_member(requester_id, group_id, user_id)
         
         response = GenericResponse(status="success", message="Member removed successfully.")
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)
 
 
     @require_group_role(GroupRole.HEAD_CHEF)
@@ -188,7 +188,7 @@ class GroupMemberDetailView(BaseGroupView):
             message="Member role updated successfully.",
             data=GroupMembershipSchema.model_validate(response_data)
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
 
 class GroupMemberMeView(BaseGroupView):
@@ -207,7 +207,7 @@ class GroupMemberMeView(BaseGroupView):
         await service.remove_member(requester_id, group_id, requester_id)
         
         response = GenericResponse(status="success", message="You have left the group.")
-        return json(response.model_dump(), status=200)
+        return json(response.model_dump(mode='json'), status=200)
 
 
 class MemberIdentityProfileView(HTTPMethodView):
@@ -235,7 +235,7 @@ class MemberIdentityProfileView(HTTPMethodView):
              raise NotFound("Profile not found.")
 
         response = GenericResponse(status="success", data=UserIdentityProfileSchema.model_validate(profile))
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
 
 class MemberHealthProfileView(HTTPMethodView):
@@ -263,4 +263,4 @@ class MemberHealthProfileView(HTTPMethodView):
              raise NotFound("Profile not found.")
         
         response = GenericResponse(status="success", data=UserHealthProfileSchema.model_validate(profile))
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)

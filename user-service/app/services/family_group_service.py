@@ -87,7 +87,7 @@ class FamilyGroupService:
             raise Forbidden("Only Head Chef can add members.")
 
         # 2. Find User
-        user_to_add = await self.user_repo.get_by_email(email)
+        user_to_add = await self.user_repo.get_by_email(str(email))
         if not user_to_add:
             raise NotFound(f"User with email {email} not found.")
 
