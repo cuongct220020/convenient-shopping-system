@@ -68,7 +68,7 @@ class MeConfirmChangeEmailView(HTTPMethodView):
 
         # Update User Email
         user_repo = UserRepository(request.ctx.db_session)
-        await user_repo.update(user_id, UserInfoUpdateSchema(email=new_email))
+        await user_repo.update_field(user_id, "email", new_email)
 
         response = GenericResponse(
             status="success",

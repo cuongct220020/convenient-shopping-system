@@ -1,4 +1,4 @@
-# microservices/user-service/app/decorators/validate_request.py
+# user-service/app/decorators/validate_request.py
 from functools import wraps
 from typing import Type
 

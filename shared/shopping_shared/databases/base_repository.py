@@ -56,13 +56,18 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """Applies filtering, sorting, and soft-delete logic to a statement."""
         # 1. Apply soft-delete filter by default
         if hasattr(self.model, "is_deleted") and not include_deleted:
-            stmt = stmt.where(self.model.is_deleted == False)
+            stmt = stmt.where(self.model.is_deleted.is_(False))
 
         # 2. Apply dynamic filters
         if filters:
             for field, value in filters.items():
                 if hasattr(self.model, field):
-                    stmt = stmt.where(getattr(self.model, field) == value)
+                    column = getattr(self.model, field)
+                    if isinstance(value, (list, tuple, set)):
+                        stmt = stmt.where(column.in_(value))
+                    else:
+                        # Use == for single values, which is safe and idiomatic
+                        stmt = stmt.where(column == value)
 
         # 3. Apply dynamic sorting
         if sort_by:
@@ -91,7 +96,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
         # Apply soft-delete logic only if the model supports it
         if hasattr(self.model, "is_deleted") and not include_deleted:
-            query = query.where(self.model.is_deleted == False)
+            query = query.where(self.model.is_deleted.is_(False))
 
         # Apply eager loading options <-- MỚI
         if load_options:
@@ -250,7 +255,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         stmt = (
             update(self.model)
             .where(pk_column == record_id)
-            .where(self.model.is_deleted == False)
+            .where(self.model.is_deleted.is_(False))
             .values(is_deleted=True)
         )
         result = await self.session.execute(stmt)

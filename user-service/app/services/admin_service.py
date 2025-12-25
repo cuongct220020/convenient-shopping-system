@@ -16,10 +16,9 @@ from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Admin Service")
 
-class AdminService:
-    def __init__(self, user_repository: UserRepository, member_repo: GroupMembershipRepository):
+class AdminUserService:
+    def __init__(self, user_repository: UserRepository):
         self.user_repo = user_repository
-        self.member_repo = member_repo
 
     # ===== User Management by Admin =====
 
@@ -89,6 +88,11 @@ class AdminService:
 
 
     # ===== Group Membership Management by Admin =====
+
+class AdminGroupService:
+    def __init__(self, user_repository: UserRepository, member_repo: GroupMembershipRepository):
+        self.user_repo = user_repository
+        self.member_repo = member_repo
 
     async def add_member_by_admin(self, group_id: UUID, email: EmailStr) -> GroupMembership:
         """Admin adds member directly."""

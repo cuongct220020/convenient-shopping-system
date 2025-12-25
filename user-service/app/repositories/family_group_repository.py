@@ -1,10 +1,11 @@
 # user-service/app/repositories/family_group_repository.py
-from typing import Optional
+from typing import Optional, Sequence
 from uuid import UUID
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import FamilyGroup, GroupMembership
+from app.models import FamilyGroup, GroupMembership, User
 from app.enums import GroupRole
 from app.schemas import (
     FamilyGroupCreateSchema, 
@@ -30,13 +31,12 @@ class FamilyGroupRepository(
         Get group with eager loaded members and creator.
         Useful for detailed views where we need to show member lists and the creator.
         """
-        return await self.get_by_id(
-            group_id, 
-            load_options=[
-                selectinload(FamilyGroup.members),
-                selectinload(FamilyGroup.creator)
-            ]
+        stmt = select(FamilyGroup).where(FamilyGroup.id == group_id).options(
+            selectinload(FamilyGroup.members),
+            selectinload(FamilyGroup.creator)
         )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
 
 
 class GroupMembershipRepository(
@@ -48,13 +48,6 @@ class GroupMembershipRepository(
 ):
     """
     Repository for GroupMembership.
-    
-    Note on Schemas:
-    GroupMembershipCreateSchema and GroupMembershipUpdateSchema are required
-    for the BaseRepository generic typing and can be used if we switch to 
-    using the standard .create() or .update() methods. 
-    However, due to the composite primary key nature of this table, 
-    custom methods like add_membership and get_membership are often more practical.
     """
     def __init__(self, session: AsyncSession):
         super().__init__(GroupMembership, session)
@@ -62,6 +55,40 @@ class GroupMembershipRepository(
     async def get_membership(self, user_id: UUID, group_id: UUID) -> Optional[GroupMembership]:
         """Fetch membership by composite key (user_id, group_id)."""
         return await self.session.get(GroupMembership, (user_id, group_id))
+
+    async def get_all_members(self, group_id: UUID) -> Sequence[GroupMembership]:
+        """
+        Fetch all members of a group with User info eagerly loaded.
+        Optimized for List View.
+        """
+        stmt = (
+            select(GroupMembership)
+            .where(GroupMembership.group_id == group_id)
+            .options(selectinload(GroupMembership.user))  # Load User info to avoid N+1
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def get_member_detailed(self, group_id: UUID, user_id: UUID) -> Optional[GroupMembership]:
+        """
+        Fetch a specific member with User info AND Profiles eagerly loaded.
+        Optimized for Detail View (Single query for everything).
+        """
+        stmt = (
+            select(GroupMembership)
+            .where(
+                GroupMembership.group_id == group_id,
+                GroupMembership.user_id == user_id
+            )
+            .options(
+                selectinload(GroupMembership.user).options(
+                    selectinload(User.identity_profile),
+                    selectinload(User.health_profile)
+                )
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
 
     async def add_membership(self, user_id: UUID, group_id: UUID, role: GroupRole) -> GroupMembership:
         """Adds a user to a group with a specific role."""

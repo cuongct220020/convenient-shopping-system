@@ -13,7 +13,7 @@ from app.schemas import (
     UserAdminUpdateSchema,
     UserAdminViewSchema,
 )
-from app.services.admin_service import AdminService
+from app.services.admin_service import AdminUserService
 from shopping_shared.exceptions import BadRequest
 from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 
@@ -27,9 +27,9 @@ class AdminUsersView(HTTPMethodView):
     decorators = [require_system_role(SystemRole.ADMIN)]
 
     @staticmethod
-    def _get_service(request: Request) -> AdminService:
-        repo = UserRepository(request.ctx.db_session)
-        return AdminService(repo)
+    def _get_service(request: Request) -> AdminUserService:
+        user_repo = UserRepository(session=request.ctx.db_session)
+        return AdminUserService(user_repo)
 
     async def get(self, request: Request):
         """Lists all users with pagination for admin purposes."""
@@ -80,9 +80,9 @@ class AdminUserDetailView(HTTPMethodView):
     decorators = [require_system_role(SystemRole.ADMIN)]
 
     @staticmethod
-    def _get_service(request: Request) -> AdminService:
+    def _get_service(request: Request) -> AdminUserService:
         repo = UserRepository(session=request.ctx.db_session)
-        return AdminService(repo)
+        return AdminUserService(repo)
 
     async def get(self, request: Request, user_id: int):
         """Retrieves details of a specific user."""

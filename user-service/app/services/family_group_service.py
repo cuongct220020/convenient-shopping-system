@@ -1,5 +1,6 @@
 # user-service/app/services/family_group_service.py
 from uuid import UUID
+from typing import Sequence
 
 from pydantic import EmailStr
 
@@ -42,6 +43,29 @@ class FamilyGroupService:
     async def get_all(self, page: int = 1, page_size: int = 100):
         """Get paginated list of family groups."""
         return await self.repository.get_paginated(page=page, page_size=page_size)
+
+    async def get_group_members(self, group_id: UUID) -> Sequence[GroupMembership]:
+        """
+        Get all members of a group with basic User info.
+        Used for the 'List View'.
+        """
+        # Ensure group exists
+        await self.get(group_id)
+        return await self.member_repo.get_all_members(group_id)
+
+    async def get_group_member_detailed(self, group_id: UUID, user_id: UUID) -> GroupMembership:
+        """
+        Get a specific member with FULL details (User + Identity + Health).
+        Used for the 'Detail View'.
+        """
+        # Ensure group exists
+        await self.get(group_id)
+        
+        member = await self.member_repo.get_member_detailed(group_id, user_id)
+        if not member:
+            raise NotFound("Member not found in this group.")
+        
+        return member
 
     async def update(self, group_id: UUID, update_data: FamilyGroupUpdateSchema) -> FamilyGroup:
         """Update a family group."""
