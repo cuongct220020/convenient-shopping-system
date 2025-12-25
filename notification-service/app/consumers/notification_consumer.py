@@ -13,7 +13,6 @@ from shopping_shared.messaging.kafka_topics import (
 # Import Handlers
 from app.consumers.handlers.base_handler import BaseMessageHandler
 from app.consumers.handlers.otp_handler import OTPMessageHandler
-from app.enums import OtpAction  # Ensure you have OtpAction available or use string literals
 
 logger = get_logger("Notification Consumer")
 
