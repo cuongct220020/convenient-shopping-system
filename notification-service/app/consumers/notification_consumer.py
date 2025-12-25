@@ -6,7 +6,7 @@ from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
-    PASSWORD_RESET_EVENTS_TOPIC,
+    RESET_PASSWORD_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC
 )
 
