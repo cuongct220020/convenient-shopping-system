@@ -1,7 +1,7 @@
 import sqlite3
 import json
 
-DB_PATH = '/home/gpus/hachi/convenient-shopping-system/database/grocery_system_v2.db'
+DB_PATH = 'grocery_system_v2.db'
 
 # --- HÀM LẤY MAP NGUYÊN LIỆU---
 def get_ingredient_map_strict(cursor):
@@ -110,7 +110,7 @@ def import_recipes_strict_check(json_data):
 # --- CHẠY THỬ ---
 if __name__ == "__main__":
     # Load file json recipes của bạn ở đây
-    file = '/mnt/disk1/hachi/crawler/data/recipe_v2.json'
+    file = '/mnt/disk1/hachi/convenient-shopping-system/crawler/data/recipe_v3.json'
     with open(file, 'r', encoding='utf-8') as f:
         data = json.load(f)
         

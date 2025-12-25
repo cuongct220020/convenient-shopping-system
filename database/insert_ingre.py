@@ -38,15 +38,16 @@ def import_ingredients_text_per(json_data):
             # Lưu ý: Các chỉ số dinh dưỡng (fat, protein...) vẫn giữ là số để tính toán
             cursor.execute("""
                 INSERT INTO ingredients 
-                (component_id, category, protein, fat, carb, calories, 
+                (component_id, category, protein, fat, carb, fiber, calories, 
                  estimated_shelf_life, estimated_price)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 comp_id, 
                 item.get('category'), 
                 nutri.get('protein', 0), 
                 nutri.get('fat', 0), 
-                nutri.get('carbs', 0), 
+                nutri.get('carbs', 0),
+                nutri.get('fiber', 0), 
                 nutri.get('calories', 0),
                 365, # Shelf life mặc định
                 0,   # Price mặc định
@@ -83,7 +84,7 @@ def import_ingredients_text_per(json_data):
 
 # --- CHẠY THỬ VỚI DỮ LIỆU CỦA BẠN ---
 if __name__ == "__main__":
-    with open('/home/gpus/hachi/convenient-shopping-system/crawler/data/ingredient_v7.json', 'r', encoding='utf-8') as f:
+    with open('/mnt/disk1/hachi/convenient-shopping-system/crawler/data/ingredient_v8.json', 'r', encoding='utf-8') as f:
         raw_json = json.load(f)
     
     import_ingredients_text_per(raw_json)

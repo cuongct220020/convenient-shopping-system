@@ -2,10 +2,10 @@ import json
 from unidecode import unidecode
 
 # Load files
-with open('/home/gpus/hachi/convenient-shopping-system/crawler/data/ingredient_v7.json', 'r', encoding='utf-8') as f:
+with open('./crawler/data/ingredient_v8.json', 'r', encoding='utf-8') as f:
     ingredients = json.load(f)
 
-with open('/mnt/disk1/hachi/crawler/data/recipes_detail.json', 'r', encoding='utf-8') as f:
+with open('./crawler/data/recipes_detail.json', 'r', encoding='utf-8') as f:
     recipes = json.load(f)
 
 # Tạo mapping dictionary: name_vi -> {id, category, name_en}
@@ -78,7 +78,7 @@ for idx, recipe in enumerate(recipes, start=1):
         continue
 
 # Save output
-with open('/mnt/disk1/hachi/crawler/data/recipe_v2.json', 'w', encoding='utf-8') as f:
+with open('/mnt/disk1/hachi/convenient-shopping-system/crawler/data/recipe_v3.json', 'w', encoding='utf-8') as f:
     json.dump(dishes, f, ensure_ascii=False, indent=2)
 
-print(f"✅ Đã tạo {len(dishes)} món ăn trong dish_knowledge_base.json")
+print(f"✅ Đã tạo {len(dishes)} món ăn trong recipe_v3.json")

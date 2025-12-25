@@ -9,7 +9,7 @@ from requests.packages.urllib3.util.retry import Retry
 import time
 
 BASE_URL = "https://www.dienmayxanh.com"
-file_out = '/mnt/disk1/hachi/crawler/data/recipe_urls.csv'
+file_out = './crawler/data/recipe_urls_2.csv'
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -124,7 +124,7 @@ def main():
 
     for i, category in enumerate(categories, 1):
         print(f"\n[{i}/{len(categories)}] {category['name']}")
-        articles = get_all_articles(category["url"], max_articles_per_category=15)
+        articles = get_all_articles(category["url"], max_articles_per_category=50)
 
 
         for url in articles:
