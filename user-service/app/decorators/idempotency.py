@@ -4,7 +4,7 @@ import json
 from sanic.request import Request
 from sanic.response import json as sanic_json
 
-from shopping_shared.exceptions import Conflict, SharedAppException
+from shopping_shared.exceptions import Conflict
 from shopping_shared.utils.logger_utils import get_logger
 from app.services.redis_service import RedisService
 

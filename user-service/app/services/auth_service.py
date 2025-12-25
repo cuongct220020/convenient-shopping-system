@@ -1,8 +1,8 @@
 # user-service/app/services/auth_service.py
-from typing import Tuple
+from typing import Tuple, cast
 from uuid import UUID
 
-from pydantic import EmailStr, ValidationError
+from pydantic import EmailStr, ValidationError, TypeAdapter
 from sqlalchemy import func
 
 from app.enums import OtpAction
@@ -76,7 +76,7 @@ class AuthService:
 
         try:
             # Check if identifier looks like an email
-            EmailStr._validate(user_identifier)
+            TypeAdapter(EmailStr).validate_python(user_identifier)
             is_email = True
         except (ValidationError, ValueError):
             is_email = False
@@ -96,7 +96,7 @@ class AuthService:
         jwt_handler = JWTHandler.get_instance()
         token_data = jwt_handler.create_tokens(
             user_id=str(user.id),
-            user_role=user.system_role.value,
+            user_role=str(user.system_role.value) if hasattr(user.system_role, "value") else str(user.system_role),
             email=str(user.email)
         )
 
@@ -170,7 +170,7 @@ class AuthService:
             # không kiểm tra stateful (blocklist/allowlist)
             jwt_handler = JWTHandler.get_instance()
 
-            payload = await jwt_handler.decode_token_stateless(
+            payload = jwt_handler.decode_token_stateless(
                 token=old_refresh_token,
                 expected_token_type="refresh"
             )
@@ -204,7 +204,7 @@ class AuthService:
         # Tạo token mới (rotation)
         token_data = jwt_handler.create_tokens(
             user_id=str(user.id),
-            user_role=user.system_role.value
+            user_role=str(user.system_role.value) if hasattr(user.system_role, "value") else str(user.system_role)
         )
         
         # Update session
@@ -214,7 +214,7 @@ class AuthService:
             ttl_seconds=token_data.rt_ttl_seconds
         )
 
-        return token_data, user.is_active
+        return token_data, bool(user.is_active)
 
 
     @classmethod
@@ -277,7 +277,7 @@ class AuthService:
         match data.action:
             case OtpAction.REGISTER.value:
                 if not user.is_active:
-                    await user_repo.activate_user(user.id)
+                    await user_repo.activate_user(cast(UUID, user.id))
                 return True
             case OtpAction.RESET_PASSWORD.value:
                 # For reset password, successful OTP verification means the user is authorized to reset.
@@ -324,7 +324,10 @@ class AuthService:
         hashed_new_password = hash_password(reset_pw_data.new_password.get_secret_value())
 
         # Update the user's password
-        await user_repo.update_password(UUID(user.id), str(hashed_new_password))
+        await user_repo.update_password(
+            cast(UUID, user.id),
+            str(hashed_new_password)
+        )
 
         # Delete the OTP from Redis after successful verification
         await otp_service.delete_otp(reset_pw_data.email, OtpAction.RESET_PASSWORD.value)

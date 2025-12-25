@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import Field, EmailStr
 from shopping_shared.schemas.base_schema import BaseSchema
 from app.enums import GroupRole
-from .user_schema import UserInfoSchema
+from .user_schema import UserInfoSchema, UserDetailedProfileSchema
 
 
 # Family Group Schemas
@@ -38,8 +38,14 @@ class AddMemberRequestSchema(BaseSchema):
 
 # Family Group Detailed Schemas
 class GroupMembershipSchema(BaseSchema):
-    """Schema representing a member within a groups."""
+    """Schema representing a member within a groups (Basic Info)."""
     user: UserInfoSchema
+    role: GroupRole
+
+
+class GroupMembershipDetailedSchema(BaseSchema):
+    """Schema representing a member with FULL profile details."""
+    user: UserDetailedProfileSchema
     role: GroupRole
 
 

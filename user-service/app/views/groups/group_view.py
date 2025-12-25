@@ -18,6 +18,7 @@ from app.schemas.family_group_schema import (
     FamilyGroupCreateSchema,
     FamilyGroupDetailedSchema,
     GroupMembershipSchema,
+    GroupMembershipDetailedSchema,
     AddMemberRequestSchema,
     GroupMembershipUpdateSchema
 )
@@ -58,7 +59,7 @@ class GroupView(BaseGroupView):
             message="Group created successfully.",
             data=FamilyGroupDetailedSchema.model_validate(group)
         )
-        return json(response.model_dump(exclude_none=True, mode="json'"), status=201)
+        return json(response.model_dump(exclude_none=True, mode="json"), status=201)
 
 
 class GroupDetailView(BaseGroupView):
@@ -109,6 +110,7 @@ class GroupMembersView(BaseGroupView):
     async def get(self, request: Request, group_id: UUID):
         """Lists all members of the group. Requires membership."""
         service = self._get_service(request)
+        # Optimized fetch
         members = await service.get_group_members(group_id)
 
         response = GenericResponse(
@@ -148,9 +150,26 @@ class GroupMembersView(BaseGroupView):
 class GroupMemberDetailView(BaseGroupView):
     """
     Handles /groups/{group_id}/members/{user_id}
+    - GET: View detailed member info (User + Identity + Health)
     - PATCH: Update member role (HEAD_CHEF only - chuyển quyền HEAD_CHEF)
     - DELETE: Remove member (HEAD_CHEF only)
     """
+
+    @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
+    async def get(self, request: Request, group_id: UUID, user_id: UUID):
+        """
+        View detailed member info. 
+        Returns composite data: User Info + Role + Identity Profile + Health Profile.
+        """
+        service = self._get_service(request)
+        # Optimized fetch with eager loading
+        member_detailed = await service.get_group_member_detailed(group_id, user_id)
+
+        response = GenericResponse(
+            status="success",
+            data=GroupMembershipDetailedSchema.model_validate(member_detailed)
+        )
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
     @require_group_role(GroupRole.HEAD_CHEF)
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):

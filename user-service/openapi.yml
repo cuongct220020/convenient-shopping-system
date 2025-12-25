@@ -487,6 +487,26 @@ paths:
           $ref: '#/components/responses/NotFound'
 
   /groups/{groupId}/members/{userId}:
+    get:
+      tags: [Groups]
+      summary: Xem thông tin chi tiết thành viên trong nhóm (User + Identity + Health)
+      description: Trả về thông tin đầy đủ của một thành viên bao gồm thông tin cơ bản, vai trò trong nhóm, hồ sơ định danh và hồ sơ sức khỏe.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: "Thông tin chi tiết thành viên."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMemberDetailedResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
     delete:
       tags: [Groups]
       summary: Xóa thành viên khỏi nhóm (HeadChef only)
@@ -1287,6 +1307,13 @@ components:
           $ref: '#/components/schemas/UserPublicProfile'
         role:
           $ref: '#/components/schemas/GroupRole'
+    GroupMemberDetailed:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserDetailedProfile'
+        role:
+          $ref: '#/components/schemas/GroupRole'
     GroupDetailed:
       type: object
       properties:
@@ -1380,6 +1407,13 @@ components:
           properties:
             data:
               $ref: '#/components/schemas/GroupMember'
+    GroupMemberDetailedResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenericResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/GroupMemberDetailed'
     UserAdminViewResponse:
       allOf:
         - $ref: '#/components/schemas/GenericResponse'

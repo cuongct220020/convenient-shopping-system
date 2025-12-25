@@ -9,6 +9,7 @@ from app.enums import SystemRole, GroupRole
 from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.services.family_group_service import FamilyGroupService
+from app.services.admin_service import AdminGroupService
 from app.schemas.family_group_schema import FamilyGroupDetailedSchema
 from app.schemas.family_group_admin_schema import FamilyGroupAdminUpdateSchema
 
@@ -118,12 +119,11 @@ class AdminGroupMembersView(HTTPMethodView):
     decorators = [require_system_role(SystemRole.ADMIN)]
 
     @staticmethod
-    def _get_service(request: Request) -> FamilyGroupService:
+    def _get_service(request: Request) -> AdminGroupService:
         session = request.ctx.db_session
-        return FamilyGroupService(
-            FamilyGroupRepository(session),
-            GroupMembershipRepository(session),
-            UserRepository(session)
+        return AdminGroupService(
+            UserRepository(session),
+            GroupMembershipRepository(session)
         )
 
     async def post(self, request: Request, group_id: UUID):
@@ -150,12 +150,11 @@ class AdminGroupMembersManageView(HTTPMethodView):
     decorators = [require_system_role(SystemRole.ADMIN)]
 
     @staticmethod
-    def _get_service(request: Request) -> FamilyGroupService:
+    def _get_service(request: Request) -> AdminGroupService:
         session = request.ctx.db_session
-        return FamilyGroupService(
-            FamilyGroupRepository(session),
-            GroupMembershipRepository(session),
-            UserRepository(session)
+        return AdminGroupService(
+            UserRepository(session),
+            GroupMembershipRepository(session)
         )
 
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):
