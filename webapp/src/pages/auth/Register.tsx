@@ -1,196 +1,126 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UserPlus, LogIn, CheckCircle, X } from 'lucide-react'
+import { UserPlus, LogIn, CheckCircle } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { InputField } from '../../components/InputField'
 import { NotificationCard } from '../../components/NotificationCard'
+import { ok, err, Result } from 'neverthrow'
+import { i18nKeys } from '../../utils/i18n/keys'
+import { AuthService } from '../../services/auth'
+import { i18n } from '../../utils/i18n/i18n'
+
+const FormFields = ['email', 'username', 'password', 'confirmPassword'] as const
+type FormField = (typeof FormFields)[number]
+type FormData = Record<FormField, string>
+type FormErrors = Record<FormField, Result<void, i18nKeys>>
+type SelectedFields = Record<FormField, boolean>
+
+function validateConfirmPassword(
+  pass: string,
+  confirm: string
+): Result<void, i18nKeys> {
+  if (!confirm.trim()) {
+    return err('empty_confirm_password')
+  }
+  if (pass !== confirm) {
+    return err('invalid_confirm_password')
+  }
+  return ok()
+}
+
+function validateField(
+  field: FormField,
+  form: FormData
+): Result<void, i18nKeys> {
+  switch (field) {
+    case 'email':
+      return AuthService.validateEmail(form.email)
+    case 'username':
+      return AuthService.validateUsername(form.username)
+    case 'password':
+      return AuthService.validatePassword(form.password)
+    case 'confirmPassword':
+      return validateConfirmPassword(form.password, form.confirmPassword)
+    default:
+      throw new Error(`Unknown field: ${field}`)
+  }
+}
 
 export default function Register() {
   const navigate = useNavigate()
   // State for form fields
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     username: '',
     password: '',
     confirmPassword: ''
   })
 
-  const [errors, setErrors] = useState<{
-    email: string | null
-    username: string | null
-    password: string | null
-    confirmPassword: string | null
-  }>({
-    email: null,
-    username: null,
-    password: null,
-    confirmPassword: null
+  const [errors, setErrors] = useState<FormErrors>({
+    email: ok(),
+    username: ok(),
+    password: ok(),
+    confirmPassword: ok()
   })
 
-  const [touched, setTouched] = useState<{
-    email: boolean
-    username: boolean
-    password: boolean
-    confirmPassword: boolean
-  }>({
+  const [selected, setSelected] = useState<SelectedFields>({
+    confirmPassword: false,
     email: false,
-    username: false,
     password: false,
-    confirmPassword: false
+    username: false
   })
 
-  // State for popup
-  const [showPopup, setShowPopup] = useState(false)
+  // // State for popup
+  // const [showPopup, setShowPopup] = useState(false)
 
-  // Validation functions
-  const validateEmail = (email: string): string | null => {
-    if (!email.trim()) {
-      return 'Email không được để trống'
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return 'Email không hợp lệ'
-    }
-
-    return null
-  }
-
-  const validateUsername = (username: string): string | null => {
-    if (!username.trim()) {
-      return 'Tên đăng nhập không được để trống'
-    }
-
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
-    if (!usernameRegex.test(username)) {
-      return 'Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới (3-20 ký tự)'
-    }
-
-    return null
-  }
-
-  const validatePassword = (password: string): string | null => {
-    if (!password.trim()) {
-      return 'Mật khẩu không được để trống'
-    }
-    if (password.length < 6) {
-      return 'Mật khẩu phải có ít nhất 6 ký tự'
-    }
-    return null
-  }
-
-  const validateConfirmPassword = (
-    confirmPassword: string,
-    password: string
-  ): string | null => {
-    if (!confirmPassword.trim()) {
-      return 'Xác nhận mật khẩu không được để trống'
-    }
-    if (confirmPassword !== password) {
-      return 'Mật khẩu xác nhận không khớp'
-    }
-    return null
-  }
-
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-
-    if (touched[field as keyof typeof touched]) {
-      let error: string | null = null
-      switch (field) {
-        case 'email':
-          error = validateEmail(value)
-          break
-        case 'username':
-          error = validateUsername(value)
-          break
-        case 'password':
-          error = validatePassword(value)
-          break
-        case 'confirmPassword':
-          error = validateConfirmPassword(value, formData.password)
-          break
-        default:
-          break
-      }
-      setErrors((prev) => ({ ...prev, [field]: error }))
+  const handleChange = (field: FormField, value: string) => {
+    const newFormData = { ...formData, [field]: value }
+    setFormData(newFormData)
+    if (selected[field]) {
+      setErrors({ ...errors, [field]: validateField(field, newFormData) })
     }
   }
 
-  const handleBlur = (field: string) => {
-    setTouched((prev) => ({ ...prev, [field]: true }))
-
-    let error: string | null = null
-    switch (field) {
-      case 'email':
-        error = validateEmail(formData.email)
-        break
-      case 'username':
-        error = validateUsername(formData.username)
-        break
-      case 'password':
-        error = validatePassword(formData.password)
-        break
-      case 'confirmPassword':
-        error = validateConfirmPassword(
-          formData.confirmPassword,
-          formData.password
-        )
-        break
-      default:
-        break
-    }
-    setErrors((prev) => ({ ...prev, [field]: error }))
+  const handleBlur = (field: FormField) => {
+    setSelected({ ...selected, [field]: true })
+    setErrors({ ...errors, [field]: validateField(field, formData) })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    let errorOccured = false
+    const newError = { ...errors }
+    const newSelected = { ...selected }
+    for (const field of FormFields) {
+      const validation = validateField(field, formData)
+      errorOccured ||= validation.isErr()
+      newError[field] = validation
+      newSelected[field] = true
+    }
+    setErrors(newError)
+    setSelected(newSelected)
 
-    // Validate all fields
-    const emailError = validateEmail(formData.email)
-    const usernameError = validateUsername(formData.username)
-    const passwordError = validatePassword(formData.password)
-    const confirmPasswordError = validateConfirmPassword(
-      formData.confirmPassword,
-      formData.password
-    )
-
-    setErrors({
-      email: emailError,
-      username: usernameError,
-      password: passwordError,
-      confirmPassword: confirmPasswordError
-    })
-
-    setTouched({
-      email: true,
-      username: true,
-      password: true,
-      confirmPassword: true
-    })
-
-    // If no errors, proceed with registration
-    if (
-      !emailError &&
-      !usernameError &&
-      !passwordError &&
-      !confirmPasswordError
-    ) {
+    if (!errorOccured) {
       console.log('Registration attempt with:', formData)
-      setShowPopup(true)
+      // setShowPopup(true)
     }
   }
 
   return (
     <>
       {/* Header: Đăng ký */}
-      <div className="mb-6 sm:mb-8 text-center">
+      <div className="mb-6 text-center sm:mb-8">
         {/* Đăng ký Text */}
-        <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Đăng ký tài khoản</h1>
+        <h1 className="text-2xl font-bold text-[#C3485C] sm:text-2xl md:text-3xl">
+          Đăng ký tài khoản
+        </h1>
       </div>
 
       {/* Form with max-width constraint */}
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 max-w-sm mx-auto">
+      <form
+        onSubmit={handleSubmit}
+        className="mx-auto w-full max-w-sm space-y-4 sm:space-y-5"
+      >
         <div>
           <InputField
             id="email"
@@ -202,7 +132,7 @@ export default function Register() {
               handleChange('email', e.target.value)
             }
             onBlur={() => handleBlur('email')}
-            error={errors.email}
+            error={errors.email.isErr() ? i18n.t(errors.email.error) : null}
           />
         </div>
 
@@ -217,7 +147,9 @@ export default function Register() {
               handleChange('username', e.target.value)
             }
             onBlur={() => handleBlur('username')}
-            error={errors.username}
+            error={
+              errors.username.isErr() ? i18n.t(errors.username.error) : null
+            }
           />
         </div>
 
@@ -233,7 +165,9 @@ export default function Register() {
               handleChange('password', e.target.value)
             }
             onBlur={() => handleBlur('password')}
-            error={errors.password}
+            error={
+              errors.password.isErr() ? i18n.t(errors.password.error) : null
+            }
           />
         </div>
 
@@ -249,30 +183,29 @@ export default function Register() {
               handleChange('confirmPassword', e.target.value)
             }
             onBlur={() => handleBlur('confirmPassword')}
-            error={errors.confirmPassword}
+            error={
+              errors.confirmPassword.isErr()
+                ? i18n.t(errors.confirmPassword.error)
+                : null
+            }
           />
         </div>
 
         {/* Register Button */}
-        <Button
-          variant="primary"
-          icon={UserPlus}
-          size="fit"
-          type="submit"
-        >
+        <Button variant="primary" icon={UserPlus} size="fit" type="submit">
           Đăng ký tài khoản
         </Button>
       </form>
 
       {/* Divider */}
-      <div className="relative my-4 sm:my-5 flex items-center text-sm max-w-sm mx-auto">
+      <div className="relative mx-auto my-4 flex max-w-sm items-center text-sm sm:my-5">
         <div className="flex-1 border-t border-gray-300"></div>
-        <span className="px-3 sm:px-4 text-gray-400">hoặc</span>
+        <span className="px-3 text-gray-400 sm:px-4">hoặc</span>
         <div className="flex-1 border-t border-gray-300"></div>
       </div>
 
       {/* Login Button */}
-      <div className="max-w-sm mx-auto">
+      <div className="mx-auto max-w-sm">
         <Button
           variant="secondary"
           icon={LogIn}
@@ -286,7 +219,7 @@ export default function Register() {
       {/* Bottom Spacer for scrolling over background */}
       <div className="h-16 sm:h-20"></div>
 
-      {/* Popup Overlay */}
+      {/* Popup Overlay
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <NotificationCard
@@ -302,7 +235,7 @@ export default function Register() {
             }}
           />
         </div>
-      )}
+      )} */}
     </>
   )
 }

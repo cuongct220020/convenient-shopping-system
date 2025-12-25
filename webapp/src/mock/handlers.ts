@@ -12,7 +12,7 @@ function unauthorizedResponse() {
   )
 }
 
-export const handlers = [
+const authHandlers = [
   http.post(AppUrl.BASE + AppUrl.LOGIN, async (e) => {
     const body = await e.request.json()
     if (!body) {
@@ -31,4 +31,8 @@ export const handlers = [
     }
     return unauthorizedResponse()
   })
+]
+
+export const handlers = [
+  // ...authHandlers
 ]
