@@ -8,6 +8,8 @@ import NewPassword from '../pages/main/profile/NewPassword'
 import PersonalProfile from 'pages/main/profile/PersonalProfile'
 import HealthProfile from 'pages/main/profile/HealthProfile'
 import Favorites from 'pages/main/profile/Favorites'
+import FamilyGroup from 'pages/main/family-group/FamilyGroup'
+import AddGroup from 'pages/main/family-group/AddGroup'
 
 export const MainRoutes = {
   path: "/main",
@@ -51,7 +53,11 @@ export const MainRoutes = {
     },
     {
       path: "family-group",
-      element: <div>Family Group</div>,
+      element: <FamilyGroup />,
+    },
+    {
+      path: "family-group/add",
+      element: <AddGroup />,
     }
   ],
 }

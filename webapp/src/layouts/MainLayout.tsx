@@ -33,7 +33,7 @@ export default function MainLayout() {
   return (
     <div className="min-h-screen bg-white relative">
       {/* Main Content Area - Renders the specific screen content */}
-      <main className="pb-16">
+      <main className="pb-16 max-w-sm mx-auto w-full">
         <Outlet />
       </main>
 
