@@ -1,18 +1,29 @@
 # user-service/app/views/auth/reset_password_view.py
 from sanic.request import Request
-from sanic.response import json
-from sanic.views import HTTPMethodView
+from sanic_ext import openapi
 
-from app.decorators.validate_request import validate_request
+from app.decorators import validate_request, api_response
+from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
 from app.schemas import ResetPasswordRequestSchema
 from app.services.auth_service import AuthService
-from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.sanic.schemas import DocGenericResponse
 
 
-class ResetPasswordView(HTTPMethodView):
+class ResetPasswordView(BaseAPIView):
+    """Handles resetting the user's password using a valid OTP."""
 
+    @openapi.summary("Reset forgotten password")
+    @openapi.description("Resets a user's password after verifying a valid OTP for the 'reset_password' action.")
+    @openapi.body(ResetPasswordRequestSchema)
+    @openapi.response(200, DocGenericResponse)
+    @openapi.tag("Authentication")
     @validate_request(ResetPasswordRequestSchema)
+    @api_response(
+        success_schema=DocGenericResponse,
+        success_status=200,
+        success_description="Password reset successfully"
+    )
     async def post(self, request: Request):
         """Handles resetting the user's password using a valid OTP."""
         validated_data = request.ctx.validated_data
@@ -25,9 +36,9 @@ class ResetPasswordView(HTTPMethodView):
             user_repo=user_repo
         )
 
-        response = GenericResponse(
-            status="success",
+        # Use helper method from base class
+        return self.success_response(
             message="Password has been reset successfully.",
-            data=None
+            data=None,
+            status_code=200
         )
-        return json(response.model_dump(mode="json"), status=200)

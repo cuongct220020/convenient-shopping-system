@@ -1,19 +1,29 @@
 # user-service/app/views/auth/login_view.py
 from sanic.request import Request
-from sanic.response import json
-from sanic.views import HTTPMethodView
+from sanic_ext import openapi
 
-from app.decorators.validate_request import validate_request
+from app.decorators import validate_request, api_response
+from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth_schema import LoginRequestSchema
+from app.schemas import LoginRequestSchema, TokenDataResponseSchema
 from app.services.auth_service import AuthService
 
-from shopping_shared.schemas.response_schema import GenericResponse
 
 
-class LoginView(HTTPMethodView):
+class LoginView(BaseAPIView):
+    """Handles user login and token generation."""
 
+    @openapi.summary("Login with email/username and password")
+    @openapi.description("Logs in a user, returning an access token in the response body and a refresh token in an HttpOnly cookie.")
+    @openapi.body(LoginRequestSchema)
+    @openapi.response(200, TokenDataResponseSchema)
+    @openapi.tag("Authentication")
     @validate_request(LoginRequestSchema)
+    @api_response(
+        success_schema=TokenDataResponseSchema,
+        success_status=200,
+        success_description="Login successful"
+    )
     async def post(self, request: Request):
         """Handles user login and token generation."""
         validated_data = request.ctx.validated_data
@@ -26,27 +36,23 @@ class LoginView(HTTPMethodView):
             user_repo=user_repo
         )
 
-        response_data = GenericResponse(
-            status="success",
+        # Use helper method from base class
+        response = self.success_response(
+            data=token_response,
             message="Login successful",
-            data=token_response
+            status_code=200
         )
-
-        response = json(response_data.model_dump(by_alias=True, mode="json"), status=200)
 
         # Attach Refresh Token to cookie
         config = request.app.config
         refresh_ttl_days = config.get("REFRESH_TOKEN_EXPIRE_DAYS", 7)
         refresh_ttl_seconds = refresh_ttl_days * 24 * 60 * 60
 
-        response.add_cookie(
-            key = "refresh_token",
-            value = refresh_token,
-            httponly = True,
-            secure = not config.get("DEBUG", False),
-            samesite = "strict",
-            path="/api/v1/user-service/auth/refresh-token",
-            max_age = refresh_ttl_seconds,
-        )
+        response.cookies['refresh_token'] = refresh_token
+        response.cookies['refresh_token']['httponly'] = True
+        response.cookies['refresh_token']['secure'] = not config.get("DEBUG", False)
+        response.cookies['refresh_token']['samesite'] = 'Strict'
+        response.cookies['refresh_token']['path'] = '/api/v1/user-service/auth/refresh-token'
+        response.cookies['refresh_token']['max_age'] = refresh_ttl_seconds
 
         return response

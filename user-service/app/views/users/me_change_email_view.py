@@ -1,68 +1,102 @@
 # user-service/app/views/users/me_change_email_view.py
 from sanic.request import Request
-from sanic.response import json
 from sanic.views import HTTPMethodView
+from sanic_ext import openapi
 
-from app.decorators.validate_request import validate_request
+from app.decorators import validate_request, api_response
+from app.views.base_view import BaseAPIView
+from app.decorators.auth_decorators import auth_required
 from app.repositories.user_repository import UserRepository
 from app.schemas import RequestEmailChangeSchema, ConfirmEmailChangeRequestSchema, OTPRequestSchema
 from app.services.auth_service import AuthService
 from app.enums import OtpAction
 
-from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.sanic.schemas import DocGenericResponse
 
 
-class MeRequestChangeEmailView(HTTPMethodView):
+class MeRequestChangeEmailView(BaseAPIView):
+    """View for Step 1 of changing email: Requesting an OTP."""
 
+    @openapi.summary("Request email change (Step 1)")
+    @openapi.description("Requests an OTP to be sent to the desired new email address.")
+    @auth_required()
+    @api_response(
+        success_schema=DocGenericResponse,
+        success_status=200,
+        success_description="OTP sent to your new email address"
+    )
+    @openapi.tag("Profile")
     @validate_request(RequestEmailChangeSchema)
     async def post(self, request: Request):
         """Step 1: Request an OTP to change email."""
         new_email = request.ctx.validated_data.new_email
         user_repo = UserRepository(session=request.ctx.db_session)
 
-        # Re-use the centralized logic in AuthService for sending OTP
-        otp_req = OTPRequestSchema(email=new_email, action=OtpAction.CHANGE_EMAIL)
-        
-        # Capture OTP code (useful for debug mode)
-        otp_code = await AuthService.request_otp(
-            otp_data=otp_req,
-            user_repo=user_repo
-        )
+        try:
+            # Re-use the centralized logic in AuthService for sending OTP
+            otp_req = OTPRequestSchema(email=new_email, action=OtpAction.CHANGE_EMAIL)
 
-        response_data = None
-        if request.app.config.get("DEBUG"):
-            response_data = {"otp_code": otp_code}
+            # Capture OTP code (useful for debug mode)
+            otp_code = await AuthService.request_otp(
+                otp_data=otp_req,
+                user_repo=user_repo
+            )
 
-        response = GenericResponse(
-            status="success",
-            message="OTP sent to your new email address.",
-            data=response_data
-        )
+            response_data = None
+            if request.app.config.get("DEBUG"):
+                response_data = {"otp_code": otp_code}
 
-        return json(response.model_dump(mode="json"), status=200)
+            # Use helper method from base class
+            return self.success_response(
+                message="OTP sent to your new email address.",
+                data=response_data,
+                status_code=200
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to send OTP. Please try again.",
+                status_code=500
+            )
 
 
-class MeConfirmChangeEmailView(HTTPMethodView):
+class MeConfirmChangeEmailView(BaseAPIView):
+    """View for Step 2 of changing email: Confirming with OTP."""
 
+    @openapi.summary("Confirm email change (Step 2)")
+    @openapi.description("Confirms the email address change by providing the OTP sent to the new email.")
+    @auth_required()
+    @api_response(
+        success_schema=DocGenericResponse,
+        success_status=200,
+        success_description="Email updated successfully"
+    )
+    @openapi.tag("Profile")
     @validate_request(ConfirmEmailChangeRequestSchema)
     async def post(self, request: Request):
         """Step 2: Confirm email change with OTP."""
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
-        
+
         user_repo = UserRepository(request.ctx.db_session)
 
-        # Delegate to AuthService for atomic verification and update
-        await AuthService.change_email_with_otp(
-            user_id=user_id,
-            change_data=validated_data,
-            user_repo=user_repo
-        )
+        try:
+            # Delegate to AuthService for atomic verification and update
+            await AuthService.change_email_with_otp(
+                user_id=user_id,
+                change_data=validated_data,
+                user_repo=user_repo
+            )
 
-        response = GenericResponse(
-            status="success",
-            message="Email updated successfully. Please login again.",
-            data=None
-        )
-
-        return json(response.model_dump(mode="json"), status=200)
+            # Use helper method from base class
+            return self.success_response(
+                message="Email updated successfully. Please login again.",
+                data=None,
+                status_code=200
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to confirm email change. Please try again.",
+                status_code=500
+            )

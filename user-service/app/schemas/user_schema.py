@@ -3,7 +3,6 @@ from typing import Optional
 from uuid import UUID
 from pydantic import Field, EmailStr
 from shopping_shared.schemas.base_schema import BaseSchema
-from .otp_schema import OTPRequestSchema
 from .user_profile_schema import UserIdentityProfileSchema, UserHealthProfileSchema
 
 

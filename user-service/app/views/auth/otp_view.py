@@ -1,21 +1,24 @@
 # user-service/app/views/auth/otp_view.py
 from sanic.request import Request
-from sanic.response import json
-from sanic.views import HTTPMethodView
+from sanic_ext import openapi
 
-from app.decorators.validate_request import validate_request
+from app.decorators import validate_request, api_response
+from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
 from app.schemas import OTPRequestSchema, RegisterVerifyRequestSchema
 from app.services.auth_service import AuthService
-from app.enums import OtpAction
-from shopping_shared.schemas.response_schema import GenericResponse
-from shopping_shared.exceptions import BadRequest
+from shopping_shared.sanic.schemas import DocGenericResponse
 
 
-class OTPRequestView(HTTPMethodView):
+class OTPRequestView(BaseAPIView):
     """View to handle the generation and sending of a new OTP."""
 
     @validate_request(OTPRequestSchema)
+    @api_response(
+        success_schema=DocGenericResponse,
+        success_status=200,
+        success_description="OTP sent successfully"
+    )
     async def post(self, request: Request):
         """Handles the logic to request and send an OTP for a specific action."""
         otp_data = request.ctx.validated_data
@@ -33,19 +36,28 @@ class OTPRequestView(HTTPMethodView):
             response_data = {"otp_code": otp_code}
 
         # For security, always return a generic success message.
-        response = GenericResponse(
-            status="success",
+        # Use helper method from base class
+        return self.success_response(
             message="If your request was valid, an OTP has been sent to the specified email address.",
-            data=response_data
+            data=response_data,
+            status_code=200
         )
 
-        return json(response.model_dump(mode="json"), status=200)
 
-
-class RegisterVerificationView(HTTPMethodView):
+class RegisterVerificationView(BaseAPIView):
     """Handles the verification of an OTP for account registration."""
 
+    @openapi.summary("Verify Registration (Activate Account)")
+    @openapi.description("Verifies the OTP to complete the registration process and activate the user account.")
+    @openapi.body(RegisterVerifyRequestSchema)
+    @openapi.response(200, DocGenericResponse)
+    @openapi.tag("Authentication")
     @validate_request(RegisterVerifyRequestSchema)
+    @api_response(
+        success_schema=DocGenericResponse,
+        success_status=200,
+        success_description="Account activated successfully"
+    )
     async def post(self, request: Request):
         """
         Verifies the submitted OTP to activate an account.
@@ -58,11 +70,10 @@ class RegisterVerificationView(HTTPMethodView):
             user_repo=user_repo
         )
         message = "Account activated successfully."
-        
-        response = GenericResponse(
-            status="success",
-            message=message,
-            data=None
-        )
 
-        return json(response.model_dump(mode="json"), status=200)
+        # Use helper method from base class
+        return self.success_response(
+            message=message,
+            data=None,
+            status_code=200
+        )

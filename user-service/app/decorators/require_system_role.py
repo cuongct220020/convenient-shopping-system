@@ -9,9 +9,11 @@ from typing import Callable
 
 from app.enums import SystemRole
 from shopping_shared.exceptions import Forbidden
+from sanic_ext import openapi
+from shopping_shared.sanic.schemas import DocGenericResponse
 
 
-def require_system_role(*allowed_roles: SystemRole) -> Callable:
+def require_system_role(*allowed_roles: SystemRole, auto_document: bool = True) -> Callable:
     """
     Check System Role of the user. Must be applied AFTER auth_middleware.
 
@@ -23,8 +25,17 @@ def require_system_role(*allowed_roles: SystemRole) -> Callable:
         @require_system_role(SystemRole.ADMIN, SystemRole.USER)
         async def any_authenticated_user(request):
             ...
+
+    Args:
+        *allowed_roles: One or more SystemRole values allowed
+        auto_document: Whether to automatically document OpenAPI responses (default: True)
     """
     def decorator(func: Callable) -> Callable:
+        if auto_document:
+            # Automatically document the possible authentication/authorization error responses
+            func = openapi.response(401, DocGenericResponse, "Unauthorized - Missing or invalid authentication")(func)
+            func = openapi.response(403, DocGenericResponse, "Forbidden - Insufficient permissions")(func)
+
         @wraps(func)
         async def wrapper(self_or_request, *args, **kwargs):
             # Handle cả HTTPMethodView (self, request) và function view (request)

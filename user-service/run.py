@@ -14,46 +14,8 @@ logger = get_logger("User Service Entrypoint")
 # Create the Sanic app instance
 app = create_app(Config)
 
-# Disable Sanic Ext OpenAPI generation to avoid conflict with our custom /docs route
-app.config.OAS = False
-app.config.OAS_AUTODOC = False
-
-@app.get("/openapi.json")
-async def get_openapi_json(request):
-    """Serve the custom OpenAPI specification."""
-    spec_path = Path(__file__).parent / "openapi.yml"
-    async with aiofiles.open(spec_path, mode='r', encoding='utf-8') as f:
-        content = await f.read()
-        spec = yaml.safe_load(content)
-    return response.json(spec)
-
-@app.get("/docs")
-async def get_docs(request):
-    """Serve Swagger UI."""
-    html = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>SwaggerUI</title>
-        <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
-    </head>
-    <body>
-        <div id="swagger-ui"></div>
-        <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js" crossorigin></script>
-        <script>
-            window.onload = () => {
-                window.ui = SwaggerUIBundle({
-                    url: '/openapi.json',
-                    dom_id: '#swagger-ui',
-                });
-            };
-        </script>
-    </body>
-    </html>
-    """
-    return response.html(html)
+# The line below is removed to allow sanic-ext to auto-generate the spec
+# app.config.OAS_PATH_TO_SPEC = "openapi.yml"
 
 # Configure OpenAPI Security Schemes
 app.config.OAS_SECURITY_SCHEMES = {

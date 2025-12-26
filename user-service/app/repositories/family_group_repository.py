@@ -42,6 +42,18 @@ class FamilyGroupRepository(
         result = await self.session.execute(stmt)
         return result.scalars().first()
 
+    async def get_user_groups(self, user_id: UUID) -> Sequence[GroupMembership]:
+        """
+        Get all groups that a user is a member of with Group info eagerly loaded.
+        """
+        stmt = (
+            select(GroupMembership)
+            .where(GroupMembership.user_id == user_id)
+            .options(selectinload(GroupMembership.group))
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
     async def create_group(self, data: dict) -> FamilyGroup:
         """
         Creates a new family group from a dictionary.

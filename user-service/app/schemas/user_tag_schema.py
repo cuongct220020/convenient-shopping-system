@@ -86,7 +86,7 @@ class UserTagUpdateByCategorySchema(BaseSchema):
         return v
 
 
-class UserTagsByCategoryResponseSchema(BaseSchema):
+class UserTagsByCategorySchema(BaseSchema):
     """Schema for grouping user tags by category."""
     age: List[str] = Field(
         default_factory=list,

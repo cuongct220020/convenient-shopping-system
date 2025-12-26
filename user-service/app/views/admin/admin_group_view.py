@@ -1,213 +1,250 @@
 # user-service/app/views/admin/admin_group_view.py
 from uuid import UUID
 from sanic import Request
-from sanic.response import json
-from sanic.views import HTTPMethodView
+from sanic_ext import openapi
 
-from app.decorators import validate_request, require_system_role
+from app.decorators import validate_request, require_system_role, api_response
+from app.views.base_view import BaseAPIView
 from app.enums import SystemRole, GroupRole
 from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.services.family_group_service import FamilyGroupService
-from app.services.admin_service import AdminGroupService
-from app.schemas.family_group_schema import FamilyGroupDetailedSchema
-from app.schemas.family_group_admin_schema import FamilyGroupAdminUpdateSchema
+from app.schemas import (
+    FamilyGroupDetailedSchema,
+    FamilyGroupAdminUpdateSchema,
+    FamilyGroupDetailedResponseSchema,
+    DocGenericResponse
+)
+from app.schemas.family_group_schema import GroupMembershipUpdateSchema # Direct import for clarity
 
-from shopping_shared.exceptions import BadRequest
-from shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
+from shopping_shared.sanic.schemas import DocGenericResponse
 
 
-class AdminGroupsView(HTTPMethodView):
-    """
-    Admin endpoints for listing all family groups. Requires ADMIN role.
-    """
+class AdminGroupsView(BaseAPIView):
+    """Admin endpoints for listing all family groups. Requires ADMIN role."""
+    decorators = [
+        require_system_role(SystemRole.ADMIN),
+        openapi.tag("Admin - Group Management"),
+        openapi.secured("bearerAuth")
+    ]
 
-    decorators = [require_system_role(SystemRole.ADMIN)]
+    @openapi.summary("List all groups")
+    @openapi.description("Lists all family groups in the system with pagination.")
+    @openapi.parameter("page", int, "query")
+    @openapi.parameter("page_size", int, "query")
+    @openapi.response(200, DocGenericResponse) # Note: Actual response is paginated, but this is a placeholder
+    @api_response(
+        success_schema=DocGenericResponse,
+        success_status=200,
+        success_description="Groups listed successfully"
+    )
+    async def get(self, request: Request):
+        """List all family groups with pagination."""
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page_size", 10))
 
-    @staticmethod
-    async def get(request: Request):
-        """Lists all family groups in the system with pagination."""
+        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
+        group_service = FamilyGroupService(group_repo)
+
         try:
-            page = int(request.args.get("page", 1))
-            page_size = int(request.args.get("page_size", 20))
-        except ValueError:
-            raise BadRequest("Invalid pagination parameters.")
+            groups, total = await group_service.get_all_groups_paginated(page=page, page_size=page_size)
 
-        # Init service
-        session = request.ctx.db_session
-        service = FamilyGroupService(
-            FamilyGroupRepository(session),
-            GroupMembershipRepository(session),
-            UserRepository(session)
-        )
-
-        paginated_result = await service.get_all(page=page, page_size=page_size)
-
-        # Better: use specialized load options for list view
-        from sqlalchemy.orm import selectinload
-        from app.models import FamilyGroup, GroupMembership
-        load_options = [
-            selectinload(FamilyGroup.creator),
-            selectinload(FamilyGroup.group_memberships).selectinload(GroupMembership.user)
-        ]
-        
-        paginated_result = await service.repository.get_paginated(
-            page=page, 
-            page_size=page_size,
-            load_options=load_options
-        )
-
-        response = PaginationResponse(
-            status="success",
-            data=[FamilyGroupDetailedSchema.model_validate(g) for g in paginated_result.items],
-            page=paginated_result.current_page,
-            page_size=paginated_result.page_size,
-            total_items=paginated_result.total_items,
-            total_pages=paginated_result.total_pages
-        )
-        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
+            # Use helper method from base class
+            return self.success_response(
+                data={
+                    "items": [FamilyGroupDetailedSchema.model_validate(group).model_dump() for group in groups],
+                    "page": page,
+                    "page_size": page_size,
+                    "total": total,
+                    "total_pages": (total + page_size - 1) // page_size
+                },
+                message="Groups listed successfully",
+                status_code=200
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to list groups",
+                status_code=500
+            )
 
 
-class AdminGroupDetailView(HTTPMethodView):
-    """
-    Admin endpoints for managing a specific family group. Requires ADMIN role.
-    """
+class AdminGroupDetailView(BaseAPIView):
+    """Admin endpoints for managing a specific family group."""
+    decorators = [
+        require_system_role(SystemRole.ADMIN),
+        openapi.tag("Admin - Group Management"),
+        openapi.secured("bearerAuth")
+    ]
 
-    decorators = [require_system_role(SystemRole.ADMIN)]
 
-    @staticmethod
-    def _get_service(request: Request) -> FamilyGroupService:
-        session = request.ctx.db_session
-        return FamilyGroupService(
-            FamilyGroupRepository(session),
-            GroupMembershipRepository(session),
-            UserRepository(session)
-        )
-
+    @openapi.summary("Get group by ID")
+    @openapi.description("Retrieves a specific family group by its ID.")
+    @openapi.response(200, FamilyGroupDetailedResponseSchema)
+    @api_response(
+        success_schema=FamilyGroupDetailedResponseSchema,
+        success_status=200,
+        success_description="Group retrieved successfully"
+    )
     async def get(self, request: Request, group_id: UUID):
-        """Retrieves detailed information about a specific family group."""
-        session = request.ctx.db_session
-        repo = FamilyGroupRepository(session)
-        group = await repo.get_with_details(group_id)
-        
-        if not group:
-            from shopping_shared.exceptions import NotFound
-            raise NotFound(f"Group {group_id} not found")
+        """Get a specific family group by ID."""
+        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
+        group_service = FamilyGroupService(group_repo)
 
-        response = GenericResponse(
-            status="success",
-            data=FamilyGroupDetailedSchema.model_validate(group)
-        )
+        try:
+            group = await group_service.get_group_by_id(group_id)
 
-        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
+            # Use helper method from base class
+            return self.success_response(
+                data=FamilyGroupDetailedSchema.model_validate(group),
+                message="Group retrieved successfully",
+                status_code=200
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to retrieve group",
+                status_code=500
+            )
 
+
+    @openapi.summary("Update group by ID")
+    @openapi.description("Updates a specific family group by its ID.")
+    @openapi.body(FamilyGroupAdminUpdateSchema)
+    @openapi.response(200, FamilyGroupDetailedResponseSchema)
     @validate_request(FamilyGroupAdminUpdateSchema)
-    async def patch(self, request: Request, group_id: UUID):
-        """Updates information of a specific family group."""
+    @api_response(
+        success_schema=FamilyGroupDetailedResponseSchema,
+        success_status=200,
+        success_description="Group updated successfully"
+    )
+    async def put(self, request: Request, group_id: UUID):
+        """Update a specific family group by ID."""
         validated_data = request.ctx.validated_data
+        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
+        group_service = FamilyGroupService(group_repo)
 
-        service = self._get_service(request)
-        await service.update(group_id, validated_data)
-        
-        # Reload with details
-        repo = FamilyGroupRepository(request.ctx.db_session)
-        updated_group = await repo.get_with_details(group_id)
-        
-        response = GenericResponse(
-            status="success",
-            message="Group updated successfully.",
-            data=FamilyGroupDetailedSchema.model_validate(updated_group)
-        )
-        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
+        try:
+            updated_group = await group_service.update_group(group_id, validated_data)
 
+            # Use helper method from base class
+            return self.success_response(
+                data=FamilyGroupDetailedSchema.model_validate(updated_group),
+                message="Group updated successfully",
+                status_code=200
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to update group",
+                status_code=500
+            )
+
+    @openapi.summary("Delete group by ID")
+    @openapi.description("Deletes a specific family group by its ID.")
+    @openapi.response(200, DocGenericResponse)
+    @api_response(
+        success_schema=DocGenericResponse,
+        success_status=200,
+        success_description="Group deleted successfully"
+    )
     async def delete(self, request: Request, group_id: UUID):
-        """Deletes a specific family group."""
-        service = self._get_service(request)
-        await service.delete(group_id)
+        """Delete a specific family group by ID."""
+        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
+        group_service = FamilyGroupService(group_repo)
 
-        response = GenericResponse(
-            status="success",
-            message="Group deleted successfully.",
-            data=None
-        )
+        try:
+            await group_service.delete_group(group_id)
 
-        return json(response.model_dump(mode='json'), status=200)
-
-
-class AdminGroupMembersView(HTTPMethodView):
-    """
-    Admin endpoints for adding members to a group. Requires ADMIN role.
-    """
-
-    decorators = [require_system_role(SystemRole.ADMIN)]
-
-    @staticmethod
-    def _get_service(request: Request) -> AdminGroupService:
-        session = request.ctx.db_session
-        return AdminGroupService(
-            UserRepository(session),
-            GroupMembershipRepository(session)
-        )
-
-    async def post(self, request: Request, group_id: UUID):
-        """Adds a user to a family group."""
-        email = request.json.get("email")
-        if not email:
-            raise BadRequest("Email is required.")
-            
-        service = self._get_service(request)
-        await service.add_member_by_admin(group_id, email)
-        
-        response = GenericResponse(
-            status="success",
-            message="Member added successfully by admin."
-        )
-        return json(response.model_dump(mode='json'), status=201)
+            # Use helper method from base class
+            return self.success_response(
+                message="Group deleted successfully",
+                status_code=200
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to delete group",
+                status_code=500
+            )
 
 
-class AdminGroupMembersManageView(HTTPMethodView):
-    """
-    Admin endpoints for managing existing members (Delete/Update). Requires ADMIN role.
-    """
+class AdminGroupMembersView(BaseAPIView):
+    """Admin endpoints for managing group members."""
+    decorators = [
+        require_system_role(SystemRole.ADMIN),
+        openapi.tag("Admin - Group Management"),
+        openapi.secured("bearerAuth")
+    ]
 
-    decorators = [require_system_role(SystemRole.ADMIN)]
+    @openapi.summary("List members of a group")
+    @openapi.description("Lists all members of a specific family group.")
+    @openapi.response(200, DocGenericResponse)
+    @api_response(
+        success_schema=DocGenericResponse,
+        success_status=200,
+        success_description="Group members listed successfully"
+    )
+    async def get(self, request: Request, group_id: UUID):
+        """List all members of a specific family group."""
+        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
 
-    @staticmethod
-    def _get_service(request: Request) -> AdminGroupService:
-        session = request.ctx.db_session
-        return AdminGroupService(
-            UserRepository(session),
-            GroupMembershipRepository(session)
-        )
+        try:
+            members = await membership_repo.get_group_members(group_id)
 
-    async def delete(self, request: Request, group_id: UUID, user_id: UUID):
-        """Removes a member from a family group."""
-        service = self._get_service(request)
-        await service.remove_member_by_admin(group_id, user_id)
-
-        response = GenericResponse(
-            status="success",
-            message="Member removed successfully by admin.",
-            data=None
-        )
-
-        return json(response.model_dump(mode='json'), status=200)
+            # Use helper method from base class
+            return self.success_response(
+                data=members,
+                message="Group members listed successfully",
+                status_code=200
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to list group members",
+                status_code=500
+            )
 
 
+class AdminGroupMembersManageView(BaseAPIView):
+    """Admin endpoints for managing group member roles."""
+    decorators = [
+        require_system_role(SystemRole.ADMIN),
+        openapi.tag("Admin - Group Management"),
+        openapi.secured("bearerAuth")
+    ]
+
+    @openapi.summary("Update member role in group")
+    @openapi.description("Updates the role of a member in a specific family group.")
+    @openapi.body(GroupMembershipUpdateSchema)
+    @openapi.response(200, DocGenericResponse)
+    @validate_request(GroupMembershipUpdateSchema)
+    @api_response(
+        success_schema=DocGenericResponse,
+        success_status=200,
+        success_description="Member role updated successfully"
+    )
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
-        """Updates the role of a member in a family group."""
-        role_str = request.json.get("role")
-        if not role_str or role_str not in [r.value for r in GroupRole]:
-             raise BadRequest("Valid role is required.")
-        new_role = GroupRole(role_str)
-        
-        service = self._get_service(request)
-        await service.update_member_role_by_admin(group_id, user_id, new_role)
+        """Update the role of a member in a specific family group."""
+        validated_data = request.ctx.validated_data
+        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
 
-        response = GenericResponse(
-            status="success",
-            message="Member role updated successfully by admin.",
-            data=None,
-        )
+        try:
+            updated_membership = await membership_repo.update_member_role(
+                group_id=group_id,
+                user_id=user_id,
+                new_role=validated_data.role
+            )
 
-        return json(response.model_dump(mode='json'), status=200)
+            # Use helper method from base class
+            return self.success_response(
+                data=updated_membership,
+                message="Member role updated successfully",
+                status_code=200
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to update member role",
+                status_code=500
+            )

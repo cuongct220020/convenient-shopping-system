@@ -1,19 +1,34 @@
 # user-service/app/views/auth/refresh_view.py
 from sanic.request import Request
-from sanic.response import json, HTTPResponse
-from sanic.views import HTTPMethodView
+from sanic.response import HTTPResponse
+from sanic_ext import openapi
 
+from app.decorators import api_response
+from app.views.base_view import BaseAPIView
 from shopping_shared.exceptions import Forbidden, Unauthorized
-from shopping_shared.schemas.response_schema import GenericResponse
+
 
 from app.services.auth_service import AuthService
 from app.repositories.user_repository import UserRepository
-from app.schemas import TokenResponseSchema
+from app.schemas import TokenResponseSchema, TokenDataResponseSchema
 
 
-class RefreshView(HTTPMethodView):
+class RefreshView(BaseAPIView):
+    """Handles token refresh using a cookie."""
 
     @staticmethod
+    @openapi.summary("Refresh access token")
+    @openapi.description(
+        "Generates a new access token using the refresh token provided in an HttpOnly cookie. "
+        "This endpoint implements token rotation, where a new refresh token is also returned in a new cookie."
+    )
+    @openapi.response(200, TokenDataResponseSchema)
+    @openapi.tag("Authentication")
+    @api_response(
+        success_schema=TokenDataResponseSchema,
+        success_status=200,
+        success_description="Token refreshed successfully"
+    )
     async def post(request: Request) -> HTTPResponse:
         """
         Xử lý token refresh
@@ -36,13 +51,17 @@ class RefreshView(HTTPMethodView):
 
         except (Unauthorized, Forbidden) as e:
             # --- QUAN TRỌNG: Xóa cookie hỏng/bị thu hồi ---
-            response_data = GenericResponse(status="fail", message=str(e))
-            response = json(response_data.model_dump(mode='json'), status=401)
-            response.add_cookie(
-                "refresh_token", "", max_age=0, httponly=True,
-                secure=not config.get("DEBUG", False), samesite="Strict",
-                path="/api/v1/user-service/auth/refresh-token"
+            # Use helper method from base class
+            response = BaseAPIView.fail_response(
+                message=str(e),
+                status_code=401
             )
+            response.cookies['refresh_token'] = ""
+            response.cookies['refresh_token']['max_age'] = 0
+            response.cookies['refresh_token']['httponly'] = True
+            response.cookies['refresh_token']['secure'] = not config.get("DEBUG", False)
+            response.cookies['refresh_token']['samesite'] = 'Strict'
+            response.cookies['refresh_token']['path'] = '/api/v1/user-service/auth/refresh-token'
             return response
 
         # 3. Prepare response with access token and user status
@@ -53,26 +72,22 @@ class RefreshView(HTTPMethodView):
             is_active=is_active
         )
 
-        response_data = GenericResponse(
-            status="success",
+        # Use helper method from base class
+        response = BaseAPIView.success_response(
+            data=access_token_data,
             message="Tokens refreshed successfully",
-            data=access_token_data
+            status_code=200
         )
-
-        response = json(response_data.model_dump(by_alias=True, mode='json'), status=200)
 
         # 4. Đặt refresh token MỚI (đã được xoay vòng) vào cookie
         refresh_expires_days = int(config.get("REFRESH_TOKEN_EXPIRE_DAYS", 7))
         max_age = refresh_expires_days * 24 * 60 * 60
 
-        response.add_cookie(
-            "refresh_token",
-            new_token_data.refresh_token,
-            max_age=max_age,
-            httponly=True,
-            secure=not config.get("DEBUG", False),
-            samesite="Strict",
-            path="/api/v1/user-service/auth/refresh-token"
-        )
+        response.cookies['refresh_token'] = new_token_data.refresh_token
+        response.cookies['refresh_token']['max_age'] = max_age
+        response.cookies['refresh_token']['httponly'] = True
+        response.cookies['refresh_token']['secure'] = not config.get("DEBUG", False)
+        response.cookies['refresh_token']['samesite'] = 'Strict'
+        response.cookies['refresh_token']['path'] = '/api/v1/user-service/auth/refresh-token'
 
         return response

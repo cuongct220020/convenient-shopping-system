@@ -161,6 +161,12 @@ class FamilyGroupService:
         logger.info(f"Updated role for user {target_user_id} in group {group_id} to {new_role}")
         return membership
 
+    async def get_user_groups(self, user_id: UUID) -> Sequence[GroupMembership]:
+        """
+        Get all groups that a user is a member of.
+        """
+        return await self.member_repo.get_user_groups(user_id)
+
     async def _is_head_chef(self, user_id: UUID, group_id: UUID) -> bool:
         """Helper to check if user is HEAD_CHEF of the group."""
         membership = await self.member_repo.get_membership(user_id, group_id)

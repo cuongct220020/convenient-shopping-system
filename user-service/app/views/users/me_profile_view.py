@@ -1,12 +1,14 @@
 # user-service/app/views/users/me_profile_view.py
 from sanic import Request
-from sanic.response import json
 from sanic.views import HTTPMethodView
+from sanic_ext import openapi
 
 from shopping_shared.exceptions import NotFound
-from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.sanic.schemas import DocGenericResponse
 
-from app.decorators.validate_request import validate_request
+from app.decorators import validate_request, api_response
+from app.views.base_view import BaseAPIView
+from app.decorators.auth_decorators import auth_required
 from app.repositories.user_profile_repository import (
     UserIdentityProfileRepository,
     UserHealthProfileRepository
@@ -20,6 +22,8 @@ from app.schemas import (
     UserIdentityProfileUpdateSchema,
     UserHealthProfileSchema,
     UserHealthProfileUpdateSchema,
+    UserIdentityProfileResponseSchema,
+    UserHealthProfileResponseSchema
 )
 
 from shopping_shared.utils.logger_utils import get_logger
@@ -27,65 +31,108 @@ from shopping_shared.utils.logger_utils import get_logger
 logger = get_logger("Me Profile View")
 
 
-class MeIdentityProfileView(HTTPMethodView):
+class MeIdentityProfileView(BaseAPIView):
+    """Manages the identity profile for the authenticated user."""
 
-    @staticmethod
-    async def get(request: Request):
+    @openapi.summary("Get identity profile")
+    @openapi.description("Retrieves the identity profile (gender, DOB, etc.) of the authenticated user.")
+    @auth_required()
+    @api_response(
+        success_schema=UserIdentityProfileResponseSchema,
+        success_status=200,
+        success_description="Identity profile retrieved successfully"
+    )
+    @openapi.tag("Profile")
+    async def get(self, request: Request):
         """Retrieves the identity profile of the authenticated user."""
         user_id = request.ctx.auth_payload["sub"]
-        
+
         user_identity_profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
         user_identity_profile_service = UserIdentityProfileService(user_identity_profile_repo)
 
         try:
             profile = await user_identity_profile_service.get(user_id)
             data = UserIdentityProfileSchema.model_validate(profile)
+
+            # Use helper method from base class
+            return self.success_response(
+                data=data,
+                message="Identity profile found",
+                status_code=200
+            )
         except NotFound:
-            raise NotFound("Identity profile not found.")
+            # Use helper method from base class
+            return self.error_response(
+                message="Identity profile not found.",
+                status_code=404
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to retrieve identity profile",
+                status_code=500
+            )
 
-        response = GenericResponse(
-            status="success",
-            message="Identity profile found",
-            data=data
-        )
-
-        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
-
-        
-
-        
-
+    @openapi.summary("Update identity profile")
+    @openapi.description("Updates (or creates) the identity profile for the authenticated user.")
+    @auth_required()
+    @api_response(
+        success_schema=UserIdentityProfileResponseSchema,
+        success_status=200,
+        success_description="Identity profile updated successfully"
+    )
+    @openapi.tag("Profile")
     @validate_request(UserIdentityProfileUpdateSchema)
     async def patch(self, request: Request):
         """Updates the identity profile of the authenticated user."""
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
 
-        repo = UserIdentityProfileRepository(request.ctx.db_session)
-        service = UserIdentityProfileService(repo)
+        user_identity_profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
+        user_identity_profile_service = UserIdentityProfileService(user_identity_profile_repo)
 
-        # Check if exists, if not create (Upsert logic often preferred for profiles)
         try:
-            # Try update first
-            updated_profile = await service.update(user_id, validated_data)
+            updated_profile = await user_identity_profile_service.update(user_id, validated_data)
+
+            # Use helper method from base class
+            return self.success_response(
+                data=UserIdentityProfileSchema.model_validate(updated_profile),
+                message="Identity profile updated.",
+                status_code=200
+            )
         except NotFound:
-            logger.warning(f"Identity profile for user_id {user_id} not found. Creating new profile.")
+            # Upsert logic
             create_data = validated_data.model_dump()
             create_data['user_id'] = user_id
-            updated_profile = await repo.create(create_data)
+            updated_profile = await user_identity_profile_repo.create(create_data)
 
-        response = GenericResponse(
-            status="success",
-            message="Identity profile updated.",
-            data=UserIdentityProfileSchema.model_validate(updated_profile)
-        )
-        return json(response.model_dump(mode="json"), status=200)
+            # Use helper method from base class
+            return self.success_response(
+                data=UserIdentityProfileSchema.model_validate(updated_profile),
+                message="Identity profile created.",
+                status_code=200
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to update identity profile",
+                status_code=500
+            )
 
 
-class MeHealthProfileView(HTTPMethodView):
+class MeHealthProfileView(BaseAPIView):
+    """Manages the health profile for the authenticated user."""
 
-    @staticmethod
-    async def get(request: Request):
+    @openapi.summary("Get health profile")
+    @openapi.description("Retrieves the health profile (height, weight, etc.) of the authenticated user.")
+    @auth_required()
+    @api_response(
+        success_schema=UserHealthProfileResponseSchema,
+        success_status=200,
+        success_description="Health profile retrieved successfully"
+    )
+    @openapi.tag("Profile")
+    async def get(self, request: Request):
         """Retrieves the health profile of the authenticated user."""
 
         user_id = request.ctx.auth_payload["sub"]
@@ -96,16 +143,34 @@ class MeHealthProfileView(HTTPMethodView):
         try:
             profile = await user_health_service.get(user_id)
             data = UserHealthProfileSchema.model_validate(profile)
+
+            # Use helper method from base class
+            return self.success_response(
+                data=data,
+                status_code=200
+            )
         except NotFound:
-            raise NotFound("Health profile not found.")
+            # Use helper method from base class
+            return self.error_response(
+                message="Health profile not found.",
+                status_code=404
+            )
+        except Exception as e:
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to retrieve health profile",
+                status_code=500
+            )
 
-        response = GenericResponse(
-            status="success",
-            data=data
-        )
-        return json(response.model_dump(mode="json"), status=200)
-
-
+    @openapi.summary("Update health profile")
+    @openapi.description("Updates (or creates) the health profile for the authenticated user.")
+    @auth_required()
+    @api_response(
+        success_schema=UserHealthProfileResponseSchema,
+        success_status=200,
+        success_description="Health profile updated successfully"
+    )
+    @openapi.tag("Profile")
     @validate_request(UserHealthProfileUpdateSchema)
     async def patch(self, request: Request):
         """Updates the health profile of the authenticated user."""
@@ -123,10 +188,9 @@ class MeHealthProfileView(HTTPMethodView):
             create_data['user_id'] = user_id
             updated_profile = await user_health_profile_repo.create(create_data)
 
-        response = GenericResponse(
-            status="success",
+        # Use helper method from base class
+        return self.success_response(
+            data=UserHealthProfileSchema.model_validate(updated_profile),
             message="Health profile updated.",
-            data=UserHealthProfileSchema.model_validate(updated_profile)
+            status_code=200
         )
-
-        return json(response.model_dump(mode="json"), status=200)
