@@ -19,7 +19,7 @@ from .auth_schema import (
 
 from .otp_schema import (
     OTPRequestSchema,
-    OTPVerifyRequestSchema
+    RegisterVerifyRequestSchema
 )
 
 from .user_admin_schema import (
@@ -76,7 +76,7 @@ __all__ = [
 
     # OTP
     "OTPRequestSchema",
-    "OTPVerifyRequestSchema",
+    "RegisterVerifyRequestSchema",
 
     # Profile - Identity
     "AddressSchema",

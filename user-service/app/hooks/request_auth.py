@@ -100,7 +100,7 @@ def _is_auth_required(request: Request) -> bool:
         f"{prefix}/auth/login",
         f"{prefix}/auth/register",
         f"{prefix}/auth/otp/send",
-        f"{prefix}/auth/otp/verify",
+        f"{prefix}/auth/register/verify",
         f"{prefix}/auth/reset-password",
         f"{prefix}/auth/refresh-token"
     }
