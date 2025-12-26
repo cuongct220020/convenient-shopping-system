@@ -32,7 +32,7 @@ class JWTHandler:
         self.refresh_token_expire_days = app.config.get("REFRESH_TOKEN_EXPIRE_DAYS", 7)
         self.algorithm = app.config.get("JWT_ALGORITHM", "HS256")
 
-        # Load keys based on algorithm
+        # Load keys based on algorithm - keys should already be loaded by config.py
         if self.algorithm.startswith("RS"):
             self.private_key = app.config["JWT_PRIVATE_KEY"]
             self.public_key = app.config["JWT_PUBLIC_KEY"]
@@ -64,12 +64,14 @@ class JWTHandler:
         """Create common token payload and JTI."""
         jti = str(uuid.uuid4())
         issued_at_time = datetime.now(UTC)
+        issued_at_timestamp = int(issued_at_time.timestamp())
+        expiry_time = issued_at_time + expiry_delta
 
         payload = {
             'iss': 'shopping-user-service',
             'token_type': token_type,
-            'exp': issued_at_time + expiry_delta,
-            'iat': issued_at_time,
+            'exp': int(expiry_time.timestamp()),  # Convert to Unix timestamp
+            'iat': issued_at_timestamp,  # Convert to Unix timestamp
             'sub': str(user_id),
             'jti': jti,
             'aud': 'shopping-system-users'

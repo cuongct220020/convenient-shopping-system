@@ -16,6 +16,9 @@ async def auth_middleware(request: Request):
         logger.debug("Auth middleware skipped for path: %s", request.path)
         return  # skip public endpoints
 
+    # Check if this is a logout request, which may have an already-invalidated token
+    is_logout_request = request.path == "/api/v1/user-service/auth/logout"
+
     user_id = request.headers.get("x-user-id")
     user_role = request.headers.get("x-user-role")
     user_email = request.headers.get("x-user-email")
@@ -32,14 +35,16 @@ async def auth_middleware(request: Request):
         logger.warning("Missing x-jti header")
         raise Unauthorized("Missing token identifier from API Gateway.")
 
-    try:
-        if await RedisService.is_token_in_blocklist(access_token_jti=access_jti):
-            logger.info("Token jti found in blocklist: %s", access_jti)
-            raise Unauthorized("Access token has been revoked.")
-    except Exception as ex:
-        logger.exception("Error while checking token blocklist: %s", ex)
-        # escalate as unauthorized to be safe
-        raise Unauthorized("Failed to validate token.") from ex
+    # For logout requests, we allow blocked tokens (since that's the point of logout)
+    if not is_logout_request:
+        try:
+            if await RedisService.is_token_in_blocklist(access_token_jti=access_jti):
+                logger.info("Token jti found in blocklist: %s", access_jti)
+                raise Unauthorized("Access token has been revoked.")
+        except Exception as ex:
+            logger.exception("Error while checking token blocklist: %s", ex)
+            # escalate as unauthorized to be safe
+            raise Unauthorized("Failed to validate token.") from ex
 
     try:
         token_iat = int(iat_str)
@@ -80,10 +85,10 @@ def _is_auth_required(request: Request) -> bool:
     Xác định xem request hiện tại có cần xác thực hay không.
     """
     ignore_methods = {"OPTIONS"}
-    
+
     # Prefix cho các API
     prefix = "/api/v1/user-service"
-    
+
     # Các đường dẫn không cần xác thực
     ignore_paths = {
         "/",                  # Trang chủ service (trong run.py)
@@ -110,5 +115,9 @@ def _is_auth_required(request: Request) -> bool:
 
     if request.path in ignore_paths:
         return False
+
+    # Special handling for logout - it needs authentication but should handle invalid tokens gracefully
+    if request.path == f"{prefix}/auth/logout":
+        return True  # Logout still needs authentication but will handle invalid tokens specially
 
     return True
