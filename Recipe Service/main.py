@@ -8,6 +8,7 @@ from apis.v2.ingredient_api import ingredient_router
 from apis.v2.recipe_api import recipe_router
 from messaging.manager import kafka_manager
 from messaging.consumers.ingredient_consumer import consume_ingredient_events
+from messaging.consumers.recipe_consumer import consume_recipe_events
 import asyncio
 
 @asynccontextmanager
@@ -16,7 +17,8 @@ async def lifespan(app: FastAPI):
     kafka_manager.setup(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
 
     tasks = [
-        asyncio.create_task(consume_ingredient_events())
+        asyncio.create_task(consume_ingredient_events()),
+        asyncio.create_task(consume_recipe_events())
     ]
 
     yield

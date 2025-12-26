@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, select, String
 from typing import Sequence, Optional
 import httpx
+import asyncio
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
 from models.recipe_ingredient_flattened import RecipeIngredientFlattened
@@ -9,12 +10,60 @@ from schemas.recipe_schemas import RecipeCreate, RecipeUpdate
 from schemas.recipe_flattened_schemas import RecipeQuantityInput
 from schemas.ingredient_schemas import IngredientResponse
 from utils.custom_mapping import recipes_flattened_aggregated_mapping
+from messaging.producers.recipe_producer import publish_recipe_event
+from core.es import get_es
 
 """
     Method for RecipeDetailResponse
 """
 
 class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
+    def create(self, db: Session, obj_in: RecipeCreate) -> Recipe:
+        db_obj = super().create(db, obj_in)
+        db.refresh(db_obj)
+        if db_obj.component_list:
+            for cl in db_obj.component_list:
+                db.refresh(cl)
+                if cl.component:
+                    db.refresh(cl.component)
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(publish_recipe_event("recipe_created", db_obj))
+        else:
+            loop.run_until_complete(publish_recipe_event("recipe_created", db_obj))
+        return db_obj
+
+    def update(self, db: Session, obj_in: RecipeUpdate, db_obj: Recipe) -> Recipe:
+        result = super().update(db, obj_in, db_obj)
+        db.refresh(result)
+        if result.component_list:
+            for cl in result.component_list:
+                db.refresh(cl)
+                if cl.component:
+                    db.refresh(cl.component)
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(publish_recipe_event("recipe_updated", result))
+        else:
+            loop.run_until_complete(publish_recipe_event("recipe_updated", result))
+        return result
+
+    def delete(self, db: Session, id: int) -> Recipe:
+        obj = db.get(Recipe, id)
+        if obj is None:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail=f"Recipe with id={id} not found")
+        if obj.component_list:
+            for cl in obj.component_list:
+                if cl.component:
+                    db.refresh(cl.component)
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(publish_recipe_event("recipe_deleted", obj))
+        else:
+            loop.run_until_complete(publish_recipe_event("recipe_deleted", obj))
+        return super().delete(db, id)
+
     def get_detail(self, db: Session, ids: list[int]) -> Sequence[Recipe]:
         return db.execute(
             select(Recipe)
@@ -29,20 +78,26 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
             .where(Recipe.component_id.in_(ids))
         ).scalars().all()
 
-    def search(self, db: Session, keyword: str, limit: int = 10)  -> Sequence[Recipe]:
+    async def search(self, db: Session, keyword: str, limit: int = 10) -> Sequence[Recipe]:
+        es = get_es()
+        query = {
+            "query": {
+                "multi_match": {
+                    "query": keyword,
+                    "fields": ["component_name", "component_list"]
+                }
+            },
+            "size": 1000
+        }
+        response = await es.search(index="recipes", body=query)
+        component_ids = [int(hit["_id"]) for hit in response["hits"]["hits"]]
+        
+        if not component_ids:
+            return []
+        
         return db.execute(
             select(Recipe)
-            .where(
-                Recipe.component_id.in_(
-                    select(RecipeIngredientFlattened.recipe_id)
-                    .where(
-                        or_(
-                            RecipeIngredientFlattened.recipe_name.ilike(f"%{keyword}%"),
-                            RecipeIngredientFlattened.all_ingredients.cast(String).ilike(f"%{keyword}%")
-                        )
-                    )
-                )
-            )
+            .where(Recipe.component_id.in_(component_ids))
             .limit(limit)
         ).scalars().all()
 

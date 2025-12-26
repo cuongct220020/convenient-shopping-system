@@ -29,8 +29,8 @@ recipe_router = APIRouter(
     status_code=status.HTTP_200_OK,
     description="Search for recipes by keyword in their names or ingredients. Returns a list of matching recipes."
 )
-def search_recipes(keyword: str = Query(...), limit: int = Query(10), db: Session = Depends(get_db)):
-    return recipe_crud.search(db, keyword=keyword, limit=limit)
+async def search_recipes(keyword: str = Query(...), limit: int = Query(10), db: Session = Depends(get_db)):
+    return await recipe_crud.search(db, keyword=keyword, limit=limit)
 
 @recipe_router.post(
     "/flattened",
