@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     ES_USERNAME: Optional[str] = None
     ES_PASSWORD: Optional[str] = None
     
+    # Kafka Configuration
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
