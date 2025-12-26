@@ -6,7 +6,7 @@ from services.storable_unit_crud import StorableUnitCRUD
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse, StorableUnitStackedResponse
 from models.storage import StorableUnit
 from shared.shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
-from database import get_db
+from core.database import get_db
 
 storable_unit_crud = StorableUnitCRUD(StorableUnit)
 
@@ -112,7 +112,7 @@ def filter_units(
     status_code=status.HTTP_201_CREATED,
     description="Create a new StorableUnit."
 )
-async def create_unit(obj_in: StorableUnitCreate, db: Session = Depends(get_db)):
+def create_unit(obj_in: StorableUnitCreate, db: Session = Depends(get_db)):
     return storable_unit_crud.create(db, obj_in)
 
 
@@ -139,7 +139,7 @@ def update_unit(id: int, obj_in: StorableUnitUpdate, db: Session = Depends(get_d
         "Returns 400 if the requested quantity exceeds available quantity."
     )
 )
-async def consume_unit(id: int, consume_quantity: int = Body(..., gt=0), db: Session = Depends(get_db)):
+def consume_unit(id: int, consume_quantity: int = Body(..., gt=0), db: Session = Depends(get_db)):
     message, storable_unit = storable_unit_crud.consume(db, id, consume_quantity)
     return GenericResponse(
         message=message,

@@ -7,9 +7,30 @@ from sqlalchemy.inspection import inspect
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.storage import StorableUnit, Storage
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate
+from messaging.producers.component_existence_producer import publish_component_existence_update
+import asyncio
 
 
 class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUpdate]):
+    def create(self, db: Session, obj_in: StorableUnitCreate) -> StorableUnit:
+        db_obj = super().create(db, obj_in)
+        storage = db.get(Storage, db_obj.storage_id)
+        if storage:
+            stmt = (
+                select(StorableUnit.unit_name)
+                .join(Storage, StorableUnit.storage_id == Storage.storage_id)
+                .where(Storage.group_id == storage.group_id)
+                .where(StorableUnit.component_id.isnot(None))
+                .distinct()
+            )
+            unit_names = db.execute(stmt).scalars().all()
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(publish_component_existence_update(storage.group_id, unit_names))                   # type: ignore
+            else:
+                loop.run_until_complete(publish_component_existence_update(storage.group_id, unit_names))               # type: ignore
+        return db_obj
+
     def consume(self, db: Session, id: int, consume_quantity: int) -> tuple[str, Optional[StorableUnit]]:
         try:
             with db.begin():
@@ -29,7 +50,22 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                                f"insufficient quantity (available: {unit.package_quantity}, requested: {consume_quantity})"
                     )
                 elif consume_quantity == unit.package_quantity:
+                    storage = db.get(Storage, unit.storage_id)
                     db.delete(unit)
+                    if storage:
+                        stmt = (
+                            select(StorableUnit.unit_name)
+                            .join(Storage, StorableUnit.storage_id == Storage.storage_id)
+                            .where(Storage.group_id == storage.group_id)
+                            .where(StorableUnit.component_id.isnot(None))
+                            .distinct()
+                        )
+                        unit_names = db.execute(stmt).scalars().all()
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.create_task(publish_component_existence_update(storage.group_id, unit_names))       # type: ignore
+                        else:
+                            loop.run_until_complete(publish_component_existence_update(storage.group_id, unit_names))   # type: ignore
                     return "Consumed and deleted", None
                 else:
                     unit.package_quantity -= consume_quantity

@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
-from database import engine, Base
+from core.database import engine, Base
+from core.messaging import kafka_manager
+from core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apis.v1.plan_api import plan_router
@@ -9,12 +11,15 @@ from tasks.scheduler import setup_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    kafka_manager.setup(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
+    
     scheduler = setup_scheduler()
     scheduler.start()
 
     yield
 
     scheduler.shutdown()
+    await kafka_manager.close()
 
 app = FastAPI(
     title="Shopping & Storage Service",
