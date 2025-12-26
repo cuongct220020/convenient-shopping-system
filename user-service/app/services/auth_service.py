@@ -18,13 +18,13 @@ from app.schemas import (
     LoginRequestSchema,
     RegisterRequestSchema,
     TokenResponseSchema,
-    OTPVerifyRequestSchema,
+    RegisterVerifyRequestSchema,
     OTPRequestSchema,
     ResetPasswordRequestSchema,
     ConfirmEmailChangeRequestSchema
 )
 
-from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError, BadRequest
+from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Auth Service")
@@ -253,16 +253,13 @@ class AuthService:
     @classmethod
     async def activate_account_with_otp(
         cls,
-        verify_data: OTPVerifyRequestSchema,
+        verify_data: RegisterVerifyRequestSchema,
         user_repo: UserRepository
     ) -> bool:
         """
         Activates a newly registered account after verifying the OTP.
-        Specified for Action: REGISTER.
+        Strictly for Action: REGISTER.
         """
-        if verify_data.action != OtpAction.REGISTER:
-             raise BadRequest("Invalid action for account activation.")
-
         is_valid = await otp_service.verify_otp(
             email=verify_data.email,
             action=OtpAction.REGISTER.value,

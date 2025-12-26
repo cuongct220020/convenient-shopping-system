@@ -5,7 +5,7 @@ from sanic.views import HTTPMethodView
 
 from app.decorators.validate_request import validate_request
 from app.repositories.user_repository import UserRepository
-from app.schemas import OTPRequestSchema, OTPVerifyRequestSchema
+from app.schemas import OTPRequestSchema, RegisterVerifyRequestSchema
 from app.services.auth_service import AuthService
 from app.enums import OtpAction
 from shopping_shared.schemas.response_schema import GenericResponse
@@ -42,36 +42,23 @@ class OTPRequestView(HTTPMethodView):
         return json(response.model_dump(mode="json"), status=200)
 
 
-class OTPVerificationView(HTTPMethodView):
-    """Handles the verification of an OTP."""
+class RegisterVerificationView(HTTPMethodView):
+    """Handles the verification of an OTP for account registration."""
 
-    @validate_request(OTPVerifyRequestSchema)
+    @validate_request(RegisterVerifyRequestSchema)
     async def post(self, request: Request):
         """
-        Verifies the submitted OTP. 
-        Currently primarily used for account activation (REGISTER).
+        Verifies the submitted OTP to activate an account.
         """
         validated_data = request.ctx.validated_data
         user_repo = UserRepository(session=request.ctx.db_session)
 
-        message = "OTP verified successfully."
-
-        if validated_data.action == OtpAction.REGISTER:
-            # For registration, verifying IS activating.
-            await AuthService.activate_account_with_otp(
-                verify_data=validated_data,
-                user_repo=user_repo
-            )
-            message = "Account activated successfully."
-        else:
-            # For other actions, we should not just 'verify' without performing the action,
-            # because that might consume the OTP token (if using consume-on-verify) 
-            # or leave the system in an ambiguous state.
-            raise BadRequest(
-                f"For action '{validated_data.action.value}', please use the specific completion endpoint "
-                f"(e.g., /auth/reset-password or /users/me/email/confirm-change)."
-            )
-
+        await AuthService.activate_account_with_otp(
+            verify_data=validated_data,
+            user_repo=user_repo
+        )
+        message = "Account activated successfully."
+        
         response = GenericResponse(
             status="success",
             message=message,

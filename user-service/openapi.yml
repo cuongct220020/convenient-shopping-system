@@ -57,17 +57,17 @@ paths:
                 $ref: '#/components/schemas/GenericResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-  /auth/otp/verify:
+  /auth/register/verify:
     post:
       tags: [Authentication]
-      summary: Xác thực mã OTP
-      description: "Xác thực mã OTP. Lưu ý: Endpoint này chủ yếu dùng để kích hoạt tài khoản (action='register'). Đối với 'reset_password' hoặc 'change_email', vui lòng sử dụng endpoint tương ứng (/auth/reset-password hoặc /users/me/email/confirm-change) để xác thực và thực hiện hành động cùng lúc."
+      summary: Xác thực đăng ký (Kích hoạt tài khoản)
+      description: "Xác thực mã OTP để hoàn tất quá trình đăng ký và kích hoạt tài khoản người dùng."
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VerifyAccountRequest'
+              $ref: '#/components/schemas/RegisterVerifyRequest'
       responses:
         '200':
           description: "Xác thực OTP thành công."
@@ -1017,6 +1017,19 @@ components:
           pattern: '^[0-9]{6}$'
           description: "Mã OTP 6 chữ số"
       required: [new_email, otp_code]
+    RegisterVerifyRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        otp_code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^[0-9]{6}$'
+          description: "Mã OTP 6 chữ số"
+      required: [email, otp_code]
     AddMemberRequest:
       type: object
       properties:

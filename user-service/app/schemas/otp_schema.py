@@ -10,12 +10,10 @@ class OTPRequestSchema(BaseSchema):
     action: OtpAction
 
 
-class OTPVerifyRequestSchema(BaseSchema):
+class RegisterVerifyRequestSchema(BaseSchema):
     """
-    Schema primarily used for verifying account activation (REGISTER).
-    Other actions like Reset Password or Change Email should use their specific schemas
-    to ensure atomic verification and execution.
+    Schema for verifying account registration (activation).
+    Implies action=REGISTER.
     """
     email: EmailStr
     otp_code: str = Field(..., min_length=6, max_length=6)
-    action: OtpAction
