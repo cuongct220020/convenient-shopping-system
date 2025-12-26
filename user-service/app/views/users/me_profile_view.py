@@ -1,3 +1,4 @@
+# user-service/app/views/users/me_profile_view.py
 from sanic import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
@@ -48,8 +49,11 @@ class MeIdentityProfileView(HTTPMethodView):
             data=data
         )
 
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(exclude_none=True, mode='json'), status=200)
 
+        
+
+        
 
     @validate_request(UserIdentityProfileUpdateSchema)
     async def patch(self, request: Request):
@@ -75,7 +79,7 @@ class MeIdentityProfileView(HTTPMethodView):
             message="Identity profile updated.",
             data=UserIdentityProfileSchema.model_validate(updated_profile)
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(mode="json"), status=200)
 
 
 class MeHealthProfileView(HTTPMethodView):
@@ -83,6 +87,7 @@ class MeHealthProfileView(HTTPMethodView):
     @staticmethod
     async def get(request: Request):
         """Retrieves the health profile of the authenticated user."""
+
         user_id = request.ctx.auth_payload["sub"]
 
         user_health_profile_repo = UserHealthProfileRepository(request.ctx.db_session)
@@ -98,7 +103,7 @@ class MeHealthProfileView(HTTPMethodView):
             status="success",
             data=data
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(mode="json"), status=200)
 
 
     @validate_request(UserHealthProfileUpdateSchema)
@@ -124,4 +129,4 @@ class MeHealthProfileView(HTTPMethodView):
             data=UserHealthProfileSchema.model_validate(updated_profile)
         )
 
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(mode="json"), status=200)

@@ -59,7 +59,7 @@ class MeTagsView(HTTPMethodView):
             data=result
         )
 
-        return json(response.model_dump(exclude_none=True), status=201)
+        return json(response.model_dump(mode="json"), status=201)
 
 
 class MeTagsDeleteView(HTTPMethodView):
@@ -85,5 +85,5 @@ class MeTagsDeleteView(HTTPMethodView):
             data=result
         )
 
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(mode="json"), status=200)
 

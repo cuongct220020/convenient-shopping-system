@@ -1,5 +1,4 @@
 # user-service/app/repositories/user_repository.py
-# from datetime import time, UTC
 from typing import Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession

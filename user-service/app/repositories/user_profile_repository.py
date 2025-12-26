@@ -29,7 +29,16 @@ class UserIdentityProfileRepository(
 
         Use case: GET /users/me/profile/identity.
         """
-        profile = await self.get_by_id(user_id)
+        # Fix: Query by user_id (FK), not PK
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+        
+        stmt = select(UserIdentityProfile).where(UserIdentityProfile.user_id == user_id).options(
+            selectinload(UserIdentityProfile.address)
+        )
+        result = await self.session.execute(stmt)
+        profile = result.scalars().first()
+
         if not profile:
             # Create default profile with defaults
             from app.enums.user import UserGender
@@ -41,7 +50,9 @@ class UserIdentityProfileRepository(
                 occupation=None,
                 address=None,
             )
-            profile = UserIdentityProfile(user_id=user_id, **default_user.model_dump())
+            # IMPORTANT: We need to use dictionary for creation to handle relationships correctly if needed
+            # but here address is None so it's fine.
+            profile = UserIdentityProfile(**default_user.model_dump())
             self.session.add(profile)
             await self.session.flush()
             await self.session.refresh(profile)
@@ -66,7 +77,12 @@ class UserHealthProfileRepository(
 
         Use case: GET /users/me/profile/health
         """
-        profile = await self.get_by_id(user_id)
+        # Fix: Query by user_id (FK), not PK
+        from sqlalchemy import select
+        stmt = select(UserHealthProfile).where(UserHealthProfile.user_id == user_id)
+        result = await self.session.execute(stmt)
+        profile = result.scalars().first()
+
         if not profile:
             # Create default profile with defaults
             from app.enums import ActivityLevel, HealthCondition, HealthGoal
@@ -79,7 +95,7 @@ class UserHealthProfileRepository(
                 curr_condition=HealthCondition.NORMAL,
                 health_goal=HealthGoal.MAINTAIN
             )
-            profile = UserHealthProfile(user_id=user_id, **default_data.model_dump())
+            profile = UserHealthProfile(**default_data.model_dump())
             self.session.add(profile)
             await self.session.flush()
             await self.session.refresh(profile)

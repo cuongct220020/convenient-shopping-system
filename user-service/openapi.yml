@@ -61,7 +61,7 @@ paths:
     post:
       tags: [Authentication]
       summary: Xác thực mã OTP
-      description: Xác thực mã OTP cho các hành động khác nhau (đăng ký, quên mật khẩu, v.v.).
+      description: "Xác thực mã OTP. Lưu ý: Endpoint này chủ yếu dùng để kích hoạt tài khoản (action='register'). Đối với 'reset_password' hoặc 'change_email', vui lòng sử dụng endpoint tương ứng (/auth/reset-password hoặc /users/me/email/confirm-change) để xác thực và thực hiện hành động cùng lúc."
       requestBody:
         required: true
         content:
@@ -1003,9 +1003,7 @@ components:
         new_email:
           type: string
           format: email
-        action:
-          $ref: '#/components/schemas/OtpAction'
-      required: [new_email, action]
+      required: [new_email]
     ConfirmEmailChangeRequest:
       type: object
       properties:

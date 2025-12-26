@@ -79,6 +79,9 @@ def create_app(*config_cls) -> Sanic:
 
     for config in config_cls:
         sanic_app.update_config(config)
+        # Explicitly set DEBUG config from RUN_SETTING to make it accessible in views
+        if hasattr(config, "RUN_SETTING") and "debug" in config.RUN_SETTING:
+            sanic_app.config.DEBUG = config.RUN_SETTING["debug"]
 
     register_listeners(sanic_app)
     register_views(sanic_app)

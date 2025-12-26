@@ -11,7 +11,9 @@ from .auth_schema import (
     LoginRequestSchema,
     TokenResponseSchema,
     ResetPasswordRequestSchema,
-    ChangePasswordRequestSchema
+    ChangePasswordRequestSchema,
+    RequestEmailChangeSchema,
+    ConfirmEmailChangeRequestSchema
 )
 
 
@@ -45,9 +47,7 @@ from .user_schema import (
     UserPublicProfileSchema,
     UserInfoUpdateSchema,
     UserCreateSchema,
-    UserDetailedProfileSchema,
-    RequestEmailChangeSchema,
-    ConfirmEmailChangeSchema
+    UserDetailedProfileSchema
 )
 
 
@@ -99,7 +99,7 @@ __all__ = [
     "UserAdminCreateSchema",
     "UserAdminUpdateSchema",
     "RequestEmailChangeSchema",
-    "ConfirmEmailChangeSchema",
+    "ConfirmEmailChangeRequestSchema",
 
 
     # Group
