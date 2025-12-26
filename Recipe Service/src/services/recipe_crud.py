@@ -1,11 +1,10 @@
 from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import or_, select, String
+from sqlalchemy import select
 from typing import Sequence, Optional
-import httpx
 import asyncio
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
-from models.recipe_ingredient_flattened import RecipeIngredientFlattened
+from models.component_existence import ComponentExistence
 from schemas.recipe_schemas import RecipeCreate, RecipeUpdate
 from schemas.recipe_flattened_schemas import RecipeQuantityInput
 from schemas.ingredient_schemas import IngredientResponse
@@ -87,10 +86,10 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
         }
         response = await es.search(index="recipes", body=query)
         component_ids = [int(hit["_id"]) for hit in response["hits"]["hits"]]
-        
+
         if not component_ids:
             return []
-        
+
         return db.execute(
             select(Recipe)
             .where(Recipe.component_id.in_(component_ids))
@@ -103,7 +102,7 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
         group_id: Optional[int],
         check_existence: bool,
         db: Session
-    ) -> list[tuple[float, IngredientResponse, Optional[list]]]:
+    ) -> list[tuple[float, IngredientResponse, Optional[bool]]]:
         recipe_ids = [r.recipe_id for r in recipes_with_quantity]
         db_recipes = self.get_detail(db, recipe_ids)
 
@@ -116,24 +115,14 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
         db_recipes_with_quantity = [(r.quantity, recipe_map[r.recipe_id]) for r in recipes_with_quantity]
         aggregated_ingredients = recipes_flattened_aggregated_mapping(db_recipes_with_quantity)
 
-        result: list[tuple[float, IngredientResponse, Optional[list]]] = []
+        result: list[tuple[float, IngredientResponse, Optional[bool]]] = []
         if check_existence:
-            component_names = [ingredient.component_name for quantity, ingredient in aggregated_ingredients.values()]
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    "http://localhost:8002/v1/storable_units/filter",
-                    params={
-                        "group_id": group_id,
-                        "unit_name": component_names
-                    }
-                )
-                response.raise_for_status()
-                data = response.json().get("data", [])
-                units_name_map: dict[str, list] = {}
-                for item in data:
-                    units_name_map.setdefault(item["unit_name"], []).append(item)
-                for quantity, ingredient in aggregated_ingredients.all_ingredients.values():
-                    result.append((quantity, ingredient, units_name_map.get(ingredient.component_name, [])))
+            component_existence = db.query(ComponentExistence).filter(ComponentExistence.group_id == group_id).first()
+            component_name_list = component_existence.component_name_list if component_existence else []
+
+            for quantity, ingredient in aggregated_ingredients.all_ingredients.values():
+                available = ingredient.component_name in component_name_list
+                result.append((quantity, ingredient, available))
         else:
             for quantity, ingredient in aggregated_ingredients.all_ingredients.values():
                 result.append((quantity, ingredient, None))

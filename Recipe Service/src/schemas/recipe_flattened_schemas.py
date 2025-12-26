@@ -12,7 +12,7 @@ class AggregatedIngredientsResponse(BaseModel):
 class FlattenedIngredientItem(BaseModel):
     quantity: float
     ingredient: IngredientResponse
-    available: Optional[list] = None
+    available: Optional[bool] = None
 
 class FlattenedIngredientsResponse(BaseModel):
     ingredients: list[FlattenedIngredientItem]
