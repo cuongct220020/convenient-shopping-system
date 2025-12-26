@@ -50,7 +50,8 @@ class FamilyGroup(Base):
     group_memberships: Mapped[List["GroupMembership"]] = relationship(
         "GroupMembership",
         foreign_keys="GroupMembership.group_id",
-        back_populates="group"
+        back_populates="group",
+        cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

@@ -43,6 +43,20 @@ class AdminGroupsView(HTTPMethodView):
 
         paginated_result = await service.get_all(page=page, page_size=page_size)
 
+        # Better: use specialized load options for list view
+        from sqlalchemy.orm import selectinload
+        from app.models import FamilyGroup, GroupMembership
+        load_options = [
+            selectinload(FamilyGroup.creator),
+            selectinload(FamilyGroup.group_memberships).selectinload(GroupMembership.user)
+        ]
+        
+        paginated_result = await service.repository.get_paginated(
+            page=page, 
+            page_size=page_size,
+            load_options=load_options
+        )
+
         response = PaginationResponse(
             status="success",
             data=[FamilyGroupDetailedSchema.model_validate(g) for g in paginated_result.items],
@@ -72,8 +86,13 @@ class AdminGroupDetailView(HTTPMethodView):
 
     async def get(self, request: Request, group_id: UUID):
         """Retrieves detailed information about a specific family group."""
-        service = self._get_service(request)
-        group = await service.get(group_id)
+        session = request.ctx.db_session
+        repo = FamilyGroupRepository(session)
+        group = await repo.get_with_details(group_id)
+        
+        if not group:
+            from shopping_shared.exceptions import NotFound
+            raise NotFound(f"Group {group_id} not found")
 
         response = GenericResponse(
             status="success",
@@ -88,7 +107,11 @@ class AdminGroupDetailView(HTTPMethodView):
         validated_data = request.ctx.validated_data
 
         service = self._get_service(request)
-        updated_group = await service.update(group_id, validated_data)
+        await service.update(group_id, validated_data)
+        
+        # Reload with details
+        repo = FamilyGroupRepository(request.ctx.db_session)
+        updated_group = await repo.get_with_details(group_id)
         
         response = GenericResponse(
             status="success",

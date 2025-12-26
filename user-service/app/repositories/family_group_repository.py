@@ -31,12 +31,27 @@ class FamilyGroupRepository(
         Get group with eager loaded members and creator.
         Useful for detailed views where we need to show member lists and the creator.
         """
-        stmt = select(FamilyGroup).where(FamilyGroup.id == group_id).options(
-            selectinload(FamilyGroup.members),
-            selectinload(FamilyGroup.creator)
+        stmt = (
+            select(FamilyGroup)
+            .where(FamilyGroup.id == group_id)
+            .options(
+                selectinload(FamilyGroup.creator),
+                selectinload(FamilyGroup.group_memberships).selectinload(GroupMembership.user)
+            )
         )
         result = await self.session.execute(stmt)
         return result.scalars().first()
+
+    async def create_group(self, data: dict) -> FamilyGroup:
+        """
+        Creates a new family group from a dictionary.
+        Bypasses schema validation for internal fields like created_by_user_id.
+        """
+        group = FamilyGroup(**data)
+        self.session.add(group)
+        await self.session.flush()
+        await self.session.refresh(group)
+        return group
 
 
 class GroupMembershipRepository(

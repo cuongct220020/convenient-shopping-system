@@ -55,4 +55,4 @@ class FamilyGroupDetailedSchema(BaseSchema):
     group_name: str
     group_avatar_url: Optional[str] = None
     creator: Optional[UserInfoSchema] = None
-    members: List[GroupMembershipSchema] = []
+    members: List[GroupMembershipSchema] = Field(default=[], alias="group_memberships")
