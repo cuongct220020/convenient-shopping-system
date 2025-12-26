@@ -3,7 +3,7 @@ from typing import TypeVar, Type, cast, Optional
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
-from database import get_db
+from core.database import get_db
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from shared.shopping_shared.schemas.response_schema import PaginationResponse
 

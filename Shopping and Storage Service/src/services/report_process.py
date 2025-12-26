@@ -2,7 +2,7 @@ from schemas.plan_schemas import PlanReport
 from schemas.storable_unit_schemas import StorableUnitCreate
 from services.storable_unit_crud import StorableUnitCRUD
 from models.storage import StorableUnit
-from database import SessionLocal
+from core.database import SessionLocal
 
 storable_unit_crud = StorableUnitCRUD(StorableUnit)
 

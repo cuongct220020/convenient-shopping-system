@@ -10,7 +10,7 @@ from models.shopping_plan import ShoppingPlan
 from enums.plan_status import PlanStatus
 from shared.shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 from .crud_router_base import create_crud_router
-from database import get_db
+from core.database import get_db
 
 plan_crud = PLanCRUD(ShoppingPlan)
 plan_transition = PlanTransition()

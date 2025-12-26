@@ -5,7 +5,7 @@ from sqlalchemy.sql import func
 from datetime import datetime
 from typing import Optional
 from enums.plan_status import PlanStatus
-from database import Base
+from core.database import Base
 
 class ShoppingPlan(Base):
     __tablename__ = "shopping_plans"

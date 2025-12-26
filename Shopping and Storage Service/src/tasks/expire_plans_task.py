@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import update
 from enums.plan_status import PlanStatus
 from models.shopping_plan import ShoppingPlan
-from database import get_db
+from core.database import get_db
 
 def expire_plans():
     db = next(get_db())
