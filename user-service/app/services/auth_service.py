@@ -20,10 +20,11 @@ from app.schemas import (
     TokenResponseSchema,
     OTPVerifyRequestSchema,
     OTPRequestSchema,
-    ResetPasswordRequestSchema
+    ResetPasswordRequestSchema,
+    ConfirmEmailChangeRequestSchema
 )
 
-from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError
+from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError, BadRequest
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Auth Service")
@@ -222,13 +223,18 @@ class AuthService:
         cls,
         otp_data: OTPRequestSchema,
         user_repo: UserRepository
-    ):
+    ) -> str:
         """Handles the business logic for requesting an OTP using Redis."""
-        if otp_data.action == OtpAction.RESET_PASSWORD or otp_data.action == OtpAction.CHANGE_EMAIL:
-            # Using get_by_email since get_user_by_email is not defined in provided repo code, assuming get_by_email
+        if otp_data.action == OtpAction.RESET_PASSWORD:
+            # For reset password, the user must exist
             user = await user_repo.get_by_email(str(otp_data.email))
             if not user:
                 raise NotFound("No account found with this email address.")
+        elif otp_data.action == OtpAction.CHANGE_EMAIL:
+            # For change email, the NEW email must NOT be in use
+            user = await user_repo.get_by_email(str(otp_data.email))
+            if user:
+                raise Conflict("This email address is already in use.")
         elif otp_data.action == OtpAction.REGISTER:
             # For registration, user might not exist yet or be inactive.
             # The OTP is sent regardless, but the user creation happens in register_user.
@@ -242,98 +248,112 @@ class AuthService:
             action=str(otp_data.action)
         )
 
+        return otp_code
+
     @classmethod
-    async def verify_submitted_otp(
+    async def activate_account_with_otp(
         cls,
-        data: OTPVerifyRequestSchema,
+        verify_data: OTPVerifyRequestSchema,
         user_repo: UserRepository
     ) -> bool:
         """
-        Verifies an OTP and performs the corresponding action based on the OtpAction.
-        Returns True if OTP is valid and action is performed, False otherwise.
+        Activates a newly registered account after verifying the OTP.
+        Specified for Action: REGISTER.
         """
+        if verify_data.action != OtpAction.REGISTER:
+             raise BadRequest("Invalid action for account activation.")
 
         is_valid = await otp_service.verify_otp(
-            email=data.email,
-            action=data.action,
-            submitted_code=data.otp_code # schema uses otp_code, not otp
+            email=verify_data.email,
+            action=OtpAction.REGISTER.value,
+            submitted_code=verify_data.otp_code
         )
 
         if not is_valid:
             raise Unauthorized("Invalid or expired OTP code.")
 
-        # Corrected: use get_by_email for email lookup
-        user = await user_repo.get_by_email(str(data.email))
-        if not user and data.action != OtpAction.REGISTER: # For register, user might exist but be inactive.
-             # Actually logic: if register, user MUST exist (created in step 1).
-             # If user not found, it's weird.
-             pass
-        
+        user = await user_repo.get_by_email(str(verify_data.email))
         if not user:
-             # In registration flow 1 -> register (creates user) -> request otp. 
-             # So user should exist.
              raise NotFound("User account not found.")
-
-        match data.action:
-            case OtpAction.REGISTER.value:
-                if not user.is_active:
-                    await user_repo.activate_user(cast(UUID, user.id))
-                return True
-            case OtpAction.RESET_PASSWORD.value:
-                # For reset password, successful OTP verification means the user is authorized to reset.
-                # The actual password reset happens in reset_password_with_otp, which is called separately.
-                return True
-            case OtpAction.CHANGE_EMAIL.value:
-                # This action would typically involve updating the user's email in the database
-                # after a successful OTP verification.
-                # For now, we'll just return True, assuming the calling context will handle the email change.
-                # A more complete implementation would involve a temporary email field on the user model
-                # or a dedicated service method for email change confirmation.
-                return True
-            case _:
-                raise ValueError(f"Unsupported OTP action: {data.action}")
-
-
+        
+        if not user.is_active:
+            await user_repo.activate_user(cast(UUID, user.id))
+            
+        return True
 
     @classmethod
-    async def reset_password(
+    async def reset_password_with_otp(
         cls,
         reset_pw_data: ResetPasswordRequestSchema,
         user_repo: UserRepository
-    ):
+    ) -> bool:
         """
-        Reset user password after validating OTP.
-        This method handles OTP verification and password update atomically.
+        Reset user password after validating OTP in an atomic operation.
+        1. Verify OTP
+        2. Update Password
+        3. Revoke Tokens
         """
-        # Verify the OTP
+        # 1. Verify the OTP
         is_valid = await otp_service.verify_otp(
             email=reset_pw_data.email,
-            action=OtpAction.RESET_PASSWORD.value,  # Sử dụng giá trị enum trực tiếp
+            action=OtpAction.RESET_PASSWORD.value,
             submitted_code=reset_pw_data.otp_code
         )
 
         if not is_valid:
             raise Unauthorized("Invalid or expired OTP code.")
 
-        # Get user by email
+        # 2. Get user & Check status
         user = await user_repo.get_by_email(str(reset_pw_data.email))
         if not user or not user.is_active:
             raise NotFound("User account not found.")
 
-        # Hash the new password
+        # 3. Hash the new password and update
         hashed_new_password = hash_password(reset_pw_data.new_password.get_secret_value())
-
-        # Update the user's password
         await user_repo.update_password(
             cast(UUID, user.id),
             str(hashed_new_password)
         )
 
-        # Delete the OTP from Redis after successful verification
-        await otp_service.delete_otp(reset_pw_data.email, OtpAction.RESET_PASSWORD.value)
-
-        # Optionally revoke all existing tokens for security
+        # 4. Security Cleanup
+        # Delete the OTP is handled by verify_otp if successful.
+        # Revoke all existing sessions to enforce security.
         await redis_service.remove_session_from_allowlist(str(user.id))
         await redis_service.revoke_all_tokens_for_user(str(user.id))
 
+        return True
+
+    @classmethod
+    async def change_email_with_otp(
+        cls,
+        user_id: str,
+        change_data: ConfirmEmailChangeRequestSchema,
+        user_repo: UserRepository
+    ) -> bool:
+        """
+        Change user email after validating OTP sent to the NEW email.
+        Atomic operation.
+        """
+        # 1. Verify OTP (sent to new email)
+        is_valid = await otp_service.verify_otp(
+            email=change_data.new_email,
+            action=OtpAction.CHANGE_EMAIL.value,
+            submitted_code=change_data.otp_code
+        )
+
+        if not is_valid:
+            raise Unauthorized("Invalid or expired OTP code.")
+        
+        # 2. Check conflict (is new email already taken?)
+        existing_user = await user_repo.get_by_email(str(change_data.new_email))
+        if existing_user:
+             raise Conflict("This email address is already in use by another account.")
+
+        # 3. Update Email
+        await user_repo.update_field(UUID(user_id), "email", change_data.new_email)
+        
+        # 4. Security Cleanup
+        # Revoke sessions as email is a key identity field.
+        await redis_service.remove_session_from_allowlist(user_id)
+        
         return True

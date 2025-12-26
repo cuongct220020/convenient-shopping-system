@@ -33,16 +33,56 @@ class UserIdentityProfileService:
         Update identity profile. Creates default profile first if doesn't exist, then updates.
         Use case: PATCH /users/me/profile/identity
         """
-        # Ensure profile exists
-        await self.repository.get_or_create_for_user(user_id)
+        # Ensure profile exists and get it to find the PK
+        existing_profile = await self.repository.get_or_create_for_user(user_id)
 
-        # Update with provided data
-        profile = await self.repository.update(user_id, update_data)
-        if not profile:
-            raise NotFound(f"Identity profile for user {user_id} not found")
+        # Handle nested Address update manually
+        # Extract address data if present
+        address_data = None
+        if update_data.address is not None:
+            address_data = update_data.address.model_dump(exclude_unset=True)
+            # Remove address from main update data to prevent "dict" assignment error
+            # We create a new copy of data to avoid modifying the input schema state if needed
+            # But here we modify what we pass to repository
+            # Pydantic model .copy() or manually exclude?
+            # repository.update accepts schema.
+            # We can pass dict to repository.update? No, it expects Schema.
+            # But repository.update calls data.model_dump().
+            
+            # Problem: BaseRepository.update takes Schema.
+            # We need to customize the update logic.
+            
+            # Let's perform update manually here since it's complex
+            pass
 
-        logger.info(f"Updated identity profile for user {user_id}")
-        return profile
+        # We need to use the repository but handle the address specifically.
+        # Since BaseRepository.update is generic, we can't easily intercept.
+        # Better: Update the object fields manually here and save.
+        
+        from app.models import Address
+        
+        # 1. Update simple fields
+        fields = update_data.model_dump(exclude_unset=True, exclude={'address'})
+        for key, value in fields.items():
+            setattr(existing_profile, key, value)
+            
+        # 2. Update Address
+        if address_data is not None:
+            if existing_profile.address:
+                # Update existing address
+                for k, v in address_data.items():
+                    setattr(existing_profile.address, k, v)
+            else:
+                # Create new address
+                new_address = Address(**address_data)
+                existing_profile.address = new_address
+        
+        self.repository.session.add(existing_profile)
+        await self.repository.session.flush()
+        await self.repository.session.refresh(existing_profile)
+
+        # Reload with relationships (e.g. address) to avoid MissingGreenlet
+        return await self.repository.get_or_create_for_user(user_id)
 
 
 class UserHealthProfileService:
@@ -61,16 +101,16 @@ class UserHealthProfileService:
         Update health profile. Creates default profile first if doesn't exist, then updates.
         Use case: PATCH /users/me/profile/health
         """
-        # Ensure profile exists
-        await self.repository.get_or_create_for_user(user_id)
+        # Ensure profile exists and get it to find the PK
+        existing_profile = await self.repository.get_or_create_for_user(user_id)
 
-        # Update with provided data
-        profile = await self.repository.update(user_id, update_data)
+        # Update with provided data using the real PK (id), NOT user_id
+        profile = await self.repository.update(existing_profile.id, update_data)
         if not profile:
             raise NotFound(f"Health profile for user {user_id} not found")
 
-        logger.info(f"Updated health profile for user {user_id}")
-        return profile
+        # Reload to ensure consistency (and if any relationships are added later)
+        return await self.repository.get_or_create_for_user(user_id)
 
 
 

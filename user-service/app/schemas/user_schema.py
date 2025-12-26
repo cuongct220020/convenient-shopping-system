@@ -14,7 +14,7 @@ class UserInfoSchema(BaseSchema):
     email: EmailStr
     first_name: str
     last_name: str
-    phone_number: Optional[str] = None
+    phone_number: Optional[str] = Field(None, validation_alias="phone_num")
     avatar_url: Optional[str] = None
 
 
@@ -54,13 +54,3 @@ class UserDetailedProfileSchema(UserInfoSchema):
     identity_profile: Optional[UserIdentityProfileSchema] = None
     health_profile: Optional[UserHealthProfileSchema] = None
 
-
-
-class RequestEmailChangeSchema(OTPRequestSchema):
-    new_email: EmailStr
-
-
-
-class ConfirmEmailChangeSchema(BaseSchema):
-    new_email: EmailStr
-    otp_code: str

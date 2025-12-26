@@ -1,4 +1,4 @@
-# app/views/me_change_password_view.py
+# user-service/app/views/me_change_password_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
@@ -28,4 +28,4 @@ class ChangePasswordView(HTTPMethodView):
             message="Password changed successfully. All sessions have been logged out."
         )
 
-        return json(response.model_dump(mode='json'), status=200)
+        return json(response.model_dump(mode="json"), status=200)

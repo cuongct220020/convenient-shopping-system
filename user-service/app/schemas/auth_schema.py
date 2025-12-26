@@ -36,10 +36,21 @@ class ResetPasswordRequestSchema(BaseSchema):
     """Schema for reset password requests."""
     new_password: SecretStr
     email: EmailStr
-    otp_code: str
+    otp_code: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
 
 
 class ChangePasswordRequestSchema(BaseSchema):
     """Schema for change password requests."""
     current_password: SecretStr
     new_password: SecretStr
+
+
+class RequestEmailChangeSchema(BaseSchema):
+    """Schema for requesting an email change (Step 1)."""
+    new_email: EmailStr
+
+
+class ConfirmEmailChangeRequestSchema(BaseSchema):
+    """Schema for confirming an email change with OTP (Step 2)."""
+    new_email: EmailStr
+    otp_code: str = Field(..., min_length=6, max_length=6)

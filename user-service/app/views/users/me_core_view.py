@@ -1,4 +1,4 @@
-# app/views/users/me_core_view.py
+# user-service/app/views/users/me_core_view.py
 from sanic.request import Request
 from sanic.response import json
 from sanic.views import HTTPMethodView
@@ -27,7 +27,7 @@ class MeView(HTTPMethodView):
             status="success",
             data=UserInfoSchema.model_validate(user)
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(mode="json"), status=200)
 
 
     @validate_request(UserInfoUpdateSchema)
@@ -46,4 +46,4 @@ class MeView(HTTPMethodView):
             message="User information updated.",
             data=UserInfoSchema.model_validate(updated_user)
         )
-        return json(response.model_dump(exclude_none=True), status=200)
+        return json(response.model_dump(mode="json"), status=200)

@@ -19,13 +19,15 @@ class ResetPasswordView(HTTPMethodView):
 
         user_repo = UserRepository(session=request.ctx.db_session)
 
-        await AuthService.reset_password(
+        # Updated to call the explicit service method
+        await AuthService.reset_password_with_otp(
             reset_pw_data=validated_data,
             user_repo=user_repo
         )
 
         response = GenericResponse(
             status="success",
-            message="Password has been reset successfully."
+            message="Password has been reset successfully.",
+            data=None
         )
         return json(response.model_dump(mode="json"), status=200)

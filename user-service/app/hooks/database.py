@@ -35,25 +35,52 @@ async def open_db_session(request: Request):
     """
     Opens a new DB session context and attaches it and the session to the request.
     """
-    # Lưu trữ context manager trên request
-    request.ctx.db_session_cm = postgres_db.get_session()
-    # Enter context manager và lưu trữ session
-    request.ctx.db_session = await request.ctx.db_session_cm.__aenter__()
+    # Create the session using the database manager's context manager
+    request.ctx.db_session_context = postgres_db.get_session()
+    # Enter the context and store the session
+    request.ctx.db_session = await request.ctx.db_session_context.__aenter__()
 
 
-async def close_db_session(request: Request, response, exception: Exception | None = None):
+async def close_db_session(
+        request: Request,
+        response, exception: Exception | None = None
+    ):
     """
     Closes the DB session context, which handles commit or rollback.
     """
-    if hasattr(request.ctx, "db_session_cm"):
-        # --- SỬA LỖI Ở ĐÂY ---
-        # Lấy kiểu, giá trị, và traceback một cách an toàn
-        exc_type = type(exception) if exception else None
-        exc_value = exception
-        exc_tb = getattr(exception, '__traceback__', None) if exception else None
+    if hasattr(request.ctx, "db_session_context"):
+        session_context = request.ctx.db_session_context
 
-        # Truyền các giá trị chính xác vào __aexit__
-        await request.ctx.db_session_cm.__aexit__(exc_type, exc_value, exc_tb)
-        # --- KẾT THÚC SỬA LỖI ---
+        # Determine if we should rollback.
+        # Rollback if there is an unhandled exception OR if the response status indicates an error (4xx/5xx).
+        is_error_response = response is not None and response.status >= 400
+        should_rollback = exception is not None or is_error_response
+
+        try:
+            if should_rollback:
+                # We need to trigger the rollback logic in the context manager.
+                # If we don't have a real exception object (handled HTTP error), create a synthetic one.
+                real_exc = exception or Exception(f"HTTP {response.status} Response - Forcing Rollback")
+                
+                exc_type = type(real_exc)
+                exc_value = real_exc
+                exc_tb = getattr(real_exc, '__traceback__', None)
+
+                # __aexit__ with exception args triggers session.rollback() in get_session
+                await session_context.__aexit__(exc_type, exc_value, exc_tb)
+            else:
+                # Success case (2xx, 3xx) -> Commit
+                await session_context.__aexit__(None, None, None)
+
+        except Exception as e:
+            # The get_session context manager re-raises the exception after rolling back.
+            # We catch and suppress it here because we are in the response middleware.
+            # We want to return the original 'response' object (which might be a 400/409 error)
+            # to the client, rather than letting an exception bubble up and cause a 500 Server Error.
+            if should_rollback:
+                logger.debug(f"Suppressed expected exception after rollback: {e}")
+            else:
+                logger.error(f"Unexpected error during DB commit/close: {e}")
+            pass
 
     return response
