@@ -50,20 +50,8 @@ export const MainRoutes = {
        element: <Favorites />
     },
     {
-      path: "nutrition",
-      element: <div>Nutrition Screen</div>,
-    },
-    {
-      path: "meals",
-      element: <div>Meals Screen</div>,
-    },
-    {
-      path: "diary",
-      element: <div>Diary Screen</div>,
-    },
-    {
-      path: "favorites",
-      element: <div>Favorites Screen</div>,
-    },
+      path: "family-group",
+      element: <div>Family Group</div>,
+    }
   ],
 }
