@@ -61,8 +61,11 @@ class AdminUserService:
         # Create user via repository
         user = await self.user_repo.create_user(new_user_data)
 
+        # Refresh user with profiles to avoid lazy-load issues during serialization
+        updated_user = await self.user_repo.get_user_with_profiles(user.id)
+
         logger.info(f"Admin created user: {user.username}")
-        return user
+        return updated_user
 
     async def update_user_by_admin(self, user_id: UUID, update_data: UserAdminUpdateSchema):
         """Updates a user's information by an admin."""

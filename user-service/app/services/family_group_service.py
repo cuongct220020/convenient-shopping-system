@@ -85,13 +85,17 @@ class FamilyGroupService:
         # 1. Create Group
         data = group_data.model_dump()
         data['created_by_user_id'] = user_id
-        group = await self.repository.create(FamilyGroupCreateSchema(**data))
+        # Use repository.create_group which accepts dict and bypasses schema validation
+        group = await self.repository.create_group(data)
 
         # 2. Add Creator as HEAD_CHEF member
         await self.member_repo.add_membership(user_id, group.id, GroupRole.HEAD_CHEF)
         
+        # 3. Fetch full group details for response
+        full_group = await self.repository.get_with_details(group.id)
+        
         logger.info(f"Created family group {group.id} with HEAD_CHEF {user_id}")
-        return group
+        return full_group
 
 
     async def delete_group_by_creator(self, user_id: UUID, group_id: UUID) -> None:
