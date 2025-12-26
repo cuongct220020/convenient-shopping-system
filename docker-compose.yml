@@ -149,6 +149,7 @@ services:
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       REDIS_PASSWORD: myredis
+      KONG_UNTRUSTED_LUA: "on"
     ports:
       - "80:8000"         # HTTP Public
       - "443:8443"        # HTTPS Public

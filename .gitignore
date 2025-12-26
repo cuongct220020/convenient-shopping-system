@@ -224,4 +224,4 @@ shopping_shared.egg-info
 
 .env/
 
-user-service/secrets/
+user-service/secrets/jwt-private.pem

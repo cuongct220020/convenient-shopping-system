@@ -4,7 +4,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 from shopping_shared.configs import PostgreSQLConfig, RedisConfig, KafkaConfig
 
-load_dotenv() # Load .env
+# Explicitly load .env from user-service directory
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 
 class Config:
@@ -27,36 +29,37 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('JWT_ACCESS_TOKEN_EXPIRE_MINUTES', 15))
     REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7))
 
-
     # Load RSA keys
     @staticmethod
-    def _load_rsa_key(env_key: str, env_path_key: str) -> str:
+    def _load_rsa_key(env_path_key: str) -> str:
         """Load RSA key from env variable or file path."""
-        # Try inline key first
-        key = os.getenv(env_key)
-        if key:
-            return key.replace('\\n', '\n')  # Handle escaped newlines
-
-        # Try file path
         key_path = os.getenv(env_path_key)
-        if key_path:
-            return Path(key_path).read_text()
+        if not key_path:
+            raise ValueError(f"Missing {env_path_key} in environment")
 
-        raise ValueError(f"Missing {env_key} or {env_path_key} in environment")
+        path = Path(key_path)
+        if not path.is_absolute():
+            # Resolve relative to project root (user-service/)
+            # config.py is in user-service/app/
+            base_dir = Path(__file__).resolve().parent.parent
+            path = base_dir / path
+
+        if not path.exists():
+            raise FileNotFoundError(f"RSA key file not found: {path}")
+
+        return path.read_text()
 
     # For RS256
     JWT_PRIVATE_KEY = _load_rsa_key.__func__(
-        'JWT_PRIVATE_KEY',
         'JWT_PRIVATE_KEY_PATH'
     ) if os.getenv('JWT_ALGORITHM', 'RS256').startswith('RS') else None
 
     JWT_PUBLIC_KEY = _load_rsa_key.__func__(
-        'JWT_PUBLIC_KEY',
         'JWT_PUBLIC_KEY_PATH'
     ) if os.getenv('JWT_ALGORITHM', 'RS256').startswith('RS') else None
 
     # For HS256 (fallback)
-    JWT_SECRET = os.getenv('JWT_SECRET', 'e3dc8799821e1035ff0decd11ee02750f4740783b620e5f9c1c92020056ec10e')
+    # JWT_SECRET = os.getenv('JWT_SECRET', 'e3dc8799821e1035ff0decd11ee02750f4740783b620e5f9c1c92020056ec10e')
 
 
     # PostgreSQL Settings

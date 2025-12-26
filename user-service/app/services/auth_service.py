@@ -155,9 +155,9 @@ class AuthService:
 
     @classmethod
     async def refresh_tokens(
-            cls,
-            old_refresh_token: str,
-            user_repo: UserRepository,
+        cls,
+        old_refresh_token: str,
+        user_repo: UserRepository
     ) -> tuple[TokenData, bool]:  # Returns (token_data, is_active)
         """
         Xử lý token refresh với rotation, sử dụng Redis Allowlist.
