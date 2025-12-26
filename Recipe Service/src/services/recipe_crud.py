@@ -53,15 +53,11 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
         if obj is None:
             from fastapi import HTTPException
             raise HTTPException(status_code=404, detail=f"Recipe with id={id} not found")
-        if obj.component_list:
-            for cl in obj.component_list:
-                if cl.component:
-                    db.refresh(cl.component)
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            asyncio.create_task(publish_recipe_event("recipe_deleted", obj))
+            asyncio.create_task(publish_recipe_event("recipe_deleted", id))
         else:
-            loop.run_until_complete(publish_recipe_event("recipe_deleted", obj))
+            loop.run_until_complete(publish_recipe_event("recipe_deleted", id))
         return super().delete(db, id)
 
     def get_detail(self, db: Session, ids: list[int]) -> Sequence[Recipe]:

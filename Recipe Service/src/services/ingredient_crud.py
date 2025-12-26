@@ -63,9 +63,9 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
 
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            asyncio.create_task(publish_ingredient_event("ingredient_deleted", obj))
+            asyncio.create_task(publish_ingredient_event("ingredient_deleted", id))
         else:
-            loop.run_until_complete(publish_ingredient_event("ingredient_deleted", obj))
+            loop.run_until_complete(publish_ingredient_event("ingredient_deleted", id))
 
         return super().delete(db, id)
 
