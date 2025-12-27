@@ -1,9 +1,16 @@
 title: "Convenient Shopping System"
-description: "Technical documentation about system desgin"
-baseurl: "/IT4990-Convenient-Shopping-System" # repo GitHub name
-url: "https://cuongct220020.github.io"        # domain GitHub Pages
+description: "Technical documentation about system design" 
+baseurl: "/convenient-shopping-system"
+url: "https://cuongct220020.github.io"
 
-theme: just-the-docs
+# Sử dụng remote_theme thay vì theme
+remote_theme: just-the-docs/just-the-docs
+
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
+  - jekyll-remote-theme # Bắt buộc phải thêm plugin này để chạy Just the Docs
+
+# Cấu hình MathJax cho các công thức AI/Deep Learning (SDE, Flow Matching)
+markdown: kramdown
+math: mathjax
