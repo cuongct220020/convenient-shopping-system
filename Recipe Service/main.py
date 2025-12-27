@@ -10,6 +10,7 @@ from messaging.manager import kafka_manager
 from messaging.consumers.ingredient_consumer import consume_ingredient_events
 from messaging.consumers.recipe_consumer import consume_recipe_events
 from messaging.consumers.component_existence_consumer import consume_component_existence_events
+from messaging.consumers.group_tags_consumer import consume_group_tags_events
 import asyncio
 
 @asynccontextmanager
@@ -20,7 +21,8 @@ async def lifespan(app: FastAPI):
     tasks = [
         asyncio.create_task(consume_ingredient_events()),
         asyncio.create_task(consume_recipe_events()),
-        asyncio.create_task(consume_component_existence_events())
+        asyncio.create_task(consume_component_existence_events()),
+        asyncio.create_task(consume_group_tags_events())
     ]
 
     yield
