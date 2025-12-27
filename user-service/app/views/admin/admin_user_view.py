@@ -3,19 +3,17 @@ from uuid import UUID
 from sanic.request import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, require_system_role, api_response
+from app.decorators import validate_request, require_system_role
 from app.views.base_view import BaseAPIView
 from app.enums import SystemRole
 from app.repositories.user_repository import UserRepository
-from app.schemas import (
+from app.schemas.user_admin_schema import (
     UserAdminCreateSchema,
     UserAdminUpdateSchema,
-    UserAdminViewSchema,
-    UserAdminViewResponseSchema,
-    UserAdminViewListResponseSchema # Using this for documentation of list
+    UserAdminViewSchema
 )
 from app.services.admin_service import AdminUserService
-from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Admin User View")
@@ -39,12 +37,7 @@ class AdminUsersView(BaseAPIView):
 
     @openapi.summary("List all users (Admin)")
     @openapi.description("Lists all users in the system with pagination. Requires ADMIN role.")
-    @openapi.response(200, UserAdminViewListResponseSchema)
-    @api_response(
-        success_schema=UserAdminViewListResponseSchema,
-        success_status=200,
-        success_description="Users listed successfully"
-    )
+    @openapi.response(200, UserAdminViewSchema)
     async def get(self, request: Request):
         """List all users with pagination."""
         page = int(request.args.get("page", 1))
@@ -78,13 +71,8 @@ class AdminUsersView(BaseAPIView):
     @openapi.summary("Create a new user (Admin)")
     @openapi.description("Creates a new user account. Requires ADMIN role.")
     @openapi.body(UserAdminCreateSchema)
-    @openapi.response(201, UserAdminViewResponseSchema)
+    @openapi.response(201, UserAdminViewSchema)
     @validate_request(UserAdminCreateSchema)
-    @api_response(
-        success_schema=UserAdminViewResponseSchema,
-        success_status=201,
-        success_description="User created successfully"
-    )
     async def post(self, request: Request):
         """Create a new user."""
         validated_data = request.ctx.validated_data
@@ -123,12 +111,7 @@ class AdminUserDetailView(BaseAPIView):
 
     @openapi.summary("Get user by ID (Admin)")
     @openapi.description("Retrieves a specific user by their ID. Requires ADMIN role.")
-    @openapi.response(200, UserAdminViewResponseSchema)
-    @api_response(
-        success_schema=UserAdminViewResponseSchema,
-        success_status=200,
-        success_description="User retrieved successfully"
-    )
+    @openapi.response(200, UserAdminViewSchema)
     async def get(self, request: Request, user_id: UUID):
         """Get a specific user by ID."""
         service = self._get_service(request)
@@ -153,13 +136,8 @@ class AdminUserDetailView(BaseAPIView):
     @openapi.summary("Update user by ID (Admin)")
     @openapi.description("Updates a specific user by their ID. Requires ADMIN role.")
     @openapi.body(UserAdminUpdateSchema)
-    @openapi.response(200, UserAdminViewResponseSchema)
+    @openapi.response(200, UserAdminViewSchema)
     @validate_request(UserAdminUpdateSchema)
-    @api_response(
-        success_schema=UserAdminViewResponseSchema,
-        success_status=200,
-        success_description="User updated successfully"
-    )
     async def put(self, request: Request, user_id: UUID):
         """Update a specific user by ID."""
         validated_data = request.ctx.validated_data
@@ -184,12 +162,7 @@ class AdminUserDetailView(BaseAPIView):
 
     @openapi.summary("Delete user by ID (Admin)")
     @openapi.description("Deletes a specific user by their ID. Requires ADMIN role.")
-    @openapi.response(200, DocGenericResponse)
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="User deleted successfully"
-    )
+    @openapi.response(200, GenericResponse)
     async def delete(self, request: Request, user_id: UUID):
         """Delete a specific user by ID."""
         service = self._get_service(request)

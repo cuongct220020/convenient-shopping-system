@@ -3,14 +3,13 @@ from sanic.request import Request
 from sanic.response import HTTPResponse
 from sanic_ext import openapi
 
-from app.decorators import api_response
 from app.views.base_view import BaseAPIView
 from shopping_shared.exceptions import Forbidden, Unauthorized
 
 
 from app.services.auth_service import AuthService
 from app.repositories.user_repository import UserRepository
-from app.schemas import TokenResponseSchema, TokenDataResponseSchema
+from app.schemas.auth_schema import AccessTokenResponseSchema
 
 
 class RefreshView(BaseAPIView):
@@ -22,13 +21,8 @@ class RefreshView(BaseAPIView):
         "Generates a new access token using the refresh token provided in an HttpOnly cookie. "
         "This endpoint implements token rotation, where a new refresh token is also returned in a new cookie."
     )
-    @openapi.response(200, TokenDataResponseSchema)
+    @openapi.response(200, AccessTokenResponseSchema)
     @openapi.tag("Authentication")
-    @api_response(
-        success_schema=TokenDataResponseSchema,
-        success_status=200,
-        success_description="Token refreshed successfully"
-    )
     async def post(request: Request) -> HTTPResponse:
         """
         Xử lý token refresh
@@ -65,7 +59,7 @@ class RefreshView(BaseAPIView):
             return response
 
         # 3. Prepare response with access token and user status
-        access_token_data = TokenResponseSchema(
+        access_token_data = AccessTokenResponseSchema(
             access_token=new_token_data.access_token,
             token_type="Bearer",
             expires_in_minutes=new_token_data.at_expires_in_minutes,

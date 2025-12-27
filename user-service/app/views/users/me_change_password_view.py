@@ -2,13 +2,12 @@
 from sanic.request import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, api_response
+from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas import ChangePasswordRequestSchema
+from app.schemas.auth_schema import ChangePasswordRequestSchema
 from app.services.user_service import UserService
 
-from shopping_shared.sanic.schemas import DocGenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Me Change Password View")
@@ -18,11 +17,6 @@ class ChangePasswordView(BaseAPIView):
 
     @openapi.summary("Change password (when logged in)")
     @openapi.description("Allows an authenticated user to change their own password by providing the current password.")
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Password changed successfully"
-    )
     @openapi.tag("Profile")
     @validate_request(ChangePasswordRequestSchema)
     async def post(self, request: Request):

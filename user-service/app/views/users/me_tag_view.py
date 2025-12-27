@@ -2,15 +2,13 @@
 from sanic import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, api_response
+from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
 
-from app.schemas import (
+from app.schemas.user_tag_schema import (
     UserTagBulkAddSchema,
     UserTagDeleteSchema,
-    UserTagUpdateByCategorySchema,
-    UserTagsResponseSchema,
-    CountResponseSchema
+    UserTagUpdateByCategorySchema
 )
 from app.services.user_tag_service import UserTagService
 from app.repositories.user_tag_repository import UserTagRepository
@@ -27,11 +25,6 @@ class MeTagsView(BaseAPIView):
     """
     @openapi.summary("Get current user's tags")
     @openapi.description("Retrieves all tags for the authenticated user, grouped by category.")
-    @api_response(
-        success_schema=UserTagsResponseSchema,
-        success_status=200,
-        success_description="Successfully fetched user tags"
-    )
     @openapi.tag("Profile - Tags")
     async def get(self, request: Request):
         """Get all tags for current user, grouped by category."""
@@ -61,11 +54,6 @@ class MeTagsView(BaseAPIView):
 
     @openapi.summary("Add tags to user")
     @openapi.description("Adds one or more tags to the authenticated user's profile.")
-    @api_response(
-        success_schema=CountResponseSchema,
-        success_status=201,
-        success_description="Tags added successfully"
-    )
     @openapi.tag("Profile - Tags")
     @validate_request(UserTagBulkAddSchema)
     async def post(self, request: Request):
@@ -102,11 +90,6 @@ class MeTagsCategoryView(BaseAPIView):
     """
     @openapi.summary("Update tags in specific category")
     @openapi.description("Replaces all tags in a specific category with new ones.")
-    @api_response(
-        success_schema=CountResponseSchema,
-        success_status=200,
-        success_description="Category tags updated successfully"
-    )
     @openapi.tag("Profile - Tags")
     @validate_request(UserTagUpdateByCategorySchema)
     async def put(self, request: Request, category: str):
@@ -148,11 +131,6 @@ class MeTagsDeleteView(BaseAPIView):
     """
     @openapi.summary("Delete user's tags")
     @openapi.description("Deletes one or more tags from the authenticated user's profile.")
-    @api_response(
-        success_schema=CountResponseSchema,
-        success_status=200,
-        success_description="Tags deleted successfully"
-    )
     @openapi.tag("Profile - Tags")
     @validate_request(UserTagDeleteSchema)
     async def post(self, request: Request):

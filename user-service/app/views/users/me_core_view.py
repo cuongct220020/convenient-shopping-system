@@ -2,12 +2,11 @@
 from sanic.request import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, api_response
+from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
-from app.schemas import UserInfoUpdateSchema, UserInfoResponseSchema
-from app.schemas.user_schema import UserInfoSchema
+from app.schemas.user_schema import UserInfoUpdateSchema, UserCoreInfoSchema
 
 from shopping_shared.utils.logger_utils import get_logger
 
@@ -18,11 +17,6 @@ class MeView(BaseAPIView):
 
     @openapi.summary("Get current user's core info")
     @openapi.description("Retrieves the core information (id, username, email, names, etc.) for the authenticated user.")
-    @api_response(
-        success_schema=UserInfoResponseSchema,
-        success_status=200,
-        success_description="User information retrieved successfully"
-    )
     @openapi.tag("Profile")
     async def get(self, request: Request):
         """Get current user info."""
@@ -36,7 +30,7 @@ class MeView(BaseAPIView):
 
             # Use helper method from base class
             return self.success_response(
-                data=UserInfoSchema.model_validate(user),
+                data=UserCoreInfoSchema.model_validate(user),
                 message="User information retrieved successfully.",
                 status_code=200
             )
@@ -50,11 +44,6 @@ class MeView(BaseAPIView):
 
     @openapi.summary("Update current user's core info")
     @openapi.description("Updates the core information for the authenticated user.")
-    @api_response(
-        success_schema=UserInfoResponseSchema,
-        success_status=200,
-        success_description="User information updated successfully"
-    )
     @openapi.tag("Profile")
     @validate_request(UserInfoUpdateSchema)
     async def patch(self, request: Request):
@@ -70,7 +59,7 @@ class MeView(BaseAPIView):
 
             # Use helper method from base class
             return self.success_response(
-                data=UserInfoSchema.model_validate(updated_user),
+                data=UserCoreInfoSchema.model_validate(updated_user),
                 message="User information updated.",
                 status_code=200
             )

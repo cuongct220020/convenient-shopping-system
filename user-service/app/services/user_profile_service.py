@@ -2,7 +2,7 @@
 from uuid import UUID
 
 from app.models import UserIdentityProfile, UserHealthProfile
-from app.schemas import (
+from app.schemas.user_profile_schema import (
     UserIdentityProfileUpdateSchema,
     UserHealthProfileUpdateSchema
 )
@@ -111,6 +111,3 @@ class UserHealthProfileService:
 
         # Reload to ensure consistency (and if any relationships are added later)
         return await self.repository.get_or_create_for_user(user_id)
-
-
-

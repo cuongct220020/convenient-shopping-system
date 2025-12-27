@@ -2,12 +2,12 @@
 from datetime import datetime
 from typing import Optional
 from app.enums import SystemRole
-from app.schemas.auth_schema import RegisterRequestSchema
-from app.schemas.user_schema import UserDetailedProfileSchema, UserInfoUpdateSchema
+from app.schemas.user_profile_schema import UserDetailedProfileSchema
+from app.schemas.user_schema import UserInfoUpdateSchema, UserCreateSchema
 from app.schemas.user_profile_schema import UserIdentityProfileUpdateSchema, UserHealthProfileUpdateSchema
 
 
-class UserAdminCreateSchema(RegisterRequestSchema):
+class UserAdminCreateSchema(UserCreateSchema):
     """
     Schema for admins to create a new user.
     Inherits fields: username, email, password, first_name, last_name.
@@ -15,7 +15,6 @@ class UserAdminCreateSchema(RegisterRequestSchema):
     """
     system_role: SystemRole = SystemRole.USER
     is_active: bool = True
-    phone_num: Optional[str] = None
 
 
 class UserAdminViewSchema(UserDetailedProfileSchema):

@@ -34,8 +34,8 @@ class User(Base):
     )
 
     phone_num: Mapped[Optional[str]] = mapped_column(String(20), unique=True, nullable=True)
-    first_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    first_name: Mapped[str] = mapped_column(String(255), nullable=True)
+    last_name: Mapped[str] = mapped_column(String(255), nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

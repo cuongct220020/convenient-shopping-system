@@ -2,14 +2,14 @@
 from sanic.request import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, api_response
+from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas import RequestEmailChangeSchema, ConfirmEmailChangeRequestSchema, OTPRequestSchema
+from app.schemas.auth_schema import RequestEmailChangeSchema, ConfirmEmailChangeRequestSchema
+from app.schemas.otp_schema import OTPRequestSchema
 from app.services.auth_service import AuthService
 from app.enums import OtpAction
 
-from shopping_shared.sanic.schemas import DocGenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Me Change Email View")
@@ -20,11 +20,6 @@ class MeRequestChangeEmailView(BaseAPIView):
 
     @openapi.summary("Request email change (Step 1)")
     @openapi.description("Requests an OTP to be sent to the desired new email address.")
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="OTP sent to your new email address"
-    )
     @openapi.tag("Profile")
     @validate_request(RequestEmailChangeSchema)
     async def post(self, request: Request):
@@ -66,11 +61,6 @@ class MeConfirmChangeEmailView(BaseAPIView):
 
     @openapi.summary("Confirm email change (Step 2)")
     @openapi.description("Confirms the email address change by providing the OTP sent to the new email.")
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Email updated successfully"
-    )
     @openapi.tag("Profile")
     @validate_request(ConfirmEmailChangeRequestSchema)
     async def post(self, request: Request):

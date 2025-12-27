@@ -4,7 +4,7 @@ from pydantic import PydanticDeprecatedSince20
 
 warnings.filterwarnings("ignore", category=PydanticDeprecatedSince20, module="sanic_ext")
 
-from sanic import Sanic, response
+from sanic import Sanic
 from sanic_ext import Extend
 from shopping_shared.utils.logger_utils import get_logger
 
@@ -93,13 +93,11 @@ def create_app(*config_cls) -> Sanic:
     register_hooks(sanic_app)
     
     # Configure Sanic Extensions to serve docs at the correct prefix
-    # Explicitly point Swagger UI to the absolute path of the openapi.json spec
-    # This prevents issues with relative paths when behind a gateway
+    # We explicitly pass the config here to ensure Sanic Ext picks up the custom URL prefix and UI config
     Extend(sanic_app, config={
-        "oas_url_prefix": "/api/v1/user-service/docs",
-        "swagger_ui_configuration": {
-            "url": "/api/v1/user-service/docs/openapi.json"
-        }
+        "oas_url_prefix": sanic_app.config.OAS_URL_PREFIX,
+        "swagger_ui_configuration": sanic_app.config.SWAGGER_UI_CONFIGURATION,
+        "openapi": sanic_app.config.OAS,
     })
     
     # Register shared error handlers

@@ -6,7 +6,7 @@ from pydantic import EmailStr
 
 from app.models import FamilyGroup, GroupMembership
 from app.enums import GroupRole
-from app.schemas import (
+from app.schemas.family_group_schema import (
     FamilyGroupCreateSchema,
     FamilyGroupUpdateSchema
 )

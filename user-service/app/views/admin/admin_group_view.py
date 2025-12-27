@@ -3,21 +3,17 @@ from uuid import UUID
 from sanic import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, require_system_role, api_response
+from app.decorators import validate_request, require_system_role
 from app.views.base_view import BaseAPIView
 from app.enums import SystemRole
 from app.repositories.family_group_repository import FamilyGroupRepository
 from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.services.admin_service import AdminGroupService
-from app.schemas import (
-    FamilyGroupDetailedSchema,
-    FamilyGroupAdminUpdateSchema,
-    FamilyGroupDetailedResponseSchema,
-)
-from app.schemas.family_group_schema import GroupMembershipUpdateSchema # Direct import for clarity
+from app.schemas.family_group_schema import FamilyGroupDetailedSchema, GroupMembershipUpdateSchema
+from app.schemas.family_group_admin_schema import FamilyGroupAdminUpdateSchema
 
-from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Admin Group View")
@@ -41,12 +37,8 @@ class AdminGroupsView(BaseAPIView):
     @openapi.description("Lists all family groups in the system with pagination.")
     @openapi.parameter("page", int, "query")
     @openapi.parameter("page_size", int, "query")
-    @openapi.response(200, DocGenericResponse) # Note: Actual response is paginated, but this is a placeholder
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Groups listed successfully"
-    )
+    @openapi.response(200, GenericResponse)
+    @openapi.tag("Admin Group Management")
     async def get(self, request: Request):
         """List all family groups with pagination."""
         page = int(request.args.get("page", 1))
@@ -95,12 +87,7 @@ class AdminGroupDetailView(BaseAPIView):
 
     @openapi.summary("Get group by ID")
     @openapi.description("Retrieves a specific family group by its ID.")
-    @openapi.response(200, FamilyGroupDetailedResponseSchema)
-    @api_response(
-        success_schema=FamilyGroupDetailedResponseSchema,
-        success_status=200,
-        success_description="Group retrieved successfully"
-    )
+    @openapi.response(200, FamilyGroupDetailedSchema)
     async def get(self, request: Request, group_id: UUID):
         """Get a specific family group by ID."""
         service = self._get_service(request)
@@ -126,13 +113,8 @@ class AdminGroupDetailView(BaseAPIView):
     @openapi.summary("Update group by ID")
     @openapi.description("Updates a specific family group by its ID.")
     @openapi.body(FamilyGroupAdminUpdateSchema)
-    @openapi.response(200, FamilyGroupDetailedResponseSchema)
+    @openapi.response(200, FamilyGroupDetailedSchema)
     @validate_request(FamilyGroupAdminUpdateSchema)
-    @api_response(
-        success_schema=FamilyGroupDetailedResponseSchema,
-        success_status=200,
-        success_description="Group updated successfully"
-    )
     async def put(self, request: Request, group_id: UUID):
         """Update a specific family group by ID."""
         validated_data = request.ctx.validated_data
@@ -157,12 +139,7 @@ class AdminGroupDetailView(BaseAPIView):
 
     @openapi.summary("Delete group by ID")
     @openapi.description("Deletes a specific family group by its ID.")
-    @openapi.response(200, DocGenericResponse)
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Group deleted successfully"
-    )
+    @openapi.response(200, GenericResponse)
     async def delete(self, request: Request, group_id: UUID):
         """Delete a specific family group by ID."""
         service = self._get_service(request)
@@ -201,12 +178,7 @@ class AdminGroupMembersView(BaseAPIView):
 
     @openapi.summary("List members of a group")
     @openapi.description("Lists all members of a specific family group.")
-    @openapi.response(200, DocGenericResponse)
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Group members listed successfully"
-    )
+    @openapi.response(200, GenericResponse)
     async def get(self, request: Request, group_id: UUID):
         """List all members of a specific family group."""
         service = self._get_service(request)
@@ -247,13 +219,8 @@ class AdminGroupMembersManageView(BaseAPIView):
     @openapi.summary("Update member role in group")
     @openapi.description("Updates the role of a member in a specific family group.")
     @openapi.body(GroupMembershipUpdateSchema)
-    @openapi.response(200, DocGenericResponse)
+    @openapi.response(200, GenericResponse)
     @validate_request(GroupMembershipUpdateSchema)
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Member role updated successfully"
-    )
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
         """Update the role of a member in a specific family group."""
         validated_data = request.ctx.validated_data

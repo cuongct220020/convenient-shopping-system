@@ -3,7 +3,6 @@ from typing import List, Dict, Optional, Sequence
 from uuid import UUID
 from sqlalchemy import select, delete, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from shopping_shared.databases.base_repository import BaseRepository
 from app.models.user_tag import Tag, UserTag
@@ -69,7 +68,7 @@ class UserTagRepository:
 
         return grouped_tags
 
-    async def get_user_tags_detailed(self, user_id: UUID) -> List[Tag]:
+    async def get_user_tags_detailed(self, user_id: UUID) -> Sequence[Tag]:
         """Get all user tags with detailed information."""
         stmt = (
             select(Tag)
@@ -187,7 +186,7 @@ class UserTagRepository:
         await self.session.flush()
         return len(tag_values) if tag_values else 0
 
-    async def get_available_tags_by_category(self, category: Optional[str] = None) -> List[Tag]:
+    async def get_available_tags_by_category(self, category: Optional[str] = None) -> Sequence[Tag]:
         """Get available tags, optionally filtered by category."""
         stmt = select(Tag)
         if category:

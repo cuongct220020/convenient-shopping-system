@@ -3,10 +3,10 @@ from datetime import datetime, UTC
 from sanic.request import Request
 from sanic_ext import openapi
 
-from app.decorators import api_response
 from app.views.base_view import BaseAPIView
 from app.services.auth_service import AuthService
-from shopping_shared.sanic.schemas import DocGenericResponse
+
+from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.exceptions import Unauthorized
 
 
@@ -16,14 +16,9 @@ class LogoutView(BaseAPIView):
     @staticmethod
     @openapi.summary("Logout user")
     @openapi.description("Logs out the current user by revoking the refresh token and block-listing the access token.")
-    @openapi.response(200, DocGenericResponse)
+    @openapi.response(200, GenericResponse)
     @openapi.secured("bearerAuth")
     @openapi.tag("Authentication")
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Logout successful"
-    )
     async def post(self, request: Request):
         """Handles user logout by revoking tokens and clearing the session from the database."""
         try:

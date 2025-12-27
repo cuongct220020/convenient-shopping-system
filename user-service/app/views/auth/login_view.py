@@ -2,10 +2,10 @@
 from sanic.request import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, api_response
+from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas import LoginRequestSchema, TokenDataResponseSchema
+from app.schemas.auth_schema import LoginRequestSchema, LoginResponse
 from app.services.auth_service import AuthService
 
 
@@ -13,17 +13,11 @@ from app.services.auth_service import AuthService
 class LoginView(BaseAPIView):
     """Handles user login and token generation."""
 
-    @openapi.summary("Login with email/username and password")
+    @openapi.summary("Login")
     @openapi.description("Logs in a user, returning an access token in the response body and a refresh token in an HttpOnly cookie.")
-    @openapi.body(LoginRequestSchema)
-    @openapi.response(200, TokenDataResponseSchema)
+    @openapi.response(200, LoginResponse, "Login successful")
     @openapi.tag("Authentication")
     @validate_request(LoginRequestSchema)
-    @api_response(
-        success_schema=TokenDataResponseSchema,
-        success_status=200,
-        success_description="Login successful"
-    )
     async def post(self, request: Request):
         """Handles user login and token generation."""
         validated_data = request.ctx.validated_data

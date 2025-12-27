@@ -1,4 +1,4 @@
-# microservices/user-service/app/decorators/idempotency.py
+# user-service/app/decorators/idempotency.py
 from functools import wraps
 import json
 from sanic.request import Request
@@ -8,7 +8,7 @@ from sanic_ext import openapi
 from shopping_shared.exceptions import Conflict
 from shopping_shared.utils.logger_utils import get_logger
 from app.services.redis_service import RedisService
-from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 
 logger = get_logger("Idempotency")
 
@@ -33,8 +33,10 @@ def idempotent(ttl_seconds: int = 60 * 60 * 24, auto_document: bool = True): # D
     """
     def decorator(f):
         if auto_document:
+            # Automatically document the header requirement
+            f = openapi.parameter("Idempotency-Key", str, "header", required=False, description="Unique key to prevent duplicate operations")(f)
             # Automatically document the possible conflict error response
-            f = openapi.response(409, DocGenericResponse, "Conflict - Concurrent operation in progress")(f)
+            f = openapi.response(409, GenericResponse, "Conflict - Concurrent operation in progress")(f)
 
         @wraps(f)
         async def decorated_function(view, request: Request, *args, **kwargs):

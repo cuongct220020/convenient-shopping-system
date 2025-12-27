@@ -8,9 +8,8 @@ from sanic.response import json
 from sanic_ext import openapi
 
 # Import the standardized response schema
-from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.schemas.base_schema import BaseSchema
-from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Validate Request Decorator")
@@ -28,9 +27,11 @@ def validate_request(schema: Type[BaseSchema], auto_document: bool = True):
     """
     def decorator(func):
         if auto_document:
+            # Automatically document the request body
+            func = openapi.body(schema)(func)
             # Automatically document the possible validation error responses
-            func = openapi.response(400, DocGenericResponse, "Bad Request - Invalid JSON")(func)
-            func = openapi.response(422, DocGenericResponse, "Validation Error")(func)
+            func = openapi.response(400, GenericResponse, "Bad Request - Invalid JSON")(func)
+            func = openapi.response(422, GenericResponse, "Validation Error")(func)
 
         @wraps(func)
         async def decorated_function(view, request: Request, *args, **kwargs):

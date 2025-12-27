@@ -2,23 +2,18 @@
 from sanic.request import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, api_response
+from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas import OTPRequestSchema, RegisterVerifyRequestSchema
+from app.schemas.otp_schema import OTPRequestSchema, RegisterVerifyRequestSchema
 from app.services.auth_service import AuthService
-from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 
 
 class OTPRequestView(BaseAPIView):
     """View to handle the generation and sending of a new OTP."""
 
     @validate_request(OTPRequestSchema)
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="OTP sent successfully"
-    )
     async def post(self, request: Request):
         """Handles the logic to request and send an OTP for a specific action."""
         otp_data = request.ctx.validated_data
@@ -50,14 +45,9 @@ class RegisterVerificationView(BaseAPIView):
     @openapi.summary("Verify Registration (Activate Account)")
     @openapi.description("Verifies the OTP to complete the registration process and activate the user account.")
     @openapi.body(RegisterVerifyRequestSchema)
-    @openapi.response(200, DocGenericResponse)
+    @openapi.response(200, GenericResponse)
     @openapi.tag("Authentication")
     @validate_request(RegisterVerifyRequestSchema)
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Account activated successfully"
-    )
     async def post(self, request: Request):
         """
         Verifies the submitted OTP to activate an account.

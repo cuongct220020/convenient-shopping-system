@@ -91,5 +91,36 @@ class Config:
         bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9094')
     )
 
+    # OpenAPI / Swagger Configuration
+    OAS_URL_PREFIX = "/api/v1/user-service/docs"
+    SWAGGER_UI_CONFIGURATION = {
+        "docExpansion": "list",
+    }
+    OAS = {
+        "info": {
+            "title": "Convenient Shopping - User Service API",
+            "version": "1.0.0",
+            "description": "API quản lý người dùng, xác thực và phân quyền.",
+            "contact": {
+                "email": "cuongct@example.com",
+            },
+        },
+        "servers": [
+            {"url": "http://localhost:8000", "description": "Local Gateway"},
+            {"url": "http://localhost:8001", "description": "Local Service Direct"}
+        ],
+        "components": {
+            "securitySchemes": {
+                "BearerAuth": {
+                    "type": "http",
+                    "scheme": "bearer",
+                    "bearerFormat": "JWT",
+                    "description": "JWT Authorization header using the Bearer scheme. Example: 'Authorization: Bearer {token}'"
+                }
+            }
+        },
+        "security": [{"BearerAuth": []}]
+    }
+
 
 

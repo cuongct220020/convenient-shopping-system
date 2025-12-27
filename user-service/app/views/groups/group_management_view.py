@@ -4,21 +4,19 @@ from sanic import Request
 from sanic_ext import openapi
 
 from app.enums import GroupRole
-from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
 
-from app.decorators import validate_request, idempotent, require_group_role, api_response
+from app.decorators import validate_request, idempotent, require_group_role
 from app.views.groups.base_group_view import BaseGroupView
-from app.schemas import (
+from app.schemas.family_group_schema import (
     FamilyGroupCreateSchema,
     FamilyGroupDetailedSchema,
-    FamilyGroupDetailedResponseSchema,
-    GroupMembershipListResponseSchema,
     GroupMembershipSchema
 )
 
-logger = get_logger(__name__)
+logger = get_logger("Group Management View")
 
 
 class GroupView(BaseGroupView):
@@ -35,11 +33,11 @@ class GroupView(BaseGroupView):
         description="Creates a new family group with the authenticated user as HEAD_CHEF.",
         body=get_openapi_body(FamilyGroupCreateSchema),
         response=[
-            {"status": 201, "model": FamilyGroupDetailedResponseSchema, "description": "Group created successfully"},
-            {"status": 400, "model": DocGenericResponse, "description": "Bad Request"},
-            {"status": 401, "model": DocGenericResponse, "description": "Unauthorized"},
-            {"status": 409, "model": DocGenericResponse, "description": "Conflict"},
-            {"status": 500, "model": DocGenericResponse, "description": "Internal Server Error"}
+            {"status": 201, "model": FamilyGroupDetailedSchema, "description": "Group created successfully"},
+            {"status": 400, "model": GenericResponse, "description": "Bad Request"},
+            {"status": 401, "model": GenericResponse, "description": "Unauthorized"},
+            {"status": 409, "model": GenericResponse, "description": "Conflict"},
+            {"status": 500, "model": GenericResponse, "description": "Internal Server Error"}
         ]
     )
     @validate_request(FamilyGroupCreateSchema, auto_document=False)
@@ -73,12 +71,7 @@ class GroupView(BaseGroupView):
 
     @openapi.summary("List user's family groups")
     @openapi.description("Lists all family groups the authenticated user is a member of.")
-    @openapi.response(200, GroupMembershipListResponseSchema)
-    @api_response(
-        success_schema=GroupMembershipListResponseSchema,
-        success_status=200,
-        success_description="Groups listed successfully"
-    )
+    @openapi.response(200)
     async def get(self, request: Request):
         """List all groups the authenticated user is a member of."""
         user_id = request.ctx.auth_payload["sub"]
@@ -89,9 +82,10 @@ class GroupView(BaseGroupView):
 
             # Use helper method from base class
             # memberships is a list of GroupMembership objects, need to convert to GroupMembershipSchema
-            membership_schemas = [GroupMembershipSchema.model_validate(m) for m in memberships]
+
+
             return self.success_response(
-                data=membership_schemas,
+                data=None,
                 message="Groups listed successfully",
                 status_code=200
             )
@@ -115,12 +109,7 @@ class GroupDetailView(BaseGroupView):
 
     @openapi.summary("Get family group details")
     @openapi.description("Retrieves details of a specific family group.")
-    @openapi.response(200, FamilyGroupDetailedResponseSchema)
-    @api_response(
-        success_schema=FamilyGroupDetailedResponseSchema,
-        success_status=200,
-        success_description="Group details retrieved successfully"
-    )
+    @openapi.response(200, FamilyGroupDetailedSchema)
     async def get(self, request: Request, group_id: UUID):
         """Get details of a specific family group."""
         service = self._get_service(request)
@@ -145,13 +134,8 @@ class GroupDetailView(BaseGroupView):
     @openapi.summary("Update family group details")
     @openapi.description("Updates details of a specific family group.")
     @openapi.body(FamilyGroupCreateSchema)  # Using create schema for update as fields are similar
-    @openapi.response(200, FamilyGroupDetailedResponseSchema)
+    @openapi.response(200, FamilyGroupDetailedSchema)
     @validate_request(FamilyGroupCreateSchema)
-    @api_response(
-        success_schema=FamilyGroupDetailedResponseSchema,
-        success_status=200,
-        success_description="Group updated successfully"
-    )
     async def put(self, request: Request, group_id: UUID):
         """Update details of a specific family group."""
         validated_data = request.ctx.validated_data
@@ -176,12 +160,7 @@ class GroupDetailView(BaseGroupView):
 
     @openapi.summary("Delete a family group")
     @openapi.description("Deletes a specific family group.")
-    @openapi.response(200, DocGenericResponse)
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Group deleted successfully"
-    )
+    @openapi.response(200, GenericResponse)
     async def delete(self, request: Request, group_id: UUID):
         """Delete a specific family group."""
         service = self._get_service(request)

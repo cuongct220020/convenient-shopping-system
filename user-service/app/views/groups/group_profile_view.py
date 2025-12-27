@@ -3,7 +3,7 @@ from uuid import UUID
 from sanic import Request
 from sanic_ext import openapi
 
-from app.decorators import require_group_role, api_response
+from app.decorators import require_group_role
 from app.views.base_view import BaseAPIView
 from app.repositories.user_profile_repository import (
     UserIdentityProfileRepository,
@@ -14,11 +14,9 @@ from app.services.user_profile_service import (
     UserIdentityProfileService,
     UserHealthProfileService
 )
-from app.schemas import (
+from app.schemas.user_profile_schema import (
     UserIdentityProfileSchema,
-    UserHealthProfileSchema,
-    UserIdentityProfileResponseSchema,
-    UserHealthProfileResponseSchema
+    UserHealthProfileSchema
 )
 
 from shopping_shared.exceptions import NotFound
@@ -38,12 +36,7 @@ class MemberIdentityProfileView(BaseAPIView):
 
     @openapi.summary("Get member's identity profile")
     @openapi.description("Retrieves the identity profile of a specific group member.")
-    @openapi.response(200, UserIdentityProfileResponseSchema)
-    @api_response(
-        success_schema=UserIdentityProfileResponseSchema,
-        success_status=200,
-        success_description="Identity profile retrieved successfully"
-    )
+    @openapi.response(200, UserIdentityProfileSchema)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get identity profile of a specific group member."""
         profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
@@ -93,12 +86,7 @@ class MemberHealthProfileView(BaseAPIView):
 
     @openapi.summary("Get member's health profile")
     @openapi.description("Retrieves the health profile of a specific group member.")
-    @openapi.response(200, UserHealthProfileResponseSchema)
-    @api_response(
-        success_schema=UserHealthProfileResponseSchema,
-        success_status=200,
-        success_description="Health profile retrieved successfully"
-    )
+    @openapi.response(200, UserHealthProfileSchema)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get health profile of a specific group member."""
         profile_repo = UserHealthProfileRepository(session=request.ctx.db_session)

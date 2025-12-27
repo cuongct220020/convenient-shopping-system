@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models import FamilyGroup, GroupMembership, User
 from app.enums import GroupRole
-from app.schemas import (
+from app.schemas.family_group_schema import (
     FamilyGroupCreateSchema, 
     FamilyGroupUpdateSchema,
     GroupMembershipCreateSchema,

@@ -3,21 +3,20 @@ from uuid import UUID
 from sanic import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, require_group_role, api_response
+from app.decorators import validate_request, require_group_role
 from app.views.groups.base_group_view import BaseGroupView
 from app.enums import GroupRole
 from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas import (
+from app.schemas.family_group_schema import (
     AddMemberRequestSchema,
     GroupMembershipUpdateSchema,
     GroupMembershipSchema,
-    GroupMembershipListResponseSchema,
-    GroupMembershipResponseSchema
+    FamilyGroupDetailedSchema
 )
 
 from shopping_shared.exceptions import NotFound, Forbidden
-from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Group Members View")
@@ -34,12 +33,7 @@ class GroupMembersView(BaseGroupView):
 
     @openapi.summary("List group members")
     @openapi.description("Lists all members of a specific family group.")
-    @openapi.response(200, GroupMembershipListResponseSchema)
-    @api_response(
-        success_schema=GroupMembershipListResponseSchema,
-        success_status=200,
-        success_description="Group members listed successfully"
-    )
+    @openapi.response(200, FamilyGroupDetailedSchema)
     async def get(self, request: Request, group_id: UUID):
         """List all members of a specific family group."""
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
@@ -47,13 +41,10 @@ class GroupMembersView(BaseGroupView):
         try:
             members = await membership_repo.get_all_members(group_id)
 
-            # Use helper method from base class
-            membership_schema = [GroupMembershipSchema.model_validate(m) for m in members]
+
 
             return self.success_response(
-                data=GroupMembershipListResponseSchema(
-                    data=membership_schema,
-                ),
+                data=None,
                 message="Group members listed successfully",
                 status_code=200
             )
@@ -68,13 +59,8 @@ class GroupMembersView(BaseGroupView):
     @openapi.summary("Add a member to group")
     @openapi.description("Adds a user to a specific family group.")
     @openapi.body(AddMemberRequestSchema)
-    @openapi.response(201, GroupMembershipResponseSchema)
+    @openapi.response(201, GroupMembershipSchema)
     @validate_request(AddMemberRequestSchema)
-    @api_response(
-        success_schema=GroupMembershipResponseSchema,
-        success_status=201,
-        success_description="Member added successfully"
-    )
     async def post(self, request: Request, group_id: UUID):
         """Add a member to a specific family group."""
         validated_data = request.ctx.validated_data
@@ -121,13 +107,8 @@ class GroupMemberDetailView(BaseGroupView):
     @openapi.summary("Update member role")
     @openapi.description("Updates the role of a specific member in a family group.")
     @openapi.body(GroupMembershipUpdateSchema)
-    @openapi.response(200, GroupMembershipResponseSchema)
+    @openapi.response(200, GroupMembershipSchema)
     @validate_request(GroupMembershipUpdateSchema)
-    @api_response(
-        success_schema=GroupMembershipResponseSchema,
-        success_status=200,
-        success_description="Member role updated successfully"
-    )
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
         """Update the role of a specific member in a family group."""
         validated_data = request.ctx.validated_data
@@ -156,12 +137,7 @@ class GroupMemberDetailView(BaseGroupView):
 
     @openapi.summary("Remove member from group")
     @openapi.description("Removes a specific member from a family group.")
-    @openapi.response(200, DocGenericResponse)
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Member removed successfully"
-    )
+    @openapi.response(200, GenericResponse)
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):
         """Remove a specific member from a family group."""
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
@@ -197,12 +173,7 @@ class GroupMemberMeView(BaseGroupView):
 
     @openapi.summary("Leave a group")
     @openapi.description("Allows a member to leave a specific family group.")
-    @openapi.response(200, DocGenericResponse)
-    @api_response(
-        success_schema=DocGenericResponse,
-        success_status=200,
-        success_description="Successfully left the group"
-    )
+    @openapi.response(200, GenericResponse)
     async def delete(self, request: Request, group_id: UUID):
         """Allow a member to leave a specific family group."""
         user_id = request.ctx.auth_payload["sub"]

@@ -2,26 +2,21 @@
 from sanic.request import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, idempotent, api_response
+from app.decorators import validate_request, idempotent
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas import UserInfoSchema, RegisterRequestSchema, UserInfoResponseSchema
+from app.schemas.user_schema import UserCoreInfoSchema
+from app.schemas.auth_schema import  RegisterRequestSchema, RegisterResponse
 from app.services.auth_service import AuthService
 
 
 class RegisterView(BaseAPIView):
     @openapi.summary("Register a new account")
     @openapi.description("Creates a new user account with an inactive status and sends a verification OTP.")
-    @openapi.body(RegisterRequestSchema)
-    @openapi.response(201, UserInfoResponseSchema)
+    @openapi.response(201, RegisterResponse, "Registration successful")
     @openapi.tag("Authentication")
     @validate_request(RegisterRequestSchema)
     @idempotent()
-    @api_response(
-        success_schema=UserInfoResponseSchema,
-        success_status=201,
-        success_description="User registered successfully"
-    )
     async def post(self, request: Request):
         """Handles new user registration."""
         validated_data = request.ctx.validated_data
@@ -36,13 +31,13 @@ class RegisterView(BaseAPIView):
 
         # Use helper method from base class
         return self.success_response(
-            data=UserInfoSchema(
-                id=user.id,
+            data=UserCoreInfoSchema(
+                user_id=user.id,
                 username=user.username,
                 first_name=user.first_name,
                 last_name=user.last_name,
                 email=user.email,
-                phone_number=user.phone_num,
+                phone_num=user.phone_num,
                 avatar_url=user.avatar_url
             ),
             message="Registration successful. Please check your email for a verification OTP.",

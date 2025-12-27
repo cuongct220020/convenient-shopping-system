@@ -10,7 +10,7 @@ from typing import Callable
 from app.enums import SystemRole
 from shopping_shared.exceptions import Forbidden
 from sanic_ext import openapi
-from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.schemas.response_schema import GenericResponse
 
 
 def require_system_role(*allowed_roles: SystemRole, auto_document: bool = True) -> Callable:
@@ -33,8 +33,8 @@ def require_system_role(*allowed_roles: SystemRole, auto_document: bool = True) 
     def decorator(func: Callable) -> Callable:
         if auto_document:
             # Automatically document the possible authentication/authorization error responses
-            func = openapi.response(401, DocGenericResponse, "Unauthorized - Missing or invalid authentication")(func)
-            func = openapi.response(403, DocGenericResponse, "Forbidden - Insufficient permissions")(func)
+            func = openapi.response(401, GenericResponse, "Unauthorized - Missing or invalid authentication")(func)
+            func = openapi.response(403, GenericResponse, "Forbidden - Insufficient permissions")(func)
 
         @wraps(func)
         async def wrapper(self_or_request, *args, **kwargs):

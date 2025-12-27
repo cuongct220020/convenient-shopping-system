@@ -9,25 +9,8 @@ logger = get_logger("User Service Entrypoint")
 # Create the Sanic app instance
 app = create_app(Config)
 
-# The line below is removed to allow sanic-ext to auto-generate the spec
-# app.config.OAS_PATH_TO_SPEC = "openapi.yml"
-
-# Configure OpenAPI Security Schemes
-app.config.OAS_SECURITY_SCHEMES = {
-    "BearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT",
-        "description": "JWT Authorization header using the Bearer scheme. Example: 'Authorization: Bearer {token}'"
-    }
-}
-
-# Apply Security Scheme globally to all endpoints
-app.config.OAS_SECURITY = [{"BearerAuth": []}]
-
-
 # 1. Route Trang chủ (/): Hiển thị thông báo service đang chạy
-@app.get("/")  # <--- 2. Sử dụng @app thay vì @sanic_app
+@app.get("/")
 async def root(request):
     return response.json({
         "service": "User Service",
@@ -35,12 +18,6 @@ async def root(request):
         "version": "1.0.0",
         "message": "Welcome to Convenient Shopping System API"
     }, status=200)
-
-
-# 2. Route Favicon (/favicon.ico): Trả về rỗng
-@app.get("/favicon.ico")
-async def favicon(request):
-    return response.empty()
 
 
 def run():

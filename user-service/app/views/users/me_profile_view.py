@@ -2,7 +2,7 @@
 from sanic import Request
 from sanic_ext import openapi
 
-from app.decorators import validate_request, api_response
+from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
 from app.repositories.user_profile_repository import (
     UserIdentityProfileRepository,
@@ -12,13 +12,11 @@ from app.services.user_profile_service import (
     UserIdentityProfileService,
     UserHealthProfileService
 )
-from app.schemas import (
+from app.schemas.user_profile_schema import (
     UserIdentityProfileSchema,
     UserIdentityProfileUpdateSchema,
     UserHealthProfileSchema,
-    UserHealthProfileUpdateSchema,
-    UserIdentityProfileResponseSchema,
-    UserHealthProfileResponseSchema
+    UserHealthProfileUpdateSchema
 )
 
 from shopping_shared.exceptions import NotFound
@@ -32,11 +30,6 @@ class MeIdentityProfileView(BaseAPIView):
 
     @openapi.summary("Get identity profile")
     @openapi.description("Retrieves the identity profile (gender, DOB, etc.) of the authenticated user.")
-    @api_response(
-        success_schema=UserIdentityProfileResponseSchema,
-        success_status=200,
-        success_description="Identity profile retrieved successfully"
-    )
     @openapi.tag("Profile")
     async def get(self, request: Request):
         """Retrieves the identity profile of the authenticated user."""
@@ -71,11 +64,6 @@ class MeIdentityProfileView(BaseAPIView):
 
     @openapi.summary("Update identity profile")
     @openapi.description("Updates (or creates) the identity profile for the authenticated user.")
-    @api_response(
-        success_schema=UserIdentityProfileResponseSchema,
-        success_status=200,
-        success_description="Identity profile updated successfully"
-    )
     @openapi.tag("Profile")
     @validate_request(UserIdentityProfileUpdateSchema)
     async def patch(self, request: Request):
@@ -121,11 +109,6 @@ class MeHealthProfileView(BaseAPIView):
 
     @openapi.summary("Get health profile")
     @openapi.description("Retrieves the health profile (height, weight, etc.) of the authenticated user.")
-    @api_response(
-        success_schema=UserHealthProfileResponseSchema,
-        success_status=200,
-        success_description="Health profile retrieved successfully"
-    )
     @openapi.tag("Profile")
     async def get(self, request: Request):
         """Retrieves the health profile of the authenticated user."""
@@ -160,11 +143,6 @@ class MeHealthProfileView(BaseAPIView):
 
     @openapi.summary("Update health profile")
     @openapi.description("Updates (or creates) the health profile for the authenticated user.")
-    @api_response(
-        success_schema=UserHealthProfileResponseSchema,
-        success_status=200,
-        success_description="Health profile updated successfully"
-    )
     @openapi.tag("Profile")
     @validate_request(UserHealthProfileUpdateSchema)
     async def patch(self, request: Request):

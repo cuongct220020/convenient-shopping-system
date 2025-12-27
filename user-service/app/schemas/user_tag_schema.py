@@ -1,6 +1,6 @@
 # user-service/app/schemas/user_tag_schema.py
 from typing import List, Dict, Optional
-from pydantic import field_validator, Field, BaseModel
+from pydantic import field_validator, Field
 from shopping_shared.schemas.base_schema import BaseSchema
 
 
@@ -89,7 +89,7 @@ class UserTagUpdateByCategorySchema(BaseSchema):
         return v
 
 
-class UserTagSchema(BaseModel):
+class UserTagSchema(BaseSchema):
     """Schema for individual tag response."""
     id: int
     tag_value: str

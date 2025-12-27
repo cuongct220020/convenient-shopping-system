@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 from app.models.user import User
-from app.schemas import UserCreateSchema, UserInfoUpdateSchema
+from app.schemas.user_schema import UserCreateSchema, UserInfoUpdateSchema
 from shopping_shared.databases.base_repository import BaseRepository
 
 
@@ -34,20 +34,6 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
     async def update_password(self, user_id: UUID, hashed_password: str) -> Optional[User]:
         """Updates the user's password with the hashed value."""
         return await self.update_field(user_id, "password_hash", hashed_password)
-
-    async def update_email(self, user_id: UUID, new_email: str) -> Optional[User]:
-        """
-        Updates the user's email address. Should be called after OTP verification.
-        """
-        return await self.update_fields(user_id, {
-            "email": new_email,
-            # "updated_at": time(UTC)
-        })
-
-
-    async def verify_email(self, user_id: UUID) -> Optional[User]:
-        """Marks user's email as verified."""
-        return await self.update_field(user_id, "email_verified", True)
 
 
     async def create_user(self, user_data: dict) -> User:

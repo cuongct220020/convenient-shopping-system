@@ -6,8 +6,17 @@ from app.enums.auth import OtpAction
 
 class OTPRequestSchema(BaseSchema):
     """Schema to request a verification OTP."""
-    email: EmailStr
-    action: OtpAction
+    email: EmailStr = Field(
+        ...,
+        description="Email address to verify OTP for.",
+        examples=["user@example.com"],
+        min_length=3,
+        max_length=255
+    )
+    action: OtpAction = Field(
+        ...,
+        description="OTP action to perform.",
+    )
 
 
 class RegisterVerifyRequestSchema(BaseSchema):
@@ -15,5 +24,17 @@ class RegisterVerifyRequestSchema(BaseSchema):
     Schema for verifying account registration (activation).
     Implies action=REGISTER.
     """
-    email: EmailStr
-    otp_code: str = Field(..., min_length=6, max_length=6)
+    email: EmailStr = Field(
+        ...,
+        description="Email address to verify OTP for.",
+        examples=["user@example.com"],
+        min_length=3,
+        max_length=255
+    )
+    otp_code: str = Field(
+        ...,
+        description="OTP code to verify OTP for.",
+        examples=["OTP code"],
+        min_length=6,
+        max_length=6
+    )

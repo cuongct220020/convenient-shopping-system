@@ -7,10 +7,8 @@ from sqlalchemy.orm import selectinload
 
 from app.models import GroupMembership, User
 from app.enums import GroupRole
-from app.schemas import (
-    GroupMembershipCreateSchema,
-    GroupMembershipUpdateSchema
-)
+from app.schemas.family_group_schema import GroupMembershipCreateSchema, GroupMembershipUpdateSchema
+
 from shopping_shared.databases.base_repository import BaseRepository
 
 

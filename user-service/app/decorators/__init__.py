@@ -14,7 +14,6 @@ from .validate_request import validate_request
 from .idempotency import idempotent
 from .require_system_role import require_system_role
 from .require_group_role import require_group_role
-from .api_responses import api_response
 
 __all__ = [
     # Decorators
@@ -22,5 +21,4 @@ __all__ = [
     "idempotent", 
     "require_system_role",
     "require_group_role",
-    "api_response"
 ]
