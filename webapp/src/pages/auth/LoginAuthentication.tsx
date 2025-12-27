@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle, RefreshCcw, XCircle } from 'lucide-react'
+import { CheckCircle, RefreshCw, XCircle } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { OPTInput } from '../../components/OPTInput'
 import { LocalStorage } from '../../services/storage/local'
@@ -25,6 +25,7 @@ export default function LoginAuthentication() {
     initializeOtpCountdown()
   )
   const [isLoading, setIsLoading] = useState(false)
+  const [isAskingNewOtp, setIsAskingNewOtp] = useState(false)
   const [popup, setPopup] = useState({
     show: false,
     type: 'error' as 'error' | 'succeed' | 'incorrect'
@@ -32,17 +33,12 @@ export default function LoginAuthentication() {
   const isMounted = useIsMounted()
   useEffect(() => {
     const interval = setInterval(() => {
-      setTimeToRequestOtp((prev) => {
-        if (prev <= 0) {
-          clearInterval(interval)
-          return 0
-        }
-        return prev - 1
-      })
+      setTimeToRequestOtp((prev) => Math.max(0, prev - 1))
     }, 1000)
     return () => clearInterval(interval)
   }, [])
   const username = 'User'
+  const identification = LocalStorage.inst.unverifiedUserIdentification
 
   const handleOtpChanged = (code: string) => {
     setOtpCode(code)
@@ -50,7 +46,6 @@ export default function LoginAuthentication() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!AuthService.validateOtpFormat(otpCode)) return
-    const identification = LocalStorage.inst.unverifiedUserIdentification
     if (!identification) {
       console.error('We should not be in login auth page')
       navigate('/auth/login')
@@ -76,6 +71,21 @@ export default function LoginAuthentication() {
           setPopup({ show: true, type: 'error' })
         }
       }
+    )
+  }
+  const handleOtpResendClick = async () => {
+    console.log(identification, timeToRequestOtp)
+    if (!identification) return
+    if (timeToRequestOtp > 0) return
+    setIsAskingNewOtp(true)
+    const response = await authService.sendVerifyUserRequest(identification)
+    if (!isMounted.current) return
+    setIsAskingNewOtp(false)
+    response.match(
+      () => {
+        setTimeToRequestOtp(initializeOtpCountdown())
+      },
+      () => setPopup({ show: true, type: 'error' })
     )
   }
   const handlePopupClick = async () => {
@@ -133,12 +143,15 @@ export default function LoginAuthentication() {
                 : 'text-gray-500 hover:text-[#C3485C]'
             }`}
             disabled={timeToRequestOtp > 0}
-            onClick={() => console.log('CLicked resend otp')}
+            onClick={handleOtpResendClick}
           >
-            <RefreshCcw size={16} className="mr-2" />
+            <RefreshCw
+              size={16}
+              className={`mr-2 ${isAskingNewOtp ? 'animate-spin' : ''}`}
+            />
             <span>
               Gửi lại mã{' '}
-              {timeToRequestOtp < 0 ? '' : Time.MM_SS(timeToRequestOtp)}
+              {timeToRequestOtp <= 0 ? '' : Time.MM_SS(timeToRequestOtp)}
             </span>
           </button>
 

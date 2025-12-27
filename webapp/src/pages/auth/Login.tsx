@@ -111,7 +111,7 @@ export default function Login() {
     response
       .map(() => {
         setIsLoading(false)
-        navigate('main/profile')
+        navigate('/main/profile')
       })
       .mapErr(async (e) => {
         setIsLoading(false)

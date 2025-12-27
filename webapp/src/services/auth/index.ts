@@ -12,9 +12,7 @@ import { i18nKeys } from '../../utils/i18n/keys'
 
 const LogInResponseSchema = z.object({
   data: z.object({
-    access_token: z.string(),
-    refresh_token: z.string(),
-    token_type: z.string()
+    access_token: z.string()
   })
 })
 type LogInResponse = z.infer<typeof LogInResponseSchema>
