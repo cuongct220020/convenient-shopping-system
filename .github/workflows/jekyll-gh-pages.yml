@@ -56,7 +56,7 @@ jobs:
         working-directory: ./docs
 
       - name: Build Jekyll site
-        run: bundle exec jekyll build -s . -d ../_site
+        run: jekyll build -s . -d ../_site
         working-directory: ./docs
 
       - name: Upload artifact
