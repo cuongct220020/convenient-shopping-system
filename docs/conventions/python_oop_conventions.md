@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Python OOP Conventions"
+title: "Python-OOP Conventions"
 ---
 
 # Python OOP Conventions (Modern Typing)
