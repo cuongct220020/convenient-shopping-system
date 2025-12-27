@@ -5,7 +5,7 @@ from app.views.users.me_change_password_view import ChangePasswordView
 from app.views.users.me_core_view import MeView
 from app.views.users.me_profile_view import MeIdentityProfileView, MeHealthProfileView
 from app.views.users.me_change_email_view import MeRequestChangeEmailView, MeConfirmChangeEmailView
-from app.views.users.me_tag_view import MeTagsView, MeTagsDeleteView
+from app.views.users.me_tag_view import MeTagsView, MeTagsDeleteView, MeTagsCategoryView
 
 user_bp = Blueprint('user_blueprint', url_prefix='/users')
 
@@ -24,3 +24,4 @@ user_bp.add_route(MeHealthProfileView.as_view(), '/me/profile/health')
 # Tags
 user_bp.add_route(MeTagsView.as_view(), '/me/tags')
 user_bp.add_route(MeTagsDeleteView.as_view(), '/me/tags/delete')
+user_bp.add_route(MeTagsCategoryView.as_view(), '/me/tags/category/<category:str>')

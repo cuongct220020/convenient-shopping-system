@@ -24,7 +24,7 @@ class LogoutView(BaseAPIView):
         success_status=200,
         success_description="Logout successful"
     )
-    async def post(request: Request):
+    async def post(self, request: Request):
         """Handles user logout by revoking tokens and clearing the session from the database."""
         try:
             # 1. Lấy thông tin từ context (đã được set bởi middleware)

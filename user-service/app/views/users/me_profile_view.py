@@ -1,14 +1,9 @@
 # user-service/app/views/users/me_profile_view.py
 from sanic import Request
-from sanic.views import HTTPMethodView
 from sanic_ext import openapi
-
-from shopping_shared.exceptions import NotFound
-from shopping_shared.sanic.schemas import DocGenericResponse
 
 from app.decorators import validate_request, api_response
 from app.views.base_view import BaseAPIView
-from app.decorators.auth_decorators import auth_required
 from app.repositories.user_profile_repository import (
     UserIdentityProfileRepository,
     UserHealthProfileRepository
@@ -26,6 +21,7 @@ from app.schemas import (
     UserHealthProfileResponseSchema
 )
 
+from shopping_shared.exceptions import NotFound
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Me Profile View")
@@ -36,7 +32,6 @@ class MeIdentityProfileView(BaseAPIView):
 
     @openapi.summary("Get identity profile")
     @openapi.description("Retrieves the identity profile (gender, DOB, etc.) of the authenticated user.")
-    @auth_required()
     @api_response(
         success_schema=UserIdentityProfileResponseSchema,
         success_status=200,
@@ -67,6 +62,7 @@ class MeIdentityProfileView(BaseAPIView):
                 status_code=404
             )
         except Exception as e:
+            logger.error("Failed to retrieve identity profile", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve identity profile",
@@ -75,7 +71,6 @@ class MeIdentityProfileView(BaseAPIView):
 
     @openapi.summary("Update identity profile")
     @openapi.description("Updates (or creates) the identity profile for the authenticated user.")
-    @auth_required()
     @api_response(
         success_schema=UserIdentityProfileResponseSchema,
         success_status=200,
@@ -113,6 +108,7 @@ class MeIdentityProfileView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to update identity profile", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update identity profile",
@@ -125,7 +121,6 @@ class MeHealthProfileView(BaseAPIView):
 
     @openapi.summary("Get health profile")
     @openapi.description("Retrieves the health profile (height, weight, etc.) of the authenticated user.")
-    @auth_required()
     @api_response(
         success_schema=UserHealthProfileResponseSchema,
         success_status=200,
@@ -156,6 +151,7 @@ class MeHealthProfileView(BaseAPIView):
                 status_code=404
             )
         except Exception as e:
+            logger.error("Failed to retrieve health profile", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve health profile",
@@ -164,7 +160,6 @@ class MeHealthProfileView(BaseAPIView):
 
     @openapi.summary("Update health profile")
     @openapi.description("Updates (or creates) the health profile for the authenticated user.")
-    @auth_required()
     @api_response(
         success_schema=UserHealthProfileResponseSchema,
         success_status=200,

@@ -1,6 +1,6 @@
 # user-service/app/schemas/user_tag_schema.py
-from typing import List
-from pydantic import field_validator, Field
+from typing import List, Dict, Optional
+from pydantic import field_validator, Field, BaseModel
 from shopping_shared.schemas.base_schema import BaseSchema
 
 
@@ -19,7 +19,8 @@ class UserTagBulkAddSchema(BaseSchema):
     tag_values: List[str] = Field(
         ...,
         description="List of tag codes to add",
-        min_length=1
+        min_length=1,
+        max_length=50  # Limit number of tags at once
     )
 
     @field_validator("tag_values")
@@ -28,7 +29,7 @@ class UserTagBulkAddSchema(BaseSchema):
         """Validate tag values uniqueness and format."""
         if len(v) != len(set(v)):
             raise ValueError("Duplicate tag values are not allowed")
-        
+
         for tag in v:
             validate_tag_format(tag)
         return v
@@ -39,7 +40,8 @@ class UserTagDeleteSchema(BaseSchema):
     tag_values: List[str] = Field(
         ...,
         description="List of tag codes to delete",
-        min_length=1
+        min_length=1,
+        max_length=50  # Limit number of tags at once
     )
 
     @field_validator("tag_values")
@@ -63,7 +65,8 @@ class UserTagUpdateByCategorySchema(BaseSchema):
     )
     tag_values: List[str] = Field(
         ...,
-        description="List of tag values to set for this category (empty list removes all)"
+        description="List of tag values to set for this category (empty list removes all)",
+        max_length=20  # Limit number of tags in a category
     )
 
     @field_validator('category')
@@ -86,25 +89,50 @@ class UserTagUpdateByCategorySchema(BaseSchema):
         return v
 
 
+class UserTagSchema(BaseModel):
+    """Schema for individual tag response."""
+    id: int
+    tag_value: str
+    tag_category: str
+    tag_name: str
+    description: Optional[str] = None
+    created_at: Optional[str] = None
+
+
 class UserTagsByCategorySchema(BaseSchema):
     """Schema for grouping user tags by category."""
-    age: List[str] = Field(
+    age: List[UserTagSchema] = Field(
         default_factory=list,
         description="Age group tags (01xx)"
     )
-    medical: List[str] = Field(
+    medical: List[UserTagSchema] = Field(
         default_factory=list,
         description="Medical condition tags (02xx)"
     )
-    allergy: List[str] = Field(
+    allergy: List[UserTagSchema] = Field(
         default_factory=list,
         description="Allergy tags (03xx)"
     )
-    diet: List[str] = Field(
+    diet: List[UserTagSchema] = Field(
         default_factory=list,
         description="Special diet tags (04xx)"
     )
-    taste: List[str] = Field(
+    taste: List[UserTagSchema] = Field(
         default_factory=list,
         description="Taste preference tags (05xx)"
     )
+
+
+class UserTagsResponseSchema(BaseSchema):
+    """Enhanced response schema for user tags."""
+    data: UserTagsByCategorySchema
+    total_tags: int
+    categories_count: Dict[str, int]
+
+
+class BulkTagOperationResponseSchema(BaseSchema):
+    """Response schema for bulk tag operations."""
+    success_count: int
+    failed_count: int
+    errors: List[Dict[str, str]]
+    processed_tags: List[UserTagSchema]

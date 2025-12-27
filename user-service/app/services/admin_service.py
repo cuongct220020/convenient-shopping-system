@@ -5,7 +5,7 @@ from pydantic import EmailStr
 
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.repositories.family_group_repository import GroupMembershipRepository
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.schemas.user_admin_schema import UserAdminUpdateSchema
 from app.models.family_group import GroupMembership
 from app.utils.password_utils import hash_password

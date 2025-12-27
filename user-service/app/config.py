@@ -26,37 +26,42 @@ class Config:
 
     # JWT Settings
     JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'RS256')
+    JWT_ISSUER = os.getenv('JWT_ISSUER', 'shopping-user-service')  # Must match Kong's 'iss'
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('JWT_ACCESS_TOKEN_EXPIRE_MINUTES', 15))
     REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7))
 
     # Load RSA keys
     @staticmethod
-    def _load_rsa_key(env_path_key: str) -> str:
+    def _load_rsa_key(env_path_key: str, required: bool = False) -> str:
         """Load RSA key from env variable or file path."""
         key_path = os.getenv(env_path_key)
+        
         if not key_path:
-            raise ValueError(f"Missing {env_path_key} in environment")
+            if required:
+                raise ValueError(f"CRITICAL: Missing {env_path_key} in environment variables.")
+            return None
 
         path = Path(key_path)
         if not path.is_absolute():
             # Resolve relative to project root (user-service/)
-            # config.py is in user-service/app/
             base_dir = Path(__file__).resolve().parent.parent
             path = base_dir / path
 
         if not path.exists():
-            raise FileNotFoundError(f"RSA key file not found: {path}")
+            if required:
+                raise FileNotFoundError(f"CRITICAL: RSA key file not found at: {path}")
+            return None
 
         return path.read_text()
 
     # For RS256
+    _is_asymmetric = JWT_ALGORITHM.startswith('RS')
     JWT_PRIVATE_KEY = _load_rsa_key.__func__(
-        'JWT_PRIVATE_KEY_PATH'
-    ) if os.getenv('JWT_ALGORITHM', 'RS256').startswith('RS') else None
-
+        'JWT_PRIVATE_KEY_PATH', required=_is_asymmetric
+    )
     JWT_PUBLIC_KEY = _load_rsa_key.__func__(
-        'JWT_PUBLIC_KEY_PATH'
-    ) if os.getenv('JWT_ALGORITHM', 'RS256').startswith('RS') else None
+        'JWT_PUBLIC_KEY_PATH', required=_is_asymmetric
+    )
 
     # For HS256 (fallback)
     # JWT_SECRET = os.getenv('JWT_SECRET', 'e3dc8799821e1035ff0decd11ee02750f4740783b620e5f9c1c92020056ec10e')

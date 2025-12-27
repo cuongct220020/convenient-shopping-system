@@ -3,13 +3,10 @@ from uuid import UUID
 from sanic import Request
 from sanic_ext import openapi
 
-from shopping_shared.exceptions import NotFound, Forbidden
-from shopping_shared.sanic.schemas import DocGenericResponse
-
 from app.decorators import validate_request, require_group_role, api_response
 from app.views.groups.base_group_view import BaseGroupView
 from app.enums import GroupRole
-from app.repositories.family_group_repository import GroupMembershipRepository
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas import (
     AddMemberRequestSchema,
@@ -18,6 +15,12 @@ from app.schemas import (
     GroupMembershipListResponseSchema,
     GroupMembershipResponseSchema
 )
+
+from shopping_shared.exceptions import NotFound, Forbidden
+from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger("Group Members View")
 
 
 class GroupMembersView(BaseGroupView):
@@ -42,18 +45,20 @@ class GroupMembersView(BaseGroupView):
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
 
         try:
-            members = await membership_repo.get_group_members(group_id)
+            members = await membership_repo.get_all_members(group_id)
 
             # Use helper method from base class
+            membership_schema = [GroupMembershipSchema.model_validate(m) for m in members]
+
             return self.success_response(
                 data=GroupMembershipListResponseSchema(
-                    items=members,
-                    total=len(members)
+                    data=membership_schema,
                 ),
                 message="Group members listed successfully",
                 status_code=200
             )
         except Exception as e:
+            logger.error("Error listing group members", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to list group members",
@@ -83,7 +88,7 @@ class GroupMembersView(BaseGroupView):
                 raise NotFound("User not found")
 
             # Add member to group
-            membership = await membership_repo.add_member_to_group(
+            membership = await membership_repo.add_membership(
                 group_id=group_id,
                 user_id=validated_data.user_id,
                 role=validated_data.role
@@ -96,6 +101,7 @@ class GroupMembersView(BaseGroupView):
                 status_code=201
             )
         except Exception as e:
+            logger.error("Error adding membership", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to add member",
@@ -128,7 +134,7 @@ class GroupMemberDetailView(BaseGroupView):
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
 
         try:
-            membership = await membership_repo.update_member_role(
+            membership = await membership_repo.update_role(
                 group_id=group_id,
                 user_id=user_id,
                 new_role=validated_data.role
@@ -141,6 +147,7 @@ class GroupMemberDetailView(BaseGroupView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Error updating membership", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update member role",
@@ -160,17 +167,18 @@ class GroupMemberDetailView(BaseGroupView):
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
 
         try:
-            await membership_repo.remove_member_from_group(
+            await membership_repo.remove_membership(
                 group_id=group_id,
                 user_id=user_id
             )
 
-            # Use helper method from base class
+        # Use helper method from base class
             return self.success_response(
                 message="Member removed successfully",
                 status_code=200
             )
         except Exception as e:
+            logger.error("Error removing membership", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to remove member",
@@ -209,7 +217,7 @@ class GroupMemberMeView(BaseGroupView):
                 if len(head_chefs) <= 1:
                     raise Forbidden("HEAD_CHEF cannot leave group if they are the only HEAD_CHEF")
 
-            await membership_repo.remove_member_from_group(group_id, user_id)
+            await membership_repo.remove_membership(group_id, user_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -217,6 +225,7 @@ class GroupMemberMeView(BaseGroupView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Error removing membership", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to leave group",

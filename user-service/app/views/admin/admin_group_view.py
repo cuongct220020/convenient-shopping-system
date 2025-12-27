@@ -5,20 +5,22 @@ from sanic_ext import openapi
 
 from app.decorators import validate_request, require_system_role, api_response
 from app.views.base_view import BaseAPIView
-from app.enums import SystemRole, GroupRole
-from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
+from app.enums import SystemRole
+from app.repositories.family_group_repository import FamilyGroupRepository
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.services.family_group_service import FamilyGroupService
 from app.schemas import (
     FamilyGroupDetailedSchema,
     FamilyGroupAdminUpdateSchema,
     FamilyGroupDetailedResponseSchema,
-    DocGenericResponse
 )
 from app.schemas.family_group_schema import GroupMembershipUpdateSchema # Direct import for clarity
 
 from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.utils.logger_utils import get_logger
 
+logger = get_logger("Admin Group View")
 
 class AdminGroupsView(BaseAPIView):
     """Admin endpoints for listing all family groups. Requires ADMIN role."""
@@ -62,6 +64,7 @@ class AdminGroupsView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to list family groups", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to list groups",
@@ -101,6 +104,7 @@ class AdminGroupDetailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to get family group", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve group",
@@ -134,6 +138,7 @@ class AdminGroupDetailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to update family group", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update group",
@@ -162,6 +167,7 @@ class AdminGroupDetailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to delete family group", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to delete group",
@@ -199,6 +205,7 @@ class AdminGroupMembersView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to list group members", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to list group members",
@@ -243,6 +250,7 @@ class AdminGroupMembersManageView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to update member role", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update member role",

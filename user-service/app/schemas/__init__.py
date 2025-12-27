@@ -66,6 +66,12 @@ from .family_group_admin_schema import (
     FamilyGroupAdminUpdateSchema
 )
 
+from .user_tag_schema import (
+    UserTagBulkAddSchema,
+    UserTagDeleteSchema,
+    UserTagUpdateByCategorySchema
+)
+
 __all__ = [
     # Auth
     "RegisterRequestSchema",
@@ -101,6 +107,10 @@ __all__ = [
     "RequestEmailChangeSchema",
     "ConfirmEmailChangeRequestSchema",
 
+    # User Tag
+    "UserTagBulkAddSchema",
+    "UserTagDeleteSchema",
+    "UserTagUpdateByCategorySchema",
 
     # Group
     "FamilyGroupCreateSchema",

@@ -16,6 +16,9 @@ from app.schemas import (
 )
 from app.services.admin_service import AdminUserService
 from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger("Admin User View")
 
 
 class AdminUsersView(BaseAPIView):
@@ -65,6 +68,7 @@ class AdminUsersView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to list users", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to list users",
@@ -96,6 +100,7 @@ class AdminUsersView(BaseAPIView):
                 status_code=201
             )
         except Exception as e:
+            logger.error("Failed to create user", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to create user",
@@ -138,6 +143,7 @@ class AdminUserDetailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to get user", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve user",
@@ -169,6 +175,7 @@ class AdminUserDetailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to update user", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update user",
@@ -196,6 +203,7 @@ class AdminUserDetailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to delete user", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to delete user",

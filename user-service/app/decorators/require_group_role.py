@@ -14,7 +14,7 @@ from typing import Callable
 from uuid import UUID
 
 from app.enums import GroupRole
-from app.repositories.family_group_repository import GroupMembershipRepository
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from shopping_shared.exceptions import Forbidden, NotFound
 from sanic_ext import openapi
 from shopping_shared.sanic.schemas import DocGenericResponse

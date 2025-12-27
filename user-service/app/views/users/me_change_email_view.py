@@ -1,17 +1,18 @@
 # user-service/app/views/users/me_change_email_view.py
 from sanic.request import Request
-from sanic.views import HTTPMethodView
 from sanic_ext import openapi
 
 from app.decorators import validate_request, api_response
 from app.views.base_view import BaseAPIView
-from app.decorators.auth_decorators import auth_required
 from app.repositories.user_repository import UserRepository
 from app.schemas import RequestEmailChangeSchema, ConfirmEmailChangeRequestSchema, OTPRequestSchema
 from app.services.auth_service import AuthService
 from app.enums import OtpAction
 
 from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger("Me Change Email View")
 
 
 class MeRequestChangeEmailView(BaseAPIView):
@@ -19,7 +20,6 @@ class MeRequestChangeEmailView(BaseAPIView):
 
     @openapi.summary("Request email change (Step 1)")
     @openapi.description("Requests an OTP to be sent to the desired new email address.")
-    @auth_required()
     @api_response(
         success_schema=DocGenericResponse,
         success_status=200,
@@ -53,6 +53,7 @@ class MeRequestChangeEmailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error(f"Failed to send OTP to new email address: {e}")
             # Use helper method from base class
             return self.error_response(
                 message="Failed to send OTP. Please try again.",
@@ -65,7 +66,6 @@ class MeConfirmChangeEmailView(BaseAPIView):
 
     @openapi.summary("Confirm email change (Step 2)")
     @openapi.description("Confirms the email address change by providing the OTP sent to the new email.")
-    @auth_required()
     @api_response(
         success_schema=DocGenericResponse,
         success_status=200,
@@ -95,6 +95,7 @@ class MeConfirmChangeEmailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error(f"Failed to send OTP to new email address: {e}")
             # Use helper method from base class
             return self.error_response(
                 message="Failed to confirm email change. Please try again.",

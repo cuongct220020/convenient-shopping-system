@@ -1,25 +1,23 @@
 # user-service/app/views/users/me_core_view.py
 from sanic.request import Request
-from sanic.views import HTTPMethodView
 from sanic_ext import openapi
 
 from app.decorators import validate_request, api_response
 from app.views.base_view import BaseAPIView
-from app.decorators.auth_decorators import auth_required
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
 from app.schemas import UserInfoUpdateSchema, UserInfoResponseSchema
 from app.schemas.user_schema import UserInfoSchema
 
-from shopping_shared.sanic.schemas import DocGenericResponse
+from shopping_shared.utils.logger_utils import get_logger
 
+logger = get_logger("Me Core View")
 
 class MeView(BaseAPIView):
     """View to manage the authenticated user's core information."""
 
     @openapi.summary("Get current user's core info")
     @openapi.description("Retrieves the core information (id, username, email, names, etc.) for the authenticated user.")
-    @auth_required()
     @api_response(
         success_schema=UserInfoResponseSchema,
         success_status=200,
@@ -43,6 +41,7 @@ class MeView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to retrieve user info", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve user information",
@@ -51,7 +50,6 @@ class MeView(BaseAPIView):
 
     @openapi.summary("Update current user's core info")
     @openapi.description("Updates the core information for the authenticated user.")
-    @auth_required()
     @api_response(
         success_schema=UserInfoResponseSchema,
         success_status=200,
@@ -77,6 +75,7 @@ class MeView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
+            logger.error("Failed to update user info", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update user information",

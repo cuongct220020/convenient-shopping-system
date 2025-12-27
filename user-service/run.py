@@ -1,9 +1,4 @@
 # user-service/run.py
-
-
-import yaml
-import aiofiles
-from pathlib import Path
 from sanic import response
 from app import create_app
 from shopping_shared.utils.logger_utils import get_logger
@@ -50,12 +45,30 @@ async def favicon(request):
 
 def run():
     """Checks configuration and runs the application."""
-    # Warn if the default secret key is being used in a non-debug environment
-    if not app.config.get('DEBUG') and app.config.get('JWT_SECRET') == None:
-        logger.warning(
-            'JWT_SECRET is using the insecure default value in a production environment. '
-            'Please set a strong secret key in your environment variables.'
-        )
+    # Production Readiness Checks
+    is_debug = app.config.get("RUN_SETTING", {}).get("debug", False)
+    jwt_algo = app.config.get("JWT_ALGORITHM", "HS256")
+    
+    if not is_debug:
+        logger.info("Checking production security configuration...")
+        
+        # 1. Ensure Asymmetric algorithm is used
+        if not jwt_algo.startswith("RS"):
+            logger.critical(
+                f"INSECURE CONFIGURATION: JWT_ALGORITHM is set to '{jwt_algo}' in production. "
+                "RS256 (Asymmetric) is required for Kong Gateway integration."
+            )
+            return
+
+        # 2. Ensure Private Key is present (needed for signing)
+        if not app.config.get("JWT_PRIVATE_KEY"):
+            logger.critical(
+                "MISSING PRIVATE KEY: RSA private key is required to sign JWT tokens in production. "
+                "Check your JWT_PRIVATE_KEY_PATH environment variable."
+            )
+            return
+            
+        logger.info("Security configuration verified: RS256 with Private Key loaded.")
 
     try:
         app.run(**app.config['RUN_SETTING'])

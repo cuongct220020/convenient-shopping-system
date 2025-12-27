@@ -1,4 +1,4 @@
-# microservices/user-service/app/services/user_service.py
+# user-service/app/services/user_service.py
 from typing import List
 from uuid import UUID
 

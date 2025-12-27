@@ -10,7 +10,8 @@ from app.schemas import (
     FamilyGroupCreateSchema,
     FamilyGroupUpdateSchema
 )
-from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
+from app.repositories.family_group_repository import FamilyGroupRepository
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 
 from shopping_shared.exceptions import Forbidden, NotFound, Conflict

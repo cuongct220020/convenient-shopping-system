@@ -3,16 +3,13 @@ from uuid import UUID
 from sanic import Request
 from sanic_ext import openapi
 
-from shopping_shared.exceptions import NotFound
-from shopping_shared.sanic.schemas import DocGenericResponse
-
 from app.decorators import require_group_role, api_response
 from app.views.base_view import BaseAPIView
-from app.enums import GroupRole
 from app.repositories.user_profile_repository import (
     UserIdentityProfileRepository,
     UserHealthProfileRepository
 )
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.services.user_profile_service import (
     UserIdentityProfileService,
     UserHealthProfileService
@@ -23,6 +20,11 @@ from app.schemas import (
     UserIdentityProfileResponseSchema,
     UserHealthProfileResponseSchema
 )
+
+from shopping_shared.exceptions import NotFound
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger("Group Profile View")
 
 
 class MemberIdentityProfileView(BaseAPIView):
@@ -45,9 +47,18 @@ class MemberIdentityProfileView(BaseAPIView):
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get identity profile of a specific group member."""
         profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
+        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
         profile_service = UserIdentityProfileService(profile_repo)
 
         try:
+            # Verify that user_id is a member of group_id
+            membership = await membership_repo.get_membership(user_id, group_id)
+            if not membership:
+                return self.error_response(
+                    message="User is not a member of this group",
+                    status_code=404
+                )
+
             profile = await profile_service.get(user_id)
 
             # Use helper method from base class
@@ -63,6 +74,7 @@ class MemberIdentityProfileView(BaseAPIView):
                 status_code=404
             )
         except Exception as e:
+            logger.error("Failed to retrieve identity profile", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve identity profile",
@@ -90,9 +102,18 @@ class MemberHealthProfileView(BaseAPIView):
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get health profile of a specific group member."""
         profile_repo = UserHealthProfileRepository(session=request.ctx.db_session)
+        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
         profile_service = UserHealthProfileService(profile_repo)
 
         try:
+            # Verify that user_id is a member of group_id
+            membership = await membership_repo.get_membership(user_id, group_id)
+            if not membership:
+                return self.error_response(
+                    message="User is not a member of this group",
+                    status_code=404
+                )
+
             profile = await profile_service.get(user_id)
 
             # Use helper method from base class
@@ -108,6 +129,7 @@ class MemberHealthProfileView(BaseAPIView):
                 status_code=404
             )
         except Exception as e:
+            logger.error("Failed to retrieve health profile", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve health profile",
