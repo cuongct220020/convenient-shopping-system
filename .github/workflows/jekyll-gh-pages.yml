@@ -29,31 +29,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # - name: Setup Ruby
-      #   uses: ruby/setup-ruby@v1
-      #   with:
-      #     ruby-version: '3.2'
-      #     bundler-cache: false
-      #     working-directory: ./docs
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: false
+          working-directory: ./docs
 
-      # - name: Install dependencies
-      #   run: bundle install
-      #   working-directory: ./docs
+      - name: Install dependencies
+        run: bundle install
+        working-directory: ./docs
 
-      # - name: Cache Ruby gems
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: vendor/bundle
-      #     key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-gems-
+      - name: Cache Ruby gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
 
-      # - name: Install gems
-      #   run: |
-      #     gem install bundler
-      #     bundle config set path 'vendor/bundle'
-      #     bundle install --jobs 4 --retry 3
-      #   working-directory: ./docs
+      - name: Install gems
+        run: |
+          gem install bundler
+          bundle config set path 'vendor/bundle'
+          bundle install --jobs 4 --retry 3
+        working-directory: ./docs
 
       - name: Build Jekyll site
         run: jekyll build -s . -d ../_site
