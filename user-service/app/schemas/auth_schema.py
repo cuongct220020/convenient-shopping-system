@@ -1,27 +1,62 @@
 # user-service/app/schemas/auth_schema.py
+from typing import Optional
 from pydantic import Field, EmailStr, SecretStr
+
 
 from shopping_shared.schemas.base_schema import BaseSchema
 
 
 class RegisterRequestSchema(BaseSchema):
     """Schema for user registration requests."""
-    username: str = Field(..., min_length=3, max_length=255)
-    email: EmailStr
-    password: SecretStr
-    first_name: str = Field(..., min_length=1, max_length=255)
-    last_name: str = Field(..., min_length=1, max_length=255)
+    username: str = Field(
+        ...,
+        description="The username of the user",
+        examples=["user1", "user2"],
+        min_length=3,
+        max_length=50
+    )
+    email: EmailStr = Field(
+        ...,
+        description="The email address of the user",
+        examples=["user1@example.com", "user2@example.com"],
+        min_length=3,
+        max_length=50
+    )
+    password: SecretStr = Field(
+        ...,
+        description="The password of the user",
+        examples=["user1", "user2"],
+        min_length=3,
+        max_length=255
+    )
+    first_name: Optional[str] = Field(
+        None,
+        description="The first name of the user",
+        examples=["Cuong", "Bao"],
+        min_length=3,
+        max_length=255
+    )
+    last_name: Optional[str] = Field(
+        None,
+        description="The last name of the user",
+        examples=["Dang", "Nguyen"],
+        min_length=3,
+        max_length=255
+    )
 
 
 class LoginRequestSchema(BaseSchema):
     """Schema for user login requests."""
     identifier: str = Field(
         ...,
+        description="Username or Email address of the user",
+        examples=["cuongct0902", "cuongct@example.com"],
         min_length=3,
         max_length=255,
-        description="Username or Email"
     )
-    password: SecretStr
+    password: SecretStr = Field(
+
+    )
 
 
 class TokenResponseSchema(BaseSchema):

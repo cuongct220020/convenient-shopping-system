@@ -9,7 +9,7 @@ from app.enums import SystemRole
 from app.repositories.family_group_repository import FamilyGroupRepository
 from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
-from app.services.family_group_service import FamilyGroupService
+from app.services.admin_service import AdminGroupService
 from app.schemas import (
     FamilyGroupDetailedSchema,
     FamilyGroupAdminUpdateSchema,
@@ -30,6 +30,13 @@ class AdminGroupsView(BaseAPIView):
         openapi.secured("bearerAuth")
     ]
 
+    @staticmethod
+    def _get_service(request: Request) -> AdminGroupService:
+        user_repo = UserRepository(session=request.ctx.db_session)
+        member_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
+        return AdminGroupService(user_repo, member_repo, group_repo)
+
     @openapi.summary("List all groups")
     @openapi.description("Lists all family groups in the system with pagination.")
     @openapi.parameter("page", int, "query")
@@ -45,11 +52,10 @@ class AdminGroupsView(BaseAPIView):
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 10))
 
-        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
-        group_service = FamilyGroupService(group_repo)
+        service = self._get_service(request)
 
         try:
-            groups, total = await group_service.get_all_groups_paginated(page=page, page_size=page_size)
+            groups, total = await service.get_all_groups_paginated(page=page, page_size=page_size)
 
             # Use helper method from base class
             return self.success_response(
@@ -80,6 +86,12 @@ class AdminGroupDetailView(BaseAPIView):
         openapi.secured("bearerAuth")
     ]
 
+    @staticmethod
+    def _get_service(request: Request) -> AdminGroupService:
+        user_repo = UserRepository(session=request.ctx.db_session)
+        member_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
+        return AdminGroupService(user_repo, member_repo, group_repo)
 
     @openapi.summary("Get group by ID")
     @openapi.description("Retrieves a specific family group by its ID.")
@@ -91,11 +103,10 @@ class AdminGroupDetailView(BaseAPIView):
     )
     async def get(self, request: Request, group_id: UUID):
         """Get a specific family group by ID."""
-        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
-        group_service = FamilyGroupService(group_repo)
+        service = self._get_service(request)
 
         try:
-            group = await group_service.get_group_by_id(group_id)
+            group = await service.get_group_by_id(group_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -125,11 +136,10 @@ class AdminGroupDetailView(BaseAPIView):
     async def put(self, request: Request, group_id: UUID):
         """Update a specific family group by ID."""
         validated_data = request.ctx.validated_data
-        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
-        group_service = FamilyGroupService(group_repo)
+        service = self._get_service(request)
 
         try:
-            updated_group = await group_service.update_group(group_id, validated_data)
+            updated_group = await service.update_group(group_id, validated_data)
 
             # Use helper method from base class
             return self.success_response(
@@ -155,11 +165,10 @@ class AdminGroupDetailView(BaseAPIView):
     )
     async def delete(self, request: Request, group_id: UUID):
         """Delete a specific family group by ID."""
-        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
-        group_service = FamilyGroupService(group_repo)
+        service = self._get_service(request)
 
         try:
-            await group_service.delete_group(group_id)
+            await service.delete_group(group_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -183,6 +192,13 @@ class AdminGroupMembersView(BaseAPIView):
         openapi.secured("bearerAuth")
     ]
 
+    @staticmethod
+    def _get_service(request: Request) -> AdminGroupService:
+        user_repo = UserRepository(session=request.ctx.db_session)
+        member_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
+        return AdminGroupService(user_repo, member_repo, group_repo)
+
     @openapi.summary("List members of a group")
     @openapi.description("Lists all members of a specific family group.")
     @openapi.response(200, DocGenericResponse)
@@ -193,10 +209,10 @@ class AdminGroupMembersView(BaseAPIView):
     )
     async def get(self, request: Request, group_id: UUID):
         """List all members of a specific family group."""
-        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        service = self._get_service(request)
 
         try:
-            members = await membership_repo.get_group_members(group_id)
+            members = await service.get_group_members(group_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -221,6 +237,13 @@ class AdminGroupMembersManageView(BaseAPIView):
         openapi.secured("bearerAuth")
     ]
 
+    @staticmethod
+    def _get_service(request: Request) -> AdminGroupService:
+        user_repo = UserRepository(session=request.ctx.db_session)
+        member_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
+        return AdminGroupService(user_repo, member_repo, group_repo)
+
     @openapi.summary("Update member role in group")
     @openapi.description("Updates the role of a member in a specific family group.")
     @openapi.body(GroupMembershipUpdateSchema)
@@ -234,10 +257,10 @@ class AdminGroupMembersManageView(BaseAPIView):
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
         """Update the role of a member in a specific family group."""
         validated_data = request.ctx.validated_data
-        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        service = self._get_service(request)
 
         try:
-            updated_membership = await membership_repo.update_member_role(
+            updated_membership = await service.update_member_role_by_admin(
                 group_id=group_id,
                 user_id=user_id,
                 new_role=validated_data.role

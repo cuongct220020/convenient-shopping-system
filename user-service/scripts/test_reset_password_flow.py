@@ -13,7 +13,7 @@ Scenario:
 8. Verify login with the NEW password.
 
 Usage:
-    python3 user-service/scripts/test_reset_password_flow_v2.py
+    python3 user-service/scripts/test_reset_password_flow.py
 """
 
 import json

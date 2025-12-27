@@ -6,6 +6,7 @@ from sanic_ext import openapi
 from app.enums import GroupRole
 from shopping_shared.sanic.schemas import DocGenericResponse
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 from app.decorators import validate_request, idempotent, require_group_role, api_response
 from app.views.groups.base_group_view import BaseGroupView
@@ -29,17 +30,20 @@ class GroupView(BaseGroupView):
         openapi.secured("bearerAuth")
     ]
 
-    @openapi.summary("Create a new family group")
-    @openapi.description("Creates a new family group with the authenticated user as HEAD_CHEF.")
-    @openapi.body(FamilyGroupCreateSchema)
-    @openapi.response(201, FamilyGroupDetailedResponseSchema)
-    @validate_request(FamilyGroupCreateSchema)
-    @idempotent()
-    @api_response(
-        success_schema=FamilyGroupDetailedResponseSchema,
-        success_status=201,
-        success_description="Group created successfully"
+    @openapi.definition(
+        summary="Create a new family group",
+        description="Creates a new family group with the authenticated user as HEAD_CHEF.",
+        body=get_openapi_body(FamilyGroupCreateSchema),
+        response=[
+            {"status": 201, "model": FamilyGroupDetailedResponseSchema, "description": "Group created successfully"},
+            {"status": 400, "model": DocGenericResponse, "description": "Bad Request"},
+            {"status": 401, "model": DocGenericResponse, "description": "Unauthorized"},
+            {"status": 409, "model": DocGenericResponse, "description": "Conflict"},
+            {"status": 500, "model": DocGenericResponse, "description": "Internal Server Error"}
+        ]
     )
+    @validate_request(FamilyGroupCreateSchema, auto_document=False)
+    @idempotent(auto_document=False)
     async def post(self, request: Request):
         """Create a new family group."""
         validated_data = request.ctx.validated_data
@@ -66,7 +70,6 @@ class GroupView(BaseGroupView):
                 message="Failed to create group",
                 status_code=500
             )
-
 
     @openapi.summary("List user's family groups")
     @openapi.description("Lists all family groups the authenticated user is a member of.")

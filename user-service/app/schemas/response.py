@@ -13,46 +13,46 @@ from .family_group_schema import (
 )
 from .user_admin_schema import UserAdminViewSchema
 
-class TokenDataResponseSchema(DocGenericResponse):
-    data: Optional[TokenResponseSchema] = None
+class TokenDataResponseSchema(DocGenericResponse[TokenResponseSchema]):
+    pass
 
-class UserPublicProfileResponseSchema(DocGenericResponse):
-    data: Optional[UserPublicProfileSchema] = None
+class UserPublicProfileResponseSchema(DocGenericResponse[UserPublicProfileSchema]):
+    pass
 
-class UserInfoResponseSchema(DocGenericResponse):
-    data: Optional[UserInfoSchema] = None
+class UserInfoResponseSchema(DocGenericResponse[UserInfoSchema]):
+    pass
 
-class UserIdentityProfileResponseSchema(DocGenericResponse):
-    data: Optional[UserIdentityProfileSchema] = None
+class UserIdentityProfileResponseSchema(DocGenericResponse[UserIdentityProfileSchema]):
+    pass
 
-class UserHealthProfileResponseSchema(DocGenericResponse):
-    data: Optional[UserHealthProfileSchema] = None
+class UserHealthProfileResponseSchema(DocGenericResponse[UserHealthProfileSchema]):
+    pass
 
-class UserTagsResponseSchema(DocGenericResponse):
-    data: Optional[UserTagsByCategorySchema] = None
+class UserTagsResponseSchema(DocGenericResponse[UserTagsByCategorySchema]):
+    pass
 
 class CountResponseData(BaseModel):
     count: int = Field(..., alias="count")
 
-class CountResponseSchema(DocGenericResponse):
-    data: Optional[CountResponseData] = None
+class CountResponseSchema(DocGenericResponse[CountResponseData]):
+    pass
 
 # --- Group Schemas ---
-class FamilyGroupDetailedResponseSchema(DocGenericResponse):
-    data: Optional[FamilyGroupDetailedSchema] = None
+class FamilyGroupDetailedResponseSchema(DocGenericResponse[FamilyGroupDetailedSchema]):
+    pass
 
-class GroupMembershipListResponseSchema(DocGenericResponse):
-    data: Optional[List[GroupMembershipSchema]] = None
+class GroupMembershipListResponseSchema(DocGenericResponse[List[GroupMembershipSchema]]):
+    pass
     
-class GroupMembershipResponseSchema(DocGenericResponse):
-    data: Optional[GroupMembershipSchema] = None
+class GroupMembershipResponseSchema(DocGenericResponse[GroupMembershipSchema]):
+    pass
     
-class GroupMembershipDetailedResponseSchema(DocGenericResponse):
-    data: Optional[GroupMembershipDetailedSchema] = None
+class GroupMembershipDetailedResponseSchema(DocGenericResponse[GroupMembershipDetailedSchema]):
+    pass
 
 # --- Admin Schemas ---
-class UserAdminViewResponseSchema(DocGenericResponse):
-    data: Optional[UserAdminViewSchema] = None
+class UserAdminViewResponseSchema(DocGenericResponse[UserAdminViewSchema]):
+    pass
 
-class UserAdminViewListResponseSchema(DocGenericResponse):
-    data: Optional[List[UserAdminViewSchema]] = None
+class UserAdminViewListResponseSchema(DocGenericResponse[List[UserAdminViewSchema]]):
+    pass

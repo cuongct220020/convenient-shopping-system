@@ -1,6 +1,10 @@
 # user-service/app/__init__.py
+import warnings
+from pydantic import PydanticDeprecatedSince20
 
-from sanic import Sanic
+warnings.filterwarnings("ignore", category=PydanticDeprecatedSince20, module="sanic_ext")
+
+from sanic import Sanic, response
 from sanic_ext import Extend
 from shopping_shared.utils.logger_utils import get_logger
 
@@ -36,6 +40,7 @@ def register_views(sanic_app: Sanic):
 
     # Register the main API blueprint groups with the /api/v1/user-service prefix
     sanic_app.blueprint(api, url_prefix="/api/v1/user-service")
+
 
 def register_hooks(sanic_app: Sanic):
     from app.hooks import SecurityHeadersMiddleware, ResponseTimeMiddleware
@@ -88,7 +93,14 @@ def create_app(*config_cls) -> Sanic:
     register_hooks(sanic_app)
     
     # Configure Sanic Extensions to serve docs at the correct prefix
-    Extend(sanic_app, config={"oas_url_prefix": "/api/v1/user-service"})
+    # Explicitly point Swagger UI to the absolute path of the openapi.json spec
+    # This prevents issues with relative paths when behind a gateway
+    Extend(sanic_app, config={
+        "oas_url_prefix": "/api/v1/user-service/docs",
+        "swagger_ui_configuration": {
+            "url": "/api/v1/user-service/docs/openapi.json"
+        }
+    })
     
     # Register shared error handlers
     from shopping_shared.sanic.error_handler import register_shared_error_handlers
