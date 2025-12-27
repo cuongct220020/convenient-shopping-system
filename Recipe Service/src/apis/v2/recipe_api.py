@@ -1,10 +1,9 @@
-from fastapi import APIRouter, status, Depends, Query, HTTPException
+from fastapi import APIRouter, status, Depends, Query, HTTPException, Path, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from services.recipe_crud import RecipeCRUD
 from models.recipe_component import Recipe
 from schemas.recipe_flattened_schemas import (
-    AggregatedIngredientsResponse, 
     RecipeQuantityInput,
     FlattenedIngredientsResponse,
     FlattenedIngredientItem
@@ -14,7 +13,7 @@ from schemas.recipe_schemas import (
 )
 from .crud_router_base import create_crud_router
 from core.database import get_db
-from utils.custom_mapping import recipe_detailed_mapping, recipes_flattened_aggregated_mapping
+from utils.custom_mapping import recipe_detailed_mapping
 
 recipe_crud = RecipeCRUD(Recipe)
 
@@ -29,19 +28,31 @@ recipe_router = APIRouter(
     status_code=status.HTTP_200_OK,
     description="Search for recipes by keyword in their names or ingredients. Returns a list of matching recipes."
 )
-async def search_recipes(keyword: str = Query(...), limit: int = Query(10), db: Session = Depends(get_db)):
+async def search_recipes(
+    keyword: str = Query(..., description="Keyword to search for in recipe names or ingredients"),
+    limit: int = Query(10, ge=1, description="Maximum number of results to return"),
+    db: Session = Depends(get_db)
+):
     return await recipe_crud.search(db, keyword=keyword, limit=limit)
 
 @recipe_router.post(
     "/flattened",
     response_model=FlattenedIngredientsResponse,
     status_code=status.HTTP_200_OK,
-    description=f"Aggregate ingredients from multiple recipes with quantity. Returns 404 if at least one of the Recipes does not exist."
+    description=(
+        "Aggregate ingredients from multiple recipes with quantity. "
+        "Returns 400 if check_existence is True but group_id is not provided. "
+        "Returns 404 if at least one of the Recipes does not exist."
+    )
 )
 async def get_recipe_flattened(
-    recipes_with_quantity: list[RecipeQuantityInput],
-    check_existence: bool = Query(False),
-    group_id: Optional[int] = Query(None),
+    recipes_with_quantity: list[RecipeQuantityInput] = Body(
+        ...,
+        description="List of recipes with their quantities to aggregate",
+        example=[{"recipe_id": 1, "quantity": 2}, {"recipe_id": 2, "quantity": 1}]
+    ),
+    check_existence: bool = Query(False, description="Check if ingredients exist in group inventory"),
+    group_id: Optional[int] = Query(None, ge=1, description="Group ID to check ingredient existence (required if check_existence is True)"),
     db: Session = Depends(get_db)
 ):
     if check_existence and group_id is None:
@@ -67,8 +78,8 @@ async def get_recipe_flattened(
     response_model=RecipeResponse,
     status_code=status.HTTP_200_OK,
     description=(
-            f"Update an existing Recipe identified by its ID with the provided data. "
-            "Returns 404 if the Recipe does not exist."
+            "Update an existing Recipe identified by its ID with the provided data. "
+            "Returns 404 if the Recipe does not exist. "
             "Returns 400 if component list of the Recipe contains the Recipe itself to prevent infinite loop."
     )
 )

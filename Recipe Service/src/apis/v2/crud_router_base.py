@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, Body, status, HTTPException
-from typing import TypeVar, Type, cast, Optional
+from typing import TypeVar, Type, Optional
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
@@ -49,7 +49,11 @@ def create_crud_router(
                 "Supports pagination with cursor and limit."
         )
     )
-    def get_many_items(cursor: Optional[int] = Query(None, ge=0), limit: int = Query(100, ge=1), db: Session = Depends(get_db)):
+    def get_many_items(
+        cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
+        limit: int = Query(100, ge=1, description="Maximum number of results to return"),
+        db: Session = Depends(get_db)
+    ):
         items = crud_base.get_many(db, cursor=cursor, limit=limit)
         pk = inspect(crud_base.model).primary_key[0]
         next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
@@ -75,7 +79,7 @@ def create_crud_router(
         status_code=status.HTTP_200_OK,
         description=(
                 f"Update an existing {crud_base.model.__name__} identified by its ID with the provided data. "
-                "Returns 404 if the {crud_base.model.__name__} does not exist."
+                f"Returns 404 if the {crud_base.model.__name__} does not exist."
         )
     )
     def update_item(id: int, obj_in: update_schema, db: Session = Depends(get_db)):         # type: ignore
@@ -89,7 +93,7 @@ def create_crud_router(
         status_code=status.HTTP_204_NO_CONTENT,
         description=(
                 f"Delete an existing {crud_base.model.__name__} by its unique ID. "
-                "Returns 204 No Content on success. Returns 404 if the {crud_base.model.__name__} does not exist."
+                f"Returns 204 No Content on success. Returns 404 if the {crud_base.model.__name__} does not exist."
         )
     )
     def delete_item(id: int, db: Session = Depends(get_db)):

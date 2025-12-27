@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from fastapi import APIRouter, status, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
@@ -24,9 +24,9 @@ ingredient_router = APIRouter(
     description="Search for ingredients by keyword in their names with cursor-based pagination. Returns a paginated list of matching ingredients."
 )
 async def search_ingredients(
-        keyword: str = Query(...),
-        cursor: Optional[int] = Query(None, ge=0),
-        limit: int = Query(100, ge=1),
+        keyword: str = Query(..., description="Keyword to search for in ingredient names"),
+        cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
+        limit: int = Query(100, ge=1, description="Maximum number of results to return"),
         db: Session = Depends(get_db)
 ):
     items = await ingredient_crud.search(db, keyword=keyword, cursor=cursor, limit=limit)
@@ -46,9 +46,9 @@ async def search_ingredients(
     description="Filter ingredients by category with cursor-based pagination. Returns a paginated list of ingredients matching the specified category."
 )
 def filter_ingredients_by_category(
-    category: Category = Query(...),
-    cursor: Optional[int] = Query(None, ge=0),
-    limit: int = Query(100, ge=1),
+    category: Category = Query(..., description="Category to filter ingredients by", example=Category.vegetables),
+    cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
+    limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
     items = ingredient_crud.filter(db, category=category, cursor=cursor, limit=limit)
