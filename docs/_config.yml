@@ -4,7 +4,7 @@ baseurl: "/convenient-shopping-system"
 url: "https://cuongct220020.github.io"
 
 # Sử dụng remote_theme thay vì theme
-remote_theme: just-the-docs/just-the-docs
+remote_theme: just-the-docs/just-the-docs@v0.10.1
 
 plugins:
   - jekyll-feed
