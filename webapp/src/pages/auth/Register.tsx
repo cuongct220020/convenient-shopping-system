@@ -9,6 +9,7 @@ import { i18nKeys } from '../../utils/i18n/keys'
 import { authService, AuthService } from '../../services/auth'
 import { i18n } from '../../utils/i18n/i18n'
 import { LoadingOverlay } from '../../components/Loading'
+import { useIsMounted } from '../../hooks/useIsMounted'
 
 const FormFields = [
   'name',
@@ -87,6 +88,7 @@ export default function Register() {
     title: '' as i18nKeys,
     message: ''
   })
+  const isMounted = useIsMounted()
 
   const handleChange = (field: FormField, value: string) => {
     const newFormData = { ...formData, [field]: value }
@@ -101,7 +103,7 @@ export default function Register() {
     setErrors({ ...errors, [field]: validateField(field, formData) })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     let errorOccured = false
     const newError = { ...errors }
@@ -120,7 +122,7 @@ export default function Register() {
     }
     console.log('Registration attempt with:', formData)
     setLoading(true)
-    const registered = authService.register({
+    const registered = await authService.register({
       email: formData.email,
       username: formData.username,
       password: formData.password,
@@ -129,6 +131,12 @@ export default function Register() {
         lastName: ''
       })
     })
+    if (!isMounted.current) {
+      console.info(
+        'Register component was unmounted before async request finishes'
+      )
+      return
+    }
     registered.match(
       () => {
         setLoading(false)
@@ -253,7 +261,12 @@ export default function Register() {
           </div>
 
           {/* Register Button */}
-          <Button variant="primary" icon={UserPlus} size="fit" type="submit">
+          <Button
+            variant={loading ? 'disabled' : 'primary'}
+            icon={UserPlus}
+            size="fit"
+            type="submit"
+          >
             Đăng ký tài khoản
           </Button>
         </form>
@@ -268,7 +281,7 @@ export default function Register() {
         {/* Login Button */}
         <div className="mx-auto max-w-sm">
           <Button
-            variant="secondary"
+            variant={loading ? 'disabled' : 'secondary'}
             icon={LogIn}
             size="fit"
             onClick={() => navigate('/auth/login')}

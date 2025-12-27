@@ -3,12 +3,7 @@ import { ReactNode } from 'react'
 interface ButtonProps {
   children?: ReactNode
   onClick?: () => void
-  variant?:
-    | 'primary'
-    | 'secondary'
-    | 'text'
-    | 'icon'
-    | 'danger'
+  variant?: 'primary' | 'secondary' | 'text' | 'icon' | 'danger' | 'disabled'
   icon?: React.ComponentType<{ size?: number | string; className?: string }>
   className?: string
   size?: 'full' | 'fit' | 'auto'
@@ -37,10 +32,11 @@ export const Button = ({
   // For buttons with only icons, use square padding and minimal sizing
   const isIconOnly = !children && Icon
 
-  const baseStyle =
-    isIconOnly
-      ? `${size === 'fit' ? 'w-fit' : size === 'auto' ? 'w-auto' : 'w-full'} py-3 px-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
-      : `${sizes[size]} py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
+  const baseStyle = isIconOnly
+    ? `${
+        size === 'fit' ? 'w-fit' : size === 'auto' ? 'w-auto' : 'w-full'
+      } py-3 px-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
+    : `${sizes[size]} py-3 rounded-xl font-bold text-sm flex items-center justify-center transition-all duration-200 active:scale-95`
 
   const variants: Record<string, string> = {
     primary:
@@ -48,14 +44,15 @@ export const Button = ({
     secondary:
       'bg-[#FFD7C1] text-[#C3485C] border border-[#C3485C] hover:bg-[#fbd9d6]',
     text: 'bg-transparent text-[#C3485C] hover:underline text-xs font-semibold w-auto ml-auto block mb-6',
-    icon:
-      'bg-gray-200 text-gray-600 hover:bg-gray-300'
+    icon: 'bg-gray-200 text-gray-600 hover:bg-gray-300',
+    disabled: 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
   }
 
   return (
     <button
-      onClick={onClick}
+      onClick={variant === 'disabled' ? undefined : onClick}
       type={type}
+      disabled={variant === 'disabled'}
       className={`${baseStyle} ${variants[variant]} ${className}`}
     >
       {Icon && <Icon size={18} className={!children ? '' : 'mr-2'} />}

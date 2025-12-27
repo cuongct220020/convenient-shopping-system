@@ -20,7 +20,11 @@ function initClient(): Clients {
 }
 export const httpClients = initClient()
 
-type RequestErrorType = 'network-error' | 'unauthorized' | 'path-not-found'
+type RequestErrorType =
+  | 'network-error'
+  | 'unauthorized'
+  | 'path-not-found'
+  | 'forbidden'
 type WithType<T extends string> = {
   [K in T]: {
     type: K
@@ -42,7 +46,12 @@ export function httpPost<T>(
   other: T
 ): ResultAsync<RequestOk, RequestError> {
   return ResultAsync.fromThrowable(
-    () => client.post(url, other),
+    // () => client.post(url, other),
+    () =>
+      // Debug
+      new Promise((res) =>
+        setTimeout(() => res(client.post(url, other)), 5000)
+      ),
     (e): RequestError => {
       if (!axios.isAxiosError(e) || e.response === undefined) {
         return {
@@ -56,6 +65,8 @@ export function httpPost<T>(
           return { type: 'unauthorized', desc: null }
         case 404:
           return { type: 'path-not-found', desc: null }
+        case 403:
+          return { type: 'forbidden', desc: null }
         default:
           return {
             type: 'network-error',

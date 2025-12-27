@@ -9,6 +9,7 @@ import { i18n } from '../../utils/i18n/i18n'
 import { i18nKeys } from '../../utils/i18n/keys'
 import { LoadingOverlay } from '../../components/Loading'
 import { NotificationCard } from '../../components/NotificationCard'
+import { useIsMounted } from '../../hooks/useIsMounted'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -35,6 +36,7 @@ export default function Login() {
     title: '' as i18nKeys,
     message: ''
   })
+  const isMounted = useIsMounted()
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -76,7 +78,7 @@ export default function Login() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validate all fields
@@ -93,43 +95,52 @@ export default function Login() {
       password: true
     })
 
-    // If no errors, proceed with login
-    if (emailError.isOk() && passwordError.isOk()) {
-      console.log('Login attempt with:', email)
-      setIsLoading(true)
-      const response = authService.logIn(email, password)
-      response
-        .map(() => {
-          setIsLoading(false)
-          navigate('/auth/login-authentication')
-        })
-        .mapErr((e) => {
-          setIsLoading(false)
-          console.error('Login: ', e)
-          switch (e.type) {
-            case 'network-error':
-              setShowPopup({
-                title: 'network_error',
-                message: e.desc ?? i18n.t('internal_error'),
-                yes: true
-              })
-              break
-            case 'incorrect-credentials':
-              setShowPopup({
-                title: 'incorrect_credentials',
-                message: i18n.t('recheck_credentials'),
-                yes: true
-              })
-              break
-            default:
-              setShowPopup({
-                title: 'error_occured',
-                message: i18n.t('internal_error'),
-                yes: true
-              })
-          }
-        })
+    if (emailError.isErr() || passwordError.isErr()) {
+      return
     }
+    console.info('Login attempt with:', email)
+    setIsLoading(true)
+    const response = await authService.logIn(email, password)
+    if (!isMounted.current) {
+      console.info(
+        'Login component was unmounted before async request finishes'
+      )
+      return
+    }
+    response
+      .map(() => {
+        setIsLoading(false)
+        navigate('main/profile')
+      })
+      .mapErr((e) => {
+        setIsLoading(false)
+        console.error('Login: ', e)
+        switch (e.type) {
+          case 'unverfified':
+            navigate('/auth/login-authentication')
+            break
+          case 'network-error':
+            setShowPopup({
+              title: 'network_error',
+              message: e.desc ?? i18n.t('internal_error'),
+              yes: true
+            })
+            break
+          case 'incorrect-credentials':
+            setShowPopup({
+              title: 'incorrect_credentials',
+              message: i18n.t('recheck_credentials'),
+              yes: true
+            })
+            break
+          default:
+            setShowPopup({
+              title: 'error_occured',
+              message: i18n.t('internal_error'),
+              yes: true
+            })
+        }
+      })
   }
 
   return (
@@ -193,7 +204,12 @@ export default function Login() {
             </Link>
           </div>
 
-          <Button variant="primary" icon={LogIn} size="fit" type="submit">
+          <Button
+            variant={isLoading ? 'disabled' : 'primary'}
+            icon={LogIn}
+            size="fit"
+            type="submit"
+          >
             Đăng nhập
           </Button>
         </form>
@@ -208,7 +224,7 @@ export default function Login() {
         {/* Register Button */}
         <div className="mx-auto max-w-sm">
           <Button
-            variant="secondary"
+            variant={isLoading ? 'disabled' : 'secondary'}
             icon={UserPlus}
             size="fit"
             onClick={() => navigate('/auth/register')}

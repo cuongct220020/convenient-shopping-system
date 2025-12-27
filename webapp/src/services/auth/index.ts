@@ -18,7 +18,7 @@ const LogInResponseSchema = z.object({
   })
 })
 type LogInResponse = z.infer<typeof LogInResponseSchema>
-type LogInError = ResponseError<'incorrect-credentials'>
+type LogInError = ResponseError<'incorrect-credentials' | 'unverfified'>
 
 type FullnameValidationOk = {
   firstName: string
@@ -119,12 +119,16 @@ export class AuthService {
       identifier,
       password
     })
-      .mapErr(
-        (e): LogInError =>
-          e.type === 'unauthorized'
-            ? { ...e, type: 'incorrect-credentials' }
-            : e
-      )
+      .mapErr((e): LogInError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'incorrect-credentials' }
+          case 'forbidden':
+            return { ...e, type: 'unverfified' }
+          default:
+            return e
+        }
+      })
       .andThen((e) =>
         parseZodObject(LogInResponseSchema, e.body).mapErr(
           (e): LogInError => ({

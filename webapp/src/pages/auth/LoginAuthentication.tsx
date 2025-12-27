@@ -33,19 +33,19 @@ export default function LoginAuthentication() {
   return (
     <>
       {/* Header: Xác thực tài khoản */}
-      <div className="mb-6 sm:mb-8 text-center">
+      <div className="mb-6 text-center sm:mb-8">
         {/* Xác thực tài khoản Text */}
-        <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Xác thực tài khoản</h1>
+        <h1 className="text-2xl font-bold text-[#C3485C] sm:text-2xl md:text-3xl">
+          Xác thực tài khoản
+        </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-sm mx-auto">
+      <form onSubmit={handleSubmit} className="mx-auto max-w-sm">
         {/* Description Text */}
         <p className="mb-6 text-justify text-sm leading-relaxed text-gray-700">
-          Xin chào{' '}
-          <span className="font-bold text-[#C3485C]">{username}</span>, bạn
-          đã đăng nhập thành công. Bạn cần xác nhận tài khoản để tiếp tục
-          sử dụng ứng dụng. Vui lòng nhập mã 6 chữ số được gửi đến email
-          của bạn.
+          Xin chào <span className="font-bold text-[#C3485C]">{username}</span>,
+          bạn đã đăng nhập thành công. Bạn cần xác nhận tài khoản để tiếp tục sử
+          dụng ứng dụng. Vui lòng nhập mã 6 chữ số được gửi đến email của bạn.
         </p>
 
         {/* OTP Input Component */}
