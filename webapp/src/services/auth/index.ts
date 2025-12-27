@@ -27,6 +27,12 @@ type FullnameValidationOk = {
 type RegisterResponse = null
 type RegisterError = ResponseError<never>
 
+type VerificationResponse = null
+type VerificationError = ResponseError<'incorrect-otp'>
+
+type AskVerifyResponse = null
+type AskVerifyError = ResponseError<never>
+
 export class AuthService {
   constructor(private clients: Clients) {}
 
@@ -111,6 +117,10 @@ export class AuthService {
     return ok()
   }
 
+  public static validateOtpFormat(input: string): boolean {
+    return /^\d{6}$/.test(input)
+  }
+
   public logIn(
     identifier: string,
     password: string
@@ -153,6 +163,30 @@ export class AuthService {
       first_name: opts.firstName,
       last_name: opts.lastName
     }).map(() => null)
+  }
+
+  public sendVerifyUserRequest(
+    email: string
+  ): ResultAsync<AskVerifyResponse, AskVerifyError> {
+    return httpPost(this.clients.pub, AppUrl.SEND_OTP, {
+      email,
+      action: 'register'
+    }).map(() => null)
+  }
+
+  public verifyUser(opts: {
+    identification: string
+    otp: string
+  }): ResultAsync<VerificationResponse, VerificationError> {
+    return httpPost(this.clients.pub, AppUrl.VERIFY_OTP, {
+      email: opts.identification,
+      otp_code: opts.otp,
+      action: 'register'
+    })
+      .map(() => null)
+      .mapErr((e) =>
+        e.type === 'unauthorized' ? { ...e, type: 'incorrect-otp' } : e
+      )
   }
 }
 

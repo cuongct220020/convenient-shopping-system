@@ -6,6 +6,8 @@ export class AppUrl {
   static readonly AUTH = 'user-service/auth'
   static readonly LOGIN = this.AUTH + '/login'
   static readonly REGISTER = this.AUTH + '/register'
+  static readonly SEND_OTP = this.AUTH + '/otp/send'
+  static readonly VERIFY_OTP = this.AUTH + '/otp/verify'
 }
 
 export type Clients = {
@@ -46,12 +48,7 @@ export function httpPost<T>(
   other: T
 ): ResultAsync<RequestOk, RequestError> {
   return ResultAsync.fromThrowable(
-    // () => client.post(url, other),
-    () =>
-      // Debug
-      new Promise((res) =>
-        setTimeout(() => res(client.post(url, other)), 5000)
-      ),
+    () => client.post(url, other),
     (e): RequestError => {
       if (!axios.isAxiosError(e) || e.response === undefined) {
         return {

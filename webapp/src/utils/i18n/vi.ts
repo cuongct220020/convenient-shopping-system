@@ -22,5 +22,11 @@ export const vi: Record<i18nKeys, string> = {
   incorrect_credentials: 'Sai thông tin đăng nhập',
   recheck_credentials: 'Vui lòng kiểm tra lại thông tin bạn đã nhập',
   register_success_title: 'Đăng ký thành công',
-  register_login_to_continue: 'Vui lòng đăng nhập để tiếp tục'
+  register_login_to_continue: 'Vui lòng đăng nhập để tiếp tục',
+  auth_failed: 'Xác thực thất bại',
+  auth_succeeded: 'Xác thực thành công',
+  register_otp_unverified:
+    'Mã xác nhận không đúng hoặc đã hết hạn. Vui lòng thử lại.',
+  register_otp_verfied:
+    'Xác thực tài khoản thành công. Vui lòng đăng nhập để tiếp tục'
 }

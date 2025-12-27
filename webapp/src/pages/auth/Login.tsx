@@ -10,6 +10,7 @@ import { i18nKeys } from '../../utils/i18n/keys'
 import { LoadingOverlay } from '../../components/Loading'
 import { NotificationCard } from '../../components/NotificationCard'
 import { useIsMounted } from '../../hooks/useIsMounted'
+import { LocalStorage } from '../../services/storage/local'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -112,13 +113,21 @@ export default function Login() {
         setIsLoading(false)
         navigate('main/profile')
       })
-      .mapErr((e) => {
+      .mapErr(async (e) => {
         setIsLoading(false)
         console.error('Login: ', e)
         switch (e.type) {
-          case 'unverfified':
+          case 'unverfified': {
+            // TODO: email must be a real email
+            const realEmail = AuthService.validateEmail(email).match(
+              () => email,
+              () => 'notAnEmail@gmail.com'
+            )
+            authService.sendVerifyUserRequest(realEmail)
+            LocalStorage.inst.unverifiedUserIdentification = realEmail
             navigate('/auth/login-authentication')
             break
+          }
           case 'network-error':
             setShowPopup({
               title: 'network_error',
