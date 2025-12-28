@@ -6,6 +6,3 @@ class PlanStatus(str, enum.Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
     EXPIRED = "expired"
-
-    def is_active(self):
-        return self in {PlanStatus.CREATED, PlanStatus.IN_PROGRESS}

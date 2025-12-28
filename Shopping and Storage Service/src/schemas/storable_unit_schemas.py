@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
+from typing import Optional, List
 from enums.uc_measurement_unit import UCMeasurementUnit
 
 class StorableUnitCreate(BaseModel):
@@ -32,5 +32,24 @@ class StorableUnitResponse(BaseModel):
     content_unit: Optional[UCMeasurementUnit] = None
     added_date: datetime
     expiration_date: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class BatchItem(BaseModel):
+    unit_id: int
+    added_date: datetime
+    expiration_date: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class StorableUnitStackedResponse(BaseModel):
+    unit_name: str
+    storage_id: int
+    package_quantity: int
+    component_id: Optional[int] = None
+    content_type: Optional[str] = None
+    content_quantity: Optional[float] = None
+    content_unit: Optional[UCMeasurementUnit] = None
+    batch: List[BatchItem]
 
     model_config = ConfigDict(from_attributes=True)
