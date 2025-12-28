@@ -1,34 +1,28 @@
-import React from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Apple,
-  Soup,
-  BookOpen,
-  Star,
-  User
-} from 'lucide-react';
+import React from 'react'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Apple, Soup, BookOpen, Star, User } from 'lucide-react'
 
 // Define the available tab names
-type TabName = 'nutrition' | 'meals' | 'diary' | 'favorites' | 'profile';
+type TabName = 'nutrition' | 'food' | 'diary' | 'favorites' | 'profile'
 
 export default function MainLayout() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useNavigate()
+  const location = useLocation()
 
   // Determine active tab from current location
   const currentActiveTab = (() => {
-    const path = location.pathname;
-    if (path.includes('/nutrition')) return 'nutrition';
-    if (path.includes('/meals')) return 'meals';
-    if (path.includes('/diary')) return 'diary';
-    if (path.includes('/favorites')) return 'favorites';
-    if (path.includes('/profile')) return 'profile';
-    return 'profile'; // default
-  })();
+    const path = location.pathname
+    if (path.includes('/nutrition')) return 'nutrition'
+    if (path.includes('/food')) return 'food'
+    if (path.includes('/diary')) return 'diary'
+    if (path.includes('/favorites')) return 'favorites'
+    if (path.includes('/profile')) return 'profile'
+    return 'profile' // default
+  })()
 
   const handlePress = (tab: TabName) => {
-    navigate(`/main/${tab}`);
-  };
+    navigate(`/main/${tab}`)
+  }
 
   return (
     <div className="min-h-screen bg-white relative">
@@ -39,7 +33,6 @@ export default function MainLayout() {
 
       {/* Bottom Navigation Bar - Fixed at bottom */}
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 border-t border-gray-200 px-2.5 py-2.5 h-16 flex justify-around items-center max-w-sm mx-auto w-full z-50">
-
         {/* Tab 1: Nutrition (Apple) */}
         <TabItem
           isActive={currentActiveTab === 'nutrition'}
@@ -47,18 +40,24 @@ export default function MainLayout() {
         >
           <Apple
             size={24}
-            className={currentActiveTab === 'nutrition' ? 'text-red-700 fill-red-700' : 'text-gray-400'}
+            className={
+              currentActiveTab === 'nutrition'
+                ? 'text-red-700 fill-red-700'
+                : 'text-gray-400'
+            }
           />
         </TabItem>
 
         {/* Tab 2: Meals (Bowl) */}
         <TabItem
-          isActive={currentActiveTab === 'meals'}
-          onPress={() => handlePress('meals')}
+          isActive={currentActiveTab === 'food'}
+          onPress={() => handlePress('food')}
         >
           <Soup
             size={24}
-            className={currentActiveTab === 'meals' ? 'text-red-700' : 'text-gray-400'}
+            className={
+              currentActiveTab === 'food' ? 'text-red-700' : 'text-gray-400'
+            }
           />
         </TabItem>
 
@@ -69,7 +68,9 @@ export default function MainLayout() {
         >
           <BookOpen
             size={24}
-            className={currentActiveTab === 'diary' ? 'text-red-700' : 'text-gray-400'}
+            className={
+              currentActiveTab === 'diary' ? 'text-red-700' : 'text-gray-400'
+            }
           />
         </TabItem>
 
@@ -80,7 +81,11 @@ export default function MainLayout() {
         >
           <Star
             size={24}
-            className={currentActiveTab === 'favorites' ? 'text-red-700' : 'text-gray-400'}
+            className={
+              currentActiveTab === 'favorites'
+                ? 'text-red-700'
+                : 'text-gray-400'
+            }
           />
         </TabItem>
 
@@ -91,20 +96,23 @@ export default function MainLayout() {
         >
           <User
             size={24}
-            className={currentActiveTab === 'profile' ? 'text-red-700 fill-red-700' : 'text-gray-400'}
+            className={
+              currentActiveTab === 'profile'
+                ? 'text-red-700 fill-red-700'
+                : 'text-gray-400'
+            }
           />
         </TabItem>
-
       </nav>
     </div>
-  );
+  )
 }
 
 // Helper component for individual tabs
 interface TabItemProps {
-  isActive: boolean;
-  children: React.ReactNode;
-  onPress: () => void;
+  isActive: boolean
+  children: React.ReactNode
+  onPress: () => void
 }
 
 const TabItem: React.FC<TabItemProps> = ({ isActive, children, onPress }) => {
@@ -119,5 +127,5 @@ const TabItem: React.FC<TabItemProps> = ({ isActive, children, onPress }) => {
     >
       {children}
     </button>
-  );
-};
+  )
+}

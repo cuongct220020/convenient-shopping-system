@@ -8,6 +8,7 @@ import PersonalProfile from '../pages/main/profile/PersonalProfile'
 import HealthProfile from '../pages/main/profile/HealthProfile'
 import Favorites from '../pages/main/profile/Favorites'
 import { RouteObject } from 'react-router-dom'
+import { Storage } from '../pages/main/food-storage/Storage'
 
 const ProfileRoutes: RouteObject = {
   path: 'profile',
@@ -52,9 +53,14 @@ const NutritionRoutes: RouteObject = {
   element: <div>Nutrition Screen</div>
 }
 
-const MealRoutes: RouteObject = {
-  path: 'meal',
-  element: <div>Meal Screen</div>
+const FoodRoutes: RouteObject = {
+  path: 'food',
+  children: [
+    {
+      index: true,
+      element: <Storage />
+    }
+  ]
 }
 
 const DiaryRoutes: RouteObject = {
@@ -77,7 +83,7 @@ export const MainRoutes: RouteObject = {
     },
     ProfileRoutes,
     NutritionRoutes,
-    MealRoutes,
+    FoodRoutes,
     DiaryRoutes,
     FavoriteRoutes
   ]
