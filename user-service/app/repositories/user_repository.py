@@ -85,3 +85,16 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
         ]
         return await self.get_by_id(user_id, load_options=load_options)
 
+    async def get_by_identifier(self, identifier: str) -> Optional[User]:
+        """
+        Fetches user by either username or email.
+        """
+        # First try to get by username
+        user = await self.get_by_field_case_insensitive("username", identifier)
+        if user:
+            return user
+
+        # If not found by username, try by email
+        user = await self.get_by_field_case_insensitive("email", identifier)
+        return user
+

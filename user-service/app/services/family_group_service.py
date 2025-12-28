@@ -106,8 +106,8 @@ class FamilyGroupService:
         # Use repository.create_group which accepts dict and bypasses schema validation
         group = await self.repository.create_group(data)
 
-        # 2. Add Creator as HEAD_CHEF member
-        await self.member_repo.add_membership(user_id, group.id, GroupRole.HEAD_CHEF)
+        # 2. Add Creator as HEAD_CHEF member (creator adds themselves)
+        await self.member_repo.add_membership(user_id, group.id, GroupRole.HEAD_CHEF, user_id)
         
         # 3. Fetch full group details for response
         full_group = await self.repository.get_with_details(group.id)
@@ -142,8 +142,8 @@ class FamilyGroupService:
         if existing:
             raise Conflict("User is already a member of this group.")
 
-        # 4. Add Member
-        membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER)
+        # 4. Add Member (requester adds target user)
+        membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER, requester_id)
 
         logger.info(f"Added user {user_to_add.id} to group {group_id}")
         return membership

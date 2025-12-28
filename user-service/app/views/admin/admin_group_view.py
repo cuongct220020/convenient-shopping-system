@@ -12,9 +12,10 @@ from app.repositories.group_membership_repository import GroupMembershipReposito
 from app.repositories.user_repository import UserRepository
 from app.services.admin_service import AdminGroupService
 from app.schemas.family_group_schema import FamilyGroupDetailedSchema, GroupMembershipUpdateSchema, \
-    PaginatedFamilyGroupsResponseSchema, GroupMembershipSchema
+    PaginatedFamilyGroupsResponseSchema, GroupMembershipSchema, AddMemberRequestSchema
 from app.schemas.family_group_admin_schema import FamilyGroupAdminUpdateSchema
 
+from shopping_shared.exceptions import NotFound, Conflict
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
@@ -136,6 +137,8 @@ class AdminGroupDetailView(BaseAdminGroupsView):
                 message="Group retrieved successfully",
                 status_code=200
             )
+        except NotFound as e:
+            return self.error_response(message=str(e), status_code=404)
         except Exception as e:
             logger.error("Failed to get family group", exc_info=e)
             # Use helper method from base class
@@ -178,6 +181,8 @@ class AdminGroupDetailView(BaseAdminGroupsView):
                 message="Group updated successfully",
                 status_code=200
             )
+        except NotFound as e:
+            return self.error_response(message=str(e), status_code=404)
         except Exception as e:
             logger.error("Failed to update family group", exc_info=e)
             # Use helper method from base class
@@ -216,6 +221,8 @@ class AdminGroupDetailView(BaseAdminGroupsView):
                 message="Group deleted successfully",
                 status_code=200
             )
+        except NotFound as e:
+            return self.error_response(message=str(e), status_code=404)
         except Exception as e:
             logger.error("Failed to delete family group", exc_info=e)
             # Use helper method from base class
@@ -270,6 +277,44 @@ class AdminGroupMembersView(BaseAdminGroupsView):
                 status_code=500
             )
 
+    @openapi.definition(
+        summary="Add member to group by admin",
+        description="Admin adds a user to a group directly.",
+        body=get_openapi_body(AddMemberRequestSchema),
+        tag=["Admin Groups Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(GroupMembershipSchema),
+                status=201,
+                description="Member added successfully.",
+            )
+        ]
+    )
+    @validate_request(AddMemberRequestSchema)
+    @require_system_role(SystemRole.ADMIN)
+    async def post(self, request: Request, group_id: UUID):
+        """
+        Add a member to a group (Admin).
+        POST /api/v1/user-service/admin/groups/<group_id>/members/
+        """
+        validated_data = request.ctx.validated_data
+        service = self._get_service(request)
+
+        try:
+            admin_user_id = UUID(request.ctx.auth_payload["sub"])
+            membership = await service.add_member_by_admin(group_id, validated_data.identifier, admin_user_id)
+            return self.success_response(
+                data=GroupMembershipSchema.model_validate(membership),
+                message="Member added successfully",
+                status_code=201
+            )
+        except (NotFound, Conflict) as e:
+            return self.error_response(message=str(e), status_code=409 if isinstance(e, Conflict) else 404)
+        except Exception as e:
+            logger.error("Failed to add member", exc_info=e)
+            return self.error_response(message="Failed to add member", status_code=500)
+
 
 class AdminGroupMembersManageView(BaseAdminGroupsView):
     """Admin endpoints for managing group member roles."""
@@ -320,3 +365,36 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
                 message="Failed to update member role",
                 status_code=500
             )
+
+    @openapi.definition(
+        summary="Remove member from group by admin",
+        description="Removes a member from a group by its ID.",
+        tag=["Admin Groups Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=GenericResponse,
+                status=200,
+                description="Member removed successfully.",
+            )
+        ]
+    )
+    @require_system_role(SystemRole.ADMIN)
+    async def delete(self, request: Request, group_id: UUID, user_id: UUID):
+        """
+        Remove a member from a group (Admin).
+        DELETE api/v1/user-service/admin/groups/<group_id>/members/<user_id>
+        """
+        service = self._get_service(request)
+
+        try:
+            await service.remove_member_by_admin(group_id, user_id)
+            return self.success_response(
+                message="Member removed successfully",
+                status_code=200
+            )
+        except NotFound as e:
+            return self.error_response(message=str(e), status_code=404)
+        except Exception as e:
+            logger.error("Failed to remove member", exc_info=e)
+            return self.error_response(message="Failed to remove member", status_code=500)

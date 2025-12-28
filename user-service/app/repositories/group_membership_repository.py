@@ -81,14 +81,30 @@ class GroupMembershipRepository(
         result = await self.session.execute(stmt)
         return result.scalars().first()
 
-    async def add_membership(self, user_id: UUID, group_id: UUID, role: GroupRole) -> GroupMembership:
+    async def add_membership(self, user_id: UUID, group_id: UUID, role: GroupRole, added_by_user_id: Optional[UUID] = None) -> GroupMembership:
         """Adds a user to a group with a specific role."""
-        # We could use self.create(GroupMembershipCreateSchema(...)) here,
-        # but direct model instantiation is also fine and slightly more performant for simple join tables.
-        membership = GroupMembership(user_id=user_id, group_id=group_id, role=role)
+        membership = GroupMembership(
+            user_id=user_id,
+            group_id=group_id,
+            role=role,
+            added_by_user_id=added_by_user_id
+        )
         self.session.add(membership)
         await self.session.flush()
-        return membership
+
+        # Return the membership with user relationship loaded by fetching it again
+        from sqlalchemy.orm import selectinload
+        from sqlalchemy import select
+        stmt = (
+            select(GroupMembership)
+            .where(
+                GroupMembership.user_id == user_id,
+                GroupMembership.group_id == group_id
+            )
+            .options(selectinload(GroupMembership.user))
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
 
     async def remove_membership(self, user_id: UUID, group_id: UUID) -> None:
         """Removes a user from a group."""
