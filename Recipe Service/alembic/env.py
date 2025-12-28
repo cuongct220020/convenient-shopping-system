@@ -12,6 +12,8 @@ from core.database import Base
 from models.recipe_component import (
     RecipeComponent, Ingredient, CountableIngredient, UncountableIngredient, Recipe, ComponentList
 )
+from models.component_existence import ComponentExistence
+from models.group_preference import GroupPreference, TagRelation
 
 
 # this is the Alembic Config object, which provides
