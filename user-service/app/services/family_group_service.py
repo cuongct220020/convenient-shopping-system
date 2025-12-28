@@ -6,11 +6,12 @@ from pydantic import EmailStr
 
 from app.models import FamilyGroup, GroupMembership
 from app.enums import GroupRole
-from app.schemas import (
+from app.schemas.family_group_schema import (
     FamilyGroupCreateSchema,
     FamilyGroupUpdateSchema
 )
-from app.repositories.family_group_repository import FamilyGroupRepository, GroupMembershipRepository
+from app.repositories.family_group_repository import FamilyGroupRepository
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 
 from shopping_shared.exceptions import Forbidden, NotFound, Conflict
@@ -40,9 +41,11 @@ class FamilyGroupService:
             raise NotFound(f"Family group with id {group_id} not found")
         return group
 
+
     async def get_all(self, page: int = 1, page_size: int = 100):
         """Get paginated list of family groups."""
         return await self.repository.get_paginated(page=page, page_size=page_size)
+
 
     async def get_group_members(self, group_id: UUID) -> Sequence[GroupMembership]:
         """
@@ -52,6 +55,17 @@ class FamilyGroupService:
         # Ensure group exists
         await self.get(group_id)
         return await self.member_repo.get_all_members(group_id)
+
+
+    async def get_group_with_members(self, group_id: UUID) -> FamilyGroup:
+        """
+        Get a group with its members and creator info loaded.
+        """
+        group = await self.repository.get_with_details(group_id)
+        if not group:
+            raise NotFound(f"Family group with id {group_id} not found")
+        return group
+
 
     async def get_group_member_detailed(self, group_id: UUID, user_id: UUID) -> GroupMembership:
         """
@@ -69,9 +83,13 @@ class FamilyGroupService:
 
     async def update(self, group_id: UUID, update_data: FamilyGroupUpdateSchema) -> FamilyGroup:
         """Update a family group."""
-        group = await self.repository.update(group_id, update_data)
-        if not group:
+        updated = await self.repository.update(group_id, update_data)
+        if not updated:
             raise NotFound(f"Family group with id {group_id} not found")
+        
+        # Fetch fresh data with relationships loaded
+        group = await self.repository.get_with_details(group_id)
+        
         logger.info(f"Updated family group {group_id}")
         return group
 
@@ -160,6 +178,12 @@ class FamilyGroupService:
 
         logger.info(f"Updated role for user {target_user_id} in group {group_id} to {new_role}")
         return membership
+
+    async def get_user_groups(self, user_id: UUID) -> Sequence[GroupMembership]:
+        """
+        Get all groups that a user is a member of.
+        """
+        return await self.member_repo.get_user_groups(user_id)
 
     async def _is_head_chef(self, user_id: UUID, group_id: UUID) -> bool:
         """Helper to check if user is HEAD_CHEF of the group."""

@@ -5,11 +5,10 @@ from datetime import timedelta
 
 from pydantic import SecretStr
 
-from shopping_shared.utils.logger_utils import get_logger
-
 from app.utils.password_utils import hash_password, verify_password
 from app.services.redis_service import RedisService
 
+from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("OTP Service")
 

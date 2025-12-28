@@ -1,13 +1,17 @@
 # user-service/app/schemas/user_admin_schema.py
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+
+from pydantic import Field
+
 from app.enums import SystemRole
-from app.schemas.auth_schema import RegisterRequestSchema
-from app.schemas.user_schema import UserDetailedProfileSchema, UserInfoUpdateSchema
+from app.schemas.user_profile_schema import UserDetailedProfileSchema
+from app.schemas.user_schema import UserInfoUpdateSchema, UserCreateSchema
 from app.schemas.user_profile_schema import UserIdentityProfileUpdateSchema, UserHealthProfileUpdateSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 
 
-class UserAdminCreateSchema(RegisterRequestSchema):
+class UserAdminCreateSchema(UserCreateSchema):
     """
     Schema for admins to create a new user.
     Inherits fields: username, email, password, first_name, last_name.
@@ -15,7 +19,6 @@ class UserAdminCreateSchema(RegisterRequestSchema):
     """
     system_role: SystemRole = SystemRole.USER
     is_active: bool = True
-    phone_num: Optional[str] = None
 
 
 class UserAdminViewSchema(UserDetailedProfileSchema):
@@ -35,3 +38,12 @@ class UserAdminUpdateSchema(UserInfoUpdateSchema):
     is_active: Optional[bool] = None
     identity_profile: Optional[UserIdentityProfileUpdateSchema] = None
     health_profile: Optional[UserHealthProfileUpdateSchema] = None
+
+
+class PaginatedUserAdminViewResponseSchema(BaseSchema):
+    """Schema for paginated response of family groups."""
+    data: List[UserAdminViewSchema] = Field(default=[], description="List of users in")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of items per page")
+    total_items: int = Field(..., description="Total number of items")
+    total_pages: int = Field(..., description="Total number of pages")

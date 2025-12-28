@@ -1,4 +1,8 @@
 # user-service/app/__init__.py
+import warnings
+from pydantic import PydanticDeprecatedSince20
+
+warnings.filterwarnings("ignore", category=PydanticDeprecatedSince20, module="sanic_ext")
 
 from sanic import Sanic
 from sanic_ext import Extend
@@ -36,6 +40,7 @@ def register_views(sanic_app: Sanic):
 
     # Register the main API blueprint groups with the /api/v1/user-service prefix
     sanic_app.blueprint(api, url_prefix="/api/v1/user-service")
+
 
 def register_hooks(sanic_app: Sanic):
     from app.hooks import SecurityHeadersMiddleware, ResponseTimeMiddleware
@@ -88,7 +93,12 @@ def create_app(*config_cls) -> Sanic:
     register_hooks(sanic_app)
     
     # Configure Sanic Extensions to serve docs at the correct prefix
-    Extend(sanic_app, config={"oas_url_prefix": "/api/v1/user-service"})
+    # We explicitly pass the config here to ensure Sanic Ext picks up the custom URL prefix and UI config
+    Extend(sanic_app, config={
+        "oas_url_prefix": sanic_app.config.OAS_URL_PREFIX,
+        "swagger_ui_configuration": sanic_app.config.SWAGGER_UI_CONFIGURATION,
+        "openapi": sanic_app.config.OAS,
+    })
     
     # Register shared error handlers
     from shopping_shared.sanic.error_handler import register_shared_error_handlers

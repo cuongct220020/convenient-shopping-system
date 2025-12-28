@@ -31,13 +31,14 @@ class JWTHandler:
         self.access_token_expire_minutes = app.config.get("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", 15)
         self.refresh_token_expire_days = app.config.get("REFRESH_TOKEN_EXPIRE_DAYS", 7)
         self.algorithm = app.config.get("JWT_ALGORITHM", "HS256")
+        self.issuer = app.config.get("JWT_ISSUER", "shopping-user-service")
 
         # Load keys based on algorithm - keys should already be loaded by config.py
         if self.algorithm.startswith("RS"):
-            self.private_key = app.config["JWT_PRIVATE_KEY"]
-            self.public_key = app.config["JWT_PUBLIC_KEY"]
+            self.private_key = app.config.get("JWT_PRIVATE_KEY")
+            self.public_key = app.config.get("JWT_PUBLIC_KEY")
         else:
-            self.secret_key = app.config["JWT_SECRET"]
+            self.secret_key = app.config.get("JWT_SECRET")
 
     @classmethod
     def initialize(cls, app: Sanic) -> 'JWTHandler':
@@ -53,8 +54,8 @@ class JWTHandler:
             raise RuntimeError("JWTHandler not initialized. Call initialize() first.")
         return cls._instance
 
-    @staticmethod
     def _create_token_payload(
+        self,
         user_id: str,
         token_type: str,
         expiry_delta: timedelta,
@@ -68,7 +69,7 @@ class JWTHandler:
         expiry_time = issued_at_time + expiry_delta
 
         payload = {
-            'iss': 'shopping-user-service',
+            'iss': self.issuer,
             'token_type': token_type,
             'exp': int(expiry_time.timestamp()),  # Convert to Unix timestamp
             'iat': issued_at_timestamp,  # Convert to Unix timestamp

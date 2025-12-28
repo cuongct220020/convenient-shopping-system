@@ -13,21 +13,22 @@ from app.services.otp_service import otp_service
 from app.services.redis_service import RedisService, redis_service
 from app.services.kafka_service import kafka_service
 from app.models.user import User
-from app.schemas import (
-    UserCreateSchema,
+from app.schemas.user_schema import UserCreateSchema
+from app.schemas.otp_schema import OTPVerifyRequestSchema, OTPRequestSchema
+from app.schemas.auth_schema import (
     LoginRequestSchema,
     RegisterRequestSchema,
-    TokenResponseSchema,
-    RegisterVerifyRequestSchema,
-    OTPRequestSchema,
     ResetPasswordRequestSchema,
-    ConfirmEmailChangeRequestSchema
+    ConfirmEmailChangeRequestSchema,
+    AccessTokenResponseSchema
 )
 
 from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError
 from shopping_shared.utils.logger_utils import get_logger
 
+
 logger = get_logger("Auth Service")
+
 
 class AuthService:
 
@@ -45,16 +46,18 @@ class AuthService:
         user = existing_user
         if not user:
             hashed_password = hash_password(reg_data.password.get_secret_value())
-            # Use the new UserCreateSchema
-            user_create_data = UserCreateSchema(
-                username=reg_data.username,
-                email=reg_data.email,
-                password_hash=hashed_password,
-                first_name=reg_data.first_name,
-                last_name=reg_data.last_name,
-                is_active=False
-            )
-            user = await user_repo.create(user_create_data)
+
+            user_data_dict = {
+                "username": reg_data.username,
+                "email": reg_data.email,
+                "password_hash": hashed_password,
+                "first_name": reg_data.first_name,
+                "last_name": reg_data.last_name,
+                "phone_num": reg_data.phone_num,
+                "is_active": False,
+            }
+
+            user = await user_repo.create_user(user_data_dict)
 
         # Proceed to send OTP for the new or existing inactive user
         otp_request_data = OTPRequestSchema(email=reg_data.email, action=OtpAction.REGISTER)
@@ -68,7 +71,7 @@ class AuthService:
         cls,
         login_data: LoginRequestSchema,
         user_repo: UserRepository
-    ) -> Tuple[TokenResponseSchema, str]:
+    ) -> Tuple[AccessTokenResponseSchema, str]:
         """
         Handles user login, creates JWTs, and saves the refresh token JTI
         to enforce a single session.
@@ -101,7 +104,7 @@ class AuthService:
             email=str(user.email)
         )
 
-        access_token = TokenResponseSchema(
+        access_token = AccessTokenResponseSchema(
             access_token=token_data.access_token,
             token_type="Bearer",
             expires_in_minutes=token_data.at_expires_in_minutes,
@@ -253,7 +256,7 @@ class AuthService:
     @classmethod
     async def activate_account_with_otp(
         cls,
-        verify_data: RegisterVerifyRequestSchema,
+        verify_data: OTPVerifyRequestSchema,
         user_repo: UserRepository
     ) -> bool:
         """

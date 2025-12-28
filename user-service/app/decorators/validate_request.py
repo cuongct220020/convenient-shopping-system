@@ -5,22 +5,34 @@ from typing import Type
 from pydantic import ValidationError
 from sanic.request import Request
 from sanic.response import json
+from sanic_ext import openapi
 
 # Import the standardized response schema
-from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.schemas.base_schema import BaseSchema
+from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("Validate Request Decorator")
 
-def validate_request(schema: Type[BaseSchema]):
+def validate_request(schema: Type[BaseSchema], auto_document: bool = True):
     """
     A decorator that automatically validates the request body against a Pydantic schema.
 
     On success, it attaches the validated data to `request.ctx.validated_data`.
-    On failure, it returns a 400 Bad Request using the standardized GenericResponse format.
+    On failure, it returns a 400 Bad Request or 422 Unprocessable Entity using the standardized GenericResponse format.
+
+    Args:
+        schema: The Pydantic schema to validate against
+        auto_document: Whether to automatically document OpenAPI responses (default: True)
     """
     def decorator(func):
+        if auto_document:
+            # Automatically document the request body
+            func = openapi.body(schema)(func)
+            # Automatically document the possible validation error responses
+            func = openapi.response(400, GenericResponse, "Bad Request - Invalid JSON")(func)
+            func = openapi.response(422, GenericResponse, "Validation Error")(func)
+
         @wraps(func)
         async def decorated_function(view, request: Request, *args, **kwargs):
             if not request.json:

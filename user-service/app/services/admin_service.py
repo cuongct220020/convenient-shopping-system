@@ -1,12 +1,14 @@
 # user-service/app/services/admin_service.py
 from uuid import UUID
+from typing import Tuple, Sequence
 
 from pydantic import EmailStr
 
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.repositories.family_group_repository import GroupMembershipRepository
-from app.schemas.user_admin_schema import UserAdminUpdateSchema
+from app.repositories.family_group_repository import FamilyGroupRepository
+from app.repositories.group_membership_repository import GroupMembershipRepository
+from app.schemas.user_admin_schema import UserAdminUpdateSchema, UserAdminCreateSchema
 from app.models.family_group import GroupMembership
 from app.utils.password_utils import hash_password
 from app.enums import GroupRole
@@ -22,29 +24,30 @@ class AdminUserService:
 
     # ===== User Management by Admin =====
 
-    async def get_user_by_admin(self, user_id):
+    async def get_user(self, user_id: UUID):
         """Fetch a user by ID for admin."""
         user = await self.user_repo.get_user_with_profiles(user_id)
         if not user:
             raise NotFound(f"User with id {user_id} not found")
         return user
 
-
-    async def get_all_users(self, page: int = 1, page_size: int = 20):
+    async def get_all_users_paginated(self, page: int = 1, page_size: int = 20) -> Tuple[list, int]:
         """Fetch all users with pagination."""
         from sqlalchemy.orm import selectinload
         load_options = [
             selectinload(User.identity_profile),
             selectinload(User.health_profile)
         ]
-        return await self.user_repo.get_paginated(
+        paginated_result = await self.user_repo.get_paginated(
             page=page,
             page_size=page_size,
             load_options=load_options
         )
 
+        # get_paginated returns a PaginationResult object with items and total_items properties
+        return paginated_result.items, paginated_result.total_items
 
-    async def create_user_by_admin(self, user_data):
+    async def create_user(self, user_data: UserAdminCreateSchema):
         """Creates a new user by an admin."""
         existing_user = await self.user_repo.get_by_username(user_data.username)
         if existing_user:
@@ -67,7 +70,7 @@ class AdminUserService:
         logger.info(f"Admin created user: {user.username}")
         return updated_user
 
-    async def update_user_by_admin(self, user_id: UUID, update_data: UserAdminUpdateSchema):
+    async def update_user(self, user_id: UUID, update_data: UserAdminUpdateSchema):
         """Updates a user's information by an admin."""
         user = await self.user_repo.update(user_id, update_data)
         if not user:
@@ -78,7 +81,7 @@ class AdminUserService:
         logger.info(f"Admin updated user: {user_id}")
         return updated_user
 
-    async def delete_user_by_admin(self, user_id: UUID):
+    async def delete_user(self, user_id: UUID):
         """Delete a user by an admin. Using soft_delete if supported, or delete"""
         deleted = await self.user_repo.soft_delete(user_id)
         if not deleted:
@@ -90,12 +93,57 @@ class AdminUserService:
         logger.info(f"Admin deleted user: {user_id}")
 
 
-    # ===== Group Membership Management by Admin =====
 
 class AdminGroupService:
-    def __init__(self, user_repository: UserRepository, member_repo: GroupMembershipRepository):
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        member_repo: GroupMembershipRepository,
+        group_repo: FamilyGroupRepository
+    ):
         self.user_repo = user_repository
         self.member_repo = member_repo
+        self.group_repo = group_repo
+
+    # ===== Group Management by Admin =====
+
+    async def get_all_groups_paginated(self, page: int = 1, page_size: int = 20):
+        """Fetch all groups with pagination."""
+        from sqlalchemy.orm import selectinload
+        from app.models.family_group import FamilyGroup
+        load_options = [
+            selectinload(FamilyGroup.creator),
+            selectinload(FamilyGroup.group_memberships).selectinload(GroupMembership.user)
+        ]
+        paginated_result = await self.group_repo.get_paginated(
+            page=page,
+            page_size=page_size,
+            load_options=load_options
+        )
+        return paginated_result.items, paginated_result.total_items
+
+    async def get_group_by_id(self, group_id: UUID):
+        """Fetch a specific group by ID."""
+        group = await self.group_repo.get_with_details(group_id)
+        if not group:
+            raise NotFound(f"Group with id {group_id} not found")
+        return group
+
+    async def update_group(self, group_id: UUID, update_data):
+        """Update a specific group."""
+        group = await self.group_repo.update(group_id, update_data)
+        if not group:
+            raise NotFound(f"Group with id {group_id} not found")
+        return group
+
+    async def delete_group(self, group_id: UUID):
+        """Delete a specific group."""
+        group = await self.group_repo.get_by_id(group_id)
+        if not group:
+            raise NotFound(f"Group with id {group_id} not found")
+        await self.group_repo.delete(group_id)
+
+    # ===== Group Membership Management by Admin =====
 
     async def add_member_by_admin(self, group_id: UUID, email: EmailStr) -> GroupMembership:
         """Admin adds member directly."""
@@ -123,3 +171,8 @@ class AdminGroupService:
         if not membership:
              raise NotFound("Membership not found.")
         return membership
+
+    async def get_group_members(self, group_id: UUID) -> Sequence[GroupMembership]:
+        """Get all members of a specific group."""
+        members = await self.member_repo.get_all_members(group_id)
+        return members

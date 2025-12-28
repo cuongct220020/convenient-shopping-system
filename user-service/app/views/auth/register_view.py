@@ -1,21 +1,38 @@
 # user-service/app/views/auth/register_view.py
 from sanic.request import Request
-from sanic.response import json
-from sanic.views import HTTPMethodView
+from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
-from app.decorators.validate_request import validate_request
-from app.decorators.idempotency import idempotent
+from app.decorators import validate_request, idempotent
+from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas import UserPublicProfileSchema, RegisterRequestSchema
+from app.schemas.user_schema import UserCoreInfoSchema
+from app.schemas.auth_schema import  RegisterRequestSchema
 from app.services.auth_service import AuthService
 from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 
-class RegisterView(HTTPMethodView):
+class RegisterView(BaseAPIView):
+
+
+    @openapi.definition(
+        summary="Register Account",
+        description="Creates a new user account with an inactive status and sends a verification OTP.",
+        body=get_openapi_body(RegisterRequestSchema),
+        tag=["Authentication"],
+        response=[
+            Response(content=get_openapi_body(UserCoreInfoSchema), status=201, description="User info"),
+            Response(content=get_openapi_body(GenericResponse), status=401, description="Bad Request"),
+        ]
+    )
     @validate_request(RegisterRequestSchema)
     @idempotent()
     async def post(self, request: Request):
-        """Handles new user registration."""
+        """
+        Handles new user registration.
+        POST /api/v1/user-service/auth/register
+        """
         validated_data = request.ctx.validated_data
 
         user_repo = UserRepository(session=request.ctx.db_session)
@@ -26,18 +43,17 @@ class RegisterView(HTTPMethodView):
             user_repo=user_repo
         )
 
-        user_profile = UserPublicProfileSchema(
-            id=user.id,
-            username=user.username,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            avatar_url=user.avatar_url
-        )
-
-        response = GenericResponse(
-            status="success",
+        # Use helper method from base class
+        return self.success_response(
+            data=UserCoreInfoSchema(
+                user_id=user.id,
+                username=user.username,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                email=user.email,
+                phone_num=user.phone_num,
+                avatar_url=user.avatar_url
+            ),
             message="Registration successful. Please check your email for a verification OTP.",
-            data=user_profile
+            status_code=201
         )
-
-        return json(response.model_dump(mode="json"), status=201)

@@ -83,7 +83,7 @@ def main():
     password = os.getenv('ADMIN_PASSWORD', 'admin')
     first_name = os.getenv('ADMIN_FIRST_NAME', 'Admin')
     last_name = os.getenv('ADMIN_LAST_NAME', 'User')
-    
+
     # If no environment variables are set, you can pass arguments
     if len(sys.argv) > 1:
         username = sys.argv[1]

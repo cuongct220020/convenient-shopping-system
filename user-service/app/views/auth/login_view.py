@@ -1,21 +1,45 @@
 # user-service/app/views/auth/login_view.py
 from sanic.request import Request
-from sanic.response import json
-from sanic.views import HTTPMethodView
+from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
-from app.decorators.validate_request import validate_request
+from app.decorators import validate_request
+from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth_schema import LoginRequestSchema
+from app.schemas.auth_schema import LoginRequestSchema, AccessTokenResponseSchema
 from app.services.auth_service import AuthService
-
 from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 
-class LoginView(HTTPMethodView):
+class LoginView(BaseAPIView):
+    """Handles user login and token generation."""
 
+
+    @openapi.definition(
+        summary="User login and token generation.",
+        description="Logs in a user, returning an access token in the response body and a refresh token in an HttpOnly Cookie.",
+        body=get_openapi_body(LoginRequestSchema),
+        tag="Authentication",
+        response=[
+            Response(
+                content=get_openapi_body(AccessTokenResponseSchema),
+                status=200,
+                description="Successfully logged in.",
+            ),
+            Response(
+                content={"application/json": GenericResponse},
+                status=401,
+                description="User login failed.",
+            )
+        ]
+    )
     @validate_request(LoginRequestSchema)
     async def post(self, request: Request):
-        """Handles user login and token generation."""
+        """
+        Handles user login and token generation.
+        POST /api/v1/user-service/auth/login
+        """
         validated_data = request.ctx.validated_data
 
         # Instantiate required repositories with the request's DB session
@@ -26,13 +50,12 @@ class LoginView(HTTPMethodView):
             user_repo=user_repo
         )
 
-        response_data = GenericResponse(
-            status="success",
+        # Use helper method from base class
+        response = self.success_response(
+            data=token_response,
             message="Login successful",
-            data=token_response
+            status_code=200
         )
-
-        response = json(response_data.model_dump(by_alias=True, mode="json"), status=200)
 
         # Attach Refresh Token to cookie
         config = request.app.config
@@ -40,13 +63,13 @@ class LoginView(HTTPMethodView):
         refresh_ttl_seconds = refresh_ttl_days * 24 * 60 * 60
 
         response.add_cookie(
-            key = "refresh_token",
-            value = refresh_token,
-            httponly = True,
-            secure = not config.get("DEBUG", False),
-            samesite = "strict",
-            path="/api/v1/user-service/auth/refresh-token",
-            max_age = refresh_ttl_seconds,
+            "refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=not config.get("DEBUG", False),
+            samesite="Strict",
+            path='/api/v1/user-service/auth/refresh-token',
+            max_age=refresh_ttl_seconds
         )
 
         return response

@@ -1,19 +1,42 @@
 # user-service/app/views/auth/logout_view.py
 from datetime import datetime, UTC
 from sanic.request import Request
-from sanic.response import json
-from sanic.views import HTTPMethodView
+from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
+from app.views.base_view import BaseAPIView
 from app.services.auth_service import AuthService
+
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.exceptions import Unauthorized
 
 
-class LogoutView(HTTPMethodView):
+class LogoutView(BaseAPIView):
+    """Handles user logout."""
 
-    @staticmethod
-    async def post(request: Request):
-        """Handles user logout by revoking tokens and clearing the session from the database."""
+    @openapi.definition(
+        summary="User Logout",
+        description="Revoke access token, delete refresh token cookie, and clear user session from database. Requires valid Bearer token.",
+        secured={"bearerAuth": []},
+        tag="Authentication",
+        response=[
+            Response(
+                content={"application/json": GenericResponse},
+                status=200,
+                description="Logout successful"
+            ),
+            Response(
+                content={"application/json": GenericResponse},
+                status=401,
+                description="Invalid or missing authentication token"
+            )
+        ]
+    )
+    async def post(self, request: Request):
+        """
+        Handles user logout by revoking tokens and clearing the session from the database.
+        POST /api/v1/user-service/auth/logout
+        """
         try:
             # 1. Lấy thông tin từ context (đã được set bởi middleware)
             auth_payload = request.ctx.auth_payload
@@ -41,11 +64,16 @@ class LogoutView(HTTPMethodView):
         except Exception as e:
             raise Unauthorized(f"Missing Authentication information: {str(e)}")
 
-        # 4. Trả response thành công
-        response_data = GenericResponse(status="success", message="Logout successful.")
-        response = json(response_data.model_dump(mode="json"), status=200)
+        # 4. Trả response thành công using base class helper
+        response = self.success_response(
+            message="Logout successful.",
+            status_code=200
+        )
 
         # 5. Xóa HttpOnly cookie
-        response.delete_cookie("refresh_token")
+        response.delete_cookie(
+            "refresh_token",
+            path='/api/v1/user-service/auth/refresh-token'
+        )
 
         return response

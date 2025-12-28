@@ -14,11 +14,13 @@ from typing import Callable
 from uuid import UUID
 
 from app.enums import GroupRole
-from app.repositories.family_group_repository import GroupMembershipRepository
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from shopping_shared.exceptions import Forbidden, NotFound
+from sanic_ext import openapi
+from shopping_shared.schemas.response_schema import GenericResponse
 
 
-def require_group_role(*allowed_roles: GroupRole, group_id_param: str = "group_id") -> Callable:
+def require_group_role(*allowed_roles: GroupRole, group_id_param: str = "group_id", auto_document: bool = True) -> Callable:
     """
     Check Group Role of the user within a specific family group. Must be applied AFTER auth_middleware.
 
@@ -32,8 +34,19 @@ def require_group_role(*allowed_roles: GroupRole, group_id_param: str = "group_i
         async def all_members(request, group_id: UUID):
             # Tất cả thành viên đều vào được
             ...
+
+    Args:
+        *allowed_roles: One or more GroupRole values allowed
+        group_id_param: Name of the parameter containing the group ID (default: "group_id")
+        auto_document: Whether to automatically document OpenAPI responses (default: True)
     """
     def decorator(func: Callable) -> Callable:
+        if auto_document:
+            # Automatically document the possible authentication/authorization error responses
+            func = openapi.response(401, GenericResponse, "Unauthorized - Missing or invalid authentication")(func)
+            func = openapi.response(403, GenericResponse, "Forbidden - Insufficient permissions")(func)
+            func = openapi.response(404, GenericResponse, "Not Found - Group not found or user not member")(func)
+
         @wraps(func)
         async def wrapper(self_or_request, *args, **kwargs):
             # Handle cả HTTPMethodView (self, request) và function view (request)

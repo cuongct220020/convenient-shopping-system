@@ -1,7 +1,7 @@
 # user-service/app/apis/group_bp.py
 from sanic import Blueprint
 
-from app.views.groups.group_view import (
+from app.views.groups import (
     GroupView,
     GroupDetailView,
     GroupMembersView,

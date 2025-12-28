@@ -1,4 +1,4 @@
-# microservices/user-service/app/services/user_service.py
+# user-service/app/services/user_service.py
 from typing import List
 from uuid import UUID
 
@@ -7,7 +7,7 @@ from shopping_shared.utils.logger_utils import get_logger
 
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas import UserCreateSchema, UserInfoUpdateSchema
+from app.schemas.user_schema import UserCreateSchema, UserInfoUpdateSchema
 
 from app.schemas.auth_schema import ChangePasswordRequestSchema
 from app.utils.password_utils import hash_password, verify_password

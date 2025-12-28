@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shopping_shared.databases.base_repository import BaseRepository
 from app.models import UserIdentityProfile, UserHealthProfile
-from app.schemas import (
+from app.schemas.user_profile_schema import (
     UserIdentityProfileCreateSchema,
     UserIdentityProfileUpdateSchema,
     UserHealthProfileCreateSchema,

@@ -15,8 +15,8 @@ class Address(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     ward: Mapped[str] = mapped_column(String(100), nullable=True)
     district: Mapped[str] = mapped_column(String(100), nullable=True)
-    city: Mapped[str] = mapped_column(String(100), nullable=False)
-    province: Mapped[str] = mapped_column(String(100), nullable=False)
+    city: Mapped[str] = mapped_column(String(100), nullable=True)
+    province: Mapped[str] = mapped_column(String(100), nullable=True)
 
     # --- Relationships ---
     user_profiles: Mapped[List["UserIdentityProfile"]] = relationship(back_populates="address")

@@ -1,31 +1,62 @@
-# user-service/app/views/me_change_password_view.py
+# user-service/app/views/users/me_change_password_view.py
 from sanic.request import Request
-from sanic.response import json
-from sanic.views import HTTPMethodView
+from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
-from app.decorators.validate_request import validate_request
+from app.decorators import validate_request
+from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas import ChangePasswordRequestSchema
-from shopping_shared.schemas.response_schema import GenericResponse
+from app.schemas.auth_schema import ChangePasswordRequestSchema
 from app.services.user_service import UserService
+from shopping_shared.schemas.response_schema import GenericResponse
+
+from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
+
+logger = get_logger("Me Change Password View")
+
+class ChangePasswordView(BaseAPIView):
+    """Handles changing the password for an authenticated user."""
 
 
-class ChangePasswordView(HTTPMethodView):
-
+    @openapi.definition(
+        summary="Change Password (when logged in)",
+        description="Allows an authenticated user to change their own password by providing the current password.",
+        body=get_openapi_body(ChangePasswordRequestSchema),
+        tag=["User Profile"],
+        response=[
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status_code=201,
+                description="Change password successfully",
+            )
+        ]
+    )
     @validate_request(ChangePasswordRequestSchema)
     async def post(self, request: Request):
-        """Handles changing the password for the authenticated user."""
+        """
+        Handles changing the password for the authenticated user.
+        POST /api/v1/user-service/me/change-password
+        """
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
 
         user_repo = UserRepository(session=request.ctx.db_session)
         user_service = UserService(user_repo=user_repo)
 
-        await user_service.change_password(user_id=user_id, data=validated_data)
+        try:
+            await user_service.change_password(user_id=user_id, data=validated_data)
 
-        response = GenericResponse(
-            status="success",
-            message="Password changed successfully. All sessions have been logged out."
-        )
-
-        return json(response.model_dump(mode="json"), status=200)
+            # Use helper method from base class
+            return self.success_response(
+                message="Password changed successfully. All sessions have been logged out.",
+                data=None,
+                status_code=200
+            )
+        except Exception as e:
+            logger.error(f"Failed to change password: {str(e)}", exc_info=True)
+            # Use helper method from base class
+            return self.error_response(
+                message="Failed to change password. Please try again.",
+                status_code=500
+            )

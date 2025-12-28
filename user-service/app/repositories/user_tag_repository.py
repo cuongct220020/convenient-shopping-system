@@ -1,7 +1,7 @@
 # user-service/app/repositories/user_tag_repository.py
-from typing import List, Dict
+from typing import List, Dict, Optional, Sequence
 from uuid import UUID
-from sqlalchemy import select, delete, and_
+from sqlalchemy import select, delete, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shopping_shared.databases.base_repository import BaseRepository
@@ -41,6 +41,169 @@ class UserTagRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.tag_repo = TagRepository(session)
+
+    async def get_user_tags_by_category(self, user_id: UUID) -> Dict[str, List[Tag]]:
+        """Get all user tags grouped by category with optimized query."""
+        stmt = (
+            select(Tag)
+            .join(UserTag)
+            .where(UserTag.user_id == user_id)
+            .order_by(Tag.tag_category, Tag.tag_value)
+        )
+        result = await self.session.execute(stmt)
+        tags = result.scalars().all()
+
+        # Group tags by category
+        grouped_tags: Dict[str, List[Tag]] = {
+            'age': [],
+            'medical': [],
+            'allergy': [],
+            'diet': [],
+            'taste': []
+        }
+
+        for tag in tags:
+            if tag.tag_category in grouped_tags:
+                grouped_tags[tag.tag_category].append(tag)
+
+        return grouped_tags
+
+    async def get_user_tags_detailed(self, user_id: UUID) -> Sequence[Tag]:
+        """Get all user tags with detailed information."""
+        stmt = (
+            select(Tag)
+            .join(UserTag)
+            .where(UserTag.user_id == user_id)
+            .order_by(Tag.tag_category, Tag.tag_name)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def get_user_tag_values(self, user_id: UUID) -> List[str]:
+        """Get only tag values for a user - optimized for validation."""
+        stmt = (
+            select(Tag.tag_value)
+            .join(UserTag)
+            .where(UserTag.user_id == user_id)
+        )
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.all()]
+
+    async def add_tags_to_user(self, user_id: UUID, tag_values: List[str]) -> int:
+        """Add multiple tags to user with validation."""
+        # Get existing tags to avoid duplicates
+        existing_values = await self.get_user_tag_values(user_id)
+        new_values = [v for v in tag_values if v not in existing_values]
+
+        if not new_values:
+            return 0
+
+        # Get tag IDs for the values
+        tag_stmt = select(Tag.id).where(Tag.tag_value.in_(new_values))
+        result = await self.session.execute(tag_stmt)
+        tag_ids = [row[0] for row in result.all()]
+
+        # Create UserTag associations
+        user_tag_instances = []
+        for tag_id in tag_ids:
+            user_tag = UserTag(user_id=user_id, tag_id=tag_id)
+            user_tag_instances.append(user_tag)
+
+        if user_tag_instances:
+            self.session.add_all(user_tag_instances)
+            await self.session.flush()
+
+        return len(user_tag_instances)
+
+    async def remove_tags_from_user(self, user_id: UUID, tag_values: List[str]) -> int:
+        """Remove multiple tags from user."""
+        # Get tag IDs for the values
+        tag_stmt = select(Tag.id).where(Tag.tag_value.in_(tag_values))
+        result = await self.session.execute(tag_stmt)
+        tag_ids = [row[0] for row in result.all()]
+
+        if not tag_ids:
+            return 0
+
+        # Delete UserTag associations
+        delete_stmt = (
+            delete(UserTag)
+            .where(
+                and_(
+                    UserTag.user_id == user_id,
+                    UserTag.tag_id.in_(tag_ids)
+                )
+            )
+        )
+        result = await self.session.execute(delete_stmt)
+        await self.session.flush()
+
+        return result.rowcount
+
+    async def replace_category_tags(self, user_id: UUID, category: str, tag_values: List[str]) -> int:
+        """Replace all tags in a specific category."""
+        # First, remove all tags in this category
+        existing_category_tags_stmt = (
+            select(Tag.id)
+            .join(UserTag)
+            .where(
+                and_(
+                    UserTag.user_id == user_id,
+                    Tag.tag_category == category
+                )
+            )
+        )
+        result = await self.session.execute(existing_category_tags_stmt)
+        existing_category_tag_ids = [row[0] for row in result.all()]
+
+        if existing_category_tag_ids:
+            delete_stmt = (
+                delete(UserTag)
+                .where(
+                    and_(
+                        UserTag.user_id == user_id,
+                        UserTag.tag_id.in_(existing_category_tag_ids)
+                    )
+                )
+            )
+            await self.session.execute(delete_stmt)
+
+        # Add new tags if provided
+        if tag_values:
+            new_tag_ids_stmt = select(Tag.id).where(Tag.tag_value.in_(tag_values))
+            result = await self.session.execute(new_tag_ids_stmt)
+            new_tag_ids = [row[0] for row in result.all()]
+
+            # Create new associations
+            user_tag_instances = []
+            for tag_id in new_tag_ids:
+                user_tag = UserTag(user_id=user_id, tag_id=tag_id)
+                user_tag_instances.append(user_tag)
+
+            if user_tag_instances:
+                self.session.add_all(user_tag_instances)
+
+        await self.session.flush()
+        return len(tag_values) if tag_values else 0
+
+    async def get_available_tags_by_category(self, category: Optional[str] = None) -> Sequence[Tag]:
+        """Get available tags, optionally filtered by category."""
+        stmt = select(Tag)
+        if category:
+            stmt = stmt.where(Tag.tag_category == category)
+        stmt = stmt.order_by(Tag.tag_category, Tag.tag_name)
+        
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def get_user_tags_count(self, user_id: UUID) -> int:
+        """Get total count of user's tags."""
+        stmt = (
+            select(func.count(UserTag.user_id))
+            .where(UserTag.user_id == user_id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
 
     async def get_user_tags(self, user_id: UUID) -> List[Tag]:
         """
@@ -92,111 +255,3 @@ class UserTagRepository:
                 grouped[tag.tag_category].append(tag.tag_value)
 
         return grouped
-
-    async def add_tags(self, user_id: UUID, tag_values: List[str]) -> int:
-        """
-        Add tags to user.
-
-        Args:
-            user_id: User ID
-            tag_values: List of tag codes (e.g., ['0212', '0300'])
-
-        Returns:
-            Number of tags actually added (skips duplicates)
-        """
-        # Get Tag objects by values
-        tags = await self.tag_repo.get_by_tag_values(tag_values)
-
-        if not tags:
-            return 0
-
-        # Get existing UserTag associations
-        existing_query = select(UserTag.tag_id).where(UserTag.user_id == user_id)
-        existing_result = await self.session.execute(existing_query)
-        existing_tag_ids = {row[0] for row in existing_result.all()}
-
-        # Add only new associations
-        added_count = 0
-        for tag in tags:
-            if tag.id not in existing_tag_ids:
-                user_tag = UserTag(user_id=user_id, tag_id=tag.id)
-                self.session.add(user_tag)
-                added_count += 1
-
-        if added_count > 0:
-            await self.session.flush()
-
-        return added_count
-
-    async def remove_tags(self, user_id: UUID, tag_values: List[str]) -> int:
-        """
-        Remove tags from user.
-
-        Returns:
-            Number of tags actually removed
-        """
-        # Get Tag IDs by values
-        tags = await self.tag_repo.get_by_tag_values(tag_values)
-        tag_ids = [tag.id for tag in tags]
-
-        if not tag_ids:
-            return 0
-
-        # Delete UserTag associations
-        query = delete(UserTag).where(
-            and_(
-                UserTag.user_id == user_id,
-                UserTag.tag_id.in_(tag_ids)
-            )
-        )
-        result = await self.session.execute(query)
-        await self.session.flush()
-
-        return getattr(result, "rowcount", 0)
-
-    async def remove_all_tags(self, user_id: UUID) -> int:
-        """Remove all tags for a user."""
-        query = delete(UserTag).where(UserTag.user_id == user_id)
-        result = await self.session.execute(query)
-        await self.session.flush()
-        return getattr(result, "rowcount", 0)
-
-    async def replace_tags_by_category(
-        self,
-        user_id: UUID,
-        category: str,
-        new_tag_values: List[str]
-    ) -> int:
-        """
-        Replace all tags in a specific category with new ones.
-
-        Args:
-            user_id: User ID
-            category: Category to replace
-            new_tag_values: New tag values for this category
-
-        Returns:
-            Number of tags in the category after replacement
-        """
-        # Get all tags in category (from Tag table)
-        category_tags = await self.tag_repo.get_by_category(category)
-        category_tag_ids = [tag.id for tag in category_tags]
-
-        # Delete existing UserTag associations for this category
-        if category_tag_ids:
-            await self.session.execute(
-                delete(UserTag).where(
-                    and_(
-                        UserTag.user_id == user_id,
-                        UserTag.tag_id.in_(category_tag_ids)
-                    )
-                )
-            )
-            await self.session.flush()
-
-        # Add new tags
-        if new_tag_values:
-            await self.add_tags(user_id, new_tag_values)
-
-        return len(new_tag_values)
-
