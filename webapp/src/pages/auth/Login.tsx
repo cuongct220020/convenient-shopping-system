@@ -123,8 +123,8 @@ export default function Login() {
               () => email,
               () => 'notAnEmail@gmail.com'
             )
-            authService.sendVerifyUserRequest(realEmail)
-            LocalStorage.inst.unverifiedUserIdentification = realEmail
+            authService.sendOtpRequest('register', realEmail)
+            LocalStorage.inst.emailRequestingOtp = realEmail
             navigate('/auth/login-authentication')
             break
           }

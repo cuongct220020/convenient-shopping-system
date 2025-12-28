@@ -38,7 +38,7 @@ export default function LoginAuthentication() {
     return () => clearInterval(interval)
   }, [])
   const username = 'User'
-  const identification = LocalStorage.inst.unverifiedUserIdentification
+  const identification = LocalStorage.inst.emailRequestingOtp
 
   const handleOtpChanged = (code: string) => {
     setOtpCode(code)
@@ -52,15 +52,16 @@ export default function LoginAuthentication() {
       return
     }
     setIsLoading(true)
-    const response = await authService.verifyUser({
+    const response = await authService.verifyOtp({
       identification,
-      otp: otpCode
+      otp: otpCode,
+      type: 'register'
     })
     if (!isMounted.current) return
     setIsLoading(false)
     response.match(
       () => {
-        LocalStorage.inst.unverifiedUserIdentification = null
+        LocalStorage.inst.emailRequestingOtp = null
         setPopup({ show: true, type: 'succeed' })
       },
       (e) => {
@@ -74,11 +75,13 @@ export default function LoginAuthentication() {
     )
   }
   const handleOtpResendClick = async () => {
-    console.log(identification, timeToRequestOtp)
     if (!identification) return
     if (timeToRequestOtp > 0) return
     setIsAskingNewOtp(true)
-    const response = await authService.sendVerifyUserRequest(identification)
+    const response = await authService.sendOtpRequest(
+      'register',
+      identification
+    )
     if (!isMounted.current) return
     setIsAskingNewOtp(false)
     response.match(
@@ -163,10 +166,10 @@ export default function LoginAuthentication() {
             <NotificationCard
               message={
                 popup.type === 'succeed'
-                  ? i18n.t('register_otp_verfied')
+                  ? i18n.t('otp_verified')
                   : popup.type === 'error'
                     ? i18n.t('internal_error')
-                    : i18n.t('register_otp_unverified')
+                    : i18n.t('otp_unverified')
               }
               title={
                 popup.type === 'succeed'

@@ -5,12 +5,12 @@ import { assert } from '../../utils/assert'
 
 const DefaultDataSchema = z.object({
   otpExpireTime: z.number(),
-  unverifiedUserIdentification: z.string().or(z.undefined())
+  emailRequestingOtp: z.string().or(z.undefined())
 })
 type DataType = z.infer<typeof DefaultDataSchema>
 const DEFAULT_DATA: DataType = {
   otpExpireTime: 0,
-  unverifiedUserIdentification: undefined
+  emailRequestingOtp: undefined
 } as const
 
 export class LocalStorage {
@@ -50,13 +50,13 @@ export class LocalStorage {
     return this.otpTimeToNextRequest <= 0
   }
 
-  public set unverifiedUserIdentification(val: string | null) {
-    this.data.unverifiedUserIdentification = val ?? undefined
+  public set emailRequestingOtp(val: string | null) {
+    this.data.emailRequestingOtp = val ?? undefined
     this.save()
   }
 
-  public get unverifiedUserIdentification(): string | null {
-    return this.data.unverifiedUserIdentification ?? null
+  public get emailRequestingOtp(): string | null {
+    return this.data.emailRequestingOtp ?? null
   }
 
   private save() {

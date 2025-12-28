@@ -31,6 +31,8 @@ type VerificationError = ResponseError<'incorrect-otp'>
 type AskVerifyResponse = null
 type AskVerifyError = ResponseError<never>
 
+type OtpType = 'register' | 'reset_password' | 'change_email'
+
 export class AuthService {
   constructor(private clients: Clients) {}
 
@@ -163,23 +165,25 @@ export class AuthService {
     }).map(() => null)
   }
 
-  public sendVerifyUserRequest(
+  public sendOtpRequest(
+    type: OtpType,
     email: string
   ): ResultAsync<AskVerifyResponse, AskVerifyError> {
     return httpPost(this.clients.pub, AppUrl.SEND_OTP, {
       email,
-      action: 'register'
+      action: type
     }).map(() => null)
   }
 
-  public verifyUser(opts: {
+  public verifyOtp(opts: {
     identification: string
     otp: string
+    type: OtpType
   }): ResultAsync<VerificationResponse, VerificationError> {
     return httpPost(this.clients.pub, AppUrl.VERIFY_OTP, {
       email: opts.identification,
       otp_code: opts.otp,
-      action: 'register'
+      action: opts.type
     })
       .map(() => null)
       .mapErr((e) =>
