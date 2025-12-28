@@ -33,6 +33,9 @@ type AskVerifyError = ResponseError<never>
 
 type OtpType = 'register' | 'reset_password' | 'change_email'
 
+type ResetPasswordResponse = null
+type ResetPasswordError = ResponseError<'incorrect-or-expired-otp'>
+
 export class AuthService {
   constructor(private clients: Clients) {}
 
@@ -192,6 +195,27 @@ export class AuthService {
             return { ...e, type: 'incorrect-otp' }
           case 'path-not-found':
             return { ...e, type: 'user-not-found' }
+          default:
+            return e
+        }
+      })
+  }
+
+  public resetPassword(opts: {
+    email: string
+    newPassword: string
+    otpCode: string
+  }): ResultAsync<ResetPasswordResponse, ResetPasswordError> {
+    return httpPost(this.clients.pub, AppUrl.RESET_PASSWORD, {
+      email: opts.email,
+      new_password: opts.newPassword,
+      otp_code: opts.otpCode
+    })
+      .map(() => null)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'incorrect-or-expired-otp' }
           default:
             return e
         }

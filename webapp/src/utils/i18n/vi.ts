@@ -26,5 +26,9 @@ export const vi: Record<i18nKeys, string> = {
   auth_failed: 'Xác thực thất bại',
   auth_succeeded: 'Xác thực thành công',
   otp_unverified: 'Mã xác nhận không đúng hoặc đã hết hạn. Vui lòng thử lại.',
-  otp_verified: 'Xác thực tài khoản thành công. Vui lòng đăng nhập để tiếp tục'
+  otp_verified: 'Xác thực tài khoản thành công. Vui lòng đăng nhập để tiếp tục',
+  otp_expired: 'Mã xác thực đã hết hạn. Vui lòng thử lại',
+  reset_password_success_title: 'Đổi mật khẩu thành công',
+  reset_password_login_to_continue:
+    'Mật khẩu của bạn đã được cập nhật, vui lòng đăng nhập bằng mật khẩu mới để tiếp tục.'
 }

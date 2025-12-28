@@ -1,6 +1,7 @@
 export const Constant = {
   keys: {
-    localStorage: 'ShopSense'
+    localStorage: 'ShopSense',
+    sessionStorage: 'ShopSense'
   },
   otpRequestInterval: 60 /* seconds */
 } as const

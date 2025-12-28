@@ -10,6 +10,7 @@ import { useIsMounted } from '../../hooks/useIsMounted'
 import { NotificationCard } from '../../components/NotificationCard'
 import { i18n } from '../../utils/i18n/i18n'
 import { LoadingOverlay } from '../../components/Loading'
+import { SessionStorage } from '../../services/storage/session'
 
 function initializeOtpTimer(): number {
   if (LocalStorage.inst.otpCanRequest) {
@@ -62,7 +63,7 @@ export default function ForgotPasswordAuthentication() {
     setIsLoading(false)
     response
       .andTee(() => {
-        LocalStorage.inst.emailRequestingOtp = null
+        SessionStorage.inst.resetPasswordOtp = otpCode
         navigate('/auth/forgot-password-new-password')
       })
       .mapErr((e) => {
@@ -152,15 +153,15 @@ export default function ForgotPasswordAuthentication() {
         {popup.show && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
             <NotificationCard
-              message={
-                popup.type === 'not-match'
-                  ? i18n.t('auth_failed')
-                  : i18n.t('internal_error')
-              }
               title={
                 popup.type === 'not-match'
-                  ? i18n.t('otp_unverified')
+                  ? i18n.t('auth_failed')
                   : i18n.t('error_occured')
+              }
+              message={
+                popup.type === 'not-match'
+                  ? i18n.t('otp_unverified')
+                  : i18n.t('internal_error')
               }
               icon={XCircle}
               iconBgColor="bg-red-500"

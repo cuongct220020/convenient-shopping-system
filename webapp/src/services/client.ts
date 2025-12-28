@@ -8,6 +8,7 @@ export class AppUrl {
   static readonly REGISTER = this.AUTH + '/register'
   static readonly SEND_OTP = this.AUTH + '/otp/send'
   static readonly VERIFY_OTP = this.AUTH + '/otp/verify'
+  static readonly RESET_PASSWORD = this.AUTH + '/reset-password'
 }
 
 export type Clients = {
