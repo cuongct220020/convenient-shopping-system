@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Search, Check } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Camera, Search, Check, X } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
-import UserCard, { UserCardProps } from '../../../components/UserCard';
+import { UserCardProps, UserCard } from '../../../components/UserCard';
 
 // 1. Define a Mock User to simulate the database found result
 const MOCK_DB_USER = {
@@ -13,24 +14,47 @@ const MOCK_DB_USER = {
   email: 'hungdeptrai@gmail.com',
 };
 
+type GroupData = {
+  id: string;
+  name: string;
+  members: Array<{ id: string; name: string; role: string; email?: string }>;
+};
+
 const AddGroup: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const groupToEdit = location.state?.group as GroupData | undefined;
+
+  const isEditMode = !!groupToEdit;
+
   // --- State Management ---
-  const [groupName, setGroupName] = useState('');
+  const [groupName, setGroupName] = useState(() => groupToEdit?.name || '');
   const [memberSearch, setMemberSearch] = useState('');
   
   // Search states
   const [searchResult, setSearchResult] = useState<typeof MOCK_DB_USER | null>(null);
   const [showNotFound, setShowNotFound] = useState(false);
 
-  // Selected members list (Initialized with current user)
-  const [selectedMembers, setSelectedMembers] = useState<UserCardProps[]>([
-    {
-      id: 'user-me',
-      name: 'Bạn (Tôi)',
-      role: 'Trưởng nhóm',
-      isRemovable: false,
-    },
-  ]);
+  // Selected members list (Initialized with current user or existing members)
+  const [selectedMembers, setSelectedMembers] = useState<UserCardProps[]>(() => {
+    if (groupToEdit?.members) {
+      return groupToEdit.members.map(m => ({
+        id: m.id,
+        name: m.name,
+        role: m.role,
+        email: m.email,
+        isRemovable: m.role !== 'Trưởng nhóm',
+      }));
+    }
+    return [
+      {
+        id: 'user-me',
+        name: 'Bạn (Tôi)',
+        role: 'Trưởng nhóm',
+        isRemovable: false,
+      },
+    ];
+  });
 
   // --- Search Logic (Debounced) ---
   useEffect(() => {
@@ -86,18 +110,25 @@ const AddGroup: React.FC = () => {
   };
 
   const handleSubmit = () => {
-    // Submit logic here
-    console.log('Creating group:', { groupName, members: selectedMembers });
+    if (isEditMode && groupToEdit) {
+      navigate(`/main/family-group/${groupToEdit.id}`);
+    } else {
+      navigate('/main/family-group');
+    }
   };
 
   return (
     <div className="min-h-screen bg-white p-6 pb-24 relative">
       {/* 1. Header */}
       <div className="relative mb-6 flex items-center">
-        <BackButton text="Quay lại" to="/main/family-group" className="absolute left-0" />
+        <BackButton
+          text="Quay lại"
+          to={isEditMode && groupToEdit ? `/main/family-group/${groupToEdit.id}` : '/main/family-group'}
+          className="absolute left-0"
+        />
       </div>
       <h1 className="text-xl font-bold text-[#C3485C] text-center">
-        Tạo Nhóm Mới
+        {isEditMode ? 'Chỉnh Sửa Nhóm' : 'Tạo Nhóm Mới'}
       </h1>
 
       {/* 2. Group Image Upload */}
@@ -130,7 +161,7 @@ const AddGroup: React.FC = () => {
           <InputField
             label="Thêm thành viên"
             labelClassName="after:content-['*'] after:ml-0.5 after:text-red-500"
-            placeholder="hungdeptrai@gmail.com"
+            placeholder="Ví dụ: hungdeptrai@gmail.com"
             icon={<Search size={20} />}
             value={memberSearch}
             onChange={(e) => setMemberSearch(e.target.value)}
@@ -179,15 +210,25 @@ const AddGroup: React.FC = () => {
       </div>
 
       {/* 5. Submit Button */}
-      <div className="mt-10">
+      <div className={isEditMode ? "mt-10 flex gap-0" : "mt-10"}>
         <Button
           variant="primary"
           onClick={handleSubmit}
           size="fit"
           icon={Check}
         >
-          Tạo nhóm
+          {isEditMode ? 'Lưu thay đổi' : 'Tạo nhóm'}
         </Button>
+        {isEditMode && (
+          <Button
+            variant="secondary"
+            onClick={() => groupToEdit ? navigate(`/main/family-group/${groupToEdit.id}`) : navigate('/main/family-group')}
+            size="fit"
+            icon={X}
+          >
+            Hủy
+          </Button>
+        )}
       </div>
     </div>
   );

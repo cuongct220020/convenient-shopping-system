@@ -5,11 +5,15 @@ interface GroupCardProps {
   role: 'Trưởng nhóm' | 'Thành viên';
   memberCount: number;
   iconSrc: string;
+  onClick?: () => void;
 }
 
-const GroupCard: React.FC<GroupCardProps> = ({ name, role, memberCount, iconSrc }) => {
+const GroupCard: React.FC<GroupCardProps> = ({ name, role, memberCount, iconSrc, onClick }) => {
   return (
-    <div className="flex items-center bg-gray-50 rounded-2xl p-4 shadow-sm">
+    <div
+      className={`flex items-center bg-gray-50 rounded-2xl p-4 shadow-sm ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''}`}
+      onClick={onClick}
+    >
       {/* Icon/Avatar */}
       <div className="w-16 h-16 mr-4 flex-shrink-0">
          <img 

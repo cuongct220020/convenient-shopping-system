@@ -54,6 +54,7 @@ const FamilyGroup: React.FC = () => {
               role={group.role}
               memberCount={group.memberCount}
               iconSrc={group.iconSrc}
+              onClick={() => navigate(`/main/family-group/${group.id}`)}
             />
           ))}
         </div>

@@ -13,9 +13,14 @@ export interface UserCardProps {
   isRemovable?: boolean;
   variant?: UserCardVariant;
   onAdd?: (id: string | number) => void;
+  onClick?: () => void;
+  /**
+   * Optional custom action element to be rendered instead of the default add/remove buttons.
+   */
+  actionElement?: React.ReactNode;
 }
 
-const UserCard: React.FC<UserCardProps> = ({
+export const UserCard: React.FC<UserCardProps> = ({
   id,
   name,
   role,
@@ -25,11 +30,16 @@ const UserCard: React.FC<UserCardProps> = ({
   isRemovable = false,
   variant = 'selected',
   onAdd,
+  onClick,
+  actionElement,
 }) => {
   const isCandidate = variant === 'candidate';
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-100 rounded-xl">
+    <div
+      className={`flex items-center justify-between p-4 bg-gray-100 rounded-xl ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''}`}
+      onClick={onClick}
+    >
       <div className="flex items-center space-x-4">
         {/* Avatar */}
         <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
@@ -44,19 +54,21 @@ const UserCard: React.FC<UserCardProps> = ({
         <div>
           <h3 className="font-bold text-gray-900">{name}</h3>
           {!isCandidate && <p className="text-sm font-medium text-gray-700">{role}</p>}
-          {email && <p className="text-xs text-gray-500 italic">{email}</p>}
+          {email && <p className="text-xs text-gray-500 italic truncate max-w-[150px]">{email}</p>}
         </div>
       </div>
 
-      {/* Action Button */}
-      {isCandidate && onAdd ? (
+      {/* Action Button Area */}
+      {actionElement ? (
+        actionElement
+      ) : isCandidate && onAdd ? (
         // Add Button (+) for candidate variant
         <button
           onClick={() => onAdd(id)}
-          className="w-10 h-10 rounded-full bg-[#FFD7C1] flex items-center justify-center text-[#C3485C] hover:bg-[#ffc5a3] transition-colors shrink-0"
+          className="w-8 h-8 rounded-lg bg-[#FFD7C1] flex items-center justify-center text-[#C3485C] hover:bg-[#ffc5a3] transition-colors shrink-0"
           type="button"
         >
-          <Plus size={24} strokeWidth={2.5} />
+          <Plus size={20} strokeWidth={2.5} />
         </button>
       ) : (
         // Remove Button (X) for selected variant
@@ -73,5 +85,3 @@ const UserCard: React.FC<UserCardProps> = ({
     </div>
   );
 };
-
-export default UserCard;

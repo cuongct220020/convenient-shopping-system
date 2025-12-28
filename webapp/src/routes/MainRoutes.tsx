@@ -10,6 +10,8 @@ import HealthProfile from 'pages/main/profile/HealthProfile'
 import Favorites from 'pages/main/profile/Favorites'
 import FamilyGroup from 'pages/main/family-group/FamilyGroup'
 import AddGroup from 'pages/main/family-group/AddGroup'
+import GroupDetail from 'pages/main/family-group/GroupDetail'
+import UserDetail from 'pages/main/family-group/UserDetail'
 
 export const MainRoutes = {
   path: "/main",
@@ -58,6 +60,14 @@ export const MainRoutes = {
     {
       path: "family-group/add",
       element: <AddGroup />,
+    },
+    {
+      path: "family-group/:id",
+      element: <GroupDetail />,
+    },
+    {
+      path: "family-group/:id/:userId",
+      element: <UserDetail />
     }
   ],
 }
