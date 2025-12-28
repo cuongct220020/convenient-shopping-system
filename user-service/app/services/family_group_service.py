@@ -83,9 +83,13 @@ class FamilyGroupService:
 
     async def update(self, group_id: UUID, update_data: FamilyGroupUpdateSchema) -> FamilyGroup:
         """Update a family group."""
-        group = await self.repository.update(group_id, update_data)
-        if not group:
+        updated = await self.repository.update(group_id, update_data)
+        if not updated:
             raise NotFound(f"Family group with id {group_id} not found")
+        
+        # Fetch fresh data with relationships loaded
+        group = await self.repository.get_with_details(group_id)
+        
         logger.info(f"Updated family group {group_id}")
         return group
 

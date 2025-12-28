@@ -41,7 +41,6 @@ class GroupView(BaseGroupView):
     )
     @validate_request(FamilyGroupCreateSchema, auto_document=True)
     @idempotent(auto_document=True)
-    @require_group_role(GroupRole.MEMBER, GroupRole.HEAD_CHEF)
     async def post(self, request: Request):
         """Create a new family group."""
         validated_data = request.ctx.validated_data
@@ -165,7 +164,7 @@ class GroupDetailView(BaseGroupView):
         service = self._get_service(request)
 
         try:
-            group = await service.get(group_id)
+            group = await service.get_group_with_members(group_id)
 
             # Use helper method from base class
             return self.success_response(

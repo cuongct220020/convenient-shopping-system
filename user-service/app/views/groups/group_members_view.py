@@ -262,7 +262,7 @@ class GroupMemberMeView(BaseGroupView):
             )
         ]
     )
-    @require_group_role()
+    @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
     async def delete(self, request: Request, group_id: UUID):
         """Allow a member to leave a specific family group."""
         user_id = request.ctx.auth_payload["sub"]
@@ -270,19 +270,28 @@ class GroupMemberMeView(BaseGroupView):
 
         try:
             # Check if user is HEAD_CHEF and prevent leaving if they are the only one
-            membership = await membership_repo.get_membership(group_id, user_id)
+            membership = await membership_repo.get_membership(user_id=user_id, group_id=group_id)
+            
+            if not membership:
+                raise NotFound("You are not a member of this group")
+
             if membership.role == GroupRole.HEAD_CHEF:
                 # Check if there are other HEAD_CHEF members
                 head_chefs = await membership_repo.get_members_by_role(group_id, GroupRole.HEAD_CHEF)
                 if len(head_chefs) <= 1:
-                    raise Forbidden("HEAD_CHEF cannot leave group if they are the only HEAD_CHEF")
+                    raise Forbidden("HEAD_CHEF cannot leave group if they are the only HEAD_CHEF. Please transfer ownership first.")
 
-            await membership_repo.remove_membership(group_id, user_id)
+            await membership_repo.remove_membership(user_id=user_id, group_id=group_id)
 
             # Use helper method from base class
             return self.success_response(
                 message="Successfully left the group",
                 status_code=200
+            )
+        except (Forbidden, NotFound) as e:
+            return self.error_response(
+                message=str(e),
+                status_code=e.status_code
             )
         except Exception as e:
             logger.error("Error removing membership", exc_info=e)

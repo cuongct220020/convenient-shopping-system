@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import GroupMembership, User
+from app.models import GroupMembership, User, FamilyGroup
 from app.enums import GroupRole
 from app.schemas.family_group_schema import GroupMembershipCreateSchema, GroupMembershipUpdateSchema
 
@@ -25,6 +25,23 @@ class GroupMembershipRepository(
     """
     def __init__(self, session: AsyncSession):
         super().__init__(GroupMembership, session)
+
+    async def get_user_groups(self, user_id: UUID) -> Sequence[GroupMembership]:
+        """
+        Get all groups that a user is a member of with Group info, memberships and creator eagerly loaded.
+        """
+        stmt = (
+            select(GroupMembership)
+            .where(GroupMembership.user_id == user_id)
+            .options(
+                selectinload(GroupMembership.group)
+                .selectinload(FamilyGroup.group_memberships),
+                selectinload(GroupMembership.group)
+                .selectinload(FamilyGroup.creator)
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
     async def get_membership(self, user_id: UUID, group_id: UUID) -> Optional[GroupMembership]:
         """Fetch membership by composite key (user_id, group_id)."""
@@ -82,7 +99,17 @@ class GroupMembershipRepository(
 
     async def update_role(self, user_id: UUID, group_id: UUID, new_role: GroupRole) -> Optional[GroupMembership]:
         """Updates the role of a user in a group."""
-        membership = await self.get_membership(user_id, group_id)
+        stmt = (
+            select(GroupMembership)
+            .where(
+                GroupMembership.user_id == user_id,
+                GroupMembership.group_id == group_id
+            )
+            .options(selectinload(GroupMembership.user))
+        )
+        result = await self.session.execute(stmt)
+        membership = result.scalars().first()
+
         if membership:
             membership.role = new_role
             await self.session.flush()
