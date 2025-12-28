@@ -20,7 +20,6 @@ from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
 
-
 logger = get_logger("Admin Group View")
 
 
