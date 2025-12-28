@@ -48,6 +48,30 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
         return user
 
 
+    async def update(self, user_id: UUID, data: UserInfoUpdateSchema) -> Optional[User]:
+        """
+        Updates an existing user record, handling unique constraints properly.
+        Specifically handles phone number updates to avoid self-referencing unique constraint violations.
+        """
+        instance = await self.get_by_id(user_id)
+        if instance:
+            # Use exclude_unset to only update fields that were provided in the request
+            update_data = data.model_dump(exclude_unset=True)
+
+            # Handle phone number update carefully to avoid unique constraint issues
+            if 'phone_num' in update_data:
+                new_phone = update_data['phone_num']
+                # If the new phone number is the same as the current one, skip the update
+                if new_phone == instance.phone_num:
+                    del update_data['phone_num']
+
+            for key, value in update_data.items():
+                setattr(instance, key, value)
+            self.session.add(instance)
+            await self.session.flush()
+            await self.session.refresh(instance)
+        return instance
+
     async def get_user_with_profiles(self, user_id: UUID) -> Optional[User]:
         """
         Gets user with eager-loaded identity and health profiles.

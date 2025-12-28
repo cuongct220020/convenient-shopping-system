@@ -47,7 +47,7 @@ class MeIdentityProfileView(BaseAPIView):
     async def get(self, request: Request):
         """
         Retrieves the identity profile of the authenticated user.
-        GET /api/v1/user-service/users/me/identity-profile
+        GET /api/v1/user-service/users/me/profile/identity
         """
         user_id = request.ctx.auth_payload["sub"]
 
@@ -66,14 +66,14 @@ class MeIdentityProfileView(BaseAPIView):
             )
         except NotFound:
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Identity profile not found.",
                 status_code=404
             )
         except Exception as e:
             logger.error("Failed to retrieve identity profile", exc_info=e)
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Failed to retrieve identity profile",
                 status_code=500
             )
@@ -96,7 +96,7 @@ class MeIdentityProfileView(BaseAPIView):
     async def patch(self, request: Request):
         """
         Updates the identity profile of the authenticated user."
-        PATH /api/v1/user-service/users/me/identity-profile
+        PATCH /api/v1/user-service/users/me/profile/identity
         """
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
@@ -128,7 +128,7 @@ class MeIdentityProfileView(BaseAPIView):
         except Exception as e:
             logger.error("Failed to update identity profile", exc_info=e)
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Failed to update identity profile",
                 status_code=500
             )
@@ -157,7 +157,7 @@ class MeHealthProfileView(BaseAPIView):
     async def get(self, request: Request):
         """
         Retrieves the health profile of the authenticated user.
-        GET /api/v1/user-service/users/me/health-profile
+        GET /api/v1/user-service/users/me/profile/health
         """
 
         user_id = request.ctx.auth_payload["sub"]
@@ -176,14 +176,14 @@ class MeHealthProfileView(BaseAPIView):
             )
         except NotFound:
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Health profile not found.",
                 status_code=404
             )
         except Exception as e:
             logger.error("Failed to retrieve health profile", exc_info=e)
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Failed to retrieve health profile",
                 status_code=500
             )
@@ -206,7 +206,7 @@ class MeHealthProfileView(BaseAPIView):
     async def patch(self, request: Request):
         """
         Updates the health profile of the authenticated user.
-        PATCH /api/v1/user-service/users/me/health-profile
+        PATCH /api/v1/user-service/users/me/profile/health
         """
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data

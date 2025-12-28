@@ -33,7 +33,7 @@ class MeView(BaseAPIView):
     async def get(self, request: Request):
         """
         Get current user info.
-        GET /api/v1/user-service/users/me/
+        GET /api/v1/user-service/users/me
         """
         user_id = request.ctx.auth_payload["sub"]
 
@@ -52,7 +52,7 @@ class MeView(BaseAPIView):
         except Exception as e:
             logger.error("Failed to retrieve user info", exc_info=e)
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Failed to retrieve user information",
                 status_code=500
             )
@@ -77,7 +77,7 @@ class MeView(BaseAPIView):
     async def patch(self, request: Request):
         """
         Update current user info.
-        PATCH /api/v1/user-service/users/me/
+        PATCH /api/v1/user-service/users/me
         """
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
@@ -97,7 +97,7 @@ class MeView(BaseAPIView):
         except Exception as e:
             logger.error("Failed to update user info", exc_info=e)
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Failed to update user information",
                 status_code=500
             )

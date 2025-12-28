@@ -7,7 +7,7 @@ from shopping_shared.schemas.base_schema import BaseSchema
 
 # User Base Schema
 class UserCoreInfoSchema(BaseSchema):
-    user_id: UUID = Field(..., description="The ID of the user")
+    user_id: UUID = Field(..., description="The ID of the user", validation_alias="id")
     username: str = Field(
         ...,
         description="The username of the user",
@@ -24,7 +24,7 @@ class UserCoreInfoSchema(BaseSchema):
         None,
         description="The phone number of the user",
         min_length=3,
-        max_length=11
+        max_length=15
     )
     first_name: Optional[str] = Field(
         None,
@@ -68,7 +68,7 @@ class UserInfoUpdateSchema(BaseSchema):
         None,
         description="The phone number of the user",
         min_length=3,
-        max_length=11
+        max_length=15
     )
     avatar_url: Optional[str] = Field(
         None,
@@ -118,6 +118,6 @@ class UserCreateSchema(BaseSchema):
         description="The phone number of the user",
         examples=["0813090204"],
         min_length=3,
-        max_length=11
+        max_length=15
     )
     is_active: bool = False

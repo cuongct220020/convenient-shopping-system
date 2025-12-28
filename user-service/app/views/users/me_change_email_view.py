@@ -40,7 +40,7 @@ class MeRequestChangeEmailView(BaseAPIView):
     async def post(self, request: Request):
         """
         Request an OTP to change email
-        POST /api/v1/user-service/admin/email/change-request
+        POST /api/v1/user-service/users/me/email/request-change
         """
 
         new_email = request.ctx.validated_data.new_email
@@ -69,7 +69,7 @@ class MeRequestChangeEmailView(BaseAPIView):
         except Exception as e:
             logger.error(f"Failed to send OTP to new email address: {e}")
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Failed to send OTP. Please try again.",
                 status_code=500
             )
@@ -96,7 +96,7 @@ class MeConfirmChangeEmailView(BaseAPIView):
     async def post(self, request: Request):
         """
         Confirm email change with OTP.
-        POST /api/v1/user-service/admin/email/confirm-change
+        POST /api/v1/user-service/users/me/email/confirm-change
         """
 
         user_id = request.ctx.auth_payload["sub"]
@@ -121,7 +121,7 @@ class MeConfirmChangeEmailView(BaseAPIView):
         except Exception as e:
             logger.error(f"Failed to send OTP to new email address: {e}")
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Failed to confirm email change. Please try again.",
                 status_code=500
             )
