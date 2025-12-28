@@ -2,7 +2,7 @@ from datetime import date
 from sqlalchemy import update
 from enums.meal_status import MealStatus
 from models.meal import Meal
-from database import get_db
+from core.database import get_db
 
 def expire_meals():
     db = next(get_db())

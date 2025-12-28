@@ -6,7 +6,7 @@ from services.meal_command_handler import MealCommandHandler
 from services.meal_transition import MealTransition
 from schemas.meal_schemas import DailyMealsCommand, MealResponse
 from enums.meal_type import MealType
-from database import get_db
+from core.database import get_db
 
 meal_command_handler = MealCommandHandler()
 meal_transition = MealTransition()
