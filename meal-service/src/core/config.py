@@ -5,10 +5,10 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Database Configuration
-    DB_HOST: str = os.getenv("DB_HOST", "software20251db.c3e0884ou51k.ap-southeast-2.rds.amazonaws.com")
-    DB_PORT: int = int(os.getenv("DB_PORT", "5432"))
-    DB_USER: str = os.getenv("DB_USER", "thanh")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "software20251")
+    DB_HOST: str
+    DB_PORT: int
+    DB_USER: str
+    DB_PASSWORD: str
     
     @property
     def DATABASE_URL(self) -> str:
