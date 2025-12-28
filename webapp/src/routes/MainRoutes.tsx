@@ -7,62 +7,78 @@ import NewPassword from '../pages/main/profile/NewPassword'
 import PersonalProfile from '../pages/main/profile/PersonalProfile'
 import HealthProfile from '../pages/main/profile/HealthProfile'
 import Favorites from '../pages/main/profile/Favorites'
+import { RouteObject } from 'react-router-dom'
 
-export const MainRoutes = {
-  path: '/main',
-  element: <MainLayout />,
+const ProfileRoutes: RouteObject = {
+  path: 'profile',
   children: [
     {
       index: true,
       element: <Profile />
     },
     {
-      path: 'profile',
-      element: <Profile />
-    },
-    {
-      path: 'profile/login-information',
+      path: 'login-information',
       element: <LoginInformation />
     },
     {
-      path: 'profile/old-password',
+      path: 'old-password',
       element: <OldPassword />
     },
     {
-      path: 'profile/authentication',
+      path: 'authentication',
       element: <Authentication />
     },
     {
-      path: 'profile/new-password',
+      path: 'new-password',
       element: <NewPassword />
     },
     {
-      path: 'profile/personal-profile',
+      path: 'personal-profile',
       element: <PersonalProfile />
     },
     {
-      path: 'profile/health-profile',
+      path: 'health-profile',
       element: <HealthProfile />
     },
     {
-      path: 'profile/favorites',
-      element: <Favorites />
-    },
-    {
-      path: 'nutrition',
-      element: <div>Nutrition Screen</div>
-    },
-    {
-      path: 'meals',
-      element: <div>Meals Screen</div>
-    },
-    {
-      path: 'diary',
-      element: <div>Diary Screen</div>
-    },
-    {
       path: 'favorites',
-      element: <div>Favorites Screen</div>
+      element: <Favorites />
     }
+  ]
+}
+
+const NutritionRoutes: RouteObject = {
+  path: 'nutrition',
+  element: <div>Nutrition Screen</div>
+}
+
+const MealRoutes: RouteObject = {
+  path: 'meal',
+  element: <div>Meal Screen</div>
+}
+
+const DiaryRoutes: RouteObject = {
+  path: 'diary',
+  element: <div>Diary Screen</div>
+}
+
+const FavoriteRoutes: RouteObject = {
+  path: 'nutrition',
+  element: <div>Favorite Screen</div>
+}
+
+export const MainRoutes: RouteObject = {
+  path: 'main',
+  element: <MainLayout />,
+  children: [
+    {
+      index: true,
+      element: <Profile />
+    },
+    ProfileRoutes,
+    NutritionRoutes,
+    MealRoutes,
+    DiaryRoutes,
+    FavoriteRoutes
   ]
 }
