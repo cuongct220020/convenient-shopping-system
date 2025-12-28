@@ -1,63 +1,121 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Camera, Search, Check } from 'lucide-react';
-import { BackButton } from '../../../components/BackButton'; // Adjust path as needed
-import { InputField } from '../../../components/InputField'; // Adjust path as needed
-import { Button } from '../../../components/Button'; // Adjust path as needed
-import UserCard, { UserCardProps } from '../../../components/UserCard'; // Adjust path as needed
+import { BackButton } from '../../../components/BackButton';
+import { InputField } from '../../../components/InputField';
+import { Button } from '../../../components/Button';
+import UserCard, { UserCardProps } from '../../../components/UserCard';
+
+// 1. Define a Mock User to simulate the database found result
+const MOCK_DB_USER = {
+  id: 'user-hung-123',
+  name: 'Bùi Mạnh Hưng',
+  role: 'Thành viên',
+  email: 'hungdeptrai@gmail.com',
+};
 
 const AddGroup: React.FC = () => {
-  // State for form inputs
+  // --- State Management ---
   const [groupName, setGroupName] = useState('');
   const [memberSearch, setMemberSearch] = useState('');
+  
+  // Search states
+  const [searchResult, setSearchResult] = useState<typeof MOCK_DB_USER | null>(null);
+  const [showNotFound, setShowNotFound] = useState(false);
 
-  // Mock state for selected members based on the image
+  // Selected members list (Initialized with current user)
   const [selectedMembers, setSelectedMembers] = useState<UserCardProps[]>([
     {
-      id: 'user-1',
+      id: 'user-me',
       name: 'Bạn (Tôi)',
       role: 'Trưởng nhóm',
-      isRemovable: false, // Current user cannot remove themselves in this context
-    },
-    {
-      id: 'user-2',
-      name: 'Bùi Mạnh Hưng',
-      role: 'Thành viên',
-      email: 'hungdeptrai@gmail.com',
-      isRemovable: true,
+      isRemovable: false,
     },
   ]);
 
+  // --- Search Logic (Debounced) ---
+  useEffect(() => {
+    // 300ms delay to simulate network request and avoid flickering
+    const delayDebounceFn = setTimeout(() => {
+      if (!memberSearch.trim()) {
+        setSearchResult(null);
+        setShowNotFound(false);
+        return;
+      }
+
+      // Check if this user is already added to the list
+      const isAlreadyAdded = selectedMembers.some(
+        (m) => m.email === memberSearch || (memberSearch === MOCK_DB_USER.email && m.email === MOCK_DB_USER.email)
+      );
+
+      if (isAlreadyAdded) {
+        setSearchResult(null);
+        setShowNotFound(true); // Treat already added as "not found" for adding purposes
+        return;
+      }
+
+      // Simulate finding the specific user from the screenshot
+      if (memberSearch === 'hungdeptrai@gmail.com') {
+        setSearchResult(MOCK_DB_USER);
+        setShowNotFound(false);
+      } else {
+        setSearchResult(null);
+        setShowNotFound(true);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [memberSearch, selectedMembers]);
+
+  // --- Handlers ---
+  const handleAddMember = (user: typeof MOCK_DB_USER) => {
+    const newUser: UserCardProps = {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      email: user.email,
+      isRemovable: true,
+    };
+
+    setSelectedMembers((prev) => [...prev, newUser]);
+    setMemberSearch(''); // Clear search input
+    setSearchResult(null); // Clear result
+  };
+
   const handleRemoveMember = (id: string | number) => {
-    setSelectedMembers(prev => prev.filter(member => member.id !== id));
+    setSelectedMembers((prev) => prev.filter((member) => member.id !== id));
   };
 
   const handleSubmit = () => {
+    // Submit logic here
     console.log('Creating group:', { groupName, members: selectedMembers });
-    // Add logic to submit data to backend
   };
 
   return (
     <div className="min-h-screen bg-white p-6 pb-24 relative">
-      {/* Header */}
+      {/* 1. Header */}
       <div className="relative mb-6 flex items-center">
-        <BackButton text="Quay lại" className="absolute left-0" />
+        <BackButton text="Quay lại" to="/main/family-group" className="absolute left-0" />
       </div>
-      <h1 className="text-xl font-bold text-[#C3485C] text-center">Tạo Nhóm Mới</h1>
+      <h1 className="text-xl font-bold text-[#C3485C] text-center">
+        Tạo Nhóm Mới
+      </h1>
 
-      {/* Group Image Upload Placeholder */}
+      {/* 2. Group Image Upload */}
       <div className="flex flex-col items-center mb-8">
         <div className="relative">
           <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center">
-            {/* Placeholder for image or actual image preview would go here */}
+            {/* Placeholder for avatar */}
           </div>
           <button className="absolute bottom-0 right-0 bg-gray-200 p-2 rounded-full text-gray-600 hover:bg-gray-300 transition-colors border-2 border-white">
             <Camera size={20} />
           </button>
         </div>
-        <p className="text-sm font-medium text-gray-700 mt-3">Tải ảnh nhóm lên</p>
+        <p className="text-sm font-medium text-gray-700 mt-3">
+          Tải ảnh nhóm lên
+        </p>
       </div>
 
-      {/* Form Fields */}
+      {/* 3. Form Fields */}
       <div className="space-y-6">
         <InputField
           label="Tên nhóm gia đình"
@@ -67,23 +125,50 @@ const AddGroup: React.FC = () => {
           onChange={(e) => setGroupName(e.target.value)}
         />
 
-        <InputField
-          label="Thêm thành viên"
-          labelClassName="after:content-['*'] after:ml-0.5 after:text-red-500"
-          placeholder="Nhập username hoặc email..."
-          icon={<Search size={20} />}
-          value={memberSearch}
-          onChange={(e) => setMemberSearch(e.target.value)}
-        />
+        {/* Member Search Section */}
+        <div className="relative">
+          <InputField
+            label="Thêm thành viên"
+            labelClassName="after:content-['*'] after:ml-0.5 after:text-red-500"
+            placeholder="hungdeptrai@gmail.com"
+            icon={<Search size={20} />}
+            value={memberSearch}
+            onChange={(e) => setMemberSearch(e.target.value)}
+          />
+
+          {/* --- UI State: Not Found --- */}
+          {showNotFound && (
+            <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+              <Search size={24} className="mb-2 opacity-50" />
+              <p className="text-sm font-medium">
+                Không tồn tại tài khoản với email trên
+              </p>
+            </div>
+          )}
+
+          {/* --- UI State: Found Result (Add Candidate) --- */}
+          {searchResult && (
+            <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+              <UserCard
+                id={searchResult.id}
+                name={searchResult.name}
+                role={searchResult.role}
+                email={searchResult.email}
+                variant="candidate"
+                onAdd={() => handleAddMember(searchResult)}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Selected Members List */}
+      {/* 4. Selected Members List */}
       <div className="mt-8">
         <h2 className="text-sm font-bold text-gray-700 mb-4 uppercase">
           THÀNH VIÊN ĐÃ CHỌN ({selectedMembers.length})
         </h2>
         <div className="flex flex-col gap-3">
-          {selectedMembers.map(member => (
+          {selectedMembers.map((member) => (
             <UserCard
               key={member.id}
               {...member}
@@ -93,11 +178,16 @@ const AddGroup: React.FC = () => {
         </div>
       </div>
 
-      {/* Submit Button - Fixed at bottom of padding area */}
+      {/* 5. Submit Button */}
       <div className="mt-10">
-         <Button variant="primary" onClick={handleSubmit} size="fit" icon={Check}>
-            Tạo nhóm
-         </Button>
+        <Button
+          variant="primary"
+          onClick={handleSubmit}
+          size="fit"
+          icon={Check}
+        >
+          Tạo nhóm
+        </Button>
       </div>
     </div>
   );

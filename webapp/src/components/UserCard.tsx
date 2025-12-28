@@ -1,5 +1,7 @@
 import React from 'react';
-import { User, X } from 'lucide-react';
+import { User, X, Plus } from 'lucide-react';
+
+export type UserCardVariant = 'selected' | 'candidate';
 
 export interface UserCardProps {
   id: string | number;
@@ -9,6 +11,8 @@ export interface UserCardProps {
   avatarSrc?: string;
   onRemove?: (id: string | number) => void;
   isRemovable?: boolean;
+  variant?: UserCardVariant;
+  onAdd?: (id: string | number) => void;
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -19,7 +23,11 @@ const UserCard: React.FC<UserCardProps> = ({
   avatarSrc,
   onRemove,
   isRemovable = false,
+  variant = 'selected',
+  onAdd,
 }) => {
+  const isCandidate = variant === 'candidate';
+
   return (
     <div className="flex items-center justify-between p-4 bg-gray-100 rounded-xl">
       <div className="flex items-center space-x-4">
@@ -35,20 +43,32 @@ const UserCard: React.FC<UserCardProps> = ({
         {/* User Info */}
         <div>
           <h3 className="font-bold text-gray-900">{name}</h3>
-          <p className="text-sm font-medium text-gray-700">{role}</p>
-          {email && <p className="text-xs text-gray-500">{email}</p>}
+          {!isCandidate && <p className="text-sm font-medium text-gray-700">{role}</p>}
+          {email && <p className="text-xs text-gray-500 italic">{email}</p>}
         </div>
       </div>
 
-      {/* Remove Button - Only show if removable and handler provided */}
-      {isRemovable && onRemove && (
+      {/* Action Button */}
+      {isCandidate && onAdd ? (
+        // Add Button (+) for candidate variant
         <button
-          onClick={() => onRemove(id)}
-          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"
+          onClick={() => onAdd(id)}
+          className="w-10 h-10 rounded-full bg-[#FFD7C1] flex items-center justify-center text-[#C3485C] hover:bg-[#ffc5a3] transition-colors shrink-0"
           type="button"
         >
-          <X size={24} />
+          <Plus size={24} strokeWidth={2.5} />
         </button>
+      ) : (
+        // Remove Button (X) for selected variant
+        isRemovable && onRemove && (
+          <button
+            onClick={() => onRemove(id)}
+            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"
+            type="button"
+          >
+            <X size={24} />
+          </button>
+        )
       )}
     </div>
   );

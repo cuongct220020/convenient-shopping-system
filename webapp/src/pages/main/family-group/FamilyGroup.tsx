@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserPlus, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/Button';
 import GroupCard from '../../../components/GroupCard';
 
@@ -13,6 +14,7 @@ interface GroupData {
 }
 
 const FamilyGroup: React.FC = () => {
+  const navigate = useNavigate();
   // Mock Data: Toggle this array to empty [] to see the "No Groups" screen.
   const [groups, setGroups] = useState<GroupData[]>([
     { id: 1, name: 'Gia đình haha', role: 'Trưởng nhóm', memberCount: 5, iconSrc: 'https://cdn-icons-png.flaticon.com/512/3253/3253272.png' },
@@ -23,8 +25,7 @@ const FamilyGroup: React.FC = () => {
 
   const handleCreateGroup = () => {
     console.log('Create/Add group clicked');
-    // Example: Add a new group to state to demonstrate switching views
-    // setGroups([...groups, { id: Date.now(), name: 'New Group', role: 'Trưởng nhóm', memberCount: 1, iconSrc: '...' }]);
+    navigate('/main/family-group/add');
   };
 
   // --- RENDER: LIST VIEW (If groups exist) ---
