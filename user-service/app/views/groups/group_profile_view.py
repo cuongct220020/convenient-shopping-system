@@ -2,8 +2,10 @@
 from uuid import UUID
 from sanic import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import require_group_role
+from app.enums import GroupRole
 from app.views.base_view import BaseAPIView
 from app.repositories.user_profile_repository import (
     UserIdentityProfileRepository,
@@ -20,7 +22,9 @@ from app.schemas.user_profile_schema import (
 )
 
 from shopping_shared.exceptions import NotFound
+from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 logger = get_logger("Group Profile View")
 
@@ -28,15 +32,25 @@ logger = get_logger("Group Profile View")
 class MemberIdentityProfileView(BaseAPIView):
     """Handles identity profile of group members."""
 
-    decorators = [
-        require_group_role(),  # Any group member can access member profiles
-        openapi.tag("Group Members - Profiles"),
-        openapi.secured("bearerAuth")
-    ]
-
-    @openapi.summary("Get member's identity profile")
-    @openapi.description("Retrieves the identity profile of a specific group member.")
-    @openapi.response(200, UserIdentityProfileSchema)
+    @openapi.definition(
+        summary="User identity profile of a group member.v",
+        description="Retrieves the identity profile of a specific group member.",
+        tag=["Family Groups", "Group Memberships"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserIdentityProfileSchema),
+                status=200,
+                description="User identity profile of a specific group member."
+            ),
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=404,
+                description="Unauthorize"
+            )
+        ]
+    )
+    @require_group_role(GroupRole.MEMBER, GroupRole.HEAD_CHEF)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get identity profile of a specific group member."""
         profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
@@ -78,15 +92,20 @@ class MemberIdentityProfileView(BaseAPIView):
 class MemberHealthProfileView(BaseAPIView):
     """Handles health profile of group members."""
 
-    decorators = [
-        require_group_role(),  # Any group member can access member profiles
-        openapi.tag("Group Members - Profiles"),
-        openapi.secured("bearerAuth")
-    ]
-
-    @openapi.summary("Get member's health profile")
-    @openapi.description("Retrieves the health profile of a specific group member.")
-    @openapi.response(200, UserHealthProfileSchema)
+    @openapi.definition(
+        summary="User health profile of a group member.",
+        description="Retrieves the health profile of a specific group member.",
+        tag=["Family Groups", "Group Memberships"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserHealthProfileSchema),
+                status=200,
+                description="User health profile of a specific group member."
+            )
+        ]
+    )
+    @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get health profile of a specific group member."""
         profile_repo = UserHealthProfileRepository(session=request.ctx.db_session)

@@ -2,6 +2,7 @@
 from datetime import datetime, UTC
 from sanic.request import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.views.base_view import BaseAPIView
 from app.services.auth_service import AuthService
@@ -13,14 +14,29 @@ from shopping_shared.exceptions import Unauthorized
 class LogoutView(BaseAPIView):
     """Handles user logout."""
 
-    @staticmethod
-    @openapi.summary("Logout user")
-    @openapi.description("Logs out the current user by revoking the refresh token and block-listing the access token.")
-    @openapi.response(200, GenericResponse)
-    @openapi.secured("bearerAuth")
-    @openapi.tag("Authentication")
+    @openapi.definition(
+        summary="User Logout",
+        description="Revoke access token, delete refresh token cookie, and clear user session from database. Requires valid Bearer token.",
+        secured={"bearerAuth": []},
+        tag="Authentication",
+        response=[
+            Response(
+                content={"application/json": GenericResponse},
+                status=200,
+                description="Logout successful"
+            ),
+            Response(
+                content={"application/json": GenericResponse},
+                status=401,
+                description="Invalid or missing authentication token"
+            )
+        ]
+    )
     async def post(self, request: Request):
-        """Handles user logout by revoking tokens and clearing the session from the database."""
+        """
+        Handles user logout by revoking tokens and clearing the session from the database.
+        POST /api/v1/user-service/auth/logout
+        """
         try:
             # 1. Lấy thông tin từ context (đã được set bởi middleware)
             auth_payload = request.ctx.auth_payload
@@ -55,6 +71,9 @@ class LogoutView(BaseAPIView):
         )
 
         # 5. Xóa HttpOnly cookie
-        response.cookies.delete("refresh_token")
+        response.delete_cookie(
+            "refresh_token",
+            path='/api/v1/user-service/auth/refresh-token'
+        )
 
         return response

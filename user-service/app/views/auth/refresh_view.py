@@ -2,6 +2,7 @@
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.views.base_view import BaseAPIView
 from shopping_shared.exceptions import Forbidden, Unauthorized
@@ -11,21 +12,35 @@ from app.services.auth_service import AuthService
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth_schema import AccessTokenResponseSchema
 
+from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.utils.openapi_utils import get_openapi_body
+
 
 class RefreshView(BaseAPIView):
     """Handles token refresh using a cookie."""
 
-    @staticmethod
-    @openapi.summary("Refresh access token")
-    @openapi.description(
-        "Generates a new access token using the refresh token provided in an HttpOnly cookie. "
-        "This endpoint implements token rotation, where a new refresh token is also returned in a new cookie."
+    @openapi.definition(
+        summary="Refresh token",
+        description="Generates a new access token using the refresh token provided in an HttpOnly cookie. This endpoint implements token rotation, where a new refresh token is also returned in a new cookie.",
+        secured={"bearerAuth": []},
+        tag=["Authentication"],
+        response=[
+            Response(
+                content=get_openapi_body(AccessTokenResponseSchema),
+                status=200,
+                description="Access token successfully generated"
+            ),
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=401,
+                description="Invalid or missing authentication token"
+            ),
+        ]
     )
-    @openapi.response(200, AccessTokenResponseSchema)
-    @openapi.tag("Authentication")
-    async def post(request: Request) -> HTTPResponse:
+    async def post(self, request: Request) -> HTTPResponse:
         """
         Xử lý token refresh
+        POST /api/v1/user-service/auth/refresh-token
         """
         # 1. Đọc refresh token từ cookie
         old_refresh_token = request.cookies.get("refresh_token")
@@ -50,12 +65,13 @@ class RefreshView(BaseAPIView):
                 message=str(e),
                 status_code=401
             )
-            response.cookies['refresh_token'] = ""
-            response.cookies['refresh_token']['max_age'] = 0
-            response.cookies['refresh_token']['httponly'] = True
-            response.cookies['refresh_token']['secure'] = not config.get("DEBUG", False)
-            response.cookies['refresh_token']['samesite'] = 'Strict'
-            response.cookies['refresh_token']['path'] = '/api/v1/user-service/auth/refresh-token'
+            response.delete_cookie(
+                "refresh_token",
+                path='/api/v1/user-service/auth/refresh-token',
+                httponly=True,
+                secure=not config.get("DEBUG", False),
+                samesite="Strict"
+            )
             return response
 
         # 3. Prepare response with access token and user status
@@ -77,11 +93,14 @@ class RefreshView(BaseAPIView):
         refresh_expires_days = int(config.get("REFRESH_TOKEN_EXPIRE_DAYS", 7))
         max_age = refresh_expires_days * 24 * 60 * 60
 
-        response.cookies['refresh_token'] = new_token_data.refresh_token
-        response.cookies['refresh_token']['max_age'] = max_age
-        response.cookies['refresh_token']['httponly'] = True
-        response.cookies['refresh_token']['secure'] = not config.get("DEBUG", False)
-        response.cookies['refresh_token']['samesite'] = 'Strict'
-        response.cookies['refresh_token']['path'] = '/api/v1/user-service/auth/refresh-token'
+        response.add_cookie(
+            "refresh_token",
+            value=new_token_data.refresh_token,
+            max_age=max_age,
+            httponly=True,
+            secure=not config.get("DEBUG", False),
+            samesite="Strict",
+            path='/api/v1/user-service/auth/refresh-token'
+        )
 
         return response

@@ -1,24 +1,38 @@
 # user-service/app/views/auth/register_view.py
 from sanic.request import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request, idempotent
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
 from app.schemas.user_schema import UserCoreInfoSchema
-from app.schemas.auth_schema import  RegisterRequestSchema, RegisterResponse
+from app.schemas.auth_schema import  RegisterRequestSchema
 from app.services.auth_service import AuthService
+from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 
 class RegisterView(BaseAPIView):
-    @openapi.summary("Register a new account")
-    @openapi.description("Creates a new user account with an inactive status and sends a verification OTP.")
-    @openapi.response(201, RegisterResponse, "Registration successful")
-    @openapi.tag("Authentication")
+
+
+    @openapi.definition(
+        summary="Register Account",
+        description="Creates a new user account with an inactive status and sends a verification OTP.",
+        body=get_openapi_body(RegisterRequestSchema),
+        tag=["Authentication"],
+        response=[
+            Response(content=get_openapi_body(UserCoreInfoSchema), status=201, description="User info"),
+            Response(content=get_openapi_body(GenericResponse), status=401, description="Bad Request"),
+        ]
+    )
     @validate_request(RegisterRequestSchema)
     @idempotent()
     async def post(self, request: Request):
-        """Handles new user registration."""
+        """
+        Handles new user registration.
+        POST /api/v1/user-service/auth/register
+        """
         validated_data = request.ctx.validated_data
 
         user_repo = UserRepository(session=request.ctx.db_session)

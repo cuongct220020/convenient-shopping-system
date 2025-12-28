@@ -44,12 +44,16 @@ class FamilyGroupRepository(
 
     async def get_user_groups(self, user_id: UUID) -> Sequence[GroupMembership]:
         """
-        Get all groups that a user is a member of with Group info eagerly loaded.
+        Get all groups that a user is a member of with Group info, memberships and creator eagerly loaded.
         """
         stmt = (
             select(GroupMembership)
             .where(GroupMembership.user_id == user_id)
-            .options(selectinload(GroupMembership.group))
+            .options(
+                selectinload(GroupMembership.group)
+                .selectinload(FamilyGroup.group_memberships)
+                .selectinload(FamilyGroup.creator)
+            )
         )
         result = await self.session.execute(stmt)
         return result.scalars().all()

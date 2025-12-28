@@ -2,6 +2,7 @@
 from uuid import UUID
 from sanic import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request, require_system_role
 from app.views.base_view import BaseAPIView
@@ -10,21 +11,18 @@ from app.repositories.family_group_repository import FamilyGroupRepository
 from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.services.admin_service import AdminGroupService
-from app.schemas.family_group_schema import FamilyGroupDetailedSchema, GroupMembershipUpdateSchema
+from app.schemas.family_group_schema import FamilyGroupDetailedSchema, GroupMembershipUpdateSchema, \
+    PaginatedFamilyGroupsResponseSchema, GroupMembershipSchema
 from app.schemas.family_group_admin_schema import FamilyGroupAdminUpdateSchema
 
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 logger = get_logger("Admin Group View")
 
-class AdminGroupsView(BaseAPIView):
-    """Admin endpoints for listing all family groups. Requires ADMIN role."""
-    decorators = [
-        require_system_role(SystemRole.ADMIN),
-        openapi.tag("Admin - Group Management"),
-        openapi.secured("bearerAuth")
-    ]
+
+class BaseAdminGroupsView(BaseAPIView):
 
     @staticmethod
     def _get_service(request: Request) -> AdminGroupService:
@@ -33,14 +31,46 @@ class AdminGroupsView(BaseAPIView):
         group_repo = FamilyGroupRepository(session=request.ctx.db_session)
         return AdminGroupService(user_repo, member_repo, group_repo)
 
-    @openapi.summary("List all groups")
-    @openapi.description("Lists all family groups in the system with pagination.")
-    @openapi.parameter("page", int, "query")
-    @openapi.parameter("page_size", int, "query")
-    @openapi.response(200, GenericResponse)
-    @openapi.tag("Admin Group Management")
+
+
+class AdminGroupsView(BaseAdminGroupsView):
+    """Admin endpoints for listing all family groups. Requires ADMIN role."""
+
+    @openapi.definition(
+        summary="List all family groups",
+        description="Lists all family groups in the system with pagination.",
+        parameter=[
+            {
+                "name": "page",
+                "in": "query",
+                "required": False,
+                "description": "Page number for pagination (default: 1)",
+                "schema": {"type": "integer", "default": 1, "minimum": 1}
+            },
+            {
+                "name": "page_size",
+                "in": "query",
+                "required": False,
+                "description": "Number of items per page (default: 10, max: 100)",
+                "schema": {"type": "integer", "default": 10, "minimum": 1, "maximum": 100}
+            }
+        ],
+        secured={"bearerAuth": []},
+        tag=["Admin Groups Management"],
+        response=[
+            Response(
+                content=get_openapi_body(PaginatedFamilyGroupsResponseSchema),
+                status=200,
+                description="List all family groups in the system with pagination.",
+            )
+        ]
+    )
+    @require_system_role(SystemRole.ADMIN)
     async def get(self, request: Request):
-        """List all family groups with pagination."""
+        """
+        List all family groups with pagination.
+        GET /api/v1/user-service/admin/groups
+        """
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 10))
 
@@ -49,15 +79,18 @@ class AdminGroupsView(BaseAPIView):
         try:
             groups, total = await service.get_all_groups_paginated(page=page, page_size=page_size)
 
+            # Create the paginated response using the schema
+            paginated_response = PaginatedFamilyGroupsResponseSchema(
+                data=[FamilyGroupDetailedSchema.model_validate(group) for group in groups],
+                page=page,
+                page_size=page_size,
+                total_items=total,
+                total_pages=(total + page_size - 1) // page_size
+            )
+
             # Use helper method from base class
             return self.success_response(
-                data={
-                    "items": [FamilyGroupDetailedSchema.model_validate(group).model_dump() for group in groups],
-                    "page": page,
-                    "page_size": page_size,
-                    "total": total,
-                    "total_pages": (total + page_size - 1) // page_size
-                },
+                data=paginated_response,
                 message="Groups listed successfully",
                 status_code=200
             )
@@ -70,26 +103,28 @@ class AdminGroupsView(BaseAPIView):
             )
 
 
-class AdminGroupDetailView(BaseAPIView):
+class AdminGroupDetailView(BaseAdminGroupsView):
     """Admin endpoints for managing a specific family group."""
-    decorators = [
-        require_system_role(SystemRole.ADMIN),
-        openapi.tag("Admin - Group Management"),
-        openapi.secured("bearerAuth")
-    ]
 
-    @staticmethod
-    def _get_service(request: Request) -> AdminGroupService:
-        user_repo = UserRepository(session=request.ctx.db_session)
-        member_repo = GroupMembershipRepository(session=request.ctx.db_session)
-        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
-        return AdminGroupService(user_repo, member_repo, group_repo)
-
-    @openapi.summary("Get group by ID")
-    @openapi.description("Retrieves a specific family group by its ID.")
-    @openapi.response(200, FamilyGroupDetailedSchema)
+    @openapi.definition(
+        summary="Get a specific family group by ID",
+        description="Retrieves a specific family group by its ID.",
+        tag=["Admin Groups Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(FamilyGroupDetailedSchema),
+                status=200,
+                description="Get a specific family group by its ID.",
+            )
+        ]
+    )
+    @require_system_role(SystemRole.ADMIN)
     async def get(self, request: Request, group_id: UUID):
-        """Get a specific family group by ID."""
+        """
+        Get a specific family group by ID.
+        GET api/v1/user-service/admin/groups/<group_id>
+        """
         service = self._get_service(request)
 
         try:
@@ -110,13 +145,27 @@ class AdminGroupDetailView(BaseAPIView):
             )
 
 
-    @openapi.summary("Update group by ID")
-    @openapi.description("Updates a specific family group by its ID.")
-    @openapi.body(FamilyGroupAdminUpdateSchema)
-    @openapi.response(200, FamilyGroupDetailedSchema)
+    @openapi.definition(
+        summary="Update group by ID",
+        description="Updates a specific family group by its ID.",
+        body=get_openapi_body(FamilyGroupAdminUpdateSchema),
+        tag=["Admin Groups Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(FamilyGroupDetailedSchema),
+                status=200,
+                description="Update a specific family group by its ID successfully.",
+            )
+        ]
+    )
     @validate_request(FamilyGroupAdminUpdateSchema)
+    @require_system_role(SystemRole.ADMIN)
     async def put(self, request: Request, group_id: UUID):
-        """Update a specific family group by ID."""
+        """
+        Update a specific family group by ID."
+        PUT /api/v1/user-service/admin/groups/{group_id}
+        """
         validated_data = request.ctx.validated_data
         service = self._get_service(request)
 
@@ -137,11 +186,26 @@ class AdminGroupDetailView(BaseAPIView):
                 status_code=500
             )
 
-    @openapi.summary("Delete group by ID")
-    @openapi.description("Deletes a specific family group by its ID.")
-    @openapi.response(200, GenericResponse)
+
+    @openapi.definition(
+        summary="Delete a family group by ID",
+        description="Deletes a specific family group by its ID.",
+        tag=["Admin Groups Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=GenericResponse,
+                status=200,
+                description="Delete a specific family group by its ID successfully.",
+            )
+        ]
+    )
+    @require_system_role(SystemRole.ADMIN)
     async def delete(self, request: Request, group_id: UUID):
-        """Delete a specific family group by ID."""
+        """
+        Delete a specific family group by ID.
+        DELETE /api/v1/user-service/admin/groups/{group_id}
+        """
         service = self._get_service(request)
 
         try:
@@ -161,34 +225,40 @@ class AdminGroupDetailView(BaseAPIView):
             )
 
 
-class AdminGroupMembersView(BaseAPIView):
+class AdminGroupMembersView(BaseAdminGroupsView):
     """Admin endpoints for managing group members."""
-    decorators = [
-        require_system_role(SystemRole.ADMIN),
-        openapi.tag("Admin - Group Management"),
-        openapi.secured("bearerAuth")
-    ]
 
-    @staticmethod
-    def _get_service(request: Request) -> AdminGroupService:
-        user_repo = UserRepository(session=request.ctx.db_session)
-        member_repo = GroupMembershipRepository(session=request.ctx.db_session)
-        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
-        return AdminGroupService(user_repo, member_repo, group_repo)
-
-    @openapi.summary("List members of a group")
-    @openapi.description("Lists all members of a specific family group.")
-    @openapi.response(200, GenericResponse)
+    @openapi.definition(
+        summary="List members of a family group",
+        description="Lists all members of a specific family group.",
+        tag=["Admin Groups Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(GenericResponse[list[GroupMembershipSchema]]),
+                status=200,
+                description="List all members of a specific family group.",
+            )
+        ]
+    )
+    @require_system_role(SystemRole.ADMIN)
     async def get(self, request: Request, group_id: UUID):
-        """List all members of a specific family group."""
+        """
+        List all members of a specific family group.
+        GET /api/v1/user-service/admin/groups/<group_id>/members/
+        """
+
         service = self._get_service(request)
 
         try:
             members = await service.get_group_members(group_id)
 
+            # Convert members to GroupMembershipSchema objects
+            members_schemas = [GroupMembershipSchema.model_validate(member) for member in members]
+
             # Use helper method from base class
             return self.success_response(
-                data=members,
+                data=members_schemas,
                 message="Group members listed successfully",
                 status_code=200
             )
@@ -201,28 +271,29 @@ class AdminGroupMembersView(BaseAPIView):
             )
 
 
-class AdminGroupMembersManageView(BaseAPIView):
+class AdminGroupMembersManageView(BaseAdminGroupsView):
     """Admin endpoints for managing group member roles."""
-    decorators = [
-        require_system_role(SystemRole.ADMIN),
-        openapi.tag("Admin - Group Management"),
-        openapi.secured("bearerAuth")
-    ]
 
-    @staticmethod
-    def _get_service(request: Request) -> AdminGroupService:
-        user_repo = UserRepository(session=request.ctx.db_session)
-        member_repo = GroupMembershipRepository(session=request.ctx.db_session)
-        group_repo = FamilyGroupRepository(session=request.ctx.db_session)
-        return AdminGroupService(user_repo, member_repo, group_repo)
-
-    @openapi.summary("Update member role in group")
-    @openapi.description("Updates the role of a member in a specific family group.")
-    @openapi.body(GroupMembershipUpdateSchema)
-    @openapi.response(200, GenericResponse)
+    @openapi.definition(
+        summary="Update member role in group by admin",
+        description="Updates a specific member role in group by its ID.",
+        tag=["Admin Groups Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(GroupMembershipSchema),
+                status=200,
+                description="Update a specific member role by its ID successfully.",
+            )
+        ]
+    )
     @validate_request(GroupMembershipUpdateSchema)
+    @require_system_role(SystemRole.ADMIN)
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
-        """Update the role of a member in a specific family group."""
+        """
+        Update the role of a member in a specific family group.
+        PATCH api/v1/user-service/admin/groups/<group_id>/members/<user_id>
+        """
         validated_data = request.ctx.validated_data
         service = self._get_service(request)
 
@@ -233,9 +304,12 @@ class AdminGroupMembersManageView(BaseAPIView):
                 new_role=validated_data.role
             )
 
+            # Convert to GroupMembershipSchema for proper response format
+            membership_schema = GroupMembershipSchema.model_validate(updated_membership)
+
             # Use helper method from base class
             return self.success_response(
-                data=updated_membership,
+                data=membership_schema,
                 message="Member role updated successfully",
                 status_code=200
             )

@@ -1,21 +1,39 @@
 # user-service/app/views/auth/otp_view.py
 from sanic.request import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
-from app.schemas.otp_schema import OTPRequestSchema, RegisterVerifyRequestSchema
+from app.schemas.otp_schema import OTPRequestSchema, OTPVerifyRequestSchema
 from app.services.auth_service import AuthService
 from shopping_shared.schemas.response_schema import GenericResponse
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 
 class OTPRequestView(BaseAPIView):
     """View to handle the generation and sending of a new OTP."""
 
+    @openapi.definition(
+        summary="OTP",
+        description="Generate a new OTP using an existing OTP",
+        body=get_openapi_body(OTPRequestSchema),
+        tag=["Authentication"],
+        response=[
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=200,
+                description="Successfully."
+            )
+        ]
+    )
     @validate_request(OTPRequestSchema)
     async def post(self, request: Request):
-        """Handles the logic to request and send an OTP for a specific action."""
+        """
+        Handles the logic to request and send an OTP for a specific action.
+        POST /api/v1/user-service/auth/otp/send
+        """
         otp_data = request.ctx.validated_data
         user_repo = UserRepository(session=request.ctx.db_session)
 
@@ -39,18 +57,23 @@ class OTPRequestView(BaseAPIView):
         )
 
 
-class RegisterVerificationView(BaseAPIView):
+class OTPVerificationView(BaseAPIView):
     """Handles the verification of an OTP for account registration."""
 
-    @openapi.summary("Verify Registration (Activate Account)")
-    @openapi.description("Verifies the OTP to complete the registration process and activate the user account.")
-    @openapi.body(RegisterVerifyRequestSchema)
-    @openapi.response(200, GenericResponse)
-    @openapi.tag("Authentication")
-    @validate_request(RegisterVerifyRequestSchema)
+    @openapi.definition(
+        summary="OTP Verification",
+        description="Verify summited OTP",
+        body=get_openapi_body(OTPVerifyRequestSchema),
+        tag=["Authentication"],
+        response=[
+            Response(GenericResponse, status=200, description="Verify OTP Successfully."),
+        ]
+    )
+    @validate_request(OTPVerifyRequestSchema)
     async def post(self, request: Request):
         """
         Verifies the submitted OTP to activate an account.
+        POST /api/v1/user-service/auth/otp/verify
         """
         validated_data = request.ctx.validated_data
         user_repo = UserRepository(session=request.ctx.db_session)

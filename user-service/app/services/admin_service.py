@@ -1,6 +1,6 @@
 # user-service/app/services/admin_service.py
 from uuid import UUID
-from typing import Tuple
+from typing import Tuple, Sequence
 
 from pydantic import EmailStr
 
@@ -172,7 +172,7 @@ class AdminGroupService:
              raise NotFound("Membership not found.")
         return membership
 
-    async def get_group_members(self, group_id: UUID):
+    async def get_group_members(self, group_id: UUID) -> Sequence[GroupMembership]:
         """Get all members of a specific group."""
         members = await self.member_repo.get_all_members(group_id)
         return members

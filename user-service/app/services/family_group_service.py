@@ -41,9 +41,11 @@ class FamilyGroupService:
             raise NotFound(f"Family group with id {group_id} not found")
         return group
 
+
     async def get_all(self, page: int = 1, page_size: int = 100):
         """Get paginated list of family groups."""
         return await self.repository.get_paginated(page=page, page_size=page_size)
+
 
     async def get_group_members(self, group_id: UUID) -> Sequence[GroupMembership]:
         """
@@ -53,6 +55,17 @@ class FamilyGroupService:
         # Ensure group exists
         await self.get(group_id)
         return await self.member_repo.get_all_members(group_id)
+
+
+    async def get_group_with_members(self, group_id: UUID) -> FamilyGroup:
+        """
+        Get a group with its members and creator info loaded.
+        """
+        group = await self.repository.get_with_details(group_id)
+        if not group:
+            raise NotFound(f"Family group with id {group_id} not found")
+        return group
+
 
     async def get_group_member_detailed(self, group_id: UUID, user_id: UUID) -> GroupMembership:
         """

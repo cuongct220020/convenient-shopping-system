@@ -19,7 +19,7 @@ class OTPRequestSchema(BaseSchema):
     )
 
 
-class RegisterVerifyRequestSchema(BaseSchema):
+class OTPVerifyRequestSchema(BaseSchema):
     """
     Schema for verifying account registration (activation).
     Implies action=REGISTER.

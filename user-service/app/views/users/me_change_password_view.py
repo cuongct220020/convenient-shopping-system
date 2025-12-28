@@ -1,26 +1,43 @@
 # user-service/app/views/users/me_change_password_view.py
 from sanic.request import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth_schema import ChangePasswordRequestSchema
 from app.services.user_service import UserService
+from shopping_shared.schemas.response_schema import GenericResponse
 
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 logger = get_logger("Me Change Password View")
 
 class ChangePasswordView(BaseAPIView):
     """Handles changing the password for an authenticated user."""
 
-    @openapi.summary("Change password (when logged in)")
-    @openapi.description("Allows an authenticated user to change their own password by providing the current password.")
-    @openapi.tag("Profile")
+
+    @openapi.definition(
+        summary="Change Password (when logged in)",
+        description="Allows an authenticated user to change their own password by providing the current password.",
+        body=get_openapi_body(ChangePasswordRequestSchema),
+        tag=["User Profile"],
+        response=[
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status_code=201,
+                description="Change password successfully",
+            )
+        ]
+    )
     @validate_request(ChangePasswordRequestSchema)
     async def post(self, request: Request):
-        """Handles changing the password for the authenticated user."""
+        """
+        Handles changing the password for the authenticated user.
+        POST /api/v1/user-service/me/change-password
+        """
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
 

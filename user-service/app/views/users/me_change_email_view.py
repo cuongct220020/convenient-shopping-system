@@ -1,6 +1,7 @@
 # user-service/app/views/users/me_change_email_view.py
 from sanic.request import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
@@ -9,8 +10,10 @@ from app.schemas.auth_schema import RequestEmailChangeSchema, ConfirmEmailChange
 from app.schemas.otp_schema import OTPRequestSchema
 from app.services.auth_service import AuthService
 from app.enums import OtpAction
+from shopping_shared.schemas.response_schema import GenericResponse
 
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 logger = get_logger("Me Change Email View")
 
@@ -18,12 +21,28 @@ logger = get_logger("Me Change Email View")
 class MeRequestChangeEmailView(BaseAPIView):
     """View for Step 1 of changing email: Requesting an OTP."""
 
-    @openapi.summary("Request email change (Step 1)")
-    @openapi.description("Requests an OTP to be sent to the desired new email address.")
-    @openapi.tag("Profile")
+
+    @openapi.definition(
+        summary="Request Email Change",
+        description="Requests an OTP to be sent to the desired new email address",
+        secured={"bearerAuth": []},
+        body=get_openapi_body(RequestEmailChangeSchema),
+        tag=["User Profile"],
+        response=[
+            Response(
+                content={"application/json": GenericResponse},
+                status=200,
+                description="OTP to be sent to the desired new email address",
+            )
+        ]
+    )
     @validate_request(RequestEmailChangeSchema)
     async def post(self, request: Request):
-        """Step 1: Request an OTP to change email."""
+        """
+        Request an OTP to change email
+        POST /api/v1/user-service/admin/email/change-request
+        """
+
         new_email = request.ctx.validated_data.new_email
         user_repo = UserRepository(session=request.ctx.db_session)
 
@@ -59,12 +78,27 @@ class MeRequestChangeEmailView(BaseAPIView):
 class MeConfirmChangeEmailView(BaseAPIView):
     """View for Step 2 of changing email: Confirming with OTP."""
 
-    @openapi.summary("Confirm email change (Step 2)")
-    @openapi.description("Confirms the email address change by providing the OTP sent to the new email.")
-    @openapi.tag("Profile")
+    @openapi.definition(
+        summary="Confirm Email Change",
+        description="Confirms the email address change by providing the OTP sent to the new email.",
+        secured={"bearerAuth": []},
+        body=get_openapi_body(ConfirmEmailChangeRequestSchema),
+        tag=["User Profile"],
+        response=[
+            Response(
+                content={"application/json": GenericResponse},
+                status=200,
+                description="Change email successfully.",
+            )
+        ]
+    )
     @validate_request(ConfirmEmailChangeRequestSchema)
     async def post(self, request: Request):
-        """Step 2: Confirm email change with OTP."""
+        """
+        Confirm email change with OTP.
+        POST /api/v1/user-service/admin/email/confirm-change
+        """
+
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
 

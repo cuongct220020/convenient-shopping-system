@@ -120,3 +120,4 @@ class UserCreateSchema(BaseSchema):
         min_length=3,
         max_length=11
     )
+    is_active: bool = False

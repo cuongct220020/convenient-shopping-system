@@ -1,6 +1,7 @@
 # user-service/app/views/users/me_core_view.py
 from sanic.request import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
@@ -9,17 +10,31 @@ from app.services.user_service import UserService
 from app.schemas.user_schema import UserInfoUpdateSchema, UserCoreInfoSchema
 
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 logger = get_logger("Me Core View")
 
 class MeView(BaseAPIView):
     """View to manage the authenticated user's core information."""
 
-    @openapi.summary("Get current user's core info")
-    @openapi.description("Retrieves the core information (id, username, email, names, etc.) for the authenticated user.")
-    @openapi.tag("Profile")
+    @openapi.definition(
+        summary="Get current user's core info",
+        description="Retrieves the core information (id, username, email, names, etc.) for the authenticated user.",
+        tag=["User Profile"],
+        secured={"bearAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserCoreInfoSchema),
+                status=200,
+                description="Get core information (id, username, email, names, etc.) successfully.",
+            )
+        ]
+    )
     async def get(self, request: Request):
-        """Get current user info."""
+        """
+        Get current user info.
+        GET /api/v1/user-service/users/me/
+        """
         user_id = request.ctx.auth_payload["sub"]
 
         user_repo = UserRepository(request.ctx.db_session)
@@ -42,12 +57,28 @@ class MeView(BaseAPIView):
                 status_code=500
             )
 
-    @openapi.summary("Update current user's core info")
-    @openapi.description("Updates the core information for the authenticated user.")
-    @openapi.tag("Profile")
+
+
+    @openapi.definition(
+        summary="Get current user's core info",
+        description="Retrieves the core information from the authenticated user.",
+        tag=["User Profile"],
+        body=get_openapi_body(UserInfoUpdateSchema),
+        secured={"bearAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserCoreInfoSchema),
+                status=200,
+                description="Update core information (id, username, email, names, etc.) successfully.",
+            )
+        ]
+    )
     @validate_request(UserInfoUpdateSchema)
     async def patch(self, request: Request):
-        """Update current user info."""
+        """
+        Update current user info.
+        PATCH /api/v1/user-service/users/me/
+        """
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
 

@@ -1,7 +1,7 @@
 # user-service/app/schemas/family_group_schema.py
 from typing import Optional, List
 from uuid import UUID
-from pydantic import Field, EmailStr
+from pydantic import Field
 from shopping_shared.schemas.base_schema import BaseSchema
 from app.enums import GroupRole
 from app.schemas.user_schema import UserCoreInfoSchema
@@ -55,7 +55,13 @@ class GroupMembershipUpdateSchema(BaseSchema):
 
 
 class AddMemberRequestSchema(BaseSchema):
-    email: EmailStr
+    identifier: str = Field(
+        ...,
+        description="Username or Email address of the user",
+        examples=["cuongct", "cuongct@example.com"],
+        min_length=3,
+        max_length=255,
+    )
 
 
 # Family Group Detailed Schemas
@@ -78,3 +84,27 @@ class FamilyGroupDetailedSchema(BaseSchema):
     group_avatar_url: Optional[str] = None
     creator: Optional[UserCoreInfoSchema] = None
     members: List[GroupMembershipSchema] = Field(default=[], alias="group_memberships")
+
+
+class UserGroupSchema(BaseSchema):
+    """Schema for a group when listing user's groups, including the user's role in that group."""
+    id: UUID
+    group_name: str
+    group_avatar_url: Optional[str] = None
+    creator: Optional[UserCoreInfoSchema] = None
+    role_in_group: GroupRole  # The role of the current user in this group
+    member_count: int = Field(default=0, description="Number of members in the group")
+
+
+class UserGroupListResponseSchema(BaseSchema):
+    """Schema for the response when listing user's groups."""
+    groups: List[UserGroupSchema] = Field(default=[], description="List of groups the user is a member of")
+
+
+class PaginatedFamilyGroupsResponseSchema(BaseSchema):
+    """Schema for paginated response of family groups."""
+    data: List[FamilyGroupDetailedSchema] = Field(default=[], description="List of family groups")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of items per page")
+    total_items: int = Field(..., description="Total number of items")
+    total_pages: int = Field(..., description="Total number of pages")

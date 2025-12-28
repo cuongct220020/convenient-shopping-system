@@ -13,3 +13,19 @@ class BaseSchema(BaseModel):
         use_enum_values=True,
         arbitrary_types_allowed=True
     )
+
+    @classmethod
+    def model_json_schema(cls, *args, **kwargs):
+        schema = super().model_json_schema(*args, **kwargs)
+        if "properties" in schema:
+            schema["properties"].pop("model_config", None)
+            schema["properties"].pop("config_dict", None)
+        return schema
+
+    @classmethod
+    def schema(cls, *args, **kwargs):
+        schema = super().schema(*args, **kwargs)
+        if "properties" in schema:
+            schema["properties"].pop("model_config", None)
+            schema["properties"].pop("config_dict", None)
+        return schema

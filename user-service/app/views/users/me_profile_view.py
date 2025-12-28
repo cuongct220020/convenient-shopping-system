@@ -1,6 +1,7 @@
 # user-service/app/views/users/me_profile_view.py
 from sanic import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request
 from app.views.base_view import BaseAPIView
@@ -21,6 +22,7 @@ from app.schemas.user_profile_schema import (
 
 from shopping_shared.exceptions import NotFound
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 logger = get_logger("Me Profile View")
 
@@ -28,11 +30,25 @@ logger = get_logger("Me Profile View")
 class MeIdentityProfileView(BaseAPIView):
     """Manages the identity profile for the authenticated user."""
 
-    @openapi.summary("Get identity profile")
-    @openapi.description("Retrieves the identity profile (gender, DOB, etc.) of the authenticated user.")
-    @openapi.tag("Profile")
+
+    @openapi.definition(
+        summary="Get user identity profile",
+        description="Retrieves the identity profile (gender, DOB, etc.) of the authenticated user",
+        tag=["User Profile"],
+        secured={"bearAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserIdentityProfileSchema),
+                status=200,
+                description="Get user identity profile successfully.",
+            )
+        ]
+    )
     async def get(self, request: Request):
-        """Retrieves the identity profile of the authenticated user."""
+        """
+        Retrieves the identity profile of the authenticated user.
+        GET /api/v1/user-service/users/me/identity-profile
+        """
         user_id = request.ctx.auth_payload["sub"]
 
         user_identity_profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
@@ -62,12 +78,26 @@ class MeIdentityProfileView(BaseAPIView):
                 status_code=500
             )
 
-    @openapi.summary("Update identity profile")
-    @openapi.description("Updates (or creates) the identity profile for the authenticated user.")
-    @openapi.tag("Profile")
+
+    @openapi.definition(
+        summary="Update user identity profile",
+        description="Updates (or creates) the identity profile of the authenticated user.",
+        tag=["User Profile"],
+        secured={"bearAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserIdentityProfileUpdateSchema),
+                status=200,
+                description="Update user identity profile successfully.",
+            )
+        ]
+    )
     @validate_request(UserIdentityProfileUpdateSchema)
     async def patch(self, request: Request):
-        """Updates the identity profile of the authenticated user."""
+        """
+        Updates the identity profile of the authenticated user."
+        PATH /api/v1/user-service/users/me/identity-profile
+        """
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
 
@@ -107,11 +137,28 @@ class MeIdentityProfileView(BaseAPIView):
 class MeHealthProfileView(BaseAPIView):
     """Manages the health profile for the authenticated user."""
 
-    @openapi.summary("Get health profile")
-    @openapi.description("Retrieves the health profile (height, weight, etc.) of the authenticated user.")
-    @openapi.tag("Profile")
+    # @openapi.summary("Get health profile")
+    # @openapi.description("Retrieves the health profile (height, weight, etc.) of the authenticated user.")
+    # @openapi.tag("Profile")
+
+    @openapi.definition(
+        summary="Get user health profile",
+        description="Retrieves the health profile (height, weight, etc.) of the authenticated user",
+        tag=["User Profile"],
+        secured={"bearAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserHealthProfileSchema),
+                status=200,
+                description="Get user health profile successfully.",
+            )
+        ]
+    )
     async def get(self, request: Request):
-        """Retrieves the health profile of the authenticated user."""
+        """
+        Retrieves the health profile of the authenticated user.
+        GET /api/v1/user-service/users/me/health-profile
+        """
 
         user_id = request.ctx.auth_payload["sub"]
 
@@ -141,12 +188,26 @@ class MeHealthProfileView(BaseAPIView):
                 status_code=500
             )
 
-    @openapi.summary("Update health profile")
-    @openapi.description("Updates (or creates) the health profile for the authenticated user.")
-    @openapi.tag("Profile")
+
+    @openapi.definition(
+        summary="Update user health profile",
+        description="Updates (or creates) the health profile of the authenticated user.",
+        tag=["User Profile"],
+        secured={"bearAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserHealthProfileUpdateSchema),
+                status=200,
+                description="Update user health profile successfully.",
+            )
+        ]
+    )
     @validate_request(UserHealthProfileUpdateSchema)
     async def patch(self, request: Request):
-        """Updates the health profile of the authenticated user."""
+        """
+        Updates the health profile of the authenticated user.
+        PATCH /api/v1/user-service/users/me/health-profile
+        """
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
 

@@ -1,6 +1,6 @@
 # user-service/app/schemas/auth_schema.py
 from typing import Optional
-from pydantic import Field, EmailStr, SecretStr, ConfigDict
+from pydantic import Field, EmailStr, SecretStr, ConfigDict, BaseModel
 
 from shopping_shared.schemas.base_schema import BaseSchema
 from shopping_shared.schemas.response_schema import GenericResponse
@@ -44,6 +44,13 @@ class RegisterRequestSchema(BaseSchema):
         examples=["Dang", "Nguyen"],
         min_length=1,
         max_length=100
+    )
+    phone_num: Optional[str] = Field(
+        default=None,
+        description="The phone number of the user",
+        examples=["0123456789"],
+        min_length=11,
+        max_length=11
     )
 
 
@@ -157,18 +164,4 @@ class AccessTokenResponseSchema(BaseSchema):
     is_active: bool = Field(
         ..., 
         description="Whether the user account is currently active"
-    )
-
-
-class LoginResponse(GenericResponse[AccessTokenResponseSchema]):
-    """Response schema for successful login."""
-    model_config = ConfigDict(
-        json_schema_serialization_defaults={'ref_template': '#/components/schemas/{model}'}
-    )
-
-
-class RegisterResponse(GenericResponse[UserCoreInfoSchema]):
-    """Response schema for successful registration."""
-    model_config = ConfigDict(
-        json_schema_serialization_defaults={'ref_template': '#/components/schemas/{model}'}
     )

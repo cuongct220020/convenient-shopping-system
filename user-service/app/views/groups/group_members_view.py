@@ -2,12 +2,12 @@
 from uuid import UUID
 from sanic import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request, require_group_role
 from app.views.groups.base_group_view import BaseGroupView
 from app.enums import GroupRole
 from app.repositories.group_membership_repository import GroupMembershipRepository
-from app.repositories.user_repository import UserRepository
 from app.schemas.family_group_schema import (
     AddMemberRequestSchema,
     GroupMembershipUpdateSchema,
@@ -18,6 +18,7 @@ from app.schemas.family_group_schema import (
 from shopping_shared.exceptions import NotFound, Forbidden
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 logger = get_logger("Group Members View")
 
@@ -25,28 +26,47 @@ logger = get_logger("Group Members View")
 class GroupMembersView(BaseGroupView):
     """Handles operations on group members."""
 
-    decorators = [
-        require_group_role(GroupRole.HEAD_CHEF),  # Only HEAD_CHEF can manage members
-        openapi.tag("Group Members"),
-        openapi.secured("bearerAuth")
-    ]
-
-    @openapi.summary("List group members")
-    @openapi.description("Lists all members of a specific family group.")
-    @openapi.response(200, FamilyGroupDetailedSchema)
+    @openapi.definition(
+        summary="List all group members",
+        description="List all members of a specific family group.",
+        tag=["Family Groups", "Group Memberships"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(GenericResponse[FamilyGroupDetailedSchema]),
+                status=200,
+                description="Group members listed successfully"
+            ),
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=500,
+                description="Internal Server Error"
+            )
+        ]
+    )
+    @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
     async def get(self, request: Request, group_id: UUID):
         """List all members of a specific family group."""
-        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        service = self._get_service(request)
 
         try:
-            members = await membership_repo.get_all_members(group_id)
+            # Get the group with its members using the service method
+            group = await service.get_group_with_members(group_id)
 
-
+            # Validate the group data to create FamilyGroupDetailedSchema
+            # This will include the members through the group_memberships relationship
+            group_detailed = FamilyGroupDetailedSchema.model_validate(group)
 
             return self.success_response(
-                data=None,
+                data=group_detailed,
                 message="Group members listed successfully",
                 status_code=200
+            )
+        except NotFound:
+            logger.error(f"Group with id {group_id} not found")
+            return self.error_response(
+                message="Group not found",
+                status_code=404
             )
         except Exception as e:
             logger.error("Error listing group members", exc_info=e)
@@ -56,28 +76,63 @@ class GroupMembersView(BaseGroupView):
                 status_code=500
             )
 
-    @openapi.summary("Add a member to group")
-    @openapi.description("Adds a user to a specific family group.")
-    @openapi.body(AddMemberRequestSchema)
-    @openapi.response(201, GroupMembershipSchema)
+
+    @openapi.definition(
+        summary="Add a member to group",
+        description="Adds a user to a specific family group. Only HEAD_CHEF can add members.",
+        body=get_openapi_body(AddMemberRequestSchema),
+        tag=["Family Groups", "Group Memberships"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(GroupMembershipSchema),
+                status=201,
+                description="Member added successfully"
+            ),
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=403,
+                description="Forbidden - Only HEAD_CHEF can add members"
+            ),
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=404,
+                description="User not found"
+            ),
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=500,
+                description="Internal Server Error"
+            )
+        ]
+    )
     @validate_request(AddMemberRequestSchema)
+    @require_group_role(GroupRole.HEAD_CHEF)  # Only HEAD_CHEF can add members to the group
     async def post(self, request: Request, group_id: UUID):
         """Add a member to a specific family group."""
+        requester_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
-        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
-        user_repo = UserRepository(session=request.ctx.db_session)
+        identifier = validated_data.identifier
+
+        service = self._get_service(request)
 
         try:
-            # Verify the user exists
-            user = await user_repo.get_by_id(validated_data.user_id)
-            if not user:
-                raise NotFound("User not found")
+            # Find the target user by identifier (email or username)
+            # First, try to find by email
+            target_user = await service.user_repo.get_by_email(identifier)
 
-            # Add member to group
-            membership = await membership_repo.add_membership(
+            # If not found by email, try to find by username
+            if not target_user:
+                target_user = await service.user_repo.get_by_username(identifier)
+
+            if not target_user:
+                raise NotFound(f"User with identifier '{identifier}' not found")
+
+            # Use the service method to add member by email (which internally handles the permission logic)
+            membership = await service.add_member_by_email(
+                requester_id=requester_id,
                 group_id=group_id,
-                user_id=validated_data.user_id,
-                role=validated_data.role
+                email=target_user.email  # Use the email from the found user
             )
 
             # Use helper method from base class
@@ -85,6 +140,18 @@ class GroupMembersView(BaseGroupView):
                 data=GroupMembershipSchema.model_validate(membership),
                 message="Member added successfully",
                 status_code=201
+            )
+        except NotFound as e:
+            logger.error(f"User not found: {identifier}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=404
+            )
+        except Forbidden as e:
+            logger.error(f"Permission denied adding member: {identifier}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=403
             )
         except Exception as e:
             logger.error("Error adding membership", exc_info=e)
@@ -98,17 +165,22 @@ class GroupMembersView(BaseGroupView):
 class GroupMemberDetailView(BaseGroupView):
     """Handles operations on a specific group member."""
 
-    decorators = [
-        require_group_role(GroupRole.HEAD_CHEF),  # Only HEAD_CHEF can manage specific members
-        openapi.tag("Group Members"),
-        openapi.secured("bearerAuth")
-    ]
-
-    @openapi.summary("Update member role")
-    @openapi.description("Updates the role of a specific member in a family group.")
-    @openapi.body(GroupMembershipUpdateSchema)
-    @openapi.response(200, GroupMembershipSchema)
+    @openapi.definition(
+        summary="Update member role",
+        description="Updates the role of a specific member in a family group.",
+        body=get_openapi_body(GroupMembershipUpdateSchema),
+        tag=["Family Groups", "Group Memberships"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(GroupMembershipSchema),
+                status=200,
+                description="Member role updated successfully"
+            )
+        ]
+    )
     @validate_request(GroupMembershipUpdateSchema)
+    @require_group_role(GroupRole.HEAD_CHEF)
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
         """Update the role of a specific member in a family group."""
         validated_data = request.ctx.validated_data
@@ -135,9 +207,21 @@ class GroupMemberDetailView(BaseGroupView):
                 status_code=500
             )
 
-    @openapi.summary("Remove member from group")
-    @openapi.description("Removes a specific member from a family group.")
-    @openapi.response(200, GenericResponse)
+
+    @openapi.definition(
+        summary="Remove member from group",
+        description="Removes a member from a specific family group.",
+        tag=["Family Groups", "Group Memberships"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=200,
+                description="Member role removed successfully"
+            )
+        ]
+    )
+    @require_group_role(GroupRole.HEAD_CHEF)
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):
         """Remove a specific member from a family group."""
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
@@ -165,15 +249,20 @@ class GroupMemberDetailView(BaseGroupView):
 class GroupMemberMeView(BaseGroupView):
     """Handles operations for the authenticated user in their groups."""
 
-    decorators = [
-        require_group_role(),  # Any group member can access these endpoints
-        openapi.tag("Group Members"),
-        openapi.secured("bearerAuth")
-    ]
-
-    @openapi.summary("Leave a group")
-    @openapi.description("Allows a member to leave a specific family group.")
-    @openapi.response(200, GenericResponse)
+    @openapi.definition(
+        summary="Leave a group member",
+        description="Allows a member to leave a specific family group.",
+        tag=["Family Groups", "Group Memberships"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=200,
+                description="Group member leave successfully"
+            )
+        ]
+    )
+    @require_group_role()
     async def delete(self, request: Request, group_id: UUID):
         """Allow a member to leave a specific family group."""
         user_id = request.ctx.auth_payload["sub"]

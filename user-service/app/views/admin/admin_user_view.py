@@ -2,6 +2,7 @@
 from uuid import UUID
 from sanic.request import Request
 from sanic_ext import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request, require_system_role
 from app.views.base_view import BaseAPIView
@@ -10,36 +11,64 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.user_admin_schema import (
     UserAdminCreateSchema,
     UserAdminUpdateSchema,
-    UserAdminViewSchema
+    UserAdminViewSchema,
+    PaginatedUserAdminViewResponseSchema
 )
 from app.services.admin_service import AdminUserService
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 logger = get_logger("Admin User View")
 
 
-class AdminUsersView(BaseAPIView):
-    """
-    Admin endpoints for managing users.
-    All methods require ADMIN role.
-    """
-    decorators = [
-        require_system_role(SystemRole.ADMIN),
-        openapi.tag("Admin - User Management"),
-        openapi.secured("bearerAuth")
-    ]
-
+class BaseAdminUserView(BaseAPIView):
     @staticmethod
     def _get_service(request: Request) -> AdminUserService:
         user_repo = UserRepository(session=request.ctx.db_session)
         return AdminUserService(user_repo)
 
-    @openapi.summary("List all users (Admin)")
-    @openapi.description("Lists all users in the system with pagination. Requires ADMIN role.")
-    @openapi.response(200, UserAdminViewSchema)
+
+class AdminUsersView(BaseAdminUserView):
+    """
+    Admin endpoints for managing users. All methods require ADMIN role.
+    """
+
+    @openapi.definition(
+        summary="List all users (Admin)",
+        description="Lists all users in the system with pagination by admin.",
+        tag=["Admin Users Management"],
+        secured={"bearerAuth": []},
+        parameter=[
+            {
+                "name": "page",
+                "in": "query",
+                "required": False,
+                "description": "Page number for pagination (default: 1)",
+                "schema": {"type": "integer", "default": 1, "minimum": 1}
+            },
+            {
+                "name": "page_size",
+                "in": "query",
+                "required": False,
+                "description": "Number of items per page (default: 10, max: 100)",
+                "schema": {"type": "integer", "default": 10, "minimum": 1, "maximum": 100}
+            }
+        ],
+        response=[
+            Response(
+                content=get_openapi_body(PaginatedUserAdminViewResponseSchema),
+                status=200,
+                description="List all users in the system with pagination by admin.",
+            )
+        ]
+    )
+    @require_system_role(SystemRole.ADMIN)
     async def get(self, request: Request):
-        """List all users with pagination."""
+        """
+        List all users with pagination.
+        GET api/v1/user-service/admin/users
+        """
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 10))
 
@@ -48,15 +77,17 @@ class AdminUsersView(BaseAPIView):
         try:
             users, total = await service.get_all_users_paginated(page=page, page_size=page_size)
 
+            paginated_reponse = PaginatedUserAdminViewResponseSchema(
+                data=[UserAdminViewSchema.model_validate(user) for user in users],
+                page=page,
+                page_size=page_size,
+                total_items=total,
+                total_pages=(total + page_size - 1) // page_size
+            )
+
             # Use helper method from base class
             return self.success_response(
-                data={
-                    "items": [UserAdminViewSchema.model_validate(user).model_dump() for user in users],
-                    "page": page,
-                    "page_size": page_size,
-                    "total": total,
-                    "total_pages": (total + page_size - 1) // page_size
-                },
+                data=paginated_reponse,
                 message="Users listed successfully",
                 status_code=200
             )
@@ -68,13 +99,28 @@ class AdminUsersView(BaseAPIView):
                 status_code=500
             )
 
-    @openapi.summary("Create a new user (Admin)")
-    @openapi.description("Creates a new user account. Requires ADMIN role.")
-    @openapi.body(UserAdminCreateSchema)
-    @openapi.response(201, UserAdminViewSchema)
+
+    @openapi.definition(
+        summary="Create new user by admin (Admin)",
+        description="Create new user by admin",
+        body=get_openapi_body(UserAdminCreateSchema),
+        tag=["Admin Users Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserAdminViewSchema),
+                status=201,
+                description="Create new user successfully",
+            )
+        ]
+    )
     @validate_request(UserAdminCreateSchema)
+    @require_system_role(SystemRole.ADMIN)
     async def post(self, request: Request):
-        """Create a new user."""
+        """
+        Create a new user.
+        POST api/v1/user-service/admin/users
+        """
         validated_data = request.ctx.validated_data
         service = self._get_service(request)
 
@@ -96,24 +142,30 @@ class AdminUsersView(BaseAPIView):
             )
 
 
-class AdminUserDetailView(BaseAPIView):
+
+class AdminUserDetailView(BaseAdminUserView):
     """Admin endpoints for managing a specific user."""
-    decorators = [
-        require_system_role(SystemRole.ADMIN),
-        openapi.tag("Admin - User Management"),
-        openapi.secured("bearerAuth")
-    ]
 
-    @staticmethod
-    def _get_service(request: Request) -> AdminUserService:
-        user_repo = UserRepository(session=request.ctx.db_session)
-        return AdminUserService(user_repo)
 
-    @openapi.summary("Get user by ID (Admin)")
-    @openapi.description("Retrieves a specific user by their ID. Requires ADMIN role.")
-    @openapi.response(200, UserAdminViewSchema)
+    @openapi.definition(
+        summary="Get user by id (Admin)",
+        description="Retrieves a specific user by their ID by admin role.",
+        tag=["Admin Users Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserAdminViewSchema),
+                status=200,
+                description="Get user successfully",
+            )
+        ]
+    )
+    @require_system_role(SystemRole.ADMIN)
     async def get(self, request: Request, user_id: UUID):
-        """Get a specific user by ID."""
+        """
+        Get a specific user by ID.
+        GET api/v1/user-service/admin/users/{user_id}
+        """
         service = self._get_service(request)
 
         try:
@@ -133,13 +185,29 @@ class AdminUserDetailView(BaseAPIView):
                 status_code=500
             )
 
-    @openapi.summary("Update user by ID (Admin)")
-    @openapi.description("Updates a specific user by their ID. Requires ADMIN role.")
-    @openapi.body(UserAdminUpdateSchema)
-    @openapi.response(200, UserAdminViewSchema)
+
+
+    @openapi.definition(
+        summary="Update user by ID (Admin)",
+        description="Updates a specific user by their ID.",
+        body=get_openapi_body(UserAdminUpdateSchema),
+        tag=["Admin Users Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(UserAdminViewSchema),
+                status=200,
+                description="Update user successfully",
+            )
+        ]
+    )
     @validate_request(UserAdminUpdateSchema)
+    @require_system_role(SystemRole.ADMIN)
     async def put(self, request: Request, user_id: UUID):
-        """Update a specific user by ID."""
+        """
+        Update a specific user by ID.
+        PUT api/v1/user-service/admin/users/{user_id}
+        """
         validated_data = request.ctx.validated_data
         service = self._get_service(request)
 
@@ -160,11 +228,26 @@ class AdminUserDetailView(BaseAPIView):
                 status_code=500
             )
 
-    @openapi.summary("Delete user by ID (Admin)")
-    @openapi.description("Deletes a specific user by their ID. Requires ADMIN role.")
-    @openapi.response(200, GenericResponse)
+
+    @openapi.definition(
+        summary="Delete user by ID (Admin)",
+        description="Deletes a specific user by their ID.",
+        tag=["Admin Users Management"],
+        secured={"bearerAuth": []},
+        response=[
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=200,
+                description="Delete user successfully",
+            )
+        ]
+    )
+    @require_system_role(SystemRole.ADMIN)
     async def delete(self, request: Request, user_id: UUID):
-        """Delete a specific user by ID."""
+        """
+        Delete a specific user by ID.
+        DELETE api/v1/user-service/admin/users/{user_id}
+        """
         service = self._get_service(request)
 
         try:

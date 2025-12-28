@@ -1,10 +1,14 @@
 # user-service/app/schemas/user_admin_schema.py
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+
+from pydantic import Field
+
 from app.enums import SystemRole
 from app.schemas.user_profile_schema import UserDetailedProfileSchema
 from app.schemas.user_schema import UserInfoUpdateSchema, UserCreateSchema
 from app.schemas.user_profile_schema import UserIdentityProfileUpdateSchema, UserHealthProfileUpdateSchema
+from shopping_shared.schemas.base_schema import BaseSchema
 
 
 class UserAdminCreateSchema(UserCreateSchema):
@@ -34,3 +38,12 @@ class UserAdminUpdateSchema(UserInfoUpdateSchema):
     is_active: Optional[bool] = None
     identity_profile: Optional[UserIdentityProfileUpdateSchema] = None
     health_profile: Optional[UserHealthProfileUpdateSchema] = None
+
+
+class PaginatedUserAdminViewResponseSchema(BaseSchema):
+    """Schema for paginated response of family groups."""
+    data: List[UserAdminViewSchema] = Field(default=[], description="List of users in")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of items per page")
+    total_items: int = Field(..., description="Total number of items")
+    total_pages: int = Field(..., description="Total number of pages")
