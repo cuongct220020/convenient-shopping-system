@@ -2,7 +2,7 @@
 from uuid import UUID
 from typing import Tuple, Sequence
 
-from pydantic import EmailStr
+from sqlalchemy.exc import IntegrityError
 
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
@@ -49,9 +49,21 @@ class AdminUserService:
 
     async def create_user(self, user_data: UserAdminCreateSchema):
         """Creates a new user by an admin."""
+        # 1. Check Username
         existing_user = await self.user_repo.get_by_username(user_data.username)
         if existing_user:
-            raise Conflict(f"User with username {user_data.username} already exists.")
+            raise Conflict(f"User with username '{user_data.username}' already exists.")
+
+        # 2. Check Email
+        existing_email = await self.user_repo.get_by_email(str(user_data.email))
+        if existing_email:
+            raise Conflict(f"User with email '{user_data.email}' already exists.")
+
+        # 3. Check Phone Number (if provided)
+        if user_data.phone_num:
+            existing_phone = await self.user_repo.get_by_field_case_insensitive("phone_num", user_data.phone_num)
+            if existing_phone:
+                raise Conflict(f"User with phone number '{user_data.phone_num}' already exists.")
 
         # Hash password (handle SecretStr properly)
         password_str = user_data.password.get_secret_value() if hasattr(user_data.password, 'get_secret_value') else str(user_data.password)
@@ -61,8 +73,12 @@ class AdminUserService:
         new_user_data = user_data.model_dump(exclude={'password'})
         new_user_data['password_hash'] = hashed_password
 
-        # Create user via repository
-        user = await self.user_repo.create_user(new_user_data)
+        try:
+            # Create user via repository
+            user = await self.user_repo.create_user(new_user_data)
+        except IntegrityError as e:
+            logger.error(f"Integrity error creating user: {e}")
+            raise Conflict("User with provided unique fields (username, email, or phone) already exists.")
 
         # Refresh user with profiles to avoid lazy-load issues during serialization
         updated_user = await self.user_repo.get_user_with_profiles(user.id)
@@ -131,10 +147,17 @@ class AdminGroupService:
 
     async def update_group(self, group_id: UUID, update_data):
         """Update a specific group."""
-        group = await self.group_repo.update(group_id, update_data)
-        if not group:
+        # First update the group
+        updated = await self.group_repo.update(group_id, update_data)
+        if not updated:
             raise NotFound(f"Group with id {group_id} not found")
-        return group
+
+        # Then get the updated group with relationships loaded to avoid lazy loading issues
+        group_with_details = await self.group_repo.get_with_details(group_id)
+        if not group_with_details:
+            raise NotFound(f"Group with id {group_id} not found after update")
+
+        return group_with_details
 
     async def delete_group(self, group_id: UUID):
         """Delete a specific group."""
@@ -145,18 +168,22 @@ class AdminGroupService:
 
     # ===== Group Membership Management by Admin =====
 
-    async def add_member_by_admin(self, group_id: UUID, email: EmailStr) -> GroupMembership:
+    async def add_member_by_admin(self, group_id: UUID, identifier: str, added_by_user_id: UUID) -> GroupMembership:
         """Admin adds member directly."""
-        user_to_add = await self.user_repo.get_by_email(str(email))
+        user_to_add = await self.user_repo.get_by_identifier(identifier)
         if not user_to_add:
-            raise NotFound(f"User with email {email} not found.")
+            raise NotFound(f"User with identifier '{identifier}' not found.")
 
         existing = await self.member_repo.get_membership(user_to_add.id, group_id)
         if existing:
             raise Conflict("User is already a member of this group.")
 
-        membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER)
-        return membership
+        try:
+            membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER, added_by_user_id)
+            return membership
+        except Exception as e:
+            logger.error(f"Error adding member to group {group_id} for user {user_to_add.id}: {str(e)}", exc_info=True)
+            raise
 
     async def remove_member_by_admin(self, group_id: UUID, user_id: UUID):
         """Admin removes member directly."""
@@ -167,10 +194,14 @@ class AdminGroupService:
 
     async def update_member_role_by_admin(self, group_id: UUID, user_id: UUID, new_role: GroupRole):
         """Admin updates member role directly."""
-        membership = await self.member_repo.update_role(user_id, group_id, new_role)
-        if not membership:
-             raise NotFound("Membership not found.")
-        return membership
+        try:
+            membership = await self.member_repo.update_role(user_id, group_id, new_role)
+            if not membership:
+                raise NotFound("Membership not found.")
+            return membership
+        except Exception as e:
+            logger.error(f"Error updating member role for user {user_id} in group {group_id}: {str(e)}", exc_info=True)
+            raise
 
     async def get_group_members(self, group_id: UUID) -> Sequence[GroupMembership]:
         """Get all members of a specific group."""

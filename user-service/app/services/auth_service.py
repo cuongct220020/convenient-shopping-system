@@ -13,7 +13,6 @@ from app.services.otp_service import otp_service
 from app.services.redis_service import RedisService, redis_service
 from app.services.kafka_service import kafka_service
 from app.models.user import User
-from app.schemas.user_schema import UserCreateSchema
 from app.schemas.otp_schema import OTPVerifyRequestSchema, OTPRequestSchema
 from app.schemas.auth_schema import (
     LoginRequestSchema,
