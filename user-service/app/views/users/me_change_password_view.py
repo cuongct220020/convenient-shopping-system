@@ -36,7 +36,7 @@ class ChangePasswordView(BaseAPIView):
     async def post(self, request: Request):
         """
         Handles changing the password for the authenticated user.
-        POST /api/v1/user-service/me/change-password
+        POST /api/v1/user-service/users/me/change-password
         """
         user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
@@ -56,7 +56,7 @@ class ChangePasswordView(BaseAPIView):
         except Exception as e:
             logger.error(f"Failed to change password: {str(e)}", exc_info=True)
             # Use helper method from base class
-            return self.error_response(
+            return self.fail_response(
                 message="Failed to change password. Please try again.",
                 status_code=500
             )
