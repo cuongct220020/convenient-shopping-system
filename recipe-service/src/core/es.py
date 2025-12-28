@@ -6,7 +6,7 @@ _es: AsyncElasticsearch | None = None
 async def init_es():
     global _es
     _es = AsyncElasticsearch(
-        hosts=settings.ES_HOST,
+        hosts=[settings.ES_URL],
         basic_auth=(
             settings.ES_USERNAME,
             settings.ES_PASSWORD,

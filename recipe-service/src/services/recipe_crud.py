@@ -84,7 +84,7 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
             },
             "size": 1000
         }
-        response = await es.search(index="recipes", body=query)
+        response = await es.search(index="recipes", **query)
         component_ids = [int(hit["_id"]) for hit in response["hits"]["hits"]]
 
         if not component_ids:

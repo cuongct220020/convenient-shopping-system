@@ -1,7 +1,15 @@
 from elasticsearch import Elasticsearch
+from core.config import settings
 
 def setup_indices():
-    client = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+    # Keep consistent with runtime client config
+    client = Elasticsearch(
+        hosts=[settings.ES_URL],
+        basic_auth=(
+            settings.ES_USERNAME,
+            settings.ES_PASSWORD,
+        ) if settings.ES_USERNAME else None,
+    )
     create_ingredient_index(client)
     create_recipe_index(client)
     client.close()
@@ -17,8 +25,8 @@ def create_ingredient_index(client: Elasticsearch):
             }
         }
     }
-    if not client.indices.exists(index="ingredient"):
-        client.indices.create(index="ingredient", body=body)
+    if not client.indices.exists(index="ingredients"):
+        client.indices.create(index="ingredients", body=body)
 
 def create_recipe_index(client: Elasticsearch):
     body = {
@@ -31,5 +39,5 @@ def create_recipe_index(client: Elasticsearch):
             }
         }
     }
-    if not client.indices.exists(index="recipe"):
-        client.indices.create(index="recipe", body=body)
+    if not client.indices.exists(index="recipes"):
+        client.indices.create(index="recipes", body=body)

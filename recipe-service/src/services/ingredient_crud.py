@@ -79,7 +79,7 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
             },
             "size": 1000
         }
-        response = await es.search(index="ingredients", body=query)
+        response = await es.search(index="ingredients", **query)
         component_ids = [int(hit["_id"]) for hit in response["hits"]["hits"]]
         
         if not component_ids:

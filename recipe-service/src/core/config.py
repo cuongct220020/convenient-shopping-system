@@ -14,11 +14,15 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/recipe_db"
 
-    # Elasticsearch Configuration
+    ES_SCHEME: str = "http"
     ES_HOST: str = "elasticsearch"
     ES_PORT: int = 9200
     ES_USERNAME: Optional[str] = None
     ES_PASSWORD: Optional[str] = None
+
+    @property
+    def ES_URL(self) -> str:
+        return f"{self.ES_SCHEME}://{self.ES_HOST}:{self.ES_PORT}"
     
     # Kafka Configuration
     KAFKA_BOOTSTRAP_SERVERS: str = "kafka-broker:9092"
