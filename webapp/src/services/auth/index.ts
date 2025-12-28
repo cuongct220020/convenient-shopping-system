@@ -26,7 +26,7 @@ type RegisterResponse = null
 type RegisterError = ResponseError<never>
 
 type VerificationResponse = null
-type VerificationError = ResponseError<'incorrect-otp'>
+type VerificationError = ResponseError<'incorrect-otp' | 'user-not-found'>
 
 type AskVerifyResponse = null
 type AskVerifyError = ResponseError<never>
@@ -186,9 +186,16 @@ export class AuthService {
       action: opts.type
     })
       .map(() => null)
-      .mapErr((e) =>
-        e.type === 'unauthorized' ? { ...e, type: 'incorrect-otp' } : e
-      )
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'incorrect-otp' }
+          case 'path-not-found':
+            return { ...e, type: 'user-not-found' }
+          default:
+            return e
+        }
+      })
   }
 }
 
