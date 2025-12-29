@@ -3,13 +3,14 @@ from datetime import date
 from typing import Optional
 from uuid import UUID
 from pydantic import Field
+from sanic_ext.extensions.openapi import openapi
 
 from app.enums import UserGender, ActivityLevel, HealthCondition, HealthGoal
 from app.schemas.user_schema import UserCoreInfoSchema
 
 from shopping_shared.schemas.base_schema import BaseSchema
 
-
+@openapi.component
 class AddressSchema(BaseSchema):
     ward: Optional[str] = Field(
         None,
@@ -37,6 +38,7 @@ class AddressSchema(BaseSchema):
 
 
 # User Identity Profile Schemas
+@openapi.component
 class UserIdentityProfileSchema(BaseSchema):
     user_id: UUID = Field(
         ...,
@@ -60,10 +62,12 @@ class UserIdentityProfileSchema(BaseSchema):
     )
 
 
+@openapi.component
 class UserIdentityProfileCreateSchema(UserIdentityProfileSchema):
     user_id: Optional[UUID] = Field(None, description="The ID of the user")
 
 
+@openapi.component
 class UserIdentityProfileUpdateSchema(BaseSchema):
     gender: Optional[UserGender] = Field(None)
     date_of_birth: Optional[date] = Field(None)
@@ -72,6 +76,7 @@ class UserIdentityProfileUpdateSchema(BaseSchema):
 
 
 # User Health Profile Schemas
+@openapi.component
 class UserHealthProfileSchema(BaseSchema):
     user_id: UUID = Field(
         None,
@@ -103,10 +108,12 @@ class UserHealthProfileSchema(BaseSchema):
     )
 
 
+@openapi.component
 class UserHealthProfileCreateSchema(UserHealthProfileSchema):
     user_id: Optional[UUID] = Field(None, description="The ID of the user")
 
 
+@openapi.component
 class UserHealthProfileUpdateSchema(BaseSchema):
     height_cm: Optional[int] = Field(
         None,
@@ -135,6 +142,7 @@ class UserHealthProfileUpdateSchema(BaseSchema):
         description="The health goal of the user"
     )
 
+@openapi.component
 class UserDetailedProfileSchema(UserCoreInfoSchema):
     """Full user profile including identity and health info."""
     identity_profile: Optional[UserIdentityProfileSchema] = Field(

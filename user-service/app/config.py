@@ -94,20 +94,27 @@ class Config:
     # OpenAPI / Swagger Configuration
     OAS_URL_PREFIX = "/api/v1/user-service/docs"
     SWAGGER_UI_CONFIGURATION = {
-        "docExpansion": "list",
+        "docExpansion": "list",  # Expand only the endpoint list, not the full details
+        "filter": True,  # Enable search/filter functionality
+        "syntaxHighlight": {
+            "theme": "monokai"  # Better syntax highlighting theme
+        },
+        "tryItOutEnabled": True,  # Always show "Try it out" button
+        "displayRequestDuration": True,  # Show API response time
+        "defaultModelsExpandDepth": -1,  # Hide schemas section to reduce clutter
     }
     OAS = {
         "info": {
-            "title": "Convenient Shopping - User Service API",
+            "title": "Convenient Shopping System - User Service API",
             "version": "1.0.0",
-            "description": "API quản lý người dùng, xác thực và phân quyền.",
+            "description": "API quản lý người dùng, nhóm gia đình và xác thực và phân quyền.",
             "contact": {
-                "email": "cuongct@example.com",
+                "email": "cuongct0902@example.com",
             },
         },
         "servers": [
-            {"url": "http://localhost:8000", "description": "Local Gateway"},
-            {"url": "http://localhost:8001", "description": "Local Service Direct"}
+            {"url": "http://localhost:8000", "description": "Local Kong Gateway"},
+            {"url": "http://localhost:9000", "description": "Local User Service Direct"}
         ],
         "components": {
             "securitySchemes": {

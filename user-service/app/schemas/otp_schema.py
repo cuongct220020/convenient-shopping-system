@@ -1,9 +1,12 @@
 # user-service/app/schemas/otp_schema.py
 from pydantic import Field, EmailStr
+from sanic_ext.extensions.openapi import openapi
+
 from shopping_shared.schemas.base_schema import BaseSchema
 from app.enums.auth import OtpAction
 
 
+@openapi.component
 class OTPRequestSchema(BaseSchema):
     """Schema to request a verification OTP."""
     email: EmailStr = Field(
@@ -19,6 +22,7 @@ class OTPRequestSchema(BaseSchema):
     )
 
 
+@openapi.component
 class OTPVerifyRequestSchema(BaseSchema):
     """
     Schema for verifying account registration (activation).

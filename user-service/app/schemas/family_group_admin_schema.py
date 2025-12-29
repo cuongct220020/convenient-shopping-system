@@ -2,10 +2,12 @@ from typing import Optional
 from uuid import UUID
 
 from pydantic import Field
+from sanic_ext import openapi
 
 from app.schemas.family_group_schema import FamilyGroupCreateSchema, FamilyGroupUpdateSchema
 
 
+@openapi.component
 class FamilyGroupAdminCreateSchema(FamilyGroupCreateSchema):
     """
     Schema for admin to create a group.
@@ -17,6 +19,7 @@ class FamilyGroupAdminCreateSchema(FamilyGroupCreateSchema):
     creator_id: UUID = Field(None, description="The ID of the creator of the family group.")
 
 
+@openapi.component
 class FamilyGroupAdminUpdateSchema(FamilyGroupUpdateSchema):
     """
     Schema for admin to update a group.

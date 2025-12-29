@@ -62,6 +62,7 @@ services:
       # Public routes (no JWT required)
       - name: user-service-public
         paths:
+          - /api/v1/user-service/health
           # API Paths
           - /api/v1/user-service/auth/register
           - /api/v1/user-service/auth/login

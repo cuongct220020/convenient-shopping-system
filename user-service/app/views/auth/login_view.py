@@ -17,20 +17,15 @@ class LoginView(BaseAPIView):
 
 
     @openapi.definition(
-        summary="User login and token generation.",
-        description="Logs in a user, returning an access token in the response body and a refresh token in an HttpOnly Cookie.",
+        summary="Authenticate user and generate tokens",
+        description="Authenticate a user with email and password. On successful authentication, returns an access token in the response body and sets a refresh token in an HttpOnly cookie for secure session management.",
         body=get_openapi_body(LoginRequestSchema),
         tag="Authentication",
         response=[
             Response(
                 content=get_openapi_body(AccessTokenResponseSchema),
                 status=200,
-                description="Successfully logged in.",
-            ),
-            Response(
-                content={"application/json": GenericResponse},
-                status=401,
-                description="User login failed.",
+                description="Successfully authenticated and tokens generated.",
             )
         ]
     )

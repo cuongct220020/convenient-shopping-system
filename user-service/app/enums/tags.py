@@ -1,7 +1,9 @@
 # user-service/app/enums/tags.py
 from enum import Enum
+from sanic_ext import openapi
 
 
+@openapi.component
 class AgeTag(str, Enum):
     """Tags for age groups."""
     CHILDREN = "0100"  # Trẻ em
@@ -11,6 +13,7 @@ class AgeTag(str, Enum):
     ELDER = "0104"  # Cao tuổi
 
 
+@openapi.component
 class MedicalConditionTag(str, Enum):
     """Tags for medical conditions."""
 
@@ -60,6 +63,7 @@ class MedicalConditionTag(str, Enum):
     DERMATOLOGICAL_DISEASE = "0272"  # Bệnh da liễu
 
 
+@openapi.component
 class AllergyTag(str, Enum):
     """Tags for food allergies."""
     SHELLFISH = "0300"  # Hải sản có vỏ
@@ -73,6 +77,7 @@ class AllergyTag(str, Enum):
     WHEAT = "0308"  # Lúa mì
 
 
+@openapi.component
 class SpecialDietTag(str, Enum):
     """Tags for special dietary preferences."""
     GYMER = "0400"  # Người tập gym
@@ -81,6 +86,7 @@ class SpecialDietTag(str, Enum):
     VEGETARIAN = "0403"  # Người ăn chay (có thể dùng sữa, trứng)
 
 
+@openapi.component
 class TastePreferenceTag(str, Enum):
     """Tags for taste preferences."""
     SALTY_PREF = "0500"  # Thích mặn

@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from pydantic import Field
+from sanic_ext.extensions.openapi import openapi
 
 from app.enums import SystemRole
 from app.schemas.user_profile_schema import UserDetailedProfileSchema
@@ -10,7 +11,7 @@ from app.schemas.user_schema import UserInfoUpdateSchema, UserCreateSchema
 from app.schemas.user_profile_schema import UserIdentityProfileUpdateSchema, UserHealthProfileUpdateSchema
 from shopping_shared.schemas.base_schema import BaseSchema
 
-
+@openapi.component
 class UserAdminCreateSchema(UserCreateSchema):
     """
     Schema for admins to create a new user.
@@ -21,6 +22,7 @@ class UserAdminCreateSchema(UserCreateSchema):
     is_active: bool = True
 
 
+@openapi.component
 class UserAdminViewSchema(UserDetailedProfileSchema):
     """Detailed user view for administrators."""
     system_role: SystemRole
@@ -28,6 +30,7 @@ class UserAdminViewSchema(UserDetailedProfileSchema):
     last_login: Optional[datetime] = None
 
 
+@openapi.component
 class UserAdminUpdateSchema(UserInfoUpdateSchema):
     """
     Schema for admins to update any user's information.
@@ -40,6 +43,7 @@ class UserAdminUpdateSchema(UserInfoUpdateSchema):
     health_profile: Optional[UserHealthProfileUpdateSchema] = None
 
 
+@openapi.component
 class PaginatedUserAdminViewResponseSchema(BaseSchema):
     """Schema for paginated response of family groups."""
     data: List[UserAdminViewSchema] = Field(default=[], description="List of users in")

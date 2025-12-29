@@ -20,20 +20,20 @@ class RefreshView(BaseAPIView):
     """Handles token refresh using a cookie."""
 
     @openapi.definition(
-        summary="Refresh token",
-        description="Generates a new access token using the refresh token provided in an HttpOnly cookie. This endpoint implements token rotation, where a new refresh token is also returned in a new cookie.",
+        summary="Refresh access token using refresh token",
+        description="Generates a new access token using the refresh token stored in an HttpOnly cookie. Implements token rotation by issuing a new refresh token with each request, enhancing security by invalidating the previous refresh token.",
         secured={"bearerAuth": []},
         tag=["Authentication"],
         response=[
             Response(
                 content=get_openapi_body(AccessTokenResponseSchema),
                 status=200,
-                description="Access token successfully generated"
+                description="New access token generated successfully with token rotation applied."
             ),
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=401,
-                description="Invalid or missing authentication token"
+                description="Invalid, expired, or missing refresh token."
             ),
         ]
     )
@@ -61,7 +61,7 @@ class RefreshView(BaseAPIView):
         except (Unauthorized, Forbidden) as e:
             # --- QUAN TRỌNG: Xóa cookie hỏng/bị thu hồi ---
             # Use helper method from base class
-            response = BaseAPIView.fail_response(
+            response = self.fail_response(
                 message=str(e),
                 status_code=401
             )
@@ -83,7 +83,7 @@ class RefreshView(BaseAPIView):
         )
 
         # Use helper method from base class
-        response = BaseAPIView.success_response(
+        response = self.success_response(
             data=access_token_data,
             message="Tokens refreshed successfully",
             status_code=200

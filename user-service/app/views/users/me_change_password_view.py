@@ -20,15 +20,15 @@ class ChangePasswordView(BaseAPIView):
 
 
     @openapi.definition(
-        summary="Change Password (when logged in)",
-        description="Allows an authenticated user to change their own password by providing the current password.",
+        summary="Change authenticated user's password",
+        description="Allows an authenticated user to change their own password by providing their current password and a new password. Upon successful change, all active sessions will be invalidated for security.",
         body=get_openapi_body(ChangePasswordRequestSchema),
         tag=["User Profile"],
         response=[
             Response(
                 content=get_openapi_body(GenericResponse),
-                status_code=201,
-                description="Change password successfully",
+                status_code=200,
+                description="Password changed successfully. All active sessions have been invalidated.",
             )
         ]
     )

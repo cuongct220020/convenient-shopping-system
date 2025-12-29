@@ -91,12 +91,9 @@ def _is_auth_required(request: Request) -> bool:
 
     # Các đường dẫn không cần xác thực
     ignore_paths = {
-        "/",                  # Trang chủ service (trong run.py)
-        "/favicon.ico",        # Favicon (trong run.py)
+        f"{prefix}/health",             # Trang chủ service
         f"{prefix}/docs",               # Swagger UI
         f"{prefix}/openapi.json",       # OpenAPI spec
-        f"{prefix}/openapi.yml",        # OpenAPI YAML spec
-        f"{prefix}/redoc",              # ReDoc (if enabled)
         f"{prefix}/auth/login",
         f"{prefix}/auth/register",
         f"{prefix}/auth/otp/send",

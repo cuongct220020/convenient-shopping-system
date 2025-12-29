@@ -27,7 +27,7 @@ class GroupView(BaseGroupView):
 
     @openapi.definition(
         summary="Create a new family group",
-        description="Creates a new family group with the authenticated user as HEAD_CHEF.",
+        description="Creates a new family group with the authenticated user as the HEAD_CHEF (group administrator). The creator automatically becomes the group leader with full management privileges.",
         body=get_openapi_body(FamilyGroupCreateSchema),
         tag=["Family Groups"],
         secured={"bearerAuth": []},
@@ -35,7 +35,7 @@ class GroupView(BaseGroupView):
             Response(
                 content=get_openapi_body(FamilyGroupDetailedSchema),
                 status=201,
-                description="Group created successfully",
+                description="Family group created successfully with the authenticated user as HEAD_CHEF.",
             )
         ]
     )
@@ -69,20 +69,20 @@ class GroupView(BaseGroupView):
             )
 
     @openapi.definition(
-        summary="List user's family groups",
-        description="Lists all family groups the authenticated user is a member of.",
+        summary="List authenticated user's family groups",
+        description="Retrieves a list of all family groups that the authenticated user is a member of, including their role in each group and basic group information.",
         tag=["Family Groups"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(GenericResponse[UserGroupListResponseSchema]),
                 status=200,
-                description="Groups listed successfully",
+                description="Successfully retrieved the list of family groups for the authenticated user.",
             ),
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=500,
-                description="Internal Server Error",
+                description="Internal Server Error occurred while retrieving family groups.",
             )
         ]
     )
@@ -137,25 +137,25 @@ class GroupDetailView(BaseGroupView):
     ]
 
     @openapi.definition(
-        summary="Get a specific family group",
-        description="Retrieves details of a specific family group.",
+        summary="Retrieve detailed family group information",
+        description="Retrieves comprehensive details of a specific family group, including group information, member list, and their roles within the group.",
         tag=["Family Groups"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(FamilyGroupDetailedSchema),
                 status=200,
-                description="Group retrieved successfully",
+                description="Successfully retrieved detailed information for the specified family group.",
             ),
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=404,
-                description="Not Found",
+                description="Family group not found.",
             ),
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=400,
-                description="Bad Request",
+                description="Invalid request parameters.",
             )
         ]
     )
@@ -183,8 +183,8 @@ class GroupDetailView(BaseGroupView):
 
 
     @openapi.definition(
-        summary="Update a specific family group",
-        description="Updates details of a specific family group.",
+        summary="Update family group details",
+        description="Updates the details of a specific family group including name, description, and other group attributes. Only accessible to the group HEAD_CHEF.",
         body=get_openapi_body(FamilyGroupUpdateSchema),
         tag=["Family Groups"],
         secured={"bearerAuth": []},
@@ -192,12 +192,12 @@ class GroupDetailView(BaseGroupView):
             Response(
                 content=get_openapi_body(FamilyGroupDetailedSchema),
                 status=200,
-                description="Group updated successfully",
+                description="Successfully updated the family group details.",
             ),
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=400,
-                description="Bad Request",
+                description="Invalid request parameters or insufficient permissions.",
             )
         ]
     )
@@ -226,13 +226,13 @@ class GroupDetailView(BaseGroupView):
 
 
     @openapi.definition(
-        summary="Delete a specific family group",
-        description="Deletes details of a specific family group.",
+        summary="Delete a family group",
+        description="Permanently deletes a specific family group and all associated memberships. This action is irreversible and can only be performed by the group HEAD_CHEF.",
         tag=["Family Groups"],
         secured={"bearerAuth": []},
         response=[
-            Response(content=get_openapi_body(GenericResponse), status=200, description="Group deleted successfully"),
-            Response(content=get_openapi_body(GenericResponse), status=404, description="Not Found")
+            Response(content=get_openapi_body(GenericResponse), status=200, description="Family group deleted successfully."),
+            Response(content=get_openapi_body(GenericResponse), status=404, description="Family group not found.")
         ]
     )
     async def delete(self, request: Request, group_id: UUID):

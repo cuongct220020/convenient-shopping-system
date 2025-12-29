@@ -2,6 +2,7 @@
 from typing import Optional, List
 from uuid import UUID
 from pydantic import Field
+from sanic_ext import openapi
 from shopping_shared.schemas.base_schema import BaseSchema
 from app.enums import GroupRole
 from app.schemas.user_schema import UserCoreInfoSchema
@@ -9,6 +10,7 @@ from app.schemas.user_profile_schema import UserDetailedProfileSchema
 
 
 # Family Group Schemas
+@openapi.component
 class FamilyGroupCreateSchema(BaseSchema):
     """Schema for creating a new groups."""
     group_name: str = Field(
@@ -23,7 +25,7 @@ class FamilyGroupCreateSchema(BaseSchema):
         description="The url to the avatar of the new family group"
     )
 
-
+@openapi.component
 class FamilyGroupUpdateSchema(BaseSchema):
     """Schema for updating a group."""
     group_name: Optional[str] = Field(
@@ -40,6 +42,7 @@ class FamilyGroupUpdateSchema(BaseSchema):
 
 
 # Group Membership Schemas
+@openapi.component
 class GroupMembershipCreateSchema(BaseSchema):
     user_id: UUID = Field(..., description="The ID of the user")
     group_id: UUID = Field(..., description="The ID of the group")
@@ -50,10 +53,12 @@ class GroupMembershipCreateSchema(BaseSchema):
     added_by_user_id: Optional[UUID] = Field(None, description="The ID of the user")
 
 
+@openapi.component
 class GroupMembershipUpdateSchema(BaseSchema):
     role: Optional[GroupRole] = None
 
 
+@openapi.component
 class AddMemberRequestSchema(BaseSchema):
     identifier: str = Field(
         ...,
@@ -65,18 +70,21 @@ class AddMemberRequestSchema(BaseSchema):
 
 
 # Family Group Detailed Schemas
+@openapi.component
 class GroupMembershipSchema(BaseSchema):
     """Schema representing a member within a groups (Basic Info)."""
     user: UserCoreInfoSchema
     role: GroupRole
 
 
+@openapi.component
 class GroupMembershipDetailedSchema(BaseSchema):
     """Schema representing a member with FULL profile details."""
     user: UserDetailedProfileSchema
     role: GroupRole
 
 
+@openapi.component
 class FamilyGroupDetailedSchema(BaseSchema):
     """Detailed schema for a groups, including its members."""
     id: UUID
@@ -86,6 +94,7 @@ class FamilyGroupDetailedSchema(BaseSchema):
     members: List[GroupMembershipSchema] = Field(default=[], alias="group_memberships")
 
 
+@openapi.component
 class UserGroupSchema(BaseSchema):
     """Schema for a group when listing user's groups, including the user's role in that group."""
     id: UUID
@@ -96,11 +105,13 @@ class UserGroupSchema(BaseSchema):
     member_count: int = Field(default=0, description="Number of members in the group")
 
 
+@openapi.component
 class UserGroupListResponseSchema(BaseSchema):
     """Schema for the response when listing user's groups."""
     groups: List[UserGroupSchema] = Field(default=[], description="List of groups the user is a member of")
 
 
+@openapi.component
 class PaginatedFamilyGroupsResponseSchema(BaseSchema):
     """Schema for paginated response of family groups."""
     data: List[FamilyGroupDetailedSchema] = Field(default=[], description="List of family groups")

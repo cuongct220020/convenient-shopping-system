@@ -38,8 +38,8 @@ class AdminGroupsView(BaseAdminGroupsView):
     """Admin endpoints for listing all family groups. Requires ADMIN role."""
 
     @openapi.definition(
-        summary="List all family groups",
-        description="Lists all family groups in the system with pagination.",
+        summary="List all family groups (Admin)",
+        description="Retrieves a paginated list of all family groups in the system. This endpoint is accessible only to administrators for group management and oversight purposes.",
         parameter=[
             {
                 "name": "page",
@@ -62,7 +62,7 @@ class AdminGroupsView(BaseAdminGroupsView):
             Response(
                 content=get_openapi_body(PaginatedFamilyGroupsResponseSchema),
                 status=200,
-                description="List all family groups in the system with pagination.",
+                description="Successfully retrieved paginated list of all family groups.",
             )
         ]
     )
@@ -108,15 +108,15 @@ class AdminGroupDetailView(BaseAdminGroupsView):
     """Admin endpoints for managing a specific family group."""
 
     @openapi.definition(
-        summary="Get a specific family group by ID",
-        description="Retrieves a specific family group by its ID.",
+        summary="Retrieve family group details by ID (Admin)",
+        description="Retrieves comprehensive details for a specific family group by its unique identifier. This endpoint is accessible only to administrators for detailed group information and management.",
         tag=["Admin Groups Management"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(FamilyGroupDetailedSchema),
                 status=200,
-                description="Get a specific family group by its ID.",
+                description="Successfully retrieved detailed information for the specified family group.",
             )
         ]
     )
@@ -149,8 +149,8 @@ class AdminGroupDetailView(BaseAdminGroupsView):
 
 
     @openapi.definition(
-        summary="Update group by ID",
-        description="Updates a specific family group by its ID.",
+        summary="Update family group details by ID (Admin)",
+        description="Updates the details of a specific family group by its unique identifier. This endpoint allows administrators to modify group information such as name, description, and other attributes.",
         body=get_openapi_body(FamilyGroupAdminUpdateSchema),
         tag=["Admin Groups Management"],
         secured={"bearerAuth": []},
@@ -158,7 +158,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
             Response(
                 content=get_openapi_body(FamilyGroupDetailedSchema),
                 status=200,
-                description="Update a specific family group by its ID successfully.",
+                description="Successfully updated the specified family group details.",
             )
         ]
     )
@@ -193,15 +193,15 @@ class AdminGroupDetailView(BaseAdminGroupsView):
 
 
     @openapi.definition(
-        summary="Delete a family group by ID",
-        description="Deletes a specific family group by its ID.",
+        summary="Delete family group by ID (Admin)",
+        description="Permanently deletes a specific family group by its unique identifier. This action is irreversible and will remove all group data and memberships from the system.",
         tag=["Admin Groups Management"],
         secured={"bearerAuth": []},
         response=[
             Response(
-                content=GenericResponse,
+                content=get_openapi_body(GenericResponse),
                 status=200,
-                description="Delete a specific family group by its ID successfully.",
+                description="Successfully deleted the specified family group.",
             )
         ]
     )
@@ -236,15 +236,15 @@ class AdminGroupMembersView(BaseAdminGroupsView):
     """Admin endpoints for managing group members."""
 
     @openapi.definition(
-        summary="List members of a family group",
-        description="Lists all members of a specific family group.",
+        summary="List all members in a family group (Admin)",
+        description="Retrieves a list of all members in a specific family group, including their roles and membership details. This endpoint is accessible only to administrators for group oversight.",
         tag=["Admin Groups Management"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(GenericResponse[list[GroupMembershipSchema]]),
                 status=200,
-                description="List all members of a specific family group.",
+                description="Successfully retrieved the list of members in the specified family group.",
             )
         ]
     )
@@ -278,8 +278,8 @@ class AdminGroupMembersView(BaseAdminGroupsView):
             )
 
     @openapi.definition(
-        summary="Add member to group by admin",
-        description="Admin adds a user to a group directly.",
+        summary="Add a member to a family group (Admin)",
+        description="Allows an administrator to directly add a user to a family group. This bypasses the normal invitation process and immediately adds the user with the specified role.",
         body=get_openapi_body(AddMemberRequestSchema),
         tag=["Admin Groups Management"],
         secured={"bearerAuth": []},
@@ -287,7 +287,7 @@ class AdminGroupMembersView(BaseAdminGroupsView):
             Response(
                 content=get_openapi_body(GroupMembershipSchema),
                 status=201,
-                description="Member added successfully.",
+                description="Successfully added the member to the family group.",
             )
         ]
     )
@@ -320,15 +320,15 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
     """Admin endpoints for managing group member roles."""
 
     @openapi.definition(
-        summary="Update member role in group by admin",
-        description="Updates a specific member role in group by its ID.",
+        summary="Update member role in family group (Admin)",
+        description="Allows an administrator to update the role of a specific member within a family group. This endpoint enables role changes without requiring the member to leave and rejoin the group.",
         tag=["Admin Groups Management"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(GroupMembershipSchema),
                 status=200,
-                description="Update a specific member role by its ID successfully.",
+                description="Successfully updated the member's role in the family group.",
             )
         ]
     )
@@ -367,15 +367,15 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
             )
 
     @openapi.definition(
-        summary="Remove member from group by admin",
-        description="Removes a member from a group by its ID.",
+        summary="Remove a member from family group (Admin)",
+        description="Allows an administrator to remove a specific member from a family group. This action will revoke the member's access to group resources and remove their membership permanently.",
         tag=["Admin Groups Management"],
         secured={"bearerAuth": []},
         response=[
             Response(
-                content=GenericResponse,
+                content=get_openapi_body(GenericResponse),
                 status=200,
-                description="Member removed successfully.",
+                description="Successfully removed the member from the family group.",
             )
         ]
     )
