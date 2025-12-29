@@ -1,4 +1,5 @@
 # user-service/app/hooks/caching.py
+import asyncio
 from sanic import Sanic, Request
 from shopping_shared.caching.redis_manager import redis_manager
 from shopping_shared.utils.logger_utils import get_logger
@@ -39,7 +40,18 @@ async def setup_redis(app: Sanic):
 async def close_redis(_app: Sanic):
     """Hook to close the Redis connection pool."""
     logger.info("Closing Redis connection pool...")
-    await redis_manager.close()
+    try:
+        # Close the Redis manager with timeout
+        await asyncio.wait_for(redis_manager.close(), timeout=5.0)
+    except asyncio.TimeoutError:
+        logger.warning("Redis manager close operation timed out, forcing shutdown")
+        # Force close without waiting
+        try:
+            redis_manager.close()
+        except:
+            pass  # Ignore errors during force close
+    except Exception as e:
+        logger.error(f"Error during Redis manager shutdown: {e}")
     logger.info("Redis connection pool closed.")
 
 

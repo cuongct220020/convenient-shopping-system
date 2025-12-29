@@ -13,7 +13,7 @@ This script tests the complete user information management flow:
 8. Logout
 
 Usage:
-    python3 user-service/scripts/test_me_endpoints_flow.py
+    python3 user-service/scripts/test_me_management_flow.py
 """
 
 import json
@@ -22,9 +22,7 @@ import urllib.request
 import urllib.error
 import sys
 import os
-import random
 import time
-import uuid
 
 # Configuration
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:8000")
