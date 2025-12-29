@@ -40,7 +40,18 @@ class AuthService:
         """Handles the first step of registration: creating an inactive user and sending a verification OTP."""
         existing_user = await user_repo.get_by_username(reg_data.username)
         if existing_user and existing_user.is_active:
+            raise Conflict("An account with this username already exists.")
+
+        # Check if email already exists
+        existing_email_user = await user_repo.get_by_email(str(reg_data.email))
+        if existing_email_user and existing_email_user.is_active:
             raise Conflict("An account with this email already exists.")
+
+        # Check if phone number already exists (if provided)
+        if reg_data.phone_num:
+            existing_phone_user = await user_repo.get_by_field_case_insensitive("phone_num", reg_data.phone_num)
+            if existing_phone_user and existing_phone_user.is_active:
+                raise Conflict("An account with this phone number already exists.")
 
         user = existing_user
         if not user:
@@ -56,12 +67,29 @@ class AuthService:
                 "is_active": False,
             }
 
-            user = await user_repo.create_user(user_data_dict)
+            try:
+                user = await user_repo.create_user(user_data_dict)
+            except Exception as e:
+                # Handle database constraint violations
+                from sqlalchemy.exc import IntegrityError
+                if isinstance(e, IntegrityError):
+                    # Check which constraint was violated
+                    error_msg = str(e.orig).lower() if hasattr(e, 'orig') and e.orig else str(e).lower()
+                    if 'uq_users_email' in error_msg or 'email' in error_msg:
+                        raise Conflict("An account with this email already exists.")
+                    elif 'uq_users_username' in error_msg or 'username' in error_msg:
+                        raise Conflict("An account with this username already exists.")
+                    elif 'uq_users_phone_num' in error_msg or 'phone' in error_msg:
+                        raise Conflict("An account with this phone number already exists.")
+                    else:
+                        raise Conflict("Account creation failed due to a constraint violation.")
+                else:
+                    raise Conflict("Account creation failed due to a system error.")
 
         # Proceed to send OTP for the new or existing inactive user
         otp_request_data = OTPRequestSchema(email=reg_data.email, action=OtpAction.REGISTER)
         await cls.request_otp(otp_request_data, user_repo)
-        
+
         return user
 
 
