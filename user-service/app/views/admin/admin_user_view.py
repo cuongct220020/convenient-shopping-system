@@ -36,7 +36,7 @@ class AdminUsersView(BaseAdminUserView):
 
     @openapi.definition(
         summary="List all users (Admin)",
-        description="Lists all users in the system with pagination by admin.",
+        description="Lists all users in the system with pagination. Available only to ADMIN users. Returns comprehensive user details including status, roles, and creation date.",
         tag=["Admin Users Management"],
         secured={"bearerAuth": []},
         parameter=[
@@ -101,8 +101,8 @@ class AdminUsersView(BaseAdminUserView):
 
 
     @openapi.definition(
-        summary="Create new user by admin (Admin)",
-        description="Create new user by admin",
+        summary="Create a new user account (Admin)",
+        description="Creates a new user account by an administrator. This endpoint allows admins to create user accounts with specified details without requiring the user to register themselves.",
         body=get_openapi_body(UserAdminCreateSchema),
         tag=["Admin Users Management"],
         secured={"bearerAuth": []},
@@ -110,7 +110,7 @@ class AdminUsersView(BaseAdminUserView):
             Response(
                 content=get_openapi_body(UserAdminViewSchema),
                 status=201,
-                description="Create new user successfully",
+                description="User account created successfully by admin.",
             )
         ]
     )
@@ -148,15 +148,15 @@ class AdminUserDetailView(BaseAdminUserView):
 
 
     @openapi.definition(
-        summary="Get user by id (Admin)",
-        description="Retrieves a specific user by their ID by admin role.",
+        summary="Retrieve user details by ID (Admin)",
+        description="Retrieves comprehensive details for a specific user by their unique identifier. This endpoint is accessible only to administrators for user management purposes.",
         tag=["Admin Users Management"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(UserAdminViewSchema),
                 status=200,
-                description="Get user successfully",
+                description="User details retrieved successfully.",
             )
         ]
     )
@@ -188,8 +188,8 @@ class AdminUserDetailView(BaseAdminUserView):
 
 
     @openapi.definition(
-        summary="Update user by ID (Admin)",
-        description="Updates a specific user by their ID.",
+        summary="Update user details by ID (Admin)",
+        description="Updates the details of a specific user by their unique identifier. This endpoint allows administrators to modify user information such as status, roles, and personal details.",
         body=get_openapi_body(UserAdminUpdateSchema),
         tag=["Admin Users Management"],
         secured={"bearerAuth": []},
@@ -197,7 +197,7 @@ class AdminUserDetailView(BaseAdminUserView):
             Response(
                 content=get_openapi_body(UserAdminViewSchema),
                 status=200,
-                description="Update user successfully",
+                description="User details updated successfully.",
             )
         ]
     )
@@ -230,15 +230,15 @@ class AdminUserDetailView(BaseAdminUserView):
 
 
     @openapi.definition(
-        summary="Delete user by ID (Admin)",
-        description="Deletes a specific user by their ID.",
+        summary="Delete user account by ID (Admin)",
+        description="Permanently deletes a specific user account by their unique identifier. This action is irreversible and should be used with caution as it removes all user data from the system.",
         tag=["Admin Users Management"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=200,
-                description="Delete user successfully",
+                description="User account deleted successfully.",
             )
         ]
     )

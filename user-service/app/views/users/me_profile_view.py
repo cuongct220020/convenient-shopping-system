@@ -32,15 +32,15 @@ class MeIdentityProfileView(BaseAPIView):
 
 
     @openapi.definition(
-        summary="Get user identity profile",
-        description="Retrieves the identity profile (gender, DOB, etc.) of the authenticated user",
+        summary="Retrieve authenticated user's identity profile",
+        description="Retrieves the identity profile information for the authenticated user, including gender, date of birth, first name, last name, and other personal identity details.",
         tag=["User Profile"],
-        secured={"bearAuth": []},
+        secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(UserIdentityProfileSchema),
                 status=200,
-                description="Get user identity profile successfully.",
+                description="Successfully retrieved the authenticated user's identity profile information.",
             )
         ]
     )
@@ -80,15 +80,15 @@ class MeIdentityProfileView(BaseAPIView):
 
 
     @openapi.definition(
-        summary="Update user identity profile",
-        description="Updates (or creates) the identity profile of the authenticated user.",
+        summary="Update authenticated user's identity profile",
+        description="Updates the identity profile information for the authenticated user. If no profile exists, creates a new one. Only provided fields will be updated.",
         tag=["User Profile"],
-        secured={"bearAuth": []},
+        secured={"bearerAuth": []},
         response=[
             Response(
-                content=get_openapi_body(UserIdentityProfileUpdateSchema),
+                content=get_openapi_body(UserIdentityProfileSchema),
                 status=200,
-                description="Update user identity profile successfully.",
+                description="Successfully updated the authenticated user's identity profile information.",
             )
         ]
     )
@@ -142,15 +142,15 @@ class MeHealthProfileView(BaseAPIView):
     # @openapi.tag("Profile")
 
     @openapi.definition(
-        summary="Get user health profile",
-        description="Retrieves the health profile (height, weight, etc.) of the authenticated user",
+        summary="Retrieve authenticated user's health profile",
+        description="Retrieves the health profile information for the authenticated user, including height, weight, medical conditions, allergies, and other health-related details.",
         tag=["User Profile"],
-        secured={"bearAuth": []},
+        secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(UserHealthProfileSchema),
                 status=200,
-                description="Get user health profile successfully.",
+                description="Successfully retrieved the authenticated user's health profile information.",
             )
         ]
     )
@@ -190,15 +190,15 @@ class MeHealthProfileView(BaseAPIView):
 
 
     @openapi.definition(
-        summary="Update user health profile",
-        description="Updates (or creates) the health profile of the authenticated user.",
+        summary="Update authenticated user's health profile",
+        description="Updates the health profile information for the authenticated user. If no profile exists, creates a new one. Only provided fields will be updated.",
         tag=["User Profile"],
-        secured={"bearAuth": []},
+        secured={"bearerAuth": []},
         response=[
             Response(
-                content=get_openapi_body(UserHealthProfileUpdateSchema),
+                content=get_openapi_body(UserHealthProfileSchema),
                 status=200,
-                description="Update user health profile successfully.",
+                description="Successfully updated the authenticated user's health profile information.",
             )
         ]
     )

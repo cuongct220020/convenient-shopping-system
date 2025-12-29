@@ -16,15 +16,15 @@ class OTPRequestView(BaseAPIView):
     """View to handle the generation and sending of a new OTP."""
 
     @openapi.definition(
-        summary="OTP",
-        description="Generate a new OTP using an existing OTP",
+        summary="Request OTP for verification",
+        description="Request a One-Time Password (OTP) to be sent to the user's email for verification purposes. This OTP can be used for account activation, password reset, or email change verification.",
         body=get_openapi_body(OTPRequestSchema),
         tag=["Authentication"],
         response=[
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=200,
-                description="Successfully."
+                description="OTP request processed successfully. If the email exists in the system, an OTP will be sent to the associated email address."
             )
         ]
     )
@@ -61,12 +61,15 @@ class OTPVerificationView(BaseAPIView):
     """Handles the verification of an OTP for account registration."""
 
     @openapi.definition(
-        summary="OTP Verification",
-        description="Verify summited OTP",
+        summary="Verify OTP for account activation",
+        description="Verify the submitted One-Time Password (OTP) to activate an account or complete a verification process. Validates the OTP against the stored value and performs the requested action if valid.",
         body=get_openapi_body(OTPVerifyRequestSchema),
         tag=["Authentication"],
         response=[
-            Response(GenericResponse, status=200, description="Verify OTP Successfully."),
+            Response(
+                content=get_openapi_body(GenericResponse),
+                status=200, description="OTP verified successfully and the requested action has been completed."
+            )
         ]
     )
     @validate_request(OTPVerifyRequestSchema)

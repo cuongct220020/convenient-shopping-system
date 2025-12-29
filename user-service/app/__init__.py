@@ -78,7 +78,7 @@ def register_hooks(sanic_app: Sanic):
 
 
 def create_app(*config_cls) -> Sanic:
-    logger.info(f"Sanic application initialized with { ', '.join([config.__name__ for config in config_cls]) }")
+    logger.info(f"Sanic application initialized with { ', '.join([config.__name__ for config in config_cls]) if config_cls else 'no config' }")
 
     sanic_app = Sanic(__name__)
 
@@ -91,15 +91,37 @@ def create_app(*config_cls) -> Sanic:
     register_listeners(sanic_app)
     register_views(sanic_app)
     register_hooks(sanic_app)
-    
-    # Configure Sanic Extensions to serve docs at the correct prefix
-    # We explicitly pass the config here to ensure Sanic Ext picks up the custom URL prefix and UI config
-    Extend(sanic_app, config={
-        "oas_url_prefix": sanic_app.config.OAS_URL_PREFIX,
-        "swagger_ui_configuration": sanic_app.config.SWAGGER_UI_CONFIGURATION,
-        "openapi": sanic_app.config.OAS,
-    })
-    
+
+    # Configure Sanic Extensions with OpenAPI settings from config
+    Extend(sanic_app, oas=True)
+
+    # Apply OAS configuration from config if available
+    # Only apply configuration if config_cls is not empty
+    if config_cls:
+        config = config_cls[0]  # Use the first config for OAS settings
+        if hasattr(config, 'OAS'):
+            # Set the OAS info from config
+            if 'info' in config.OAS:
+                sanic_app.config.API_TITLE = config.OAS['info'].get('title', 'API')
+                sanic_app.config.API_VERSION = config.OAS['info'].get('version', '1.0.0')
+                sanic_app.config.API_DESCRIPTION = config.OAS['info'].get('description', '')
+
+            # Set servers if defined in config
+            if 'servers' in config.OAS:
+                sanic_app.config.OAS_SERVERS = config.OAS['servers']
+
+            # Set security if defined in config
+            if 'security' in config.OAS:
+                sanic_app.config.OAS_SECURITY = config.OAS['security']
+
+        # Set the OAS URL prefix from config
+        if hasattr(config, 'OAS_URL_PREFIX'):
+            sanic_app.config.OAS_URL_PREFIX = config.OAS_URL_PREFIX
+
+        # Set Swagger UI configuration if available
+        if hasattr(config, 'SWAGGER_UI_CONFIGURATION'):
+            sanic_app.config.SWAGGER_UI_CONFIGURATION = config.SWAGGER_UI_CONFIGURATION
+
     # Register shared error handlers
     from shopping_shared.sanic.error_handler import register_shared_error_handlers
     register_shared_error_handlers(sanic_app)

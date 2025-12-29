@@ -18,15 +18,15 @@ class MeView(BaseAPIView):
     """View to manage the authenticated user's core information."""
 
     @openapi.definition(
-        summary="Get current user's core info",
-        description="Retrieves the core information (id, username, email, names, etc.) for the authenticated user.",
+        summary="Retrieve current user's profile information",
+        description="Retrieves the authenticated user's core profile information including user ID, username, email address, first name, last name, phone number, and avatar URL.",
         tag=["User Profile"],
-        secured={"bearAuth": []},
+        secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(UserCoreInfoSchema),
                 status=200,
-                description="Get core information (id, username, email, names, etc.) successfully.",
+                description="Successfully retrieved the authenticated user's profile information.",
             )
         ]
     )
@@ -60,16 +60,16 @@ class MeView(BaseAPIView):
 
 
     @openapi.definition(
-        summary="Get current user's core info",
-        description="Retrieves the core information from the authenticated user.",
+        summary="Update current user's profile information",
+        description="Updates the authenticated user's core profile information such as username, first name, last name, phone number, and avatar URL. Only provided fields will be updated.",
         tag=["User Profile"],
         body=get_openapi_body(UserInfoUpdateSchema),
-        secured={"bearAuth": []},
+        secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(UserCoreInfoSchema),
                 status=200,
-                description="Update core information (id, username, email, names, etc.) successfully.",
+                description="Successfully updated the authenticated user's profile information.",
             )
         ]
     )

@@ -1,13 +1,13 @@
 # user-service/app/schemas/auth_schema.py
 from typing import Optional
-from pydantic import Field, EmailStr, SecretStr, ConfigDict, BaseModel
+from pydantic import Field, EmailStr, SecretStr
+from sanic_ext import openapi
 
 from shopping_shared.schemas.base_schema import BaseSchema
-from shopping_shared.schemas.response_schema import GenericResponse
-from app.schemas.user_schema import UserCoreInfoSchema
 
 # --- Request Schemas ---
 
+@openapi.component
 class RegisterRequestSchema(BaseSchema):
     """Schema for user registration requests."""
     username: str = Field(
@@ -15,7 +15,7 @@ class RegisterRequestSchema(BaseSchema):
         description="The username of the user",
         examples=["user1", "user2"],
         min_length=3,
-        max_length=50  # 255 hơi dài cho username, 50 thường là đủ
+        max_length=50
     )
     email: EmailStr = Field(
         ...,
@@ -28,14 +28,14 @@ class RegisterRequestSchema(BaseSchema):
         ...,
         description="The password of the user",
         examples=["StrongPass1!", "AnotherPass2@"],
-        min_length=8, # Password nên dài tối thiểu 8 ký tự
+        min_length=8,
         max_length=255
     )
     first_name: Optional[str] = Field(
         default=None,
         description="The first name of the user",
         examples=["Cuong", "Bao"],
-        min_length=1, # Tên có thể ngắn (ví dụ: An)
+        min_length=1,
         max_length=100
     )
     last_name: Optional[str] = Field(
@@ -54,6 +54,7 @@ class RegisterRequestSchema(BaseSchema):
     )
 
 
+@openapi.component
 class LoginRequestSchema(BaseSchema):
     """Schema for user login requests."""
     identifier: str = Field(
@@ -72,6 +73,7 @@ class LoginRequestSchema(BaseSchema):
     )
 
 
+@openapi.component
 class ResetPasswordRequestSchema(BaseSchema):
     """Schema for reset password requests."""
     new_password: SecretStr = Field(
@@ -97,7 +99,7 @@ class ResetPasswordRequestSchema(BaseSchema):
         pattern=r"^\d{6}$" # Đảm bảo chỉ chứa số
     )
 
-
+@openapi.component
 class ChangePasswordRequestSchema(BaseSchema):
     """Schema for change password requests."""
     current_password: SecretStr = Field(
@@ -116,6 +118,7 @@ class ChangePasswordRequestSchema(BaseSchema):
     )
 
 
+@openapi.component
 class RequestEmailChangeSchema(BaseSchema):
     """Schema for requesting an email change (Step 1)."""
     new_email: EmailStr = Field(
@@ -127,6 +130,7 @@ class RequestEmailChangeSchema(BaseSchema):
     )
 
 
+@openapi.component
 class ConfirmEmailChangeRequestSchema(BaseSchema):
     """Schema for confirming an email change with OTP (Step 2)."""
     new_email: EmailStr = Field(
@@ -147,6 +151,7 @@ class ConfirmEmailChangeRequestSchema(BaseSchema):
 
 # --- Response Schemas ---
 
+@openapi.component
 class AccessTokenResponseSchema(BaseSchema):
     """Schema for token responses."""
     access_token: str = Field(

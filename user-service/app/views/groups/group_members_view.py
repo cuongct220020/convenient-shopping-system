@@ -27,20 +27,20 @@ class GroupMembersView(BaseGroupView):
     """Handles operations on group members."""
 
     @openapi.definition(
-        summary="List all group members",
-        description="List all members of a specific family group.",
+        summary="List all members in a family group",
+        description="Retrieves a list of all members in a specific family group, including their roles, profile information, and membership details.",
         tag=["Family Groups", "Group Memberships"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(GenericResponse[FamilyGroupDetailedSchema]),
                 status=200,
-                description="Group members listed successfully"
+                description="Successfully retrieved the list of members in the specified family group."
             ),
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=500,
-                description="Internal Server Error"
+                description="Internal Server Error occurred while retrieving group members."
             )
         ]
     )
@@ -78,8 +78,8 @@ class GroupMembersView(BaseGroupView):
 
 
     @openapi.definition(
-        summary="Add a member to group",
-        description="Adds a user to a specific family group. Only HEAD_CHEF can add members.",
+        summary="Add a member to a family group",
+        description="Adds an existing user to a specific family group. Only the HEAD_CHEF (group administrator) has permission to add new members to the group.",
         body=get_openapi_body(AddMemberRequestSchema),
         tag=["Family Groups", "Group Memberships"],
         secured={"bearerAuth": []},
@@ -87,22 +87,12 @@ class GroupMembersView(BaseGroupView):
             Response(
                 content=get_openapi_body(GroupMembershipSchema),
                 status=201,
-                description="Member added successfully"
+                description="Successfully added the member to the family group."
             ),
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=403,
-                description="Forbidden - Only HEAD_CHEF can add members"
-            ),
-            Response(
-                content=get_openapi_body(GenericResponse),
-                status=404,
-                description="User not found"
-            ),
-            Response(
-                content=get_openapi_body(GenericResponse),
-                status=500,
-                description="Internal Server Error"
+                description="Forbidden - Only HEAD_CHEF can add members to the group."
             )
         ]
     )
@@ -166,8 +156,8 @@ class GroupMemberDetailView(BaseGroupView):
     """Handles operations on a specific group member."""
 
     @openapi.definition(
-        summary="Update member role",
-        description="Updates the role of a specific member in a family group.",
+        summary="Update a member's role in a family group",
+        description="Updates the role of a specific member in a family group. Only the HEAD_CHEF (group administrator) can modify member roles within the group.",
         body=get_openapi_body(GroupMembershipUpdateSchema),
         tag=["Family Groups", "Group Memberships"],
         secured={"bearerAuth": []},
@@ -175,7 +165,7 @@ class GroupMemberDetailView(BaseGroupView):
             Response(
                 content=get_openapi_body(GroupMembershipSchema),
                 status=200,
-                description="Member role updated successfully"
+                description="Successfully updated the member's role in the family group."
             )
         ]
     )
@@ -209,15 +199,15 @@ class GroupMemberDetailView(BaseGroupView):
 
 
     @openapi.definition(
-        summary="Remove member from group",
-        description="Removes a member from a specific family group.",
+        summary="Remove a member from a family group",
+        description="Removes a specific member from a family group. Only the HEAD_CHEF (group administrator) can remove members from the group.",
         tag=["Family Groups", "Group Memberships"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=200,
-                description="Member role removed successfully"
+                description="Successfully removed the member from the family group."
             )
         ]
     )
@@ -250,15 +240,15 @@ class GroupMemberMeView(BaseGroupView):
     """Handles operations for the authenticated user in their groups."""
 
     @openapi.definition(
-        summary="Leave a group member",
-        description="Allows a member to leave a specific family group.",
+        summary="Leave a family group",
+        description="Allows a member to voluntarily leave a specific family group. HEAD_CHEF members cannot leave if they are the only administrator of the group.",
         tag=["Family Groups", "Group Memberships"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=200,
-                description="Group member leave successfully"
+                description="Successfully left the family group."
             )
         ]
     )

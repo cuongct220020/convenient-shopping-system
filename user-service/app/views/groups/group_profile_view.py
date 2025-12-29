@@ -33,20 +33,20 @@ class MemberIdentityProfileView(BaseAPIView):
     """Handles identity profile of group members."""
 
     @openapi.definition(
-        summary="User identity profile of a group member.v",
-        description="Retrieves the identity profile of a specific group member.",
+        summary="Retrieve identity profile of a group member",
+        description="Retrieves the identity profile information of a specific member within a family group. Only accessible to other members of the same group.",
         tag=["Family Groups", "Group Memberships"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(UserIdentityProfileSchema),
                 status=200,
-                description="User identity profile of a specific group member."
+                description="Successfully retrieved the identity profile of the specified group member."
             ),
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=404,
-                description="Unauthorize"
+                description="User is not a member of this group or identity profile not found."
             )
         ]
     )
@@ -93,15 +93,15 @@ class MemberHealthProfileView(BaseAPIView):
     """Handles health profile of group members."""
 
     @openapi.definition(
-        summary="User health profile of a group member.",
-        description="Retrieves the health profile of a specific group member.",
+        summary="Retrieve health profile of a group member",
+        description="Retrieves the health profile information of a specific member within a family group. Only accessible to other members of the same group.",
         tag=["Family Groups", "Group Memberships"],
         secured={"bearerAuth": []},
         response=[
             Response(
                 content=get_openapi_body(UserHealthProfileSchema),
                 status=200,
-                description="User health profile of a specific group member."
+                description="Successfully retrieved the health profile of the specified group member."
             )
         ]
     )

@@ -17,13 +17,13 @@ class ResetPasswordView(BaseAPIView):
     """Handles resetting the user's password using a valid OTP."""
 
     @openapi.definition(
-        summary="Reset forgotten password",
-        description="Resets a user's password after verifying a valid OTP for the 'reset_password' action",
+        summary="Reset user password with OTP verification",
+        description="Resets a user's password after validating a One-Time Password (OTP) sent to their email. This endpoint is used when a user has forgotten their password and needs to reset it securely.",
         body=get_openapi_body(ResetPasswordRequestSchema),
         tag=["Authentication"],
         response=[
-            Response(content=get_openapi_body(GenericResponse), status=200, description="Reset password successfully."),
-            Response(content=get_openapi_body(GenericResponse), status=401, description="Invalid or missing authentication token")
+            Response(content=get_openapi_body(GenericResponse), status=200, description="Password has been reset successfully."),
+            Response(content=get_openapi_body(GenericResponse), status=400, description="Invalid OTP or password reset request data.")
         ]
     )
     @validate_request(ResetPasswordRequestSchema)

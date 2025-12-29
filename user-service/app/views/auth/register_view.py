@@ -17,13 +17,13 @@ class RegisterView(BaseAPIView):
 
 
     @openapi.definition(
-        summary="Register Account",
-        description="Creates a new user account with an inactive status and sends a verification OTP.",
+        summary="Create a new user account",
+        description="Registers a new user account with the provided information. The account is created in an inactive state and a verification OTP is sent to the user's email address for account activation.",
         body=get_openapi_body(RegisterRequestSchema),
         tag=["Authentication"],
         response=[
-            Response(content=get_openapi_body(UserCoreInfoSchema), status=201, description="User info"),
-            Response(content=get_openapi_body(GenericResponse), status=401, description="Bad Request"),
+            Response(content=get_openapi_body(UserCoreInfoSchema), status=201, description="User account created successfully. Verification OTP sent to the provided email address."),
+            Response(content=get_openapi_body(GenericResponse), status=400, description="Invalid registration data or user already exists."),
         ]
     )
     @validate_request(RegisterRequestSchema)

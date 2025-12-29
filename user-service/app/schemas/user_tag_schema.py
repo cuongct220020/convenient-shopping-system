@@ -1,6 +1,8 @@
 # user-service/app/schemas/user_tag_schema.py
 from typing import List, Dict, Optional
 from pydantic import field_validator, Field
+from sanic_ext.extensions.openapi import openapi
+
 from shopping_shared.schemas.base_schema import BaseSchema
 
 
@@ -14,6 +16,7 @@ def validate_tag_format(tag_value: str) -> str:
     return tag_value
 
 
+@openapi.component
 class UserTagBulkAddSchema(BaseSchema):
     """Schema for adding multiple tags to user."""
     tag_values: List[str] = Field(
@@ -34,7 +37,7 @@ class UserTagBulkAddSchema(BaseSchema):
             validate_tag_format(tag)
         return v
 
-
+@openapi.component
 class UserTagDeleteSchema(BaseSchema):
     """Schema for deleting tags from user."""
     tag_values: List[str] = Field(
@@ -53,6 +56,7 @@ class UserTagDeleteSchema(BaseSchema):
         return v
 
 
+@openapi.component
 class UserTagUpdateByCategorySchema(BaseSchema):
     """
     Schema for updating all tags in a specific category.
@@ -89,6 +93,7 @@ class UserTagUpdateByCategorySchema(BaseSchema):
         return v
 
 
+@openapi.component
 class UserTagSchema(BaseSchema):
     """Schema for individual tag response."""
     id: int
@@ -99,6 +104,7 @@ class UserTagSchema(BaseSchema):
     created_at: Optional[str] = None
 
 
+@openapi.component
 class UserTagsByCategorySchema(BaseSchema):
     """Schema for grouping user tags by category."""
     age: List[UserTagSchema] = Field(
@@ -123,6 +129,7 @@ class UserTagsByCategorySchema(BaseSchema):
     )
 
 
+@openapi.component
 class UserTagsResponseSchema(BaseSchema):
     """Enhanced response schema for user tags."""
     data: UserTagsByCategorySchema
@@ -130,6 +137,7 @@ class UserTagsResponseSchema(BaseSchema):
     categories_count: Dict[str, int]
 
 
+@openapi.component
 class BulkTagOperationResponseSchema(BaseSchema):
     """Response schema for bulk tag operations."""
     success_count: int

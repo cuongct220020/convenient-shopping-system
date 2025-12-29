@@ -1,5 +1,7 @@
 # user-service/run.py
 from sanic import response
+from sanic_ext.extensions.openapi import openapi
+
 from app import create_app
 from shopping_shared.utils.logger_utils import get_logger
 from app.config import Config
@@ -10,7 +12,8 @@ logger = get_logger("User Service Entrypoint")
 app = create_app(Config)
 
 # 1. Route Trang chủ (/): Hiển thị thông báo service đang chạy
-@app.get("/")
+@app.get("/api/v1/user-service/health")
+@openapi.tag("Home Page")
 async def root(request):
     return response.json({
         "service": "User Service",

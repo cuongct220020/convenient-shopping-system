@@ -23,16 +23,16 @@ class MeRequestChangeEmailView(BaseAPIView):
 
 
     @openapi.definition(
-        summary="Request Email Change",
-        description="Requests an OTP to be sent to the desired new email address",
+        summary="Request email address change",
+        description="Initiates the process of changing the authenticated user's email address by sending a One-Time Password (OTP) to the new email address for verification.",
         secured={"bearerAuth": []},
         body=get_openapi_body(RequestEmailChangeSchema),
         tag=["User Profile"],
         response=[
             Response(
-                content={"application/json": GenericResponse},
+                content=get_openapi_body(GenericResponse),
                 status=200,
-                description="OTP to be sent to the desired new email address",
+                description="OTP sent successfully to the new email address for verification.",
             )
         ]
     )
@@ -79,16 +79,16 @@ class MeConfirmChangeEmailView(BaseAPIView):
     """View for Step 2 of changing email: Confirming with OTP."""
 
     @openapi.definition(
-        summary="Confirm Email Change",
-        description="Confirms the email address change by providing the OTP sent to the new email.",
+        summary="Confirm email address change with OTP",
+        description="Completes the email address change process by verifying the One-Time Password (OTP) sent to the new email address and updating the user's email in the system.",
         secured={"bearerAuth": []},
         body=get_openapi_body(ConfirmEmailChangeRequestSchema),
         tag=["User Profile"],
         response=[
             Response(
-                content={"application/json": GenericResponse},
+                content=get_openapi_body(GenericResponse),
                 status=200,
-                description="Change email successfully.",
+                description="Email address updated successfully. Please log in again with the new email.",
             )
         ]
     )

@@ -3,9 +3,12 @@ from typing import Optional
 from uuid import UUID
 
 from pydantic import Field, EmailStr, SecretStr
+from sanic_ext.extensions.openapi import openapi
+
 from shopping_shared.schemas.base_schema import BaseSchema
 
 # User Base Schema
+@openapi.component
 class UserCoreInfoSchema(BaseSchema):
     user_id: UUID = Field(..., description="The ID of the user", validation_alias="id")
     username: str = Field(
@@ -44,7 +47,7 @@ class UserCoreInfoSchema(BaseSchema):
     )
 
 
-
+@openapi.component
 class UserInfoUpdateSchema(BaseSchema):
     """Schema for update user core information."""
     username: Optional[str] = Field(
@@ -78,6 +81,7 @@ class UserInfoUpdateSchema(BaseSchema):
     )
 
 
+@openapi.component
 class UserCreateSchema(BaseSchema):
     """Schema for creating a new user, used internally."""
     username: str = Field(

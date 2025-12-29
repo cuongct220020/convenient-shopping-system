@@ -1,32 +1,22 @@
 # user-service/app/enums/user_schema.py
 from enum import Enum
+from sanic_ext import openapi
 
 
+@openapi.component
 class SystemRole(str, Enum):
     """Enum for system-level user roles."""
     ADMIN = "admin"
     USER = "user"
 
 
+@openapi.component
 class GroupRole(str, Enum):
-    """
-    Enum for user roles within a family group.
-
-    HEAD_CHEF: Người tạo nhóm và có quyền cao nhất trong nhóm.
-               - Thêm/xóa thành viên
-               - Cập nhật thông tin nhóm
-               - Xóa nhóm
-               - Chuyển quyền HEAD_CHEF cho thành viên khác
-
-    MEMBER: Thành viên thông thường.
-            - Xem thông tin nhóm
-            - Xem profile các thành viên khác
-            - Rời nhóm
-    """
     HEAD_CHEF = "head_chef"  # Chủ nhóm - quyền cao nhất
     MEMBER = "member"        # Thành viên thông thường
 
 
+@openapi.component
 class UserGender(str, Enum):
     """Enum for user genders."""
     MALE = "male"
@@ -34,6 +24,7 @@ class UserGender(str, Enum):
     OTHER = "other"
 
 
+@openapi.component
 class ActivityLevel(str, Enum):
     """Enum for user activity levels."""
     SEDENTARY = "sedentary"  # Ít vận động; hệ số 1.2; ngồi nhiều, không tập
@@ -43,6 +34,7 @@ class ActivityLevel(str, Enum):
     VERY_ACTIVE = "very_active"  # Rất năng động (tập rất nặng); hệ số 1.9; Lao động nặng, 2 lần tập/ngày
 
 
+@openapi.component
 class HealthCondition(str, Enum):
     """Enum for user health conditions."""
     NORMAL = "normal"
@@ -50,6 +42,7 @@ class HealthCondition(str, Enum):
     INJURED = "injured"  # Chấn thương
 
 
+@openapi.component
 class HealthGoal(str, Enum):
     """Enum for user health goals."""
     LOSE_WEIGHT = "lose_weight"  # Giảm cân

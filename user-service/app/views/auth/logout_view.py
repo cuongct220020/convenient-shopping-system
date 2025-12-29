@@ -9,26 +9,22 @@ from app.services.auth_service import AuthService
 
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.exceptions import Unauthorized
+from shopping_shared.utils.openapi_utils import get_openapi_body
 
 
 class LogoutView(BaseAPIView):
     """Handles user logout."""
 
     @openapi.definition(
-        summary="User Logout",
-        description="Revoke access token, delete refresh token cookie, and clear user session from database. Requires valid Bearer token.",
+        summary="User logout and session termination",
+        description="Terminates the user's current session by revoking the access token, deleting the refresh token cookie, and clearing user session data from the database. Requires a valid Bearer token for authentication.",
         secured={"bearerAuth": []},
         tag="Authentication",
         response=[
             Response(
-                content={"application/json": GenericResponse},
+                content=get_openapi_body(GenericResponse),
                 status=200,
-                description="Logout successful"
-            ),
-            Response(
-                content={"application/json": GenericResponse},
-                status=401,
-                description="Invalid or missing authentication token"
+                description="Successfully logged out and session terminated."
             )
         ]
     )
