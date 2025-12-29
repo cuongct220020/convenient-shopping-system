@@ -10,6 +10,7 @@ from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
 
 from app.decorators import validate_request, idempotent, require_group_role
+from shopping_shared.exceptions import NotFound, Forbidden
 from app.views.groups.base_group_view import BaseGroupView
 from app.schemas.family_group_schema import (
     FamilyGroupCreateSchema,
@@ -172,6 +173,18 @@ class GroupDetailView(BaseGroupView):
                 message="Group details retrieved successfully",
                 status_code=200
             )
+        except NotFound as e:
+            logger.error(f"Group with id {group_id} not found", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=404
+            )
+        except Forbidden as e:
+            logger.error(f"Permission denied accessing group {group_id}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=403
+            )
         except Exception as e:
             # Use helper method from base class
             logger.error(f"Failed to retrieve group details: {str(e)}", exc_info=True)
@@ -216,6 +229,18 @@ class GroupDetailView(BaseGroupView):
                 message="Group updated successfully",
                 status_code=200
             )
+        except NotFound as e:
+            logger.error(f"Group with id {group_id} not found", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=404
+            )
+        except Forbidden as e:
+            logger.error(f"Permission denied updating group {group_id}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=403
+            )
         except Exception as e:
             # Use helper method from base class
             logger.error(f"Failed to update group: {str(e)}", exc_info=True)
@@ -237,15 +262,28 @@ class GroupDetailView(BaseGroupView):
     )
     async def delete(self, request: Request, group_id: UUID):
         """Delete a specific family group."""
+        user_id = request.ctx.auth_payload["sub"]
         service = self._get_service(request)
 
         try:
-            await service.delete(group_id)
+            await service.delete_group_by_creator(user_id, group_id)
 
             # Use helper method from base class
             return self.success_response(
                 message="Group deleted successfully",
                 status_code=200
+            )
+        except NotFound as e:
+            logger.error(f"Group with id {group_id} not found", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=404
+            )
+        except Forbidden as e:
+            logger.error(f"Permission denied deleting group {group_id}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=403
             )
         except Exception as e:
             # Use helper method from base class

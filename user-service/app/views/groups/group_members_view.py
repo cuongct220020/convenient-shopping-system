@@ -15,7 +15,7 @@ from app.schemas.family_group_schema import (
     FamilyGroupDetailedSchema
 )
 
-from shopping_shared.exceptions import NotFound, Forbidden
+from shopping_shared.exceptions import NotFound, Forbidden, Conflict
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
@@ -143,6 +143,12 @@ class GroupMembersView(BaseGroupView):
                 message=str(e),
                 status_code=403
             )
+        except Conflict as e:
+            logger.warning(f"Conflict when adding member: {identifier}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=409
+            )
         except Exception as e:
             logger.error("Error adding membership", exc_info=e)
             # Use helper method from base class
@@ -174,12 +180,14 @@ class GroupMemberDetailView(BaseGroupView):
     async def patch(self, request: Request, group_id: UUID, user_id: UUID):
         """Update the role of a specific member in a family group."""
         validated_data = request.ctx.validated_data
-        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        requester_id = request.ctx.auth_payload["sub"]
+        service = self._get_service(request)
 
         try:
-            membership = await membership_repo.update_role(
+            membership = await service.update_member_role(
+                requester_id=requester_id,
                 group_id=group_id,
-                user_id=user_id,
+                target_user_id=user_id,
                 new_role=validated_data.role
             )
 
@@ -188,6 +196,18 @@ class GroupMemberDetailView(BaseGroupView):
                 data=GroupMembershipSchema.model_validate(membership),
                 message="Member role updated successfully",
                 status_code=200
+            )
+        except NotFound as e:
+            logger.error(f"Membership not found: group_id={group_id}, user_id={user_id}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=404
+            )
+        except Forbidden as e:
+            logger.error(f"Permission denied updating role: group_id={group_id}, user_id={user_id}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=403
             )
         except Exception as e:
             logger.error("Error updating membership", exc_info=e)
@@ -214,18 +234,32 @@ class GroupMemberDetailView(BaseGroupView):
     @require_group_role(GroupRole.HEAD_CHEF)
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):
         """Remove a specific member from a family group."""
-        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        requester_id = request.ctx.auth_payload["sub"]
+        service = self._get_service(request)
 
         try:
-            await membership_repo.remove_membership(
+            await service.remove_member(
+                requester_id=requester_id,
                 group_id=group_id,
-                user_id=user_id
+                target_user_id=user_id
             )
 
-        # Use helper method from base class
+            # Use helper method from base class
             return self.success_response(
                 message="Member removed successfully",
                 status_code=200
+            )
+        except NotFound as e:
+            logger.error(f"Membership not found: group_id={group_id}, user_id={user_id}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=404
+            )
+        except Forbidden as e:
+            logger.error(f"Permission denied removing member: group_id={group_id}, user_id={user_id}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=403
             )
         except Exception as e:
             logger.error("Error removing membership", exc_info=e)
@@ -261,7 +295,7 @@ class GroupMemberMeView(BaseGroupView):
         try:
             # Check if user is HEAD_CHEF and prevent leaving if they are the only one
             membership = await membership_repo.get_membership(user_id=user_id, group_id=group_id)
-            
+
             if not membership:
                 raise NotFound("You are not a member of this group")
 
@@ -278,14 +312,20 @@ class GroupMemberMeView(BaseGroupView):
                 message="Successfully left the group",
                 status_code=200
             )
-        except (Forbidden, NotFound) as e:
+        except NotFound as e:
+            logger.error(f"User {user_id} is not a member of group {group_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
-                status_code=e.status_code
+                status_code=404
+            )
+        except Forbidden as e:
+            logger.error(f"User {user_id} cannot leave group {group_id}", exc_info=e)
+            return self.error_response(
+                message=str(e),
+                status_code=403
             )
         except Exception as e:
-            logger.error("Error removing membership", exc_info=e)
-            # Use helper method from base class
+            logger.error("Error leaving group", exc_info=e)
             return self.error_response(
                 message="Failed to leave group",
                 status_code=500

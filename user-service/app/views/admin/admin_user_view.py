@@ -15,6 +15,7 @@ from app.schemas.user_admin_schema import (
     PaginatedUserAdminViewResponseSchema
 )
 from app.services.admin_service import AdminUserService
+from shopping_shared.exceptions import Conflict, NotFound
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
@@ -69,12 +70,42 @@ class AdminUsersView(BaseAdminUserView):
         List all users with pagination.
         GET api/v1/user-service/admin/users
         """
-        page = int(request.args.get("page", 1))
-        page_size = int(request.args.get("page_size", 10))
-
-        service = self._get_service(request)
-
         try:
+            # Validate and convert query parameters with proper error handling
+            page_param = request.args.get("page", "1")
+            page_size_param = request.args.get("page_size", "10")
+
+            # Validate that parameters are numeric
+            try:
+                page = int(page_param)
+                page_size = int(page_size_param)
+            except ValueError:
+                return self.error_response(
+                    message="Page and page_size must be valid integers",
+                    status_code=400
+                )
+
+            # Validate positive values
+            if page < 1:
+                return self.error_response(
+                    message="Page must be a positive integer",
+                    status_code=400
+                )
+
+            if page_size < 1:
+                return self.error_response(
+                    message="Page size must be a positive integer",
+                    status_code=400
+                )
+
+            # Validate maximum page size
+            if page_size > 100:
+                return self.error_response(
+                    message="Page size cannot exceed 100",
+                    status_code=400
+                )
+
+            service = self._get_service(request)
             users, total = await service.get_all_users_paginated(page=page, page_size=page_size)
 
             paginated_reponse = PaginatedUserAdminViewResponseSchema(
@@ -133,6 +164,8 @@ class AdminUsersView(BaseAdminUserView):
                 message="User created successfully",
                 status_code=201
             )
+        except Conflict as e:
+            return self.error_response(message=str(e), status_code=409)
         except Exception as e:
             logger.error("Failed to create user", exc_info=e)
             # Use helper method from base class
@@ -177,6 +210,8 @@ class AdminUserDetailView(BaseAdminUserView):
                 message="User retrieved successfully",
                 status_code=200
             )
+        except NotFound as e:
+            return self.error_response(message=str(e), status_code=404)
         except Exception as e:
             logger.error("Failed to get user", exc_info=e)
             # Use helper method from base class
@@ -220,6 +255,10 @@ class AdminUserDetailView(BaseAdminUserView):
                 message="User updated successfully",
                 status_code=200
             )
+        except NotFound as e:
+            return self.error_response(message=str(e), status_code=404)
+        except Conflict as e:
+            return self.error_response(message=str(e), status_code=409)
         except Exception as e:
             logger.error("Failed to update user", exc_info=e)
             # Use helper method from base class
@@ -258,6 +297,8 @@ class AdminUserDetailView(BaseAdminUserView):
                 message="User deleted successfully",
                 status_code=200
             )
+        except NotFound as e:
+            return self.error_response(message=str(e), status_code=404)
         except Exception as e:
             logger.error("Failed to delete user", exc_info=e)
             # Use helper method from base class

@@ -72,12 +72,42 @@ class AdminGroupsView(BaseAdminGroupsView):
         List all family groups with pagination.
         GET /api/v1/user-service/admin/groups
         """
-        page = int(request.args.get("page", 1))
-        page_size = int(request.args.get("page_size", 10))
-
-        service = self._get_service(request)
-
         try:
+            # Validate and convert query parameters with proper error handling
+            page_param = request.args.get("page", "1")
+            page_size_param = request.args.get("page_size", "10")
+
+            # Validate that parameters are numeric
+            try:
+                page = int(page_param)
+                page_size = int(page_size_param)
+            except ValueError:
+                return self.error_response(
+                    message="Page and page_size must be valid integers",
+                    status_code=400
+                )
+
+            # Validate positive values
+            if page < 1:
+                return self.error_response(
+                    message="Page must be a positive integer",
+                    status_code=400
+                )
+
+            if page_size < 1:
+                return self.error_response(
+                    message="Page size must be a positive integer",
+                    status_code=400
+                )
+
+            # Validate maximum page size
+            if page_size > 100:
+                return self.error_response(
+                    message="Page size cannot exceed 100",
+                    status_code=400
+                )
+
+            service = self._get_service(request)
             groups, total = await service.get_all_groups_paginated(page=page, page_size=page_size)
 
             # Create the paginated response using the schema
@@ -358,6 +388,8 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
                 message="Member role updated successfully",
                 status_code=200
             )
+        except NotFound as e:
+            return self.error_response(message=str(e), status_code=404)
         except Exception as e:
             logger.error("Failed to update member role", exc_info=e)
             # Use helper method from base class
