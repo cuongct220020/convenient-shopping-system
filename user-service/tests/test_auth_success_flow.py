@@ -18,7 +18,7 @@ Scenario:
 10. Password reset flow: request OTP for reset, reset password, login with new password
 
 Usage:
-    python3 user-service/tests/test_auth_flow.py
+    python3 user-service/tests/test_auth_success_flow.py
 """
 
 import json

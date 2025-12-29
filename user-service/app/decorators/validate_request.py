@@ -35,10 +35,28 @@ def validate_request(schema: Type[BaseSchema], auto_document: bool = True):
 
         @wraps(func)
         async def decorated_function(view, request: Request, *args, **kwargs):
-            if not request.json:
+            # Check if request body is empty first
+            if not request.body:
                 error_response = GenericResponse(
                     status="fail",
-                    message="Invalid request: body is empty or not valid JSON."
+                    message="Invalid request: body is empty."
+                )
+                return json(error_response.model_dump(exclude_none=True), status=400)
+
+            # Try to parse JSON and handle malformed JSON gracefully
+            try:
+                # request.json might be None if JSON is malformed
+                if request.json is None:
+                    error_response = GenericResponse(
+                        status="fail",
+                        message="Invalid request: body is not valid JSON."
+                    )
+                    return json(error_response.model_dump(exclude_none=True), status=400)
+            except Exception:
+                # Catch any other JSON parsing errors
+                error_response = GenericResponse(
+                    status="fail",
+                    message="Invalid request: body is not valid JSON."
                 )
                 return json(error_response.model_dump(exclude_none=True), status=400)
 

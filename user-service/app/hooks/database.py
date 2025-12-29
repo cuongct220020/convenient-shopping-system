@@ -64,16 +64,17 @@ async def close_db_session(
         session_context = request.ctx.db_session_context
 
         # Determine if we should rollback.
-        # Rollback if there is an unhandled exception OR if the response status indicates an error (4xx/5xx).
-        is_error_response = response is not None and response.status >= 400
-        should_rollback = exception is not None or is_error_response
+        # Rollback only if there is an unhandled exception OR if the response status indicates a server error (5xx).
+        # Client errors (4xx) like 401, 403, 404, 422 should NOT trigger rollback as they are not database errors.
+        is_server_error_response = response is not None and response.status >= 500
+        should_rollback = exception is not None or is_server_error_response
 
         try:
             if should_rollback:
                 # We need to trigger the rollback logic in the context manager.
                 # If we don't have a real exception object (handled HTTP error), create a synthetic one.
                 real_exc = exception or Exception(f"HTTP {response.status} Response - Forcing Rollback")
-                
+
                 exc_type = type(real_exc)
                 exc_value = real_exc
                 exc_tb = getattr(real_exc, '__traceback__', None)
@@ -81,7 +82,8 @@ async def close_db_session(
                 # __aexit__ with exception args triggers session.rollback() in get_session
                 await session_context.__aexit__(exc_type, exc_value, exc_tb)
             else:
-                # Success case (2xx, 3xx) -> Commit
+                # Success case (2xx, 3xx) and client errors (4xx) -> Commit
+                # Client errors like 401, 403, 404, 422 are not database errors and should commit any changes
                 await session_context.__aexit__(None, None, None)
 
         except Exception as e:
