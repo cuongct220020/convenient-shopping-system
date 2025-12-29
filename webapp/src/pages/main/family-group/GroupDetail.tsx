@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Settings,
   Users,
@@ -88,7 +88,11 @@ type TimeFilterType = 'today' | 'week' | 'month';
 
 const GroupDetail = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('members');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    // Check if navigation state specifies which tab to show
+    return (location.state as { activeTab?: TabType })?.activeTab || 'members';
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [openMemberMenuId, setOpenMemberMenuId] = useState<string | null>(null);
   

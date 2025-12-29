@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, Check, Clock, User, DollarSign, Calendar } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
@@ -35,13 +35,19 @@ const ingredientsList: IngredientReadonly[] = [
 
 export const PlanDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    navigate(`/main/family-group/${id}`, { state: { activeTab: 'shopping-plan' } });
+  };
+
   return (
     <div className="bg-white min-h-screen relative pb-8">
       {/* Header Container with padding */}
       <div className="p-4">
         {/* Header Nav */}
         <div className="mb-2">
-          <BackButton text="Quay lại" to={`/main/family-group/${id}`} />
+          <BackButton text="Quay lại" to={`/main/family-group/${id}`} onClick={handleBack} />
         </div>
         <h1 className="text-xl font-bold text-[#C3485C] text-center mb-6">Chi Tiết Kế Hoạch</h1>
 
