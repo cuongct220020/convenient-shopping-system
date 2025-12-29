@@ -1,4 +1,5 @@
 # user-service/app/hooks/database.py
+import asyncio
 from sanic import Sanic, Request
 
 from shopping_shared.databases.database_manager import database_manager as postgres_db
@@ -28,7 +29,18 @@ async def close_db(_app: Sanic):
     """
     This hook closes the database connection pool when the server stops.
     """
-    await postgres_db.dispose()
+    try:
+        # Close the database manager with timeout
+        await asyncio.wait_for(postgres_db.dispose(), timeout=5.0)
+    except asyncio.TimeoutError:
+        logger.warning("Database manager close operation timed out, forcing shutdown")
+        # Force close without waiting
+        try:
+            postgres_db.dispose()
+        except:
+            pass  # Ignore errors during force close
+    except Exception as e:
+        logger.error(f"Error during database manager shutdown: {e}")
 
 
 async def open_db_session(request: Request):

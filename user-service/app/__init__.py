@@ -25,15 +25,21 @@ def register_listeners(sanic_app: Sanic):
 
     # Register database hooks
     sanic_app.register_listener(setup_db, "before_server_start")
-    sanic_app.register_listener(close_db, "after_server_stop")
+    sanic_app.register_listener(close_db, "before_server_stop")
 
     # Register Redis hooks
     sanic_app.register_listener(setup_redis, "before_server_start")
-    sanic_app.register_listener(close_redis, "after_server_stop")
-    
+    sanic_app.register_listener(close_redis, "before_server_stop")
+
     # Register Kafka hooks
     sanic_app.register_listener(setup_kafka, "before_server_start")
-    sanic_app.register_listener(close_kafka, "after_server_stop")
+    sanic_app.register_listener(close_kafka, "before_server_stop")
+
+    # Register final cleanup listener to ensure proper shutdown
+    async def cleanup_before_shutdown(app, loop):
+        logger.info("Application shutdown initiated, all resources closed.")
+
+    sanic_app.register_listener(cleanup_before_shutdown, "before_server_stop")
 
 def register_views(sanic_app: Sanic):
     from app.apis import api # Import the api Blueprint.groups

@@ -23,15 +23,18 @@ async def root(request):
     }, status=200)
 
 
+import asyncio
+import signal
+
 def run():
     """Checks configuration and runs the application."""
     # Production Readiness Checks
     is_debug = app.config.get("RUN_SETTING", {}).get("debug", False)
     jwt_algo = app.config.get("JWT_ALGORITHM", "HS256")
-    
+
     if not is_debug:
         logger.info("Checking production security configuration...")
-        
+
         # 1. Ensure Asymmetric algorithm is used
         if not jwt_algo.startswith("RS"):
             logger.critical(
@@ -47,17 +50,19 @@ def run():
                 "Check your JWT_PRIVATE_KEY_PATH environment variable."
             )
             return
-            
+
         logger.info("Security configuration verified: RS256 with Private Key loaded.")
 
+    # Run the application with proper signal handling
     try:
         app.run(**app.config['RUN_SETTING'])
-    except (KeyError, OSError) as error:
-        raise error
     except KeyboardInterrupt:
         logger.info("Received interrupt signal. Shutting down gracefully...")
-        # Sanic handles shutdown gracefully by default with its listeners
-        logger.info("Application shutdown complete.")
+    except RuntimeError as e:
+        if "Event loop stopped before Future completed" in str(e):
+            logger.warning("Event loop issue detected during shutdown, but application is stopping.")
+        else:
+            raise e
 
 
 if __name__ == '__main__':

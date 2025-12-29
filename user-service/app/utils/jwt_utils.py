@@ -32,6 +32,7 @@ class JWTHandler:
         self.refresh_token_expire_days = app.config.get("REFRESH_TOKEN_EXPIRE_DAYS", 7)
         self.algorithm = app.config.get("JWT_ALGORITHM", "HS256")
         self.issuer = app.config.get("JWT_ISSUER", "shopping-user-service")
+        self.audience = app.config.get("JWT_AUDIENCE", "shopping-system-users")
 
         # Load keys based on algorithm - keys should already be loaded by config.py
         if self.algorithm.startswith("RS"):
@@ -75,7 +76,7 @@ class JWTHandler:
             'iat': issued_at_timestamp,  # Convert to Unix timestamp
             'sub': str(user_id),
             'jti': jti,
-            'aud': 'shopping-system-users'
+            'aud': self.audience,
         }
 
         if user_role:
@@ -151,10 +152,12 @@ class JWTHandler:
         """Decode token with stateless validation (signature, expiry, type)."""
         try:
             key = self.public_key if self.algorithm.startswith("RS") else self.secret_key
-            payload = jwt.decode(token, key, algorithms=[self.algorithm])
+            payload = jwt.decode(token, key, algorithms=[self.algorithm], audience=self.audience)
 
         except jwt.ExpiredSignatureError:
             raise Unauthorized("Token has expired")
+        except jwt.InvalidAudienceError:
+            raise Unauthorized("Invalid token audience")
         except jwt.InvalidTokenError:
             raise Unauthorized("Invalid token")
         except Exception as e:

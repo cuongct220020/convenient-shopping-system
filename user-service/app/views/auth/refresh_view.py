@@ -22,7 +22,6 @@ class RefreshView(BaseAPIView):
     @openapi.definition(
         summary="Refresh access token using refresh token",
         description="Generates a new access token using the refresh token stored in an HttpOnly cookie. Implements token rotation by issuing a new refresh token with each request, enhancing security by invalidating the previous refresh token.",
-        secured={"bearerAuth": []},
         tag=["Authentication"],
         response=[
             Response(
@@ -67,10 +66,7 @@ class RefreshView(BaseAPIView):
             )
             response.delete_cookie(
                 "refresh_token",
-                path='/api/v1/user-service/auth/refresh-token',
-                httponly=True,
-                secure=not config.get("DEBUG", False),
-                samesite="Strict"
+                path='/api/v1/user-service/auth/refresh-token'
             )
             return response
 

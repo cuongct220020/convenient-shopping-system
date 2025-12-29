@@ -164,7 +164,6 @@ class AuthService:
     ) -> tuple[TokenData, bool]:  # Returns (token_data, is_active)
         """
         Xử lý token refresh với rotation, sử dụng Redis Allowlist.
-        Endpoint này phải tự xác thực không tin tưởng Kong Gateway.
         """
 
         # Giải mã Stateless

@@ -20,9 +20,6 @@ import urllib.request
 import urllib.error
 import sys
 import os
-import random
-import time
-import uuid
 from typing import Dict, Any, Optional, Tuple
 
 # Configuration
