@@ -107,7 +107,7 @@ const AddPlan = () => {
       budget,
       notes,
     });
-    // Add logic to save the plan
+    navigate(`/main/family-group/${id}`); // Navigate back to group detail after creation
   };
 
   return (

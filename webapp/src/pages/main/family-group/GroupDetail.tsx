@@ -397,7 +397,7 @@ const GroupDetail = () => {
                     role={member.role}
                     email={member.email}
                     variant="selected"
-                    onClick={() => navigate(`/main/family-group/${mockGroupData.id}/${member.id}`)}
+                    onClick={() => navigate(`/main/family-group/${mockGroupData.id}/user/${member.id}`)}
                     actionElement={
                       isHeadChef && !member.isCurrentUser && (
                         <div className="relative">
@@ -406,7 +406,7 @@ const GroupDetail = () => {
                           </button>
                           {openMemberMenuId === member.id && (
                             <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg z-10 border border-gray-200 py-1">
-                              <button onClick={(e) => { e.stopPropagation(); navigate(`/main/family-group/${mockGroupData.id}/${member.id}`); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center font-medium">
+                              <button onClick={(e) => { e.stopPropagation(); navigate(`/main/family-group/${mockGroupData.id}/user/${member.id}`); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center font-medium">
                                 <User size={16} className="mr-2" /> Xem thông tin
                               </button>
                               <button onClick={(e) => { e.stopPropagation(); setSelectedMemberForLeader(member); setIsSetLeaderModalOpen(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center font-medium">
@@ -498,7 +498,11 @@ const GroupDetail = () => {
               <div className="w-full space-y-3">
                 {mockShoppingPlans.length > 0 ? (
                   mockShoppingPlans.map((plan) => (
-                    <div key={plan.id} className="bg-gray-50 rounded-xl p-4 flex justify-between items-start shadow-sm border border-gray-100">
+                    <div
+                      key={plan.id}
+                      onClick={() => navigate(`/main/family-group/${mockGroupData.id}/plan/${plan.id}`)}
+                      className="bg-gray-50 rounded-xl p-4 flex justify-between items-start shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors"
+                    >
                       <div>
                         <h4 className="font-bold text-gray-900 text-sm">{plan.title}</h4>
                         <p className="text-xs text-gray-500 mt-1">

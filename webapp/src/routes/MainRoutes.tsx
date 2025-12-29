@@ -14,6 +14,7 @@ import GroupDetail from 'pages/main/family-group/GroupDetail'
 import EditGroup from 'pages/main/family-group/EditGroup'
 import UserDetail from 'pages/main/family-group/UserDetail'
 import AddPlan from '../pages/main/family-group/AddPlan'
+import PlanDetail from '../pages/main/family-group/PlanDetail'
 
 export const MainRoutes = {
   path: "/main",
@@ -72,12 +73,16 @@ export const MainRoutes = {
       element: <EditGroup />,
     },
     {
-      path: "family-group/:id/:userId",
+      path: "family-group/:id/user/:userId",
       element: <UserDetail />
     },
     {
       path: "family-group/:id/add-plan",
       element: <AddPlan />
+    },
+    {
+      path: "family-group/:id/plan/:planId",
+      element: <PlanDetail />
     }
   ],
 }

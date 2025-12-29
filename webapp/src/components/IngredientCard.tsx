@@ -11,9 +11,10 @@ export interface Ingredient {
 interface IngredientCardProps {
   ingredient: Ingredient;
   onDelete: (id: number) => void;
+  readonly?: boolean;
 }
 
-export const IngredientCard = ({ ingredient, onDelete }: IngredientCardProps) => {
+export const IngredientCard = ({ ingredient, onDelete, readonly = false }: IngredientCardProps) => {
   return (
     <div className="flex items-center justify-between p-3 bg-gray-100 rounded-xl mb-2">
       <div className="flex items-center space-x-3">
@@ -29,9 +30,11 @@ export const IngredientCard = ({ ingredient, onDelete }: IngredientCardProps) =>
       </div>
       <div className="flex items-center space-x-4">
         <span className="text-sm text-gray-600">{ingredient.quantity}</span>
-        <button onClick={() => onDelete(ingredient.id)} className="text-gray-400 hover:text-gray-600">
-          <X size={20} />
-        </button>
+        {!readonly && (
+          <button onClick={() => onDelete(ingredient.id)} className="text-gray-400 hover:text-gray-600">
+            <X size={20} />
+          </button>
+        )}
       </div>
     </div>
   );
