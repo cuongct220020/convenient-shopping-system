@@ -16,6 +16,9 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
+  Clock,
+  Circle
 } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
@@ -41,9 +44,44 @@ const mockGroupData = {
       email: 'hungdeeptry@gmail.com',
       isCurrentUser: false,
     },
-    // Add more members as needed for testing
   ],
 };
+
+// Mock data for Shopping Plans (matching the image)
+const mockShoppingPlans = [
+  {
+    id: 'p1',
+    title: 'Mua đồ ăn tối',
+    creator: 'Bùi Mạnh Hưng',
+    ingredients: 3,
+    cost: '500.000 VND',
+    status: 'completed', // Đã xong
+  },
+  {
+    id: 'p2',
+    title: 'Mua đồ ăn tối',
+    creator: 'Bùi Mạnh Hưng',
+    ingredients: 3,
+    cost: '500.000 VND',
+    status: 'pending', // Đang chờ
+  },
+  {
+    id: 'p3',
+    title: 'Mua đồ ăn tối',
+    creator: 'Bùi Mạnh Hưng',
+    ingredients: 3,
+    cost: '500.000 VND',
+    status: 'in_progress', // Đang thực hiện
+  },
+  {
+    id: 'p4',
+    title: 'Mua đồ ăn tối',
+    creator: 'Bùi Mạnh Hưng',
+    ingredients: 3,
+    cost: '500.000 VND',
+    status: 'completed', // Đã xong
+  },
+];
 
 type TabType = 'members' | 'shopping-plan';
 type TimeFilterType = 'today' | 'week' | 'month';
@@ -70,7 +108,6 @@ const GroupDetail = () => {
       }
     };
 
-    // Double requestAnimationFrame to ensure DOM is fully painted
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         scrollToSelected();
@@ -78,34 +115,28 @@ const GroupDetail = () => {
     });
   }, [timeFilter, selectedDate]);
 
-  // Generate dates based on selected filter (always center selected date)
+  // Generate dates based on selected filter
   const getWeekDates = () => {
     const today = new Date();
     const dates = [];
     const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
     let startDate = new Date(selectedDate);
-    let daysToShow = 30; // Show more days for scrolling
-    let centerOffset = 7; // Default center offset
+    let daysToShow = 30; 
+    let centerOffset = 7; 
 
-    // Set start date and days to show based on filter (always center selected date)
     if (timeFilter === 'today') {
-      // Show 7 days before and 7 after selected date (15 total)
       centerOffset = 7;
       daysToShow = 15;
     } else if (timeFilter === 'week') {
-      // Show 7 days before and 7 after selected date (14 total)
       centerOffset = 7;
       daysToShow = 14;
     } else if (timeFilter === 'month') {
-      // Show 15 days before and 15 after selected date (31 total)
       centerOffset = 15;
       daysToShow = 31;
     }
 
-    // Start from centerOffset days before selected date to center it
     startDate.setDate(selectedDate.getDate() - centerOffset);
 
-    // Show dates starting from startDate
     for (let i = 0; i < daysToShow; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
@@ -122,7 +153,6 @@ const GroupDetail = () => {
 
   const weekDates = useMemo(getWeekDates, [timeFilter, selectedDate]);
 
-  // Handle filter change with date update
   const handleTimeFilterChange = (filter: TimeFilterType) => {
     setTimeFilter(filter);
     const today = new Date();
@@ -130,19 +160,17 @@ const GroupDetail = () => {
     if (filter === 'today') {
       setSelectedDate(new Date(today));
     } else if (filter === 'week') {
-      setSelectedDate(new Date(today)); // Keep today selected
+      setSelectedDate(new Date(today));
     } else if (filter === 'month') {
-      setSelectedDate(new Date(today)); // Keep today selected
+      setSelectedDate(new Date(today));
     }
   };
 
-  // Check if selected date is within range for each filter
   const today = new Date();
   const isFilterInRange = (filter: TimeFilterType): boolean => {
     if (filter === 'today') {
       return selectedDate.toDateString() === today.toDateString();
     } else if (filter === 'week') {
-      // Check if selected date is in current week (Monday to Sunday)
       const dayOfWeek = today.getDay();
       const weekStart = new Date(today);
       const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -161,21 +189,14 @@ const GroupDetail = () => {
     return true;
   };
 
-  // State for the Delete Confirmation Modal
+  // Modal States
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  // State for the Set Leader Modal
   const [isSetLeaderModalOpen, setIsSetLeaderModalOpen] = useState(false);
   const [selectedMemberForLeader, setSelectedMemberForLeader] = useState<typeof mockGroupData.members[0] | null>(null);
-
-  // State for the Remove Member Modal
   const [isRemoveMemberModalOpen, setIsRemoveMemberModalOpen] = useState(false);
   const [selectedMemberForRemoval, setSelectedMemberForRemoval] = useState<typeof mockGroupData.members[0] | null>(null);
-
-  // State for the Leave Group Modal
   const [isLeaveGroupModalOpen, setIsLeaveGroupModalOpen] = useState(false);
 
-  // Add blur effect to bottom nav when modal is open
   useEffect(() => {
     const bottomNav = document.querySelector('nav.fixed.bottom-0');
     if (bottomNav) {
@@ -193,7 +214,6 @@ const GroupDetail = () => {
     };
   }, [isDeleteModalOpen, isSetLeaderModalOpen, isRemoveMemberModalOpen, isLeaveGroupModalOpen]);
 
-  // Check if current user is the head chef
   const currentUser = mockGroupData.members.find(m => m.isCurrentUser);
   const isHeadChef = currentUser?.role === 'Trưởng nhóm';
 
@@ -204,31 +224,18 @@ const GroupDetail = () => {
 
   const handleEdit = () => {
     navigate(`/main/family-group/${mockGroupData.id}/edit`, {
-      state: {
-        group: {
-          id: mockGroupData.id,
-          name: mockGroupData.name,
-          members: mockGroupData.members.map(m => ({
-            id: m.id,
-            name: m.name,
-            role: m.role,
-            email: m.email,
-          })),
-        },
-      },
+      state: { group: mockGroupData },
     });
     setIsSettingsOpen(false);
   };
 
   const handleDeleteGroup = () => {
-    // Perform delete API logic here
     console.log("Deleting group...");
     setIsDeleteModalOpen(false);
     navigate('/main/family-group');
   };
 
   const handleSetLeader = () => {
-    // Perform set leader API logic here
     console.log("Setting member as leader:", selectedMemberForLeader?.name);
     setIsSetLeaderModalOpen(false);
     setSelectedMemberForLeader(null);
@@ -236,7 +243,6 @@ const GroupDetail = () => {
   };
 
   const handleRemoveMember = () => {
-    // Perform remove member API logic here
     console.log("Removing member:", selectedMemberForRemoval?.name);
     setIsRemoveMemberModalOpen(false);
     setSelectedMemberForRemoval(null);
@@ -244,7 +250,6 @@ const GroupDetail = () => {
   };
 
   const handleLeaveGroup = () => {
-    // Perform leave group API logic here
     console.log("Leaving group...");
     setIsLeaveGroupModalOpen(false);
     setIsSettingsOpen(false);
@@ -253,16 +258,42 @@ const GroupDetail = () => {
 
   const handleCreatePlan = () => {
     console.log("Create new shopping plan");
-    navigate(`/main/family-group/${mockGroupData.id}/add-plan`); // Example route
+    navigate(`/main/family-group/${mockGroupData.id}/add-plan`);
   };
 
-  // Close popovers when clicking outside
   const handleBackdropClick = () => {
-    // Don't close anything if any modal is open
     if (isDeleteModalOpen || isSetLeaderModalOpen || isRemoveMemberModalOpen || isLeaveGroupModalOpen) return;
-
     if (isSettingsOpen) setIsSettingsOpen(false);
     if (openMemberMenuId) setOpenMemberMenuId(null);
+  };
+
+  // Helper to render plan status badge
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return (
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-green-300 bg-white">
+            <CheckCircle2 size={12} className="text-green-500" />
+            <span className="text-[10px] font-medium text-green-500">Đã xong</span>
+          </div>
+        );
+      case 'pending':
+        return (
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-orange-300 bg-white">
+            <Clock size={12} className="text-orange-400" />
+            <span className="text-[10px] font-medium text-orange-400">Đang chờ</span>
+          </div>
+        );
+      case 'in_progress':
+        return (
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-[#C3485C] bg-white">
+            <Circle size={8} fill="#C3485C" className="text-[#C3485C]" />
+            <span className="text-[10px] font-medium text-[#C3485C]">Đang thực hiện</span>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -281,37 +312,17 @@ const GroupDetail = () => {
               <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-lg shadow-lg z-10 border border-gray-200 py-1">
                 {isHeadChef ? (
                   <>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit();
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                    >
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center">
                       <Edit2 size={16} className="mr-2" />
                       Chỉnh sửa
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsSettingsOpen(false);
-                        setIsDeleteModalOpen(true); // Open the modal
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center"
-                    >
+                    <button onClick={(e) => { e.stopPropagation(); setIsSettingsOpen(false); setIsDeleteModalOpen(true); }} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center">
                       <Trash2 size={16} className="mr-2" />
                       Xóa nhóm
                     </button>
                   </>
                 ) : (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsSettingsOpen(false);
-                      setIsLeaveGroupModalOpen(true);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); setIsSettingsOpen(false); setIsLeaveGroupModalOpen(true); }} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center">
                     <LogOut size={16} className="mr-2" />
                     Rời nhóm
                   </button>
@@ -341,17 +352,10 @@ const GroupDetail = () => {
               <span>{mockGroupData.adminName}</span>
             </div>
           </div>
-          {/* Only show 'Add Member' button on Members tab */}
           {activeTab === 'members' && (
-             <Button
-             variant="primary"
-             size="fit"
-             className="mt-6"
-             icon={UserPlus}
-             onClick={handleEdit}
-           >
-             Thêm thành viên
-           </Button>
+             <Button variant="primary" size="fit" className="mt-6" icon={UserPlus} onClick={handleEdit}>
+               Thêm thành viên
+             </Button>
           )}
         </div>
 
@@ -359,9 +363,7 @@ const GroupDetail = () => {
         <div className="flex mt-8 border-b border-gray-200">
           <button
             className={`flex-1 py-3 text-center font-bold text-sm ${
-              activeTab === 'members'
-                ? 'text-gray-900 border-b-2 border-[#C3485C]'
-                : 'text-gray-500'
+              activeTab === 'members' ? 'text-gray-900 border-b-2 border-[#C3485C]' : 'text-gray-500'
             }`}
             onClick={() => setActiveTab('members')}
           >
@@ -369,9 +371,7 @@ const GroupDetail = () => {
           </button>
           <button
             className={`flex-1 py-3 text-center font-bold text-sm ${
-              activeTab === 'shopping-plan'
-                ? 'text-gray-900 border-b-2 border-[#C3485C]'
-                : 'text-gray-500'
+              activeTab === 'shopping-plan' ? 'text-gray-900 border-b-2 border-[#C3485C]' : 'text-gray-500'
             }`}
             onClick={() => {
               setActiveTab('shopping-plan');
@@ -387,9 +387,7 @@ const GroupDetail = () => {
         <div className="mt-4">
           {activeTab === 'members' && (
             <div>
-              <h3 className="text-gray-600 text-sm mb-4">
-                Danh sách thành viên ({mockGroupData.members.length})
-              </h3>
+              <h3 className="text-gray-600 text-sm mb-4">Danh sách thành viên ({mockGroupData.members.length})</h3>
               <div className="space-y-3">
                 {mockGroupData.members.map((member) => (
                   <UserCard
@@ -403,49 +401,19 @@ const GroupDetail = () => {
                     actionElement={
                       isHeadChef && !member.isCurrentUser && (
                         <div className="relative">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleMemberMenu(member.id);
-                            }}
-                            className="p-1 text-gray-400 hover:text-gray-600 rounded-full transition-colors"
-                          >
+                          <button onClick={(e) => { e.stopPropagation(); toggleMemberMenu(member.id); }} className="p-1 text-gray-400 hover:text-gray-600 rounded-full transition-colors">
                             <MoreVertical size={20} />
                           </button>
-                          {/* Member Menu Popover */}
                           {openMemberMenuId === member.id && (
                             <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg z-10 border border-gray-200 py-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/main/family-group/${mockGroupData.id}/${member.id}`);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center font-medium"
-                              >
-                                <User size={16} className="mr-2" />
-                                Xem thông tin
+                              <button onClick={(e) => { e.stopPropagation(); navigate(`/main/family-group/${mockGroupData.id}/${member.id}`); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center font-medium">
+                                <User size={16} className="mr-2" /> Xem thông tin
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedMemberForLeader(member);
-                                  setIsSetLeaderModalOpen(true);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center font-medium"
-                              >
-                                <Shield size={16} className="mr-2" />
-                                Đặt làm nhóm trưởng
+                              <button onClick={(e) => { e.stopPropagation(); setSelectedMemberForLeader(member); setIsSetLeaderModalOpen(true); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center font-medium">
+                                <Shield size={16} className="mr-2" /> Đặt làm nhóm trưởng
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedMemberForRemoval(member);
-                                  setIsRemoveMemberModalOpen(true);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center font-medium"
-                              >
-                                <LogOut size={16} className="mr-2" />
-                                Xóa khỏi nhóm
+                              <button onClick={(e) => { e.stopPropagation(); setSelectedMemberForRemoval(member); setIsRemoveMemberModalOpen(true); }} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center font-medium">
+                                <LogOut size={16} className="mr-2" /> Xóa khỏi nhóm
                               </button>
                             </div>
                           )}
@@ -459,7 +427,7 @@ const GroupDetail = () => {
           )}
           
           {activeTab === 'shopping-plan' && (
-            <div className="flex flex-col items-center pt-2">
+            <div className="flex flex-col items-center pt-2 pb-24 relative min-h-[400px]">
               {/* Filter Buttons */}
               <div className="flex w-full justify-between gap-2 mb-6 px-1">
                 {[
@@ -475,9 +443,7 @@ const GroupDetail = () => {
                       onClick={() => handleTimeFilterChange(filter.id as TimeFilterType)}
                       className={`
                         flex-1 py-1.5 px-2 rounded-lg text-sm font-semibold transition-colors
-                        ${isActive
-                          ? 'bg-[#C3485C] text-white shadow-md'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}
+                        ${isActive ? 'bg-[#C3485C] text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}
                       `}
                     >
                       {filter.label}
@@ -487,21 +453,12 @@ const GroupDetail = () => {
               </div>
 
               {/* Calendar Strip */}
-              <div className="w-full mb-8">
+              <div className="w-full mb-6">
                 <div className="flex items-center gap-2">
-                  {/* Left Navigation Button */}
-                  <button
-                    onClick={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(newDate.getDate() - 1);
-                      setSelectedDate(newDate);
-                    }}
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
-                  >
+                  <button onClick={() => { const newDate = new Date(selectedDate); newDate.setDate(newDate.getDate() - 1); setSelectedDate(newDate); }} className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0">
                     <ChevronLeft size={24} className="text-gray-600" />
                   </button>
 
-                  {/* Calendar Days */}
                   <div ref={calendarScrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-hide snap-x snap-center flex-1">
                     {weekDates.map((day, index) => (
                       <button
@@ -531,35 +488,47 @@ const GroupDetail = () => {
                   ))}
                   </div>
 
-                  {/* Right Navigation Button */}
-                  <button
-                    onClick={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(newDate.getDate() + 1);
-                      setSelectedDate(newDate);
-                    }}
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
-                  >
+                  <button onClick={() => { const newDate = new Date(selectedDate); newDate.setDate(newDate.getDate() + 1); setSelectedDate(newDate); }} className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0">
                     <ChevronRight size={24} className="text-gray-600" />
                   </button>
                 </div>
               </div>
 
-              {/* Empty State Message */}
-              <p className="text-center text-gray-800 text-sm px-6 mb-6 leading-relaxed">
-                Nhóm chưa có kế hoạch mua sắm nào cả. Hãy tạo kế hoạch mua sắm mới!
-              </p>
+              {/* Plans List */}
+              <div className="w-full space-y-3">
+                {mockShoppingPlans.length > 0 ? (
+                  mockShoppingPlans.map((plan) => (
+                    <div key={plan.id} className="bg-gray-50 rounded-xl p-4 flex justify-between items-start shadow-sm border border-gray-100">
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm">{plan.title}</h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {plan.creator} • {plan.ingredients} nguyên liệu
+                        </p>
+                        <p className="text-xs text-gray-900 mt-1 font-medium">{plan.cost}</p>
+                      </div>
+                      <div>
+                        {renderStatusBadge(plan.status)}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-800 text-sm px-6 leading-relaxed">
+                    Nhóm chưa có kế hoạch mua sắm nào cả. Hãy tạo kế hoạch mua sắm mới!
+                  </p>
+                )}
+              </div>
 
-              {/* Create Plan Button */}
-              <Button
-                variant="primary"
-                onClick={handleCreatePlan}
-                icon={Plus}
-                size="fit"
-                className="bg-[#C3485C] hover:bg-[#a83648] shadow-none"
-              >
-                Tạo kế hoạch mới
-              </Button>
+              {/* Floating Action Button for Create Plan */}
+              <div className="mt-4">
+                <Button
+                  variant="primary"
+                  size="fit"
+                  icon={Plus}
+                  onClick={handleCreatePlan}
+                >
+                  Tạo kế hoạch mới
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -568,201 +537,58 @@ const GroupDetail = () => {
       {/* DELETE CONFIRMATION MODAL */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">
-              Xóa Nhóm Gia Đình?
-            </h3>
-
-            <div className="flex justify-center mb-5">
-              <AlertTriangle
-                size={64}
-                className="text-white fill-[#C3485C]"
-                strokeWidth={1.5}
-              />
-            </div>
-
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">
-              Hành động này <span className="text-[#C3485C] font-semibold">không thể hoàn tác</span>.
-              Tất cả dữ liệu thành viên và kế hoạch mua sắm sẽ bị xóa vĩnh viễn.
-            </p>
-
+          <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Xóa Nhóm Gia Đình?</h3>
+            <div className="flex justify-center mb-5"><AlertTriangle size={64} className="text-white fill-[#C3485C]" strokeWidth={1.5} /></div>
+            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Hành động này <span className="text-[#C3485C] font-semibold">không thể hoàn tác</span>. Tất cả dữ liệu sẽ bị xóa.</p>
             <div className="flex gap-3 justify-center">
-              <div className="w-1/2">
-                 <Button
-                  variant="primary"
-                  onClick={handleDeleteGroup}
-                  icon={Trash2}
-                  className="bg-[#C3485C] hover:bg-[#a83648]"
-                >
-                  Xóa
-                </Button>
-              </div>
-              <div className="w-1/2">
-                <Button
-                  variant="secondary"
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  icon={X}
-                  className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]"
-                >
-                  Hủy
-                </Button>
-              </div>
+              <div className="w-1/2"><Button variant="primary" onClick={handleDeleteGroup} icon={Trash2} className="bg-[#C3485C] hover:bg-[#a83648]">Xóa</Button></div>
+              <div className="w-1/2"><Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)} icon={X} className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]">Hủy</Button></div>
             </div>
           </div>
         </div>
       )}
 
-      {/* SET LEADER CONFIRMATION MODAL */}
+      {/* SET LEADER MODAL */}
       {isSetLeaderModalOpen && selectedMemberForLeader && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">
-              Đặt Làm Trưởng Nhóm?
-            </h3>
-
-            <div className="flex justify-center mb-5">
-              <Shield
-                size={64}
-                className="text-[#C3485C]"
-                strokeWidth={1.5}
-              />
-            </div>
-
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">
-              Bạn có chắc muốn chuyển quyền trưởng nhóm cho <span className="text-[#C3485C] font-semibold">{selectedMemberForLeader.name}</span>?
-            </p>
-
+          <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Đặt Làm Trưởng Nhóm?</h3>
+            <div className="flex justify-center mb-5"><Shield size={64} className="text-[#C3485C]" strokeWidth={1.5} /></div>
+            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn chuyển quyền trưởng nhóm cho <span className="text-[#C3485C] font-semibold">{selectedMemberForLeader.name}</span>?</p>
             <div className="flex gap-3 justify-center">
-              <div className="w-1/2">
-                 <Button
-                  variant="primary"
-                  onClick={handleSetLeader}
-                  icon={Shield}
-                  className="bg-[#C3485C] hover:bg-[#a83648]"
-                >
-                  Xác nhận
-                </Button>
-              </div>
-              <div className="w-1/2">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setIsSetLeaderModalOpen(false);
-                    setSelectedMemberForLeader(null);
-                  }}
-                  icon={X}
-                  className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]"
-                >
-                  Hủy
-                </Button>
-              </div>
+              <div className="w-1/2"><Button variant="primary" onClick={handleSetLeader} icon={Shield} className="bg-[#C3485C] hover:bg-[#a83648]">Xác nhận</Button></div>
+              <div className="w-1/2"><Button variant="secondary" onClick={() => { setIsSetLeaderModalOpen(false); setSelectedMemberForLeader(null); }} icon={X} className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]">Hủy</Button></div>
             </div>
           </div>
         </div>
       )}
 
-      {/* REMOVE MEMBER CONFIRMATION MODAL */}
+      {/* REMOVE MEMBER MODAL */}
       {isRemoveMemberModalOpen && selectedMemberForRemoval && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">
-              Xóa Thành Viên?
-            </h3>
-
-            <div className="flex justify-center mb-5">
-              <AlertTriangle
-                size={64}
-                className="text-white fill-[#C3485C]"
-                strokeWidth={1.5}
-              />
-            </div>
-
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">
-              Bạn có chắc muốn xóa <span className="text-[#C3485C] font-semibold">{selectedMemberForRemoval.name}</span> khỏi nhóm?
-            </p>
-
+           <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Xóa Thành Viên?</h3>
+            <div className="flex justify-center mb-5"><AlertTriangle size={64} className="text-white fill-[#C3485C]" strokeWidth={1.5} /></div>
+            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn xóa <span className="text-[#C3485C] font-semibold">{selectedMemberForRemoval.name}</span> khỏi nhóm?</p>
             <div className="flex gap-3 justify-center">
-              <div className="w-1/2">
-                 <Button
-                  variant="primary"
-                  onClick={handleRemoveMember}
-                  icon={LogOut}
-                  className="bg-[#C3485C] hover:bg-[#a83648]"
-                >
-                  Xóa
-                </Button>
-              </div>
-              <div className="w-1/2">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setIsRemoveMemberModalOpen(false);
-                    setSelectedMemberForRemoval(null);
-                  }}
-                  icon={X}
-                  className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]"
-                >
-                  Hủy
-                </Button>
-              </div>
+              <div className="w-1/2"><Button variant="primary" onClick={handleRemoveMember} icon={LogOut} className="bg-[#C3485C] hover:bg-[#a83648]">Xóa</Button></div>
+              <div className="w-1/2"><Button variant="secondary" onClick={() => { setIsRemoveMemberModalOpen(false); setSelectedMemberForRemoval(null); }} icon={X} className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]">Hủy</Button></div>
             </div>
           </div>
         </div>
       )}
 
-      {/* LEAVE GROUP CONFIRMATION MODAL */}
+      {/* LEAVE GROUP MODAL */}
       {isLeaveGroupModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">
-              Rời Nhóm?
-            </h3>
-
-            <div className="flex justify-center mb-5">
-              <LogOut
-                size={64}
-                className="text-[#C3485C]"
-                strokeWidth={1.5}
-              />
-            </div>
-
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">
-              Bạn có chắc muốn rời khỏi nhóm <span className="text-[#C3485C] font-semibold">{mockGroupData.name}</span>?
-            </p>
-
+          <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Rời Nhóm?</h3>
+            <div className="flex justify-center mb-5"><LogOut size={64} className="text-[#C3485C]" strokeWidth={1.5} /></div>
+            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn rời khỏi nhóm <span className="text-[#C3485C] font-semibold">{mockGroupData.name}</span>?</p>
             <div className="flex gap-3 justify-center">
-              <div className="w-1/2">
-                 <Button
-                  variant="primary"
-                  onClick={handleLeaveGroup}
-                  icon={LogOut}
-                  className="bg-[#C3485C] hover:bg-[#a83648]"
-                >
-                  Rời nhóm
-                </Button>
-              </div>
-              <div className="w-1/2">
-                <Button
-                  variant="secondary"
-                  onClick={() => setIsLeaveGroupModalOpen(false)}
-                  icon={X}
-                  className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]"
-                >
-                  Hủy
-                </Button>
-              </div>
+              <div className="w-1/2"><Button variant="primary" onClick={handleLeaveGroup} icon={LogOut} className="bg-[#C3485C] hover:bg-[#a83648]">Rời nhóm</Button></div>
+              <div className="w-1/2"><Button variant="secondary" onClick={() => setIsLeaveGroupModalOpen(false)} icon={X} className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]">Hủy</Button></div>
             </div>
           </div>
         </div>
