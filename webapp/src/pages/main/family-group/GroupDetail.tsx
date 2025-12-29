@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Settings,
@@ -12,7 +12,10 @@ import {
   Shield,
   LogOut,
   AlertTriangle,
-  X, // Added for the cancel button
+  X,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
@@ -43,6 +46,7 @@ const mockGroupData = {
 };
 
 type TabType = 'members' | 'shopping-plan';
+type TimeFilterType = 'today' | 'week' | 'month';
 
 const GroupDetail = () => {
   const navigate = useNavigate();
@@ -50,6 +54,113 @@ const GroupDetail = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [openMemberMenuId, setOpenMemberMenuId] = useState<string | null>(null);
   
+  // Shopping Plan State
+  const [timeFilter, setTimeFilter] = useState<TimeFilterType>('week');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const calendarScrollRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to selected date when filter or selected date changes
+  useEffect(() => {
+    const scrollToSelected = () => {
+      if (calendarScrollRef.current) {
+        const activeButton = calendarScrollRef.current.querySelector('[data-selected="true"]') as HTMLElement;
+        if (activeButton) {
+          activeButton.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+        }
+      }
+    };
+
+    // Double requestAnimationFrame to ensure DOM is fully painted
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollToSelected();
+      });
+    });
+  }, [timeFilter, selectedDate]);
+
+  // Generate dates based on selected filter (always center selected date)
+  const getWeekDates = () => {
+    const today = new Date();
+    const dates = [];
+    const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    let startDate = new Date(selectedDate);
+    let daysToShow = 30; // Show more days for scrolling
+    let centerOffset = 7; // Default center offset
+
+    // Set start date and days to show based on filter (always center selected date)
+    if (timeFilter === 'today') {
+      // Show 7 days before and 7 after selected date (15 total)
+      centerOffset = 7;
+      daysToShow = 15;
+    } else if (timeFilter === 'week') {
+      // Show 7 days before and 7 after selected date (14 total)
+      centerOffset = 7;
+      daysToShow = 14;
+    } else if (timeFilter === 'month') {
+      // Show 15 days before and 15 after selected date (31 total)
+      centerOffset = 15;
+      daysToShow = 31;
+    }
+
+    // Start from centerOffset days before selected date to center it
+    startDate.setDate(selectedDate.getDate() - centerOffset);
+
+    // Show dates starting from startDate
+    for (let i = 0; i < daysToShow; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      dates.push({
+        date: date.getDate(),
+        fullDate: date,
+        label: dayLabels[date.getDay()],
+        active: date.toDateString() === selectedDate.toDateString(),
+        isToday: date.toDateString() === today.toDateString(),
+      });
+    }
+    return dates;
+  };
+
+  const weekDates = useMemo(getWeekDates, [timeFilter, selectedDate]);
+
+  // Handle filter change with date update
+  const handleTimeFilterChange = (filter: TimeFilterType) => {
+    setTimeFilter(filter);
+    const today = new Date();
+
+    if (filter === 'today') {
+      setSelectedDate(new Date(today));
+    } else if (filter === 'week') {
+      setSelectedDate(new Date(today)); // Keep today selected
+    } else if (filter === 'month') {
+      setSelectedDate(new Date(today)); // Keep today selected
+    }
+  };
+
+  // Check if selected date is within range for each filter
+  const today = new Date();
+  const isFilterInRange = (filter: TimeFilterType): boolean => {
+    if (filter === 'today') {
+      return selectedDate.toDateString() === today.toDateString();
+    } else if (filter === 'week') {
+      // Check if selected date is in current week (Monday to Sunday)
+      const dayOfWeek = today.getDay();
+      const weekStart = new Date(today);
+      const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      weekStart.setDate(today.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      return selectedDate >= weekStart && selectedDate <= weekEnd;
+    } else if (filter === 'month') {
+      return selectedDate.getMonth() === today.getMonth() &&
+             selectedDate.getFullYear() === today.getFullYear();
+    }
+    return true;
+  };
+
   // State for the Delete Confirmation Modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -140,6 +251,11 @@ const GroupDetail = () => {
     navigate('/main/family-group');
   };
 
+  const handleCreatePlan = () => {
+    console.log("Create new shopping plan");
+    // navigate('/main/shopping-plan/create'); // Example route
+  };
+
   // Close popovers when clicking outside
   const handleBackdropClick = () => {
     // Don't close anything if any modal is open
@@ -225,15 +341,18 @@ const GroupDetail = () => {
               <span>{mockGroupData.adminName}</span>
             </div>
           </div>
-          <Button
-            variant="primary"
-            size="fit"
-            className="mt-6"
-            icon={UserPlus}
-            onClick={handleEdit}
-          >
-            Thêm thành viên
-          </Button>
+          {/* Only show 'Add Member' button on Members tab */}
+          {activeTab === 'members' && (
+             <Button
+             variant="primary"
+             size="fit"
+             className="mt-6"
+             icon={UserPlus}
+             onClick={handleEdit}
+           >
+             Thêm thành viên
+           </Button>
+          )}
         </div>
 
         {/* Tabs */}
@@ -254,7 +373,11 @@ const GroupDetail = () => {
                 ? 'text-gray-900 border-b-2 border-[#C3485C]'
                 : 'text-gray-500'
             }`}
-            onClick={() => setActiveTab('shopping-plan')}
+            onClick={() => {
+              setActiveTab('shopping-plan');
+              setTimeFilter('today');
+              setSelectedDate(new Date());
+            }}
           >
             Kế hoạch mua sắm
           </button>
@@ -334,9 +457,109 @@ const GroupDetail = () => {
               </div>
             </div>
           )}
+          
           {activeTab === 'shopping-plan' && (
-            <div className="text-center text-gray-500 py-8">
-              <p>Chưa có kế hoạch mua sắm nào.</p>
+            <div className="flex flex-col items-center pt-2">
+              {/* Filter Buttons */}
+              <div className="flex w-full justify-between gap-2 mb-6 px-1">
+                {[
+                  { id: 'today', label: 'Hôm nay' },
+                  { id: 'week', label: 'Tuần này' },
+                  { id: 'month', label: 'Tháng này' }
+                ].map((filter) => {
+                  const inRange = isFilterInRange(filter.id as TimeFilterType);
+                  const isActive = timeFilter === filter.id && inRange;
+                  return (
+                    <button
+                      key={filter.id}
+                      onClick={() => handleTimeFilterChange(filter.id as TimeFilterType)}
+                      className={`
+                        flex-1 py-1.5 px-2 rounded-lg text-sm font-semibold transition-colors
+                        ${isActive
+                          ? 'bg-[#C3485C] text-white shadow-md'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}
+                      `}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Calendar Strip */}
+              <div className="w-full mb-8">
+                <div className="flex items-center gap-2">
+                  {/* Left Navigation Button */}
+                  <button
+                    onClick={() => {
+                      const newDate = new Date(selectedDate);
+                      newDate.setDate(newDate.getDate() - 1);
+                      setSelectedDate(newDate);
+                    }}
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                  >
+                    <ChevronLeft size={24} className="text-gray-600" />
+                  </button>
+
+                  {/* Calendar Days */}
+                  <div ref={calendarScrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-hide snap-x snap-center flex-1">
+                    {weekDates.map((day, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedDate(day.fullDate)}
+                        data-selected={day.active ? 'true' : 'false'}
+                        className="flex flex-col items-center transition-transform active:scale-95 flex-shrink-0 snap-center"
+                      >
+                      {day.active ? (
+                        <div className="bg-[#C3485C] rounded-xl w-14 h-[5.0rem] flex flex-col items-center justify-between py-2 shadow-lg shadow-red-100 cursor-pointer">
+                          <span className="text-[10px] text-white font-medium">{day.label}</span>
+                          <div className="w-8 h-8 rounded-full bg-[#F8EFCE] flex items-center justify-center">
+                            <span className="text-[#C3485C] font-bold text-sm">{day.date}</span>
+                          </div>
+                          <span className="text-[10px] text-white font-medium mt-1">Tháng {day.fullDate.getMonth() + 1}</span>
+                        </div>
+                      ) : day.isToday ? (
+                        <div className="w-10 h-10 rounded-full bg-[#F8EFCE] border border-[#F8EFCE] shadow-sm flex items-center justify-center mt-6 cursor-pointer hover:bg-[#ffdcc4] hover:border-[#ffdcc4] transition-colors">
+                          <span className="text-[#C3485C] font-bold text-sm">{day.date}</span>
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-white border border-gray-100 shadow-sm flex items-center justify-center mt-6 cursor-pointer hover:bg-gray-50 hover:border-gray-200 transition-colors">
+                          <span className="text-gray-900 font-bold text-sm">{day.date}</span>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                  </div>
+
+                  {/* Right Navigation Button */}
+                  <button
+                    onClick={() => {
+                      const newDate = new Date(selectedDate);
+                      newDate.setDate(newDate.getDate() + 1);
+                      setSelectedDate(newDate);
+                    }}
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                  >
+                    <ChevronRight size={24} className="text-gray-600" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Empty State Message */}
+              <p className="text-center text-gray-800 text-sm px-6 mb-6 leading-relaxed">
+                Nhóm chưa có kế hoạch mua sắm nào cả. Hãy tạo kế hoạch mua sắm mới!
+              </p>
+
+              {/* Create Plan Button */}
+              <Button
+                variant="primary"
+                onClick={handleCreatePlan}
+                icon={Plus}
+                size="fit"
+                className="bg-[#C3485C] hover:bg-[#a83648] shadow-none"
+              >
+                Tạo kế hoạch mới
+              </Button>
             </div>
           )}
         </div>
@@ -354,7 +577,6 @@ const GroupDetail = () => {
             </h3>
 
             <div className="flex justify-center mb-5">
-              {/* Using fill to make the triangle solid red, text-white makes the '!' white */}
               <AlertTriangle
                 size={64}
                 className="text-white fill-[#C3485C]"
