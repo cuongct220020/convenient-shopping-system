@@ -11,6 +11,7 @@ import Favorites from 'pages/main/profile/Favorites'
 import FamilyGroup from 'pages/main/family-group/FamilyGroup'
 import AddGroup from 'pages/main/family-group/AddGroup'
 import GroupDetail from 'pages/main/family-group/GroupDetail'
+import EditGroup from 'pages/main/family-group/EditGroup'
 import UserDetail from 'pages/main/family-group/UserDetail'
 import AddPlan from '../pages/main/family-group/AddPlan'
 
@@ -67,11 +68,15 @@ export const MainRoutes = {
       element: <GroupDetail />,
     },
     {
+      path: "family-group/:id/edit",
+      element: <EditGroup />,
+    },
+    {
       path: "family-group/:id/:userId",
       element: <UserDetail />
     },
     {
-      path: "family-group/:id/add",
+      path: "family-group/:id/add-plan",
       element: <AddPlan />
     }
   ],

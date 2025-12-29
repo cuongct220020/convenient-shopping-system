@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Camera, Search, Check } from 'lucide-react';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Camera, Search, Check, X } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
@@ -14,26 +14,41 @@ const MOCK_DB_USER = {
   email: 'hungdeptrai@gmail.com',
 };
 
-const AddGroup: React.FC = () => {
+type GroupData = {
+  id: string;
+  name: string;
+  members: Array<{ id: string; name: string; role: string; email?: string }>;
+};
+
+const EditGroup: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { id } = useParams<{ id: string }>();
+  const groupToEdit = location.state?.group as GroupData;
+
+  if (!groupToEdit || !id) {
+    navigate('/main/family-group');
+    return null;
+  }
 
   // --- State Management ---
-  const [groupName, setGroupName] = useState('');
+  const [groupName, setGroupName] = useState(groupToEdit.name);
   const [memberSearch, setMemberSearch] = useState('');
 
   // Search states
   const [searchResult, setSearchResult] = useState<typeof MOCK_DB_USER | null>(null);
   const [showNotFound, setShowNotFound] = useState(false);
 
-  // Selected members list (Initialized with current user)
-  const [selectedMembers, setSelectedMembers] = useState<UserCardProps[]>([
-    {
-      id: 'user-me',
-      name: 'Bạn (Tôi)',
-      role: 'Trưởng nhóm',
-      isRemovable: false,
-    },
-  ]);
+  // Selected members list (Initialized with existing members)
+  const [selectedMembers, setSelectedMembers] = useState<UserCardProps[]>(
+    groupToEdit.members.map(m => ({
+      id: m.id,
+      name: m.name,
+      role: m.role,
+      email: m.email,
+      isRemovable: m.role !== 'Trưởng nhóm',
+    }))
+  );
 
   // --- Search Logic (Debounced) ---
   useEffect(() => {
@@ -89,7 +104,7 @@ const AddGroup: React.FC = () => {
   };
 
   const handleSubmit = () => {
-    navigate('/main/family-group');
+    navigate(`/main/family-group/${id}`);
   };
 
   return (
@@ -98,12 +113,12 @@ const AddGroup: React.FC = () => {
       <div className="relative mb-6 flex items-center">
         <BackButton
           text="Quay lại"
-          to="/main/family-group"
+          to={`/main/family-group/${id}`}
           className="absolute left-0"
         />
       </div>
       <h1 className="text-xl font-bold text-[#C3485C] text-center">
-        Tạo Nhóm Mới
+        Chỉnh Sửa Nhóm
       </h1>
 
       {/* 2. Group Image Upload */}
@@ -184,19 +199,27 @@ const AddGroup: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. Submit Button */}
-      <div className="mt-10">
+      {/* 5. Submit Buttons */}
+      <div className="mt-10 flex gap-0">
         <Button
           variant="primary"
           onClick={handleSubmit}
           size="fit"
           icon={Check}
         >
-          Tạo nhóm
+          Lưu thay đổi
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => navigate(`/main/family-group/${id}`)}
+          size="fit"
+          icon={X}
+        >
+          Hủy
         </Button>
       </div>
     </div>
   );
 };
 
-export default AddGroup;
+export default EditGroup;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
@@ -18,6 +19,9 @@ const MOCK_INGREDIENTS = [
 ];
 
 const AddPlan = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
   const [planName, setPlanName] = useState('');
   const [ingredientSearch, setIngredientSearch] = useState('');
   const [ingredientQuantity, setIngredientQuantity] = useState('');
@@ -108,7 +112,7 @@ const AddPlan = () => {
 
   return (
     <div className="p-4 max-w-sm mx-auto pb-20">
-      <BackButton text="Quay lại" to="/main/profile" className="mb-2" />
+      <BackButton text="Quay lại" to={`/main/family-group/${id}`} className="mb-2" />
       <h1 className="text-xl font-bold text-[#C3485C] text-center mb-6">
         Tạo Kế Hoạch Mới
       </h1>
@@ -217,6 +221,7 @@ const AddPlan = () => {
 
       <Button
         variant="primary"
+        size="fit"
         onClick={handleCreatePlan}
         icon={Check}
       >

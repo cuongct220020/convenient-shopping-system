@@ -32,7 +32,7 @@ const mockGroupData = {
       id: 'u1',
       name: 'Bạn (Tôi)',
       role: 'Trưởng nhóm',
-      isCurrentUser: false,
+      isCurrentUser: true,
     },
     {
       id: 'u2',
@@ -203,7 +203,7 @@ const GroupDetail = () => {
   };
 
   const handleEdit = () => {
-    navigate('/main/family-group/add', {
+    navigate(`/main/family-group/${mockGroupData.id}/edit`, {
       state: {
         group: {
           id: mockGroupData.id,
@@ -253,7 +253,7 @@ const GroupDetail = () => {
 
   const handleCreatePlan = () => {
     console.log("Create new shopping plan");
-    // navigate('/main/shopping-plan/create'); // Example route
+    navigate(`/main/family-group/${mockGroupData.id}/add-plan`); // Example route
   };
 
   // Close popovers when clicking outside
