@@ -1,0 +1,209 @@
+# user-service/app/services/admin_service.py
+from uuid import UUID
+from typing import Tuple, Sequence
+
+from sqlalchemy.exc import IntegrityError
+
+from app.models.user import User
+from app.repositories.user_repository import UserRepository
+from app.repositories.family_group_repository import FamilyGroupRepository
+from app.repositories.group_membership_repository import GroupMembershipRepository
+from app.schemas.user_admin_schema import UserAdminUpdateSchema, UserAdminCreateSchema
+from app.models.family_group import GroupMembership
+from app.utils.password_utils import hash_password
+from app.enums import GroupRole
+
+from shopping_shared.exceptions import Conflict, NotFound
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger("Admin Service")
+
+class AdminUserService:
+    def __init__(self, user_repository: UserRepository):
+        self.user_repo = user_repository
+
+    # ===== User Management by Admin =====
+
+    async def get_user(self, user_id: UUID):
+        """Fetch a user by ID for admin."""
+        user = await self.user_repo.get_user_with_profiles(user_id)
+        if not user:
+            raise NotFound(f"User with id {user_id} not found")
+        return user
+
+    async def get_all_users_paginated(self, page: int = 1, page_size: int = 20) -> Tuple[list, int]:
+        """Fetch all users with pagination."""
+        from sqlalchemy.orm import selectinload
+        load_options = [
+            selectinload(User.identity_profile),
+            selectinload(User.health_profile)
+        ]
+        paginated_result = await self.user_repo.get_paginated(
+            page=page,
+            page_size=page_size,
+            load_options=load_options
+        )
+
+        # get_paginated returns a PaginationResult object with items and total_items properties
+        return paginated_result.items, paginated_result.total_items
+
+    async def create_user(self, user_data: UserAdminCreateSchema):
+        """Creates a new user by an admin."""
+        # 1. Check Username
+        existing_user = await self.user_repo.get_by_username(user_data.username)
+        if existing_user:
+            raise Conflict(f"User with username '{user_data.username}' already exists.")
+
+        # 2. Check Email
+        existing_email = await self.user_repo.get_by_email(str(user_data.email))
+        if existing_email:
+            raise Conflict(f"User with email '{user_data.email}' already exists.")
+
+        # 3. Check Phone Number (if provided)
+        if user_data.phone_num:
+            existing_phone = await self.user_repo.get_by_field_case_insensitive("phone_num", user_data.phone_num)
+            if existing_phone:
+                raise Conflict(f"User with phone number '{user_data.phone_num}' already exists.")
+
+        # Hash password (handle SecretStr properly)
+        password_str = user_data.password.get_secret_value() if hasattr(user_data.password, 'get_secret_value') else str(user_data.password)
+        hashed_password = hash_password(password_str)
+
+        # Convert schema to dict and inject hashed password
+        new_user_data = user_data.model_dump(exclude={'password'})
+        new_user_data['password_hash'] = hashed_password
+
+        try:
+            # Create user via repository
+            user = await self.user_repo.create_user(new_user_data)
+        except IntegrityError as e:
+            logger.error(f"Integrity error creating user: {e}")
+            raise Conflict("User with provided unique fields (username, email, or phone) already exists.")
+
+        # Refresh user with profiles to avoid lazy-load issues during serialization
+        updated_user = await self.user_repo.get_user_with_profiles(user.id)
+
+        logger.info(f"Admin created user: {user.username}")
+        return updated_user
+
+    async def update_user(self, user_id: UUID, update_data: UserAdminUpdateSchema):
+        """Updates a user's information by an admin."""
+        user = await self.user_repo.update(user_id, update_data)
+        if not user:
+            raise NotFound(f"User with id {user_id} not found")
+
+        # Get the updated user with profiles
+        updated_user = await self.user_repo.get_user_with_profiles(user_id)
+        logger.info(f"Admin updated user: {user_id}")
+        return updated_user
+
+    async def delete_user(self, user_id: UUID):
+        """Delete a user by an admin. Using soft_delete if supported, or delete"""
+        deleted = await self.user_repo.soft_delete(user_id)
+        if not deleted:
+             user = await self.user_repo.get_by_id(user_id)
+             if not user:
+                 raise NotFound(f"User with id {user_id} not found")
+             await self.user_repo.delete(user_id) # Hard delete fallback or actual delete
+
+        logger.info(f"Admin deleted user: {user_id}")
+
+
+
+class AdminGroupService:
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        member_repo: GroupMembershipRepository,
+        group_repo: FamilyGroupRepository
+    ):
+        self.user_repo = user_repository
+        self.member_repo = member_repo
+        self.group_repo = group_repo
+
+    # ===== Group Management by Admin =====
+
+    async def get_all_groups_paginated(self, page: int = 1, page_size: int = 20):
+        """Fetch all groups with pagination."""
+        from sqlalchemy.orm import selectinload
+        from app.models.family_group import FamilyGroup
+        load_options = [
+            selectinload(FamilyGroup.creator),
+            selectinload(FamilyGroup.group_memberships).selectinload(GroupMembership.user)
+        ]
+        paginated_result = await self.group_repo.get_paginated(
+            page=page,
+            page_size=page_size,
+            load_options=load_options
+        )
+        return paginated_result.items, paginated_result.total_items
+
+    async def get_group_by_id(self, group_id: UUID):
+        """Fetch a specific group by ID."""
+        group = await self.group_repo.get_with_details(group_id)
+        if not group:
+            raise NotFound(f"Group with id {group_id} not found")
+        return group
+
+    async def update_group(self, group_id: UUID, update_data):
+        """Update a specific group."""
+        # First update the group
+        updated = await self.group_repo.update(group_id, update_data)
+        if not updated:
+            raise NotFound(f"Group with id {group_id} not found")
+
+        # Then get the updated group with relationships loaded to avoid lazy loading issues
+        group_with_details = await self.group_repo.get_with_details(group_id)
+        if not group_with_details:
+            raise NotFound(f"Group with id {group_id} not found after update")
+
+        return group_with_details
+
+    async def delete_group(self, group_id: UUID):
+        """Delete a specific group."""
+        group = await self.group_repo.get_by_id(group_id)
+        if not group:
+            raise NotFound(f"Group with id {group_id} not found")
+        await self.group_repo.delete(group_id)
+
+    # ===== Group Membership Management by Admin =====
+
+    async def add_member_by_admin(self, group_id: UUID, identifier: str, added_by_user_id: UUID) -> GroupMembership:
+        """Admin adds member directly."""
+        user_to_add = await self.user_repo.get_by_identifier(identifier)
+        if not user_to_add:
+            raise NotFound(f"User with identifier '{identifier}' not found.")
+
+        existing = await self.member_repo.get_membership(user_to_add.id, group_id)
+        if existing:
+            raise Conflict("User is already a member of this group.")
+
+        try:
+            membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER, added_by_user_id)
+            return membership
+        except Exception as e:
+            logger.error(f"Error adding member to group {group_id} for user {user_to_add.id}: {str(e)}", exc_info=True)
+            raise
+
+    async def remove_member_by_admin(self, group_id: UUID, user_id: UUID):
+        """Admin removes member directly."""
+        existing = await self.member_repo.get_membership(user_id, group_id)
+        if not existing:
+             raise NotFound("Membership not found.")
+        await self.member_repo.remove_membership(user_id, group_id)
+
+    async def update_member_role_by_admin(self, group_id: UUID, user_id: UUID, new_role: GroupRole):
+        """Admin updates member role directly."""
+        try:
+            membership = await self.member_repo.update_role(user_id, group_id, new_role)
+            if not membership:
+                raise NotFound("Membership not found.")
+            return membership
+        except Exception as e:
+            logger.error(f"Error updating member role for user {user_id} in group {group_id}: {str(e)}", exc_info=True)
+            raise
+
+    async def get_group_members(self, group_id: UUID) -> Sequence[GroupMembership]:
+        """Get all members of a specific group."""
+        members = await self.member_repo.get_all_members(group_id)
+        return members

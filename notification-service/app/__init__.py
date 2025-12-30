@@ -1,0 +1,77 @@
+from sanic import Sanic
+from sanic.response import json as sanic_json
+from shopping_shared.utils.logger_utils import get_logger
+
+
+logger = get_logger("Initialize Notification Service Application")
+
+
+def register_routes(sanic_app: Sanic):
+    """Register routes for the Notification Service."""
+
+    @sanic_app.route("/", methods=["GET"])
+    async def root(request):
+        """Root endpoint."""
+        return sanic_json({
+            "service": "notification-service",
+            "status": "running",
+            "message": "Notification Service is running"
+        })
+
+    @sanic_app.route("/health", methods=["GET"])
+    async def health_check(request):
+        """Health check endpoint."""
+        return sanic_json({
+            "status": "healthy",
+            "service": "notification-service"
+        })
+
+
+def register_listeners(sanic_app: Sanic):
+    """Register lifecycle listeners for the Notification Service."""
+    from app.hooks.message_broker import setup_kafka, close_kafka
+    from app.consumers.notification_consumer import consume_notifications, request_shutdown
+    from app.services.email_service import EmailService
+
+    # Initialize email service with the app
+    @sanic_app.listener("before_server_start")
+    async def init_services(app, loop):
+        """Initialize services that require app context."""
+        # Attach email service to app context as requested
+        app.ctx.email_service = EmailService(app)
+        logger.info("Email Service attached to app.ctx")
+
+    sanic_app.register_listener(setup_kafka, "before_server_start")
+    sanic_app.register_listener(close_kafka, "after_server_stop")
+
+    @sanic_app.listener("after_server_start")
+    async def start_consumer(app, loop):
+        """Start Kafka consumer as background task after server starts."""
+        logger.info("Starting Kafka consumer background task...")
+        # Pass the app instance to the consumer task so it can access app.ctx
+        app.add_task(consume_notifications(app))
+
+    @sanic_app.listener("before_server_stop")
+    async def stop_consumer(app, loop):
+        """Request graceful shutdown of Kafka consumer."""
+        logger.info("Requesting consumer shutdown...")
+        request_shutdown()
+
+
+def create_app(*config_cls) -> Sanic:
+    """Application factory for the Notification Service."""
+    logger.info(f"Sanic application initialized with { ', '.join([config.__name__ for config in config_cls]) }")
+
+    sanic_app = Sanic(__name__)
+
+    # Load configurations
+    for config in config_cls:
+        sanic_app.update_config(config)
+
+    # Register routes (required by Sanic - at least one route must exist)
+    register_routes(sanic_app)
+
+    # Register lifecycle listeners
+    register_listeners(sanic_app)
+
+    return sanic_app
