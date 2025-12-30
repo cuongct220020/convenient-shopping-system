@@ -28,6 +28,7 @@ type RequestErrorType =
   | 'unauthorized'
   | 'path-not-found'
   | 'forbidden'
+  | 'conflict'
 type WithType<T extends string> = {
   [K in T]: {
     type: K
@@ -65,6 +66,8 @@ export function httpPost<T>(
           return { type: 'path-not-found', desc: null }
         case 403:
           return { type: 'forbidden', desc: null }
+        case 409:
+          return { type: 'conflict', desc: null }
         default:
           return {
             type: 'network-error',

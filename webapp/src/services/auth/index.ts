@@ -9,11 +9,10 @@ import {
 import z from 'zod'
 import { parseZodObject } from '../../utils/zod-result'
 import { i18nKeys } from '../../utils/i18n/keys'
+import { UserAuthSchemaZ } from '../schema/authSchema'
 
 const LogInResponseSchema = z.object({
-  data: z.object({
-    access_token: z.string()
-  })
+  data: UserAuthSchemaZ
 })
 type LogInResponse = z.infer<typeof LogInResponseSchema>
 type LogInError = ResponseError<'incorrect-credentials' | 'unverfified'>
@@ -23,13 +22,13 @@ type FullnameValidationOk = {
   lastName: string
 }
 type RegisterResponse = null
-type RegisterError = ResponseError<never>
+type RegisterError = ResponseError<'credentials-existed'>
 
 type VerificationResponse = null
 type VerificationError = ResponseError<'incorrect-otp' | 'user-not-found'>
 
 type AskVerifyResponse = null
-type AskVerifyError = ResponseError<never>
+type AskVerifyError = ResponseError<'credentials-not-found'>
 
 type OtpType = 'register' | 'reset_password' | 'change_email'
 
@@ -165,7 +164,19 @@ export class AuthService {
       password: opts.password,
       first_name: opts.firstName,
       last_name: opts.lastName
-    }).map(() => null)
+    })
+      .map(() => null)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'conflict':
+            return {
+              ...e,
+              type: 'credentials-existed'
+            }
+          default:
+            return e
+        }
+      })
   }
 
   public sendOtpRequest(
@@ -175,7 +186,19 @@ export class AuthService {
     return httpPost(this.clients.pub, AppUrl.SEND_OTP, {
       email,
       action: type
-    }).map(() => null)
+    })
+      .map(() => null)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return {
+              ...e,
+              type: 'credentials-not-found'
+            }
+          default:
+            return e
+        }
+      })
   }
 
   public verifyOtp(opts: {
@@ -185,8 +208,8 @@ export class AuthService {
   }): ResultAsync<VerificationResponse, VerificationError> {
     return httpPost(this.clients.pub, AppUrl.VERIFY_OTP, {
       email: opts.identification,
-      otp_code: opts.otp,
-      action: opts.type
+      otp_code: opts.otp
+      // action: opts.type
     })
       .map(() => null)
       .mapErr((e) => {
