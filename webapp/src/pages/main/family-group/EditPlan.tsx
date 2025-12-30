@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
-import { Plus, DollarSign, FileText, Check, Search } from 'lucide-react';
+import { Plus, DollarSign, FileText, Check, Search, X } from 'lucide-react';
 import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
 
-// Dummy image for broccoli
+// Dummy image for ingredients
 const BROCCOLI_IMAGE_URL = 'https://i.imgur.com/0Zl3xYm.png';
 
 // Mock database of available ingredients
@@ -18,23 +18,55 @@ const MOCK_INGREDIENTS = [
   { id: 'ing-5', name: 'Trứng', category: 'Đồ tươi', image: BROCCOLI_IMAGE_URL },
 ];
 
-const AddPlan = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+type PlanData = {
+  id: string;
+  title: string;
+  status: string;
+  creator: string;
+  budget: string;
+  deadline: string;
+  note: string;
+  ingredients: Ingredient[];
+};
 
-  const [planName, setPlanName] = useState('');
+const EditPlan: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { id, planId } = useParams<{ id: string; planId: string }>();
+  const planToEdit = location.state?.plan as PlanData;
+
+  if (!planToEdit || !id || !planId) {
+    navigate(`/main/family-group/${id}`);
+    return null;
+  }
+
+  // --- State Management ---
+  // Parse deadline to datetime-local format
+  const parseDeadlineToLocal = (deadlineStr: string): string => {
+    // Assuming format like "21:00 - Thứ 4, 24/12/2025"
+    // For edit, we'll use a simple date format or return empty
+    // In a real app, you'd parse this properly
+    return '';
+  };
+
+  // Format currency for budget input (remove " VND" suffix)
+  const formatBudget = (budgetStr: string): string => {
+    return budgetStr.replace(' VND', '').replace('.', '').trim();
+  };
+
+  const [planName, setPlanName] = useState(planToEdit.title);
   const [ingredientSearch, setIngredientSearch] = useState('');
   const [ingredientQuantity, setIngredientQuantity] = useState('');
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>(planToEdit.ingredients);
 
   // Search states
   const [searchResult, setSearchResult] = useState<typeof MOCK_INGREDIENTS[0] | null>(null);
   const [showNotFound, setShowNotFound] = useState(false);
   const [showQuantityInput, setShowQuantityInput] = useState(false);
 
-  const [deadline, setDeadline] = useState('');
-  const [budget, setBudget] = useState('');
-  const [notes, setNotes] = useState('');
+  const [deadline, setDeadline] = useState(parseDeadlineToLocal(planToEdit.deadline));
+  const [budget, setBudget] = useState(formatBudget(planToEdit.budget));
+  const [notes, setNotes] = useState(planToEdit.note);
 
   // --- Search Logic (Debounced) ---
   useEffect(() => {
@@ -54,7 +86,7 @@ const AddPlan = () => {
 
       if (isAlreadyAdded) {
         setSearchResult(null);
-        setShowNotFound(true); // Treat already added as "not found" for adding purposes
+        setShowNotFound(true);
         setShowQuantityInput(false);
         return;
       }
@@ -78,6 +110,7 @@ const AddPlan = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [ingredientSearch, ingredients]);
 
+  // --- Handlers ---
   const handleAddIngredient = () => {
     if (searchResult && ingredientQuantity) {
       const newIngredient: Ingredient = {
@@ -99,7 +132,7 @@ const AddPlan = () => {
     setIngredients(ingredients.filter((ing) => ing.id !== id));
   };
 
-  const handleCreatePlan = () => {
+  const handleSubmit = () => {
     console.log({
       planName,
       ingredients,
@@ -107,18 +140,18 @@ const AddPlan = () => {
       budget,
       notes,
     });
-    navigate(`/main/family-group/${id}`, { state: { activeTab: 'shopping-plan' } });
+    navigate(`/main/family-group/${id}/plan/${planId}`);
   };
 
   const handleBack = () => {
-    navigate(`/main/family-group/${id}`, { state: { activeTab: 'shopping-plan' } });
+    navigate(`/main/family-group/${id}/plan/${planId}`);
   };
 
   return (
     <div className="p-4 max-w-sm mx-auto pb-20">
-      <BackButton text="Quay lại" to={`/main/family-group/${id}`} onClick={handleBack} className="mb-2" />
+      <BackButton text="Quay lại" to={`/main/family-group/${id}/plan/${planId}`} onClick={handleBack} className="mb-2" />
       <h1 className="text-xl font-bold text-[#C3485C] text-center mb-6">
-        Tạo Kế Hoạch Mới
+        Chỉnh Sửa Kế Hoạch
       </h1>
 
       <div className="mb-6">
@@ -225,16 +258,27 @@ const AddPlan = () => {
         </div>
       </div>
 
-      <Button
-        variant="primary"
-        size="fit"
-        onClick={handleCreatePlan}
-        icon={Check}
-      >
-        Tạo kế hoạch
-      </Button>
+      {/* Submit Buttons */}
+      <div className="flex gap-0">
+        <Button
+          variant="primary"
+          onClick={handleSubmit}
+          size="fit"
+          icon={Check}
+        >
+          Lưu thay đổi
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={handleBack}
+          size="fit"
+          icon={X}
+        >
+          Hủy
+        </Button>
+      </div>
     </div>
   );
 };
 
-export default AddPlan;
+export default EditPlan;

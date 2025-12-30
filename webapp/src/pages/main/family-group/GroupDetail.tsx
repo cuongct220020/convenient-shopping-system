@@ -512,7 +512,7 @@ const GroupDetail = () => {
                         <p className="text-xs text-gray-500 mt-1">
                           {plan.creator} • {plan.ingredients} nguyên liệu
                         </p>
-                        <p className="text-xs text-gray-900 mt-1 font-medium">{plan.cost}</p>
+                        <p className="text-xs text-gray-500 mt-1">{plan.cost}</p>
                       </div>
                       <div>
                         {renderStatusBadge(plan.status)}
