@@ -1,0 +1,83 @@
+import axios, { AxiosInstance } from 'axios'
+import { ResultAsync } from 'neverthrow'
+
+export class AppUrl {
+  static readonly BASE = import.meta.env.VITE_API_BASE_URL
+  static readonly AUTH = 'user-service/auth'
+  static readonly LOGIN = this.AUTH + '/login'
+  static readonly REGISTER = this.AUTH + '/register'
+  static readonly SEND_OTP = this.AUTH + '/otp/send'
+  static readonly VERIFY_OTP = this.AUTH + '/otp/verify'
+  static readonly RESET_PASSWORD = this.AUTH + '/reset-password'
+}
+
+export type Clients = {
+  pub: AxiosInstance
+  auth: AxiosInstance
+}
+function initClient(): Clients {
+  axios.defaults.baseURL = AppUrl.BASE
+  const pub = axios.create({ url: AppUrl.BASE })
+  const auth = axios.create({ url: AppUrl.BASE })
+  return { pub, auth }
+}
+export const httpClients = initClient()
+
+type RequestErrorType =
+  | 'network-error'
+  | 'unauthorized'
+  | 'path-not-found'
+  | 'forbidden'
+  | 'conflict'
+type WithType<T extends string> = {
+  [K in T]: {
+    type: K
+    desc: string | null
+  }
+}[T]
+export type RequestError = WithType<RequestErrorType>
+export type RequestOk = {
+  body: unknown
+}
+export type ResponseError<Codes extends string> =
+  | RequestError
+  | WithType<Codes>
+  | WithType<'invalid-response-format'>
+
+export function httpPost<T>(
+  client: AxiosInstance,
+  url: string,
+  other: T
+): ResultAsync<RequestOk, RequestError> {
+  return ResultAsync.fromThrowable(
+    () => client.post(url, other),
+    (e): RequestError => {
+      if (!axios.isAxiosError(e) || e.response === undefined) {
+        return {
+          type: 'network-error',
+          desc: null
+        }
+      }
+      const status = e.response.status
+      switch (status) {
+        case 401:
+          return { type: 'unauthorized', desc: null }
+        case 404:
+          return { type: 'path-not-found', desc: null }
+        case 403:
+          return { type: 'forbidden', desc: null }
+        case 409:
+          return { type: 'conflict', desc: null }
+        default:
+          return {
+            type: 'network-error',
+            desc: `HTTP ${status}`
+          }
+      }
+    }
+  )().map((response) => {
+    return {
+      body: response.data
+    }
+  })
+}
