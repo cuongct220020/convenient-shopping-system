@@ -31,7 +31,7 @@ class Ingredient(RecipeComponent):
     fiber: Mapped[float] = mapped_column(Float, nullable=True)
     calories: Mapped[float] = mapped_column(Float, nullable=True)
     estimated_price: Mapped[int] = mapped_column(Integer, nullable=True)
-    ingredient_tag_list: Mapped[list[int]] = mapped_column(JSONB, nullable=True)
+    ingredient_tag_list: Mapped[list[str]] = mapped_column(JSONB, nullable=True)
 
     __mapper_args__ = {
         "polymorphic_identity": "ingredient",

@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, Depends, Query, HTTPException, Path, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from services.recipe_crud import RecipeCRUD
+from services.recommender import Recommender
 from models.recipe_component import Recipe
 from schemas.recipe_flattened_schemas import (
     RecipeQuantityInput,
@@ -21,6 +22,29 @@ recipe_router = APIRouter(
     prefix="/v2/recipes",
     tags=["Recipes"]
 )
+
+@recipe_router.get(
+    "/recommend",
+    response_model=List[RecipeResponse],
+    status_code=status.HTTP_200_OK,
+    description="Get recommended recipes for a group based on ingredient availability and tag preferences. Returns top 10 recipes."
+)
+def recommend_recipes(
+    group_id: int = Query(..., ge=1, description="Group ID to get recommendations for"),
+    db: Session = Depends(get_db)
+):
+    recommender = Recommender(db)
+    recipe_ids = recommender.recommend(db, group_id)
+    
+    if not recipe_ids:
+        return []
+    
+    recipes = recipe_crud.get_detail(db, recipe_ids)
+    # Sort theo thứ tự trong recipe_ids để giữ thứ tự recommend
+    recipe_map = {r.component_id: r for r in recipes}
+    sorted_recipes = [recipe_map[rid] for rid in recipe_ids if rid in recipe_map]
+    
+    return [RecipeResponse.model_validate(r, from_attributes=True) for r in sorted_recipes]
 
 @recipe_router.get(
     "/search",
