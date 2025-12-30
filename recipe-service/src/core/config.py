@@ -1,6 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
-
+from pathlib import Path
 
 class Settings(BaseSettings):
     
@@ -13,24 +12,13 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL(self) -> str:
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/recipe_db"
-
-    ES_SCHEME: str = "http"
-    ES_HOST: str = "elasticsearch"
-    ES_PORT: int = 9200
-    ES_USERNAME: Optional[str] = None
-    ES_PASSWORD: Optional[str] = None
-
-    @property
-    def ES_URL(self) -> str:
-        return f"{self.ES_SCHEME}://{self.ES_HOST}:{self.ES_PORT}"
     
     # Kafka Configuration
     KAFKA_BOOTSTRAP_SERVERS: str = "kafka-broker:9092"
     
     class Config:
-        env_file = ".env"
+        env_file = Path(__file__).resolve().parent.parent.parent.parent / ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
 
 settings = Settings()
-

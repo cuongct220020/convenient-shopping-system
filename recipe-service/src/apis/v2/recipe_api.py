@@ -33,7 +33,7 @@ async def search_recipes(
     limit: int = Query(10, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
-    return await recipe_crud.search(db, keyword=keyword, limit=limit)
+    return recipe_crud.search(db, keyword=keyword, limit=limit)
 
 @recipe_router.post(
     "/flattened",

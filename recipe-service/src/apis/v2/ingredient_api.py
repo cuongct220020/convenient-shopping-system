@@ -29,7 +29,7 @@ async def search_ingredients(
         limit: int = Query(100, ge=1, description="Maximum number of results to return"),
         db: Session = Depends(get_db)
 ):
-    items = await ingredient_crud.search(db, keyword=keyword, cursor=cursor, limit=limit)
+    items = ingredient_crud.search(db, keyword=keyword, cursor=cursor, limit=limit)
     pk = inspect(Ingredient).primary_key[0]
     next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
     return PaginationResponse(

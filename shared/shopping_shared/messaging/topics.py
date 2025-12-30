@@ -12,16 +12,6 @@ NOTIFICATION_TOPIC = "service_notifications"
 # Example message: {'event_type': 'user_updated_preferences', 'user_id': 123, 'preferences': {...}}
 USER_EVENTS_TOPIC = "user_events"
 
-# Topic for events related to ingredients.
-# The recipe-service will produce events here when ingredients are created, updated, or deleted.
-# Example message: {'event_type': 'ingredient_created', 'data': {'component_id': 123, 'component_name': '...', 'type': '...', 'unit': '...'}}
-INGREDIENT_EVENTS_TOPIC = "ingredient_events"
-
-# Topic for events related to recipes.
-# The recipe-service will produce events here when recipes are created, updated, or deleted.
-# Example message: {'event_type': 'recipe_created', 'data': {'component_id': 123, 'component_name': '...', 'component_list': [...]}}
-RECIPE_EVENTS_TOPIC = "recipe_events"
-
 # Topic for component existence updates.
 # The shopping-storage-service will produce events here when storable units are added/removed.
 # The recipe-service will consume this to update component existence cache.

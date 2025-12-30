@@ -7,9 +7,7 @@ from fastapi import HTTPException
 from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient
 from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate
 from enums.category import Category
-from messaging.producers.ingredient_producer import publish_ingredient_event
-from core.es import get_es
-import asyncio
+from sqlalchemy import or_
 
 class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
     model_map = {
@@ -26,11 +24,6 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         try:
             db.commit()
             db.refresh(db_obj)
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(publish_ingredient_event("ingredient_created", db_obj))
-            else:
-                loop.run_until_complete(publish_ingredient_event("ingredient_created", db_obj))
         except IntegrityError as e:
             db.rollback()
             raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
@@ -46,11 +39,6 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         try:
             db.commit()
             db.refresh(db_obj)
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(publish_ingredient_event("ingredient_updated", db_obj))
-            else:
-                loop.run_until_complete(publish_ingredient_event("ingredient_updated", db_obj))
         except IntegrityError as e:
             db.rollback()
             raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
@@ -60,33 +48,16 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         obj = db.get(Ingredient, id)
         if obj is None:
             raise HTTPException(status_code=404, detail=f"Ingredient with id={id} not found")
-
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.create_task(publish_ingredient_event("ingredient_deleted", id))
-        else:
-            loop.run_until_complete(publish_ingredient_event("ingredient_deleted", id))
-
         return super().delete(db, id)
 
-    async def search(self, db: Session, keyword: str, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
-        es = get_es()
-        query = {
-            "query": {
-                "match": {
-                    "component_name": keyword
-                }
-            },
-            "size": 1000
-        }
-        response = await es.search(index="ingredients", **query)
-        component_ids = [int(hit["_id"]) for hit in response["hits"]["hits"]]
-        
-        if not component_ids:
-            return []
-        
+    def search(self, db: Session, keyword: str, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
         IngredientPoly = with_polymorphic(Ingredient, "*")
-        stmt = select(IngredientPoly).where(IngredientPoly.component_id.in_(component_ids))
+        stmt = select(IngredientPoly).where(
+            or_(
+                CountableIngredient.component_name.ilike(f"%{keyword}%"),
+                UncountableIngredient.component_name.ilike(f"%{keyword}%")
+            )
+        )
         if cursor is not None:
             stmt = stmt.where(IngredientPoly.component_id < cursor)
         stmt = stmt.order_by(IngredientPoly.component_id.desc()).limit(limit)

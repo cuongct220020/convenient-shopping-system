@@ -267,18 +267,11 @@ services:
     depends_on:
       kafka-broker:
         condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
     environment:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - ES_SCHEME=${ES_SCHEME}
-      - ES_HOST=${ES_HOST}
-      - ES_PORT=${ES_PORT}
-      - ES_USERNAME=${ES_USERNAME}
-      - ES_PASSWORD=${ES_PASSWORD}
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
     ports:
       - "8001:8001" # Access via localhost:8001

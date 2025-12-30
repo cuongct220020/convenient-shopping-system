@@ -19,6 +19,7 @@ class RecipeCreate(RecipeBase):
     level: Level
     default_servings: int = Field(1, ge=1)
     instructions: list[str]
+    keywords: list[str] = Field(default_factory=list)
     component_list: list[ComponentBase]
 
     model_config = ConfigDict(extra="forbid")
@@ -29,6 +30,7 @@ class RecipeUpdate(RecipeBase):
     level: Optional[Level] = None
     default_servings: Optional[int] = Field(None, ge=1)
     instructions: Optional[list[str]] = None
+    keywords: Optional[list[str]] = None
     component_list: Optional[list[ComponentBase]] = None
 
     model_config = ConfigDict(extra="forbid")
@@ -40,6 +42,7 @@ class RecipeResponse(RecipeBase):
     level: Level
     default_servings: int
     instructions: list[str]
+    keywords: list[str]
     component_list: list[ComponentBase]
 
     model_config = ConfigDict(from_attributes=True)
@@ -64,6 +67,7 @@ class RecipeDetailedResponse(RecipeBase):
     level: Level
     default_servings: int
     instructions: list[str]
+    keywords: list[str]
     component_list: list[ComponentDetailedBase]
 
 RecipeDetailedResponse.model_rebuild()

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import select
+from sqlalchemy import select, or_, cast
+from sqlalchemy.dialects.postgresql import JSONB
 from typing import Sequence, Optional
-import asyncio
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
 from models.component_existence import ComponentExistence
@@ -9,8 +9,6 @@ from schemas.recipe_schemas import RecipeCreate, RecipeUpdate
 from schemas.recipe_flattened_schemas import RecipeQuantityInput
 from schemas.ingredient_schemas import IngredientResponse
 from utils.custom_mapping import recipes_flattened_aggregated_mapping
-from messaging.producers.recipe_producer import publish_recipe_event
-from core.es import get_es
 
 """
     Method for RecipeDetailResponse
@@ -25,11 +23,6 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
                 db.refresh(cl)
                 if cl.component:
                     db.refresh(cl.component)
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.create_task(publish_recipe_event("recipe_created", db_obj))
-        else:
-            loop.run_until_complete(publish_recipe_event("recipe_created", db_obj))
         return db_obj
 
     def update(self, db: Session, obj_in: RecipeUpdate, db_obj: Recipe) -> Recipe:
@@ -40,11 +33,6 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
                 db.refresh(cl)
                 if cl.component:
                     db.refresh(cl.component)
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.create_task(publish_recipe_event("recipe_updated", result))
-        else:
-            loop.run_until_complete(publish_recipe_event("recipe_updated", result))
         return result
 
     def delete(self, db: Session, id: int) -> Recipe:
@@ -52,11 +40,6 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
         if obj is None:
             from fastapi import HTTPException
             raise HTTPException(status_code=404, detail=f"Recipe with id={id} not found")
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.create_task(publish_recipe_event("recipe_deleted", id))
-        else:
-            loop.run_until_complete(publish_recipe_event("recipe_deleted", id))
         return super().delete(db, id)
 
     def get_detail(self, db: Session, ids: list[int]) -> Sequence[Recipe]:
@@ -73,28 +56,15 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
             .where(Recipe.component_id.in_(ids))
         ).scalars().all()
 
-    async def search(self, db: Session, keyword: str, limit: int = 10) -> Sequence[Recipe]:
-        es = get_es()
-        query = {
-            "query": {
-                "multi_match": {
-                    "query": keyword,
-                    "fields": ["component_name", "component_list"]
-                }
-            },
-            "size": 1000
-        }
-        response = await es.search(index="recipes", **query)
-        component_ids = [int(hit["_id"]) for hit in response["hits"]["hits"]]
-
-        if not component_ids:
-            return []
-
-        return db.execute(
-            select(Recipe)
-            .where(Recipe.component_id.in_(component_ids))
-            .limit(limit)
-        ).scalars().all()
+    def search(self, db: Session, keyword: str, limit: int = 10) -> Sequence[Recipe]:
+        keyword_lower = keyword.lower()
+        stmt = select(Recipe).where(
+            or_(
+                Recipe.component_name.ilike(f"%{keyword}%"),
+                Recipe.keywords.contains([keyword_lower])
+            )
+        ).limit(limit)
+        return db.execute(stmt).scalars().all()
 
     async def get_flattened(
         self,
