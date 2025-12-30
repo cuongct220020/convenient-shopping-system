@@ -215,46 +215,46 @@ services:
       timeout: 10s
       retries: 5
 
-#  # User Service
-#  user-service:
-#    build:
-#      context: .
-#      dockerfile: user-service/Dockerfile
-#    container_name: user-service
-#    profiles:
-#      - user-service
-#    depends_on:
-#      - postgres-db
-#      - redis-caching
-#      - kafka-broker
-#      - kong-gateway
-#    environment:
-#      - APP_HOST=${APP_HOST}
-#      - APP_PORT=${APP_PORT}
-#      - JWT_SECRET=${JWT_SECRET}
-#      - JWT_ALGORITHM=${JWT_ALGORITHM}
-#      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
-#      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS}
-#      - POSTGRES_DB_DRIVER=${POSTGRES_DB_DRIVER}
-#      - POSTGRES_DB_USER=${POSTGRES_DB_USER}
-#      - POSTGRES_DB_PASSWORD=${POSTGRES_DB_PASSWORD}
-#      - POSTGRES_DB_NAME=${POSTGRES_DB_NAME}
-#      - POSTGRES_DB_HOST=${POSTGRES_DB_HOST}
-#      - POSTGRES_DB_PORT=${POSTGRES_DB_PORT}
-#      - REDIS_HOST=${REDIS_HOST}
-#      - REDIS_PORT=${REDIS_PORT}
-#      - REDIS_DB=${REDIS_DB}
-#      - REDIS_PASSWORD=${REDIS_PASSWORD}
-#      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
-#      - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:9092
-#    ports:
-#      - "9001:8000" # Access via localhost:9001
-#    volumes:
-#      - ./microservices/user-service:/api
-#      - /api/.venv  # Exclude virtual environment
-#    networks:
-#      - shopping-network
-#    restart: unless-stopped
+  # User Service
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    profiles:
+      - user-service
+    depends_on:
+      - postgres-db
+      - redis-caching
+      - kafka-broker
+      - kong-gateway
+    environment:
+      - APP_HOST=${APP_HOST}
+      - APP_PORT=${APP_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
+      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS}
+      - POSTGRES_DB_DRIVER=${POSTGRES_DB_DRIVER}
+      - POSTGRES_DB_USER=${POSTGRES_DB_USER}
+      - POSTGRES_DB_PASSWORD=${POSTGRES_DB_PASSWORD}
+      - POSTGRES_DB_NAME=${POSTGRES_DB_NAME}
+      - POSTGRES_DB_HOST=${POSTGRES_DB_HOST}
+      - POSTGRES_DB_PORT=${POSTGRES_DB_PORT}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:9092
+    ports:
+      - "9001:8000" # Access via localhost:9001
+    volumes:
+      - ./user-service:/api
+      - /api/.venv  # Exclude virtual environment
+    networks:
+      - shopping-network
+    restart: unless-stopped
 #
 #
 #  recipe-service:

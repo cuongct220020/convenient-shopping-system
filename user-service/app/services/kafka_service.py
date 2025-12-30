@@ -5,7 +5,9 @@ from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
-    EMAIL_CHANGE_EVENTS_TOPIC
+    EMAIL_CHANGE_EVENTS_TOPIC,
+    GROUP_USER_ADDED_EVENTS_TOPIC,
+    USER_UPDATE_TAG_EVENTS_TOPIC
 )
 
 
@@ -14,7 +16,7 @@ logger = get_logger("Kafka Service")
 class KafkaService:
 
     @staticmethod
-    async def publish_message(email: str, otp_code: str, action: str) -> None:
+    async def publish_otp_message(email: str, otp_code: str, action: str) -> None:
         """
         Publish user registration otp via Kafka.
         """
@@ -48,5 +50,43 @@ class KafkaService:
         except Exception as e:
             logger.error(f"Failed to publish user registration otp: {e}")
             raise e
+
+    @staticmethod
+    async def publish_group_user_added_message(
+        requester_id: str,
+        group_id: str,
+        user_to_add_id: str,
+        user_to_add_identifier: str,
+        topic: str = GROUP_USER_ADDED_EVENTS_TOPIC
+    ):
+        payload = {
+            "requester_id": str(requester_id),  # Convert UUID to string
+            "group_id": str(group_id),          # Convert UUID to string
+            "user_to_add_id": str(user_to_add_id),  # Convert UUID to string
+            "user_to_add_identifier": user_to_add_identifier
+        }
+
+        logger.info(f"Attempting to publish group user added message to topic: {topic}")
+        logger.info(f"Payload: {payload}")
+
+        try:
+            await kafka_manager.send_message(
+                topic=topic,
+                value=payload,
+                key=str(group_id),  # Convert UUID to string
+                wait=True
+            )
+            logger.info(f"Group user added message published successfully to topic: {topic}")
+        except Exception as e:
+            logger.error(f"Failed to publish group user added message to topic {topic}: {e}")
+            raise e
+
+
+    @staticmethod
+    async def publish_user_update_tag_message(
+        topic: str = USER_UPDATE_TAG_EVENTS_TOPIC
+    ):
+        pass
+
 
 kafka_service = KafkaService()
