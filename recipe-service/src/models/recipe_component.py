@@ -1,4 +1,5 @@
-from sqlalchemy import Integer, String, Float, Enum, ForeignKey, JSON, UniqueConstraint
+from sqlalchemy import Integer, String, Float, Enum, ForeignKey, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from enums.c_measurement_unit import CMeasurementUnit
 from enums.uc_measurement_unit import UCMeasurementUnit
@@ -30,7 +31,7 @@ class Ingredient(RecipeComponent):
     fiber: Mapped[float] = mapped_column(Float, nullable=True)
     calories: Mapped[float] = mapped_column(Float, nullable=True)
     estimated_price: Mapped[int] = mapped_column(Integer, nullable=True)
-    ingredient_tag_list: Mapped[list[int]] = mapped_column(JSON, nullable=True)
+    ingredient_tag_list: Mapped[list[int]] = mapped_column(JSONB, nullable=True)
 
     __mapper_args__ = {
         "polymorphic_identity": "ingredient",
@@ -92,7 +93,8 @@ class Recipe(RecipeComponent):
     cook_time: Mapped[int] = mapped_column(Integer, nullable=True)
     default_servings: Mapped[int] = mapped_column(Integer, default=1)
     level: Mapped[Level] = mapped_column(Enum(Level), nullable=True)
-    instructions: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    instructions: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    keywords: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     component_list: Mapped[list["ComponentList"]] = relationship(
         back_populates="recipe",
         cascade="all, delete-orphan"
