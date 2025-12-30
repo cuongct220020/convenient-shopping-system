@@ -144,14 +144,12 @@ class FamilyGroupService:
         # 5. Publish message to kafka topics
         user_to_add_identifier = user_to_add.email if user_to_add.email else user_to_add.username
 
-        logger.info(f"About to publish Kafka message for user {user_to_add.id} added to group {group_id}")
         await kafka_service.publish_group_user_added_message(
             requester_id=requester_id,
             group_id=group_id,
             user_to_add_id=user_to_add.id,
             user_to_add_identifier=user_to_add_identifier,
         )
-        logger.info(f"Kafka message published successfully for user {user_to_add.id} added to group {group_id}")
 
         return membership
 

@@ -6,7 +6,7 @@ from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC,
-    GROUP_USER_ADDED_EVENTS_TOPIC,
+    ADD_USERS_GROUP_EVENTS_TOPIC,
     USER_UPDATE_TAG_EVENTS_TOPIC
 )
 
@@ -57,7 +57,7 @@ class KafkaService:
         group_id: str,
         user_to_add_id: str,
         user_to_add_identifier: str,
-        topic: str = GROUP_USER_ADDED_EVENTS_TOPIC
+        topic: str = ADD_USERS_GROUP_EVENTS_TOPIC
     ):
         payload = {
             "requester_id": str(requester_id),  # Convert UUID to string
@@ -66,8 +66,6 @@ class KafkaService:
             "user_to_add_identifier": user_to_add_identifier
         }
 
-        logger.info(f"Attempting to publish group user added message to topic: {topic}")
-        logger.info(f"Payload: {payload}")
 
         try:
             await kafka_manager.send_message(

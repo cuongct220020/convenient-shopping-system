@@ -7,12 +7,15 @@ from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
-    EMAIL_CHANGE_EVENTS_TOPIC
+    EMAIL_CHANGE_EVENTS_TOPIC,
+    ADD_USERS_GROUP_EVENTS_TOPIC
 )
 
 # Import Handlers
 from app.consumers.handlers.base_handler import BaseMessageHandler
 from app.consumers.handlers.otp_handler import OTPMessageHandler
+from app.consumers.handlers.family_group_handler import AddUserGroupHandler
+
 
 logger = get_logger("Notification Consumer")
 
@@ -36,6 +39,7 @@ async def consume_notifications(app=None):
         REGISTRATION_EVENTS_TOPIC: OTPMessageHandler(expected_action="register"),
         RESET_PASSWORD_EVENTS_TOPIC: OTPMessageHandler(expected_action="reset_password"),
         EMAIL_CHANGE_EVENTS_TOPIC: OTPMessageHandler(expected_action="change_email"),
+        ADD_USERS_GROUP_EVENTS_TOPIC: AddUserGroupHandler()
     }
     
     topics = list(handlers.keys())

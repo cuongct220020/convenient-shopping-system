@@ -30,6 +30,7 @@ def register_routes(sanic_app: Sanic):
 def register_listeners(sanic_app: Sanic):
     """Register lifecycle listeners for the Notification Service."""
     from app.hooks.message_broker import setup_kafka, close_kafka
+    from app.hooks.database import setup_db, close_db
     from app.consumers.notification_consumer import consume_notifications, request_shutdown
     from app.services.email_service import EmailService
 
@@ -40,6 +41,9 @@ def register_listeners(sanic_app: Sanic):
         # Attach email service to app context as requested
         app.ctx.email_service = EmailService(app)
         logger.info("Email Service attached to app.ctx")
+
+    sanic_app.register_listener(setup_db, "before_server_start")
+    sanic_app.register_listener(close_db, "before_server_stop")
 
     sanic_app.register_listener(setup_kafka, "before_server_start")
     sanic_app.register_listener(close_kafka, "after_server_stop")

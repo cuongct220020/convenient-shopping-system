@@ -10,4 +10,4 @@ EMAIL_CHANGE_EVENTS_TOPIC = "user_service.user.change_email"
 USER_UPDATE_TAG_EVENTS_TOPIC = "user_service.user.update_tags"
 
 # Group-related notification topics
-GROUP_USER_ADDED_EVENTS_TOPIC = "user_service.group.add_users"
+ADD_USERS_GROUP_EVENTS_TOPIC = "user_service.group.add_users"
