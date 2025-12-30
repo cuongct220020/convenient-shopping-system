@@ -119,10 +119,10 @@ class GroupMembersView(BaseGroupView):
                 raise NotFound(f"User with identifier '{identifier}' not found")
 
             # Use the service method to add member by email (which internally handles the permission logic)
-            membership = await service.add_member_by_email(
+            membership = await service.add_member_by_identifier(
                 requester_id=requester_id,
                 group_id=group_id,
-                email=target_user.email  # Use the email from the found user
+                user_to_add=target_user
             )
 
             # Use helper method from base class
@@ -290,22 +290,10 @@ class GroupMemberMeView(BaseGroupView):
     async def delete(self, request: Request, group_id: UUID):
         """Allow a member to leave a specific family group."""
         user_id = request.ctx.auth_payload["sub"]
-        membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        service = self._get_service(request)
 
         try:
-            # Check if user is HEAD_CHEF and prevent leaving if they are the only one
-            membership = await membership_repo.get_membership(user_id=user_id, group_id=group_id)
-
-            if not membership:
-                raise NotFound("You are not a member of this group")
-
-            if membership.role == GroupRole.HEAD_CHEF:
-                # Check if there are other HEAD_CHEF members
-                head_chefs = await membership_repo.get_members_by_role(group_id, GroupRole.HEAD_CHEF)
-                if len(head_chefs) <= 1:
-                    raise Forbidden("HEAD_CHEF cannot leave group if they are the only HEAD_CHEF. Please transfer ownership first.")
-
-            await membership_repo.remove_membership(user_id=user_id, group_id=group_id)
+            await service.leave_group(user_id, group_id)
 
             # Use helper method from base class
             return self.success_response(

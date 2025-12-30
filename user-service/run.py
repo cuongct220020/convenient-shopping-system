@@ -23,9 +23,6 @@ async def root(request):
     }, status=200)
 
 
-import asyncio
-import signal
-
 def run():
     """Checks configuration and runs the application."""
     # Production Readiness Checks

@@ -271,7 +271,7 @@ class AuthService:
 
         otp_code = await otp_service.generate_and_store_otp(str(otp_data.email), str(otp_data.action))
 
-        await kafka_service.publish_message(
+        await kafka_service.publish_otp_message(
             email=str(otp_data.email),
             otp_code=str(otp_code),
             action=str(otp_data.action)

@@ -2,9 +2,7 @@
 from uuid import UUID
 from typing import Sequence
 
-from pydantic import EmailStr
-
-from app.models import FamilyGroup, GroupMembership
+from app.models import FamilyGroup, GroupMembership, User
 from app.enums import GroupRole
 from app.schemas.family_group_schema import (
     FamilyGroupCreateSchema,
@@ -13,6 +11,7 @@ from app.schemas.family_group_schema import (
 from app.repositories.family_group_repository import FamilyGroupRepository
 from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
+from app.services.kafka_service import kafka_service
 
 from shopping_shared.exceptions import Forbidden, NotFound, Conflict
 from shopping_shared.utils.logger_utils import get_logger
@@ -126,18 +125,13 @@ class FamilyGroupService:
         logger.info(f"Deleted family group {group_id} by user {user_id}")
 
 
-    async def add_member_by_email(self, requester_id: UUID, group_id: UUID, email: EmailStr) -> GroupMembership:
-        """Adds a user to the group by email."""
+    async def add_member_by_identifier(self, requester_id: UUID, group_id: UUID, user_to_add: User) -> GroupMembership:
+        """Adds a user to the group by email or username"""
         # 1. Check permission (Only HEAD_CHEF can add)
         if not await self._is_head_chef(requester_id, group_id):
             raise Forbidden("Only Head Chef can add members.")
 
-        # 2. Find User
-        user_to_add = await self.user_repo.get_by_email(str(email))
-        if not user_to_add:
-            raise NotFound(f"User with email {email} not found.")
-
-        # 3. Check existing membership
+        # 2. Check existing membership
         existing = await self.member_repo.get_membership(user_to_add.id, group_id)
         if existing:
             raise Conflict("User is already a member of this group.")
@@ -146,6 +140,19 @@ class FamilyGroupService:
         membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER, requester_id)
 
         logger.info(f"Added user {user_to_add.id} to group {group_id}")
+
+        # 5. Publish message to kafka topics
+        user_to_add_identifier = user_to_add.email if user_to_add.email else user_to_add.username
+
+        logger.info(f"About to publish Kafka message for user {user_to_add.id} added to group {group_id}")
+        await kafka_service.publish_group_user_added_message(
+            requester_id=requester_id,
+            group_id=group_id,
+            user_to_add_id=user_to_add.id,
+            user_to_add_identifier=user_to_add_identifier,
+        )
+        logger.info(f"Kafka message published successfully for user {user_to_add.id} added to group {group_id}")
+
         return membership
 
 
@@ -172,18 +179,50 @@ class FamilyGroupService:
         if not await self._is_head_chef(requester_id, group_id):
             raise Forbidden("Only Head Chef can update roles.")
 
+        # Check if the target user is actually a member of the group
+        existing_membership = await self.member_repo.get_membership(target_user_id, group_id)
+        if not existing_membership:
+            raise NotFound("Membership not found.")
+
         membership = await self.member_repo.update_role(target_user_id, group_id, new_role)
         if not membership:
-            raise NotFound("Membership not found.")
+            raise NotFound("Failed to update membership role.")
 
         logger.info(f"Updated role for user {target_user_id} in group {group_id} to {new_role}")
         return membership
+
 
     async def get_user_groups(self, user_id: UUID) -> Sequence[GroupMembership]:
         """
         Get all groups that a user is a member of.
         """
         return await self.member_repo.get_user_groups(user_id)
+
+
+    async def leave_group(self, user_id: UUID, group_id: UUID) -> None:
+        """Allow a member to leave a group."""
+        membership = await self.member_repo.get_membership(user_id=user_id, group_id=group_id)
+
+        if not membership:
+            raise NotFound("You are not a member of this group")
+
+        # Get all members in the group to check if this is the last member
+        all_members = await self.member_repo.get_all_members(group_id)
+
+        # If this is the last member, allow them to leave (equivalent to deleting the group)
+        if len(all_members) <= 1:
+            await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
+            logger.info(f"User {user_id} left group {group_id} (last member, group effectively deleted)")
+            return
+
+        # If user is HEAD_CHEF, they cannot leave unless they are the last member
+        if membership.role == GroupRole.HEAD_CHEF:
+            raise Forbidden("HEAD_CHEF cannot leave group. Please transfer ownership to another member first.")
+
+        # Regular member can leave
+        await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
+        logger.info(f"User {user_id} left group {group_id}")
+
 
     async def _is_head_chef(self, user_id: UUID, group_id: UUID) -> bool:
         """Helper to check if user is HEAD_CHEF of the group."""

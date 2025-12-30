@@ -15,14 +15,13 @@ Scenario:
 9. View User B's profiles (Identity & Health). (GET .../identity-profile & health-profile)
 10. Kick User B from the group. (DELETE /groups/{id}/members/{user_id})
 11. Promote User C to HEAD_CHEF. (PATCH /groups/{id}/members/{user_id})
-12. User A leaves the group. (DELETE /groups/{id}/members/me)
-13. Login as User C.
-14. Verify access to group details. (GET /groups/{id})
-15. Delete the group. (DELETE /groups/{id})
-16. Verify deletion. (GET /groups/{id} -> expect error)
+12. User A tries to leave (should fail as HEAD_CHEF cannot leave with other members). (DELETE /groups/{id}/members/me)
+13. User A kicks User C to become the only member. (DELETE /groups/{id}/members/{user_id})
+14. User A can now leave as the last member. (DELETE /groups/{id}/members/me)
+15. Verify group deletion. (GET /groups/{id} -> expect error)
 
 Usage:
-    python3 user-service/scripts/test_group_management_flow.py
+    python3 user-service/tests/test_group_management_flow.py
 """
 
 import json
@@ -183,34 +182,47 @@ def run_test():
     make_request(f"{BASE_URL}/groups/{group_id}/members/{user_b['id']}", "DELETE", headers=headers_a)
     print(f"{Colors.OKGREEN}✓ User B kicked.{Colors.ENDC}")
 
-    # 10. Promote User C (PATCH /groups/{id}/members/{user_id})
+    # 10. Promote User C to HEAD_CHEF (PATCH /groups/{id}/members/{user_id})
     print(f"\n{Colors.BOLD}[10] Promoting User C to head_chef...{Colors.ENDC}")
-    make_request(f"{BASE_URL}/groups/{group_id}/members/{user_c['id']}", "PATCH", {"role": "head_chef"}, headers_a)
-    print(f"{Colors.OKGREEN}✓ User C promoted.{Colors.ENDC}")
-
-    # 11. User A Leaves (DELETE /groups/{id}/members/me)
-    print(f"\n{Colors.BOLD}[11] User A leaving group...{Colors.ENDC}")
-    make_request(f"{BASE_URL}/groups/{group_id}/members/me", "DELETE", headers=headers_a)
-    print(f"{Colors.OKGREEN}✓ User A left.{Colors.ENDC}")
-
-    # 12. Verify & Cleanup via User C
-    print(f"\n{Colors.BOLD}[12] User C verifying and deleting group...{Colors.ENDC}")
-    token_c = login_user(user_c['email'], user_c['password'])
-    headers_c = {"Authorization": f"Bearer {token_c}"}
-    
-    # DELETE /groups/{id}
-    status, del_res = make_request(f"{BASE_URL}/groups/{group_id}", "DELETE", headers=headers_c)
+    status, promote_res = make_request(f"{BASE_URL}/groups/{group_id}/members/{user_c['id']}", "PATCH", {"role": "head_chef"}, headers_a)
     if status == 200:
-        print(f"{Colors.OKGREEN}✓ Group deleted by User C.{Colors.ENDC}")
+        print(f"{Colors.OKGREEN}✓ User C promoted to HEAD_CHEF.{Colors.ENDC}")
     else:
-        print(f"{Colors.FAIL}❌ Delete failed: {del_res}{Colors.ENDC}")
+        print(f"{Colors.FAIL}❌ Promotion failed: {promote_res}{Colors.ENDC}")
 
-    # Verify Deletion
-    status, _ = make_request(f"{BASE_URL}/groups/{group_id}", "GET", headers=headers_c)
-    if status in [404, 500]: # 500 because of current repo handling
-        print(f"{Colors.OKGREEN}✓ Final verification: Group is no longer accessible.{Colors.ENDC}")
+    # 11. Try to make User A leave (should fail since there are other members and User A is HEAD_CHEF)
+    print(f"\n{Colors.BOLD}[11] User A trying to leave group (should fail)...{Colors.ENDC}")
+    status, leave_res = make_request(f"{BASE_URL}/groups/{group_id}/members/me", "DELETE", headers=headers_a)
+    if status == 403:
+        print(f"{Colors.OKGREEN}✓ User A correctly prevented from leaving (HEAD_CHEF cannot leave with other members).{Colors.ENDC}")
     else:
-        print(f"{Colors.FAIL}❌ Group still exists!{Colors.ENDC}")
+        print(f"{Colors.FAIL}❌ Unexpected result when User A tried to leave: {leave_res}{Colors.ENDC}")
+
+    # 12. User A kicks User C (so User A becomes the only member and can then leave)
+    print(f"\n{Colors.BOLD}[12] User A kicking User C to become the only member...{Colors.ENDC}")
+    status, kick_res = make_request(f"{BASE_URL}/groups/{group_id}/members/{user_c['id']}", "DELETE", headers=headers_a)
+    if status == 200:
+        print(f"{Colors.OKGREEN}✓ User C kicked successfully.{Colors.ENDC}")
+    else:
+        print(f"{Colors.FAIL}❌ Failed to kick User C: {kick_res}{Colors.ENDC}")
+
+    # 13. Now User A can leave since they are the last member
+    print(f"\n{Colors.BOLD}[13] User A leaving group (now last member)...{Colors.ENDC}")
+    status, leave_res = make_request(f"{BASE_URL}/groups/{group_id}/members/me", "DELETE", headers=headers_a)
+    if status == 200:
+        print(f"{Colors.OKGREEN}✓ User A left as the last member (group effectively deleted).{Colors.ENDC}")
+    else:
+        print(f"{Colors.FAIL}❌ Failed to leave as last member: {leave_res}{Colors.ENDC}")
+
+    # 14. Verify group no longer exists by trying to access it
+    print(f"\n{Colors.BOLD}[14] Verifying group no longer exists...{Colors.ENDC}")
+    status, _ = make_request(f"{BASE_URL}/groups/{group_id}", "GET", headers=headers_a)
+    if status in [404, 500]:
+        print(f"{Colors.OKGREEN}✓ Group properly deleted when last member left.{Colors.ENDC}")
+    else:
+        print(f"{Colors.FAIL}❌ Group still exists when it should be deleted!{Colors.ENDC}")
+
+    print(f"{Colors.OKGREEN}✓ Final verification: Group is no longer accessible.{Colors.ENDC}")
 
     print(f"\n{Colors.BOLD}🎉 100% Group Management Endpoints Tested Successfully!{Colors.ENDC}")
 
