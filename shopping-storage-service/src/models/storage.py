@@ -11,7 +11,7 @@ class Storage(Base):
     __tablename__ = "storages"
 
     storage_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    storage_name: Mapped[str] = mapped_column(String)
+    storage_name: Mapped[str] = mapped_column(String, nullable=True)
     storage_type: Mapped[StorageType] = mapped_column(Enum(StorageType), nullable=False)
     group_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
