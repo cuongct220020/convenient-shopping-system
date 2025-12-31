@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends, Body, BackgroundTasks, Query
+from fastapi import APIRouter, status, Depends, Body, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import Any, Optional
@@ -74,7 +74,7 @@ plan_router.include_router(crud_router)
         "After assignment, the plan status will be IN_PROGRESS."
     )
 )
-def assign_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
+def assign_plan(id: int, assignee_id: int = Query(..., gt=0), db: Session = Depends(get_db)):
     return plan_transition.assign(db, id, assignee_id)
 
 
@@ -88,7 +88,7 @@ def assign_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depen
         "After unassignment, the plan status will be CREATED."
     )
 )
-def unassign_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
+def unassign_plan(id: int, assignee_id: int = Query(..., gt=0), db: Session = Depends(get_db)):
     return plan_transition.unassign(db, id, assignee_id)
 
 
@@ -102,7 +102,7 @@ def unassign_plan(id: int, assignee_id: int = Body(..., gt=0), db: Session = Dep
         "After cancellation, the plan status will be CANCELLED."
     )
 )
-def cancel_plan(id: int, assigner_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
+def cancel_plan(id: int, assigner_id: int = Query(..., gt=0), db: Session = Depends(get_db)):
     return plan_transition.cancel(db, id, assigner_id)
 
 
@@ -118,17 +118,16 @@ def cancel_plan(id: int, assigner_id: int = Body(..., gt=0), db: Session = Depen
         "After successful report, items from report_content will be added to their respective storages as StorableUnits."
     )
 )
-def report_plan(
+async def report_plan(
     id: int, 
     report: PlanReport, 
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    assignee_id: int = Body(..., gt=0), 
-    confirm: bool = Body(True)
+    assignee_id: int = Query(..., gt=0),
+    confirm: bool = Query(True)
 ):
     is_completed, message, data = plan_transition.report(db, id, assignee_id, report, confirm)
     if is_completed:
-        background_tasks.add_task(report_process, report)
+        await report_process(report, db)
     return GenericResponse(message=message, data=data)
 
 @plan_router.post(
@@ -141,7 +140,7 @@ def report_plan(
         "After reopening, the plan status will be CREATED."
     )
 )
-def reopen_plan(id: int, assigner_id: int = Body(..., gt=0), db: Session = Depends(get_db)):
+def reopen_plan(id: int, assigner_id: int = Query(..., gt=0), db: Session = Depends(get_db)):
     return plan_transition.reopen(db, id, assigner_id)
 
 
