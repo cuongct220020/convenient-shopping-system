@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
 from typing import Optional, Sequence, List
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
@@ -8,11 +8,15 @@ from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.storage import StorableUnit, Storage
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate
 from messaging.producers.component_existence_producer import publish_component_existence_update
-import asyncio
 
 
 class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUpdate]):
-    def create(self, db: Session, obj_in: StorableUnitCreate) -> StorableUnit:
+    def create(
+        self,
+        db: Session,
+        obj_in: StorableUnitCreate,
+        background_tasks: Optional[BackgroundTasks] = None
+    ) -> StorableUnit:
         db_obj = super().create(db, obj_in)
         storage = db.get(Storage, db_obj.storage_id)
         if storage:
@@ -24,14 +28,21 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                 .distinct()
             )
             unit_names = db.execute(stmt).scalars().all()
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(publish_component_existence_update(storage.group_id, unit_names))                   # type: ignore
-            else:
-                loop.run_until_complete(publish_component_existence_update(storage.group_id, unit_names))               # type: ignore
+            background_tasks.add_task(
+                publish_component_existence_update,
+                storage.group_id,                                                               # type: ignore
+                unit_names
+            )
+
         return db_obj
 
-    def consume(self, db: Session, id: int, consume_quantity: int) -> tuple[str, Optional[StorableUnit]]:
+    def consume(
+        self,
+        db: Session,
+        id: int,
+        consume_quantity: int,
+        background_tasks: Optional[BackgroundTasks] = None
+    ) -> tuple[str, Optional[StorableUnit]]:
         try:
             with db.begin():
                 unit = db.execute(
@@ -61,11 +72,11 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                             .distinct()
                         )
                         unit_names = db.execute(stmt).scalars().all()
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
-                            asyncio.create_task(publish_component_existence_update(storage.group_id, unit_names))       # type: ignore
-                        else:
-                            loop.run_until_complete(publish_component_existence_update(storage.group_id, unit_names))   # type: ignore
+                        background_tasks.add_task(
+                            publish_component_existence_update,
+                            storage.group_id,                                   # type: ignore
+                            unit_names
+                        )
                     return "Consumed and deleted", None
                 else:
                     unit.package_quantity -= consume_quantity
