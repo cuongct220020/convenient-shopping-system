@@ -73,6 +73,7 @@ class WebSocketNotificationService:
         event_type: str,
         requester_id: str,
         requester_username: str,
+        requester_user_role: str,
         group_id: str,
         group_name: str,
         user_to_remove_id: str,
@@ -90,6 +91,7 @@ class WebSocketNotificationService:
                 "data": {
                     "requester_id": requester_id,
                     "requester_username": requester_username,
+                    "requester_user_role": requester_user_role,
                     "group_id": group_id,
                     "group_name": group_name,
                     "user_to_remove_id": user_to_remove_id,

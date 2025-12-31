@@ -1,6 +1,7 @@
 # notification-service/app/consumers/handlers/update_head_chef_role_handler.py
 from app.consumers.handlers.base_handler import BaseMessageHandler
 from app.services.websocket_notification_service import websocket_notification_service
+from app.utils.get_current_timestamp import get_current_timestamp
 from shopping_shared.utils.logger_utils import get_logger
 
 

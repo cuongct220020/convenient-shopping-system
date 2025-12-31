@@ -99,19 +99,24 @@ class KafkaService:
     @staticmethod
     async def publish_add_user_group_message(
         requester_id: str,
+        requester_username: str,
         group_id: str,
+        group_name: str,
+        group_members_ids: List[str],
         user_to_add_id: str,
         user_to_add_identifier: str,
-        group_members_ids: List[str],
         topic: str = ADD_USERS_GROUP_EVENTS_TOPIC
     ):
         payload = kafka_service._build_payload(
-            event_type="ADD_USER_GROUP",
+            event_type="group_user_added",
             requester_id=str(requester_id),
+            requester_username=requester_username,
             group_id=str(group_id),
+            group_name=str(group_name),
             user_to_add_id=str(user_to_add_id),
             user_to_add_identifier=user_to_add_identifier,
-            group_members_ids=group_members_ids
+            group_members_ids=group_members_ids,
+            timestamp=datetime.now(UTC)
         )
 
         await kafka_service._publish_message(
@@ -119,6 +124,7 @@ class KafkaService:
             payload=payload,
             key=str(group_id)
         )
+
         logger.info(f"Group user added message published successfully to topic: {topic}")
 
 
@@ -126,19 +132,20 @@ class KafkaService:
         self,
         requester_id: str,
         requester_username: str,
-        requester_user_role: str,
-        target_user_id: str,
-        target_user_name: str,
-        group_id: str
+        user_to_remove_id: str,
+        user_to_remove_identifier: str,
+        group_id: str,
+        group_name: str,
     ):
         payload = self._build_payload(
-            event_type="REMOVE_USER_GROUP",
+            event_type="group_user_removed",
             requester_id=str(requester_id),
             requester_username=str(requester_username),
-            requester_user_role=str(requester_user_role),
-            target_user_id=str(target_user_id),
-            target_user_name=str(target_user_name),
-            group_id=str(group_id)
+            group_id=str(group_id),
+            group_name=str(group_name),
+            user_to_remove_id=str(user_to_remove_id),
+            user_to_remove_identifier=str(user_to_remove_identifier),
+            timestamp=datetime.now(UTC)
         )
 
         try:
@@ -155,13 +162,18 @@ class KafkaService:
     @staticmethod
     async def publish_user_leave_group_message(
         user_id: str,
+        user_identifier: str,
         group_id: str,
+        group_name: str,
         topic: str = LEAVE_GROUP_EVENTS_TOPIC
     ):
         payload = kafka_service._build_payload(
-            event_type="USER_LEAVE_GROUP",
+            event_type="group_user_left",
             user_id=str(user_id),
-            group_id=str(group_id)
+            user_identifier=str(user_identifier),
+            group_id=str(group_id),
+            group_name=str(group_name),
+            timestamp=datetime.now(UTC)
         )
 
         await kafka_service._publish_message(
@@ -169,19 +181,21 @@ class KafkaService:
             payload=payload,
             key=str(group_id)
         )
+
         logger.info(f"User leave group message published successfully to topic: {topic}")
 
 
     @staticmethod
-    async def publish_user_logout_message(
+    async def  publish_user_logout_message(
         user_id: str,
         jti: str,
         topic: str = LOGOUT_EVENTS_TOPIC
     ):
         payload = kafka_service._build_payload(
-            event_type="USER_LOGOUT",
+            event_type="account_logged_out",
             user_id=str(user_id),
-            access_token_id=str(jti)
+            access_token_id=str(jti),
+            timestamp=str(datetime.now(UTC)),
         )
 
         await kafka_service._publish_message(
@@ -193,16 +207,25 @@ class KafkaService:
     @staticmethod
     async def publish_update_headchef_group_message(
         requester_id: str,
+        requester_username: str,
         group_id: str,
-        target_user_id: str,
-        target_user_role: GroupRole = GroupRole.HEAD_CHEF
+        group_name: str,
+        old_head_chef_id: str,
+        old_head_chef_identifier: str,
+        new_head_chef_id: str,
+        new_head_chef_identifier: str,
     ):
         payload = kafka_service._build_payload(
-            event_type="NEW_HEAD_CHEF_GROUP",
+            event_type="group_head_chef_updated",
             requester_id=str(requester_id),
+            requester_username=str(requester_username),
             group_id=str(group_id),
-            target_user_id=str(target_user_id),
-            target_user_role=str(target_user_role)
+            group_name=str(group_name),
+            old_head_chef_id=str(old_head_chef_id),
+            old_head_chef_identifier=str(old_head_chef_identifier),
+            new_head_chef_id=str(new_head_chef_id),
+            new_head_chef_identifier=str(new_head_chef_identifier),
+            timestamp=datetime.now(UTC)
         )
 
         try:

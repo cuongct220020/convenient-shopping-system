@@ -39,12 +39,11 @@ logger = get_logger("Websocket Blueprint")
 ws_bp = Blueprint("websocket", url_prefix="/api/v1/notification-service/ws")
 
 
-@ws_bp.websocket("/notifications/groups/<group_id: UUID>")
-async def ws_group_notifications(request, ws: Websocket, group_id: UUID):
+@ws_bp.websocket("/notifications/groups/<group_id>")
+async def ws_group_notifications(request, ws: Websocket, group_id: str):
     """WebSocket cho thông báo nhóm - người dùng kết nối đến nhóm cụ thể"""
     user_id = request.ctx.auth_payload.get("sub") if hasattr(request.ctx, 'auth_payload') else "anonymous"
 
-    # Có thể thêm xác thực người dùng có quyền truy cập nhóm hay không
     await websocket_manager.connect_to_group(ws, group_id)
 
     try:
@@ -58,8 +57,8 @@ async def ws_group_notifications(request, ws: Websocket, group_id: UUID):
         await websocket_manager.disconnect_from_group(ws, group_id)
 
 
-@ws_bp.websocket("/notifications/users/<user_id: UUID>")
-async def ws_user_notifications(request, ws: Websocket, user_id: UUID):
+@ws_bp.websocket("/notifications/users/<user_id>")
+async def ws_user_notifications(request, ws: Websocket, user_id: str):
     """WebSocket cho thông báo cá nhân - người dùng kết nối đến kênh riêng"""
     # Xác thực người dùng có quyền truy cập kênh này hay không
     requesting_user_id = request.ctx.auth_payload.get("sub") if hasattr(request.ctx, 'auth_payload') else "anonymous"

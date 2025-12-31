@@ -18,6 +18,7 @@ class RemoveUserGroupHandler(BaseMessageHandler):
           "event_type": "group_user_removed",
           "requester_id": "uuid_string",
           "requester_username": "string",
+          "requester_user_role": "string",
           "group_id": "uuid_string",
           "group_name": "string",
           "user_to_remove_id": "uuid_string",
@@ -29,6 +30,7 @@ class RemoveUserGroupHandler(BaseMessageHandler):
             event_type = message.get("event_type")
             requester_id = message.get("requester_id")
             requester_username = message.get("requester_username")
+            requester_user_role = message.get("requester_user_role")
             group_id = message.get("group_id")
             group_name = message.get("group_name")
             user_to_remove_id = message.get("user_to_remove_id")
@@ -55,6 +57,7 @@ class RemoveUserGroupHandler(BaseMessageHandler):
                 event_type=event_type,
                 requester_id=requester_id,
                 requester_username=requester_username,
+                requester_user_role=requester_user_role,
                 group_id=group_id,
                 group_name=group_name,
                 user_to_remove_id=user_to_remove_id,

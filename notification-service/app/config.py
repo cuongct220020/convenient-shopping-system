@@ -37,13 +37,3 @@ class Config:
     EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'true').lower() == 'true'
     EMAIL_SENDER = os.getenv('EMAIL_SENDER', 'noreply@convenient-shopping-system.com')
     EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', 'mypassword')
-
-    # PostgresSQL
-    POSTGRESQL = PostgreSQLConfig(
-        driver=os.getenv('POSTGRES_DB_DRIVER', 'postgresql+asyncpg'),
-        user=os.getenv('POSTGRES_DB_USER', 'myname'),
-        password=os.getenv('POSTGRES_DB_PASSWORD', 'mypassword'),
-        host=os.getenv('POSTGRES_DB_HOST', 'localhost'),
-        port=int(os.getenv('POSTGRES_DB_PORT', 5432)),
-        name=os.getenv('POSTGRES_DB_NAME', 'notification_service_db'),
-    )

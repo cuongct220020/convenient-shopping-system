@@ -8,13 +8,19 @@ from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC,
-    ADD_USERS_GROUP_EVENTS_TOPIC
+    ADD_USERS_GROUP_EVENTS_TOPIC,
+    LEAVE_GROUP_EVENTS_TOPIC,
+    REMOVE_USERS_GROUP_EVENTS_TOPIC,
+    UPDATE_HEADCHEF_ROLE_EVENTS_TOPIC
 )
 
 # Import Handlers
 from app.consumers.handlers.base_handler import BaseMessageHandler
 from app.consumers.handlers.otp_handler import OTPMessageHandler
-from app.consumers.handlers.family_group_handler import AddUserGroupHandler
+from app.consumers.handlers.add_user_group_handler import AddUserGroupHandler
+from app.consumers.handlers.remove_user_group_handler import RemoveUserGroupHandler
+from app.consumers.handlers.user_leave_group_handler import UserLeaveGroupHandler
+from app.consumers.handlers.update_head_chef_role_handler import UpdateHeadChefRoleHandler
 
 
 logger = get_logger("Notification Consumer")
@@ -39,7 +45,10 @@ async def consume_notifications(app=None):
         REGISTRATION_EVENTS_TOPIC: OTPMessageHandler(expected_action="register"),
         RESET_PASSWORD_EVENTS_TOPIC: OTPMessageHandler(expected_action="reset_password"),
         EMAIL_CHANGE_EVENTS_TOPIC: OTPMessageHandler(expected_action="change_email"),
-        ADD_USERS_GROUP_EVENTS_TOPIC: AddUserGroupHandler()
+        ADD_USERS_GROUP_EVENTS_TOPIC: AddUserGroupHandler(),
+        REMOVE_USERS_GROUP_EVENTS_TOPIC: RemoveUserGroupHandler(),
+        LEAVE_GROUP_EVENTS_TOPIC: UserLeaveGroupHandler(),
+        UPDATE_HEADCHEF_ROLE_EVENTS_TOPIC: UpdateHeadChefRoleHandler(),
     }
     
     topics = list(handlers.keys())
