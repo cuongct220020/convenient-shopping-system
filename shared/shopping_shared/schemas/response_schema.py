@@ -21,4 +21,3 @@ class PaginationResponse(GenericResponse[list[T]], Generic[T]):
     data: List[T]
     next_cursor: Optional[int] = None
     size: int
-    has_more: bool

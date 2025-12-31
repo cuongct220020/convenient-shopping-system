@@ -35,8 +35,7 @@ async def search_ingredients(
     return PaginationResponse(
         data=list(items),
         next_cursor=next_cursor,
-        size=len(items),
-        has_more=len(items) == limit
+        size=len(items)
     )
 
 @ingredient_router.get(
@@ -57,8 +56,7 @@ def filter_ingredients_by_category(
     return PaginationResponse(
         data=list(items),
         next_cursor=next_cursor,
-        size=len(items),
-        has_more=len(items) == limit
+        size=len(items)
     )
 
 crud_router = create_crud_router(

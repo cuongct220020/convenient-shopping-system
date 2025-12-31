@@ -60,8 +60,7 @@ def create_crud_router(
         return PaginationResponse(
             data=list(items),
             next_cursor=next_cursor,
-            size=len(items),
-            has_more=len(items) == limit
+            size=len(items)
         )
 
     @router.post(
