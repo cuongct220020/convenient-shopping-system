@@ -284,30 +284,36 @@ class FamilyGroupService:
 
         # If this is the last member (regardless of role), allow them to leave (equivalent to deleting the group)
         if len(all_members) <= 1:
+            # Fetch group name BEFORE removing the member to ensure group still exists
+            group = await self.get(group_id)
+            group_name = group.group_name
+
             await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
             logger.info(f"User {user_id} left group {group_id} (last member, group effectively deleted)")
 
             # Publish user leave group events
-            group = await self.get(group_id) # Fetch group name after removal might still work if group exists until last member leaves
             await kafka_service.publish_user_leave_group_message(
                 user_id=user_id,
                 user_identifier=user_name if user_name else user_email,
                 group_id=group_id,
-                group_name=group.group_name
+                group_name=group_name
             )
             return
 
         # Regular member (or HEAD_CHEF as the last member) can leave
+        # Fetch group name BEFORE removing the member to ensure group still exists
+        group = await self.get(group_id)
+        group_name = group.group_name
+
         await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
         logger.info(f"User {user_id} left group {group_id}")
 
         # Publish user leave group events
-        group = await self.get(group_id)
         await kafka_service.publish_user_leave_group_message(
             user_id=user_id,
             user_identifier=user_name if user_name else user_email,
             group_id=group_id,
-            group_name=group.group_name
+            group_name=group_name
         )
 
 

@@ -10,7 +10,7 @@ app = create_app(Config)
 def run():
     """Checks configuration and runs the application."""
     try:
-        app.run(**app.config['RUN_SETTING'])
+        app.run(**app.config["RUN_SETTING"])
     except KeyboardInterrupt:
         logger.info("Application stopped by user.")
     except (BrokenPipeError, EOFError):

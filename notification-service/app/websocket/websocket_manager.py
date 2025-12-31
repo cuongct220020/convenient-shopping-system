@@ -91,10 +91,10 @@ class WebSocketManager:
                         logger.error(f"Failed to send message to group {group_id}: {e}")
                         disconnected.add(ws)
 
-            for ws in disconnected:
-                self.group_connections[group_id].discard(ws)
-            if not self.group_connections[group_id]:
-                del self.group_connections[group_id]
+                for ws in disconnected:
+                    self.group_connections[group_id].discard(ws)
+                if not self.group_connections[group_id]:
+                    del self.group_connections[group_id]
 
 
     def get_user_connections_count(self, user_id: str) -> int:

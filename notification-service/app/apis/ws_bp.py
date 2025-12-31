@@ -26,12 +26,12 @@ WebSocket Endpoints for Convenient Shopping System
 Each endpoint serves a different scope of communication within the Convenient Shopping System, allowing for efficient and targeted notification delivery
 based on the relevance to individual users or family groups.
 """
-from uuid import UUID
-
 from sanic import Blueprint
 from sanic import Websocket
 from app.websocket.websocket_manager import websocket_manager
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.middleware.auth_utils import extract_kong_headers, validate_token_state
+from shopping_shared.exceptions import Unauthorized
 
 logger = get_logger("Websocket Blueprint")
 
@@ -42,7 +42,34 @@ ws_bp = Blueprint("websocket", url_prefix="/api/v1/notification-service/ws")
 @ws_bp.websocket("/notifications/groups/<group_id>")
 async def ws_group_notifications(request, ws: Websocket, group_id: str):
     """WebSocket cho thông báo nhóm - người dùng kết nối đến nhóm cụ thể"""
-    user_id = request.ctx.auth_payload.get("sub") if hasattr(request.ctx, 'auth_payload') else "anonymous"
+    try:
+        # 1. Trích xuất payload từ headers (giả định được Kong chèn)
+        auth_payload = extract_kong_headers(dict(request.headers))
+
+        # 2. Xác thực trạng thái token (kiểm tra blocklist và revoke)
+        redis_client = getattr(request.ctx, "redis_client", None)
+        await validate_token_state(
+            user_id=auth_payload["sub"],
+            jti=auth_payload["jti"],
+            iat=auth_payload["iat"],
+            redis_client=redis_client,
+            check_blocklist=True # Kiểm tra blocklist
+        )
+
+        # 3. Gán payload vào context để sử dụng sau (nếu cần)
+        request.ctx.auth_payload = auth_payload
+        user_id = auth_payload.get("sub")
+
+        logger.info(f"User {user_id} connected to group {group_id}")
+
+    except Unauthorized as e:
+        logger.warning(f"WebSocket connection denied for group {group_id}: {e}")
+        await ws.close(code=1008, reason=str(e)) # 1008: Policy Violation
+        return
+    except Exception as e:
+        logger.error(f"Error during WebSocket auth for group {group_id}: {e}", exc_info=True)
+        await ws.close(code=1011, reason="Internal Server Error during auth") # 1011: Internal Error
+        return
 
     await websocket_manager.connect_to_group(ws, group_id)
 
@@ -60,12 +87,39 @@ async def ws_group_notifications(request, ws: Websocket, group_id: str):
 @ws_bp.websocket("/notifications/users/<user_id>")
 async def ws_user_notifications(request, ws: Websocket, user_id: str):
     """WebSocket cho thông báo cá nhân - người dùng kết nối đến kênh riêng"""
-    # Xác thực người dùng có quyền truy cập kênh này hay không
-    requesting_user_id = request.ctx.auth_payload.get("sub") if hasattr(request.ctx, 'auth_payload') else "anonymous"
+    try:
+        # 1. Trích xuất payload từ headers (giả định được Kong chèn)
+        auth_payload = extract_kong_headers(dict(request.headers))
 
-    if requesting_user_id != user_id:
-        logger.warning(f"User {requesting_user_id} tried to access notifications for user {user_id}")
-        await ws.close()
+        # 2. Xác thực trạng thái token (kiểm tra blocklist và revoke)
+        redis_client = getattr(request.ctx, "redis_client", None)
+        await validate_token_state(
+            user_id=auth_payload["sub"],
+            jti=auth_payload["jti"],
+            iat=auth_payload["iat"],
+            redis_client=redis_client,
+            check_blocklist=True # Kiểm tra blocklist
+        )
+
+        # 3. Gán payload vào context để sử dụng sau (nếu cần)
+        request.ctx.auth_payload = auth_payload
+        requesting_user_id = auth_payload.get("sub")
+
+        # 4. Xác thực người dùng có quyền truy cập kênh này hay không
+        if requesting_user_id != user_id:
+            logger.warning(f"User {requesting_user_id} tried to access notifications for user {user_id}")
+            await ws.close(code=1008, reason="Forbidden: Access denied for this user channel") # 1008: Policy Violation
+            return
+
+        logger.info(f"User {requesting_user_id} connected to personal channel {user_id}")
+
+    except Unauthorized as e:
+        logger.warning(f"WebSocket connection denied for user {user_id}: {e}")
+        await ws.close(code=1008, reason=str(e)) # 1008: Policy Violation
+        return
+    except Exception as e:
+        logger.error(f"Error during WebSocket auth for user {user_id}: {e}", exc_info=True)
+        await ws.close(code=1011, reason="Internal Server Error during auth") # 1011: Internal Error
         return
 
     await websocket_manager.connect_to_user(ws, user_id)

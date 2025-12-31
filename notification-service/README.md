@@ -214,6 +214,64 @@ This section describes how to test the real-time notification flow end-to-end, f
         }
         ```
 
+#### Scenario 5: User Account Logout (`LOGOUT_EVENTS_TOPIC`)
+
+1.  **Setup WebSocket Connections:**
+    *   **Client 1 (User A):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_A_ID` with `user_A`'s token.
+    *   **Client 2 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID` with `user_B`'s token.
+2.  **Trigger the Event:**
+    *   Use the `user-service` API via Kong to logout `user_A`.
+    *   **Endpoint:** `POST http://localhost:8000/api/v1/user-service/api/v1/user-service/auth/logout`
+    *   **Headers:** `Authorization: Bearer <JWT_TOKEN_USER_A>`
+3.  **Observe Disconnection:**
+    *   **Client 1:** Should receive a WebSocket close event, indicating the connection has been terminated.
+    *   **Client 2:** Should remain connected and unaffected by `user_A`'s logout.
+
+#### Scenario 6: Multiple Group Members Added Simultaneously
+
+1.  **Setup WebSocket Connections:**
+    *   **Client 1 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID` with `user_B`'s token.
+    *   **Client 2 (User C):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_C_ID` with `user_C`'s token.
+    *   **Client 3 (Group Members):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/groups/GROUP_ID` with a group member's token.
+2.  **Trigger the Event:**
+    *   Use the `user-service` API via Kong to add multiple users to the group simultaneously.
+    *   **Endpoint:** `POST http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members`
+    *   **Headers:** `Authorization: Bearer <JWT_TOKEN_USER_A>` (group admin/head chef)
+    *   **Body (JSON):**
+        ```json
+        {
+          "user_identifiers": ["user_b_email@example.com", "user_c_email@example.com"]
+        }
+        ```
+3.  **Observe Notifications:**
+    *   **Client 1 & 2:** Each should receive individual `group_user_added` notifications.
+    *   **Client 3:** Should receive multiple broadcast notifications for each user added.
+
+#### Scenario 7: Group Deletion (When Last Member Leaves)
+
+1.  **Setup WebSocket Connections:**
+    *   **Client (Group Members):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/groups/GROUP_ID` with a group member's token.
+2.  **Trigger the Event:**
+    *   Use the `user-service` API via Kong for the last member to leave the group.
+    *   **Endpoint:** `DELETE http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members/me`
+    *   **Headers:** `Authorization: Bearer <JWT_TOKEN_USER_A>` (last member)
+3.  **Observe Notifications:**
+    *   **Client:** Should receive a `group_user_left` notification before the group channel is automatically closed due to group deletion.
+
+#### Scenario 8: Concurrent Notifications to Multiple Recipients
+
+1.  **Setup WebSocket Connections:**
+    *   **Client 1 (User A):** Connect to user notifications endpoint.
+    *   **Client 2 (User B):** Connect to user notifications endpoint.
+    *   **Client 3 (User C):** Connect to user notifications endpoint.
+    *   **Client 4 (Group):** Connect to group notifications endpoint.
+2.  **Trigger Multiple Events:**
+    *   Simultaneously trigger multiple group events (add, remove, role update) using different API calls.
+3.  **Observe Notifications:**
+    *   Each client should receive only the notifications relevant to them.
+    *   Group clients should receive all group-related notifications.
+    *   Individual clients should receive only their personal notifications.
+
 ### Notes
 
 *   Ensure JWT tokens used for WebSocket connections are valid and belong to the user whose channel they are trying to access.

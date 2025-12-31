@@ -2,7 +2,6 @@ from sanic import Sanic
 from sanic.response import json as sanic_json
 from shopping_shared.utils.logger_utils import get_logger
 
-
 logger = get_logger("Initialize Notification Service Application")
 
 
@@ -34,12 +33,15 @@ def register_routes(sanic_app: Sanic):
 def register_middleware(sanic_app: Sanic):
     """Register middleware for the Notification Service."""
     from app.hooks.request_authentication import auth_middleware
+    from app.hooks.caching import inject_redis_client
     sanic_app.register_middleware(auth_middleware, "request")
+    sanic_app.register_middleware(inject_redis_client, "request")
 
 
 def register_listeners(sanic_app: Sanic):
     """Register lifecycle listeners for the Notification Service."""
     from app.hooks.message_broker import setup_kafka, close_kafka
+    from app.hooks.caching import setup_redis, close_redis
     # from app.hooks.database import setup_db, close_db
     from app.consumers.notification_consumer import consume_notifications, request_shutdown
     from app.services.email_service import EmailService
@@ -57,18 +59,24 @@ def register_listeners(sanic_app: Sanic):
         app.ctx.email_service = EmailService(app.config)
         logger.info("Email Service attached to app.ctx")
 
-    # # Initialize services that require Database Engine
-    # @sanic_app.listener("after_server_start")
-    # async def init_db_services(app, loop):
-    #     # Inject the engine into the global notification service
-    #     if hasattr(app.ctx, 'db_engine'):
-    #         notification_service.set_engine(app.ctx.db_engine)
-    #     else:
-    #         logger.error("DB Engine not found in app.ctx during service init")
-            
+        # # Initialize services that require Database Engine
+        # @sanic_app.listener("after_server_start")
+        # async def init_db_services(app, loop):
+        #     # Inject the engine into the global notification service
+        #     if hasattr(app.ctx, 'db_engine'):
+        #         notification_service.set_engine(app.ctx.db_engine)
+        #     else:
+        #         logger.error("DB Engine not found in app.ctx during service init")
+
         logger.info("Starting Kafka consumer background task...")
         # Pass the app instance to the consumer task so it can access app.ctx
         app.add_task(consume_notifications(app))
+
+
+    # Register Redis hooks
+    sanic_app.register_listener(setup_redis, "before_server_start")
+    sanic_app.register_listener(close_redis, "before_server_stop")
+
 
     sanic_app.register_listener(setup_kafka, "before_server_start")
     sanic_app.register_listener(close_kafka, "after_server_stop")
@@ -82,7 +90,7 @@ def register_listeners(sanic_app: Sanic):
 
 def create_app(*config_cls) -> Sanic:
     """Application factory for the Notification Service."""
-    logger.info(f"Sanic application initialized with { ', '.join([config.__name__ for config in config_cls]) }")
+    logger.info(f"Sanic application initialized with {', '.join([config.__name__ for config in config_cls])}")
 
     sanic_app = Sanic(__name__)
 
