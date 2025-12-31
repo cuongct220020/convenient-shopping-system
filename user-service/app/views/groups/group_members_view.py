@@ -7,7 +7,6 @@ from sanic_ext.extensions.openapi.definitions import Response
 from app.decorators import validate_request, require_group_role
 from app.views.groups.base_group_view import BaseGroupView
 from app.enums import GroupRole
-from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.schemas.family_group_schema import (
     AddMemberRequestSchema,
     GroupMembershipUpdateSchema,

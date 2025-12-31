@@ -26,6 +26,10 @@ def register_routes(sanic_app: Sanic):
             "service": "notification-service"
         })
 
+    # Register API Blueprints
+    from app.apis import api
+    sanic_app.blueprint(api)
+
 
 def register_listeners(sanic_app: Sanic):
     """Register lifecycle listeners for the Notification Service."""
@@ -33,27 +37,35 @@ def register_listeners(sanic_app: Sanic):
     from app.hooks.database import setup_db, close_db
     from app.consumers.notification_consumer import consume_notifications, request_shutdown
     from app.services.email_service import EmailService
+    from app.services.notification_service import notification_service
 
-    # Initialize email service with the app
-    @sanic_app.listener("before_server_start")
-    async def init_services(app, loop):
-        """Initialize services that require app context."""
-        # Attach email service to app context as requested
-        app.ctx.email_service = EmailService(app)
-        logger.info("Email Service attached to app.ctx")
-
+    # Database setup must be registered
     sanic_app.register_listener(setup_db, "before_server_start")
     sanic_app.register_listener(close_db, "before_server_stop")
 
-    sanic_app.register_listener(setup_kafka, "before_server_start")
-    sanic_app.register_listener(close_kafka, "after_server_stop")
+    # Initialize email service with the app config
+    @sanic_app.listener("before_server_start")
+    async def init_services(app, loop):
+        """Initialize services that require app context."""
+        # Attach email service to app context passing only config
+        app.ctx.email_service = EmailService(app.config)
+        logger.info("Email Service attached to app.ctx")
 
+    # Initialize services that require Database Engine
     @sanic_app.listener("after_server_start")
-    async def start_consumer(app, loop):
-        """Start Kafka consumer as background task after server starts."""
+    async def init_db_services(app, loop):
+        # Inject the engine into the global notification service
+        if hasattr(app.ctx, 'db_engine'):
+            notification_service.set_engine(app.ctx.db_engine)
+        else:
+            logger.error("DB Engine not found in app.ctx during service init")
+            
         logger.info("Starting Kafka consumer background task...")
         # Pass the app instance to the consumer task so it can access app.ctx
         app.add_task(consume_notifications(app))
+
+    sanic_app.register_listener(setup_kafka, "before_server_start")
+    sanic_app.register_listener(close_kafka, "after_server_stop")
 
     @sanic_app.listener("before_server_stop")
     async def stop_consumer(app, loop):

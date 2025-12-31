@@ -141,14 +141,19 @@ class FamilyGroupService:
 
         logger.info(f"Added user {user_to_add.id} to group {group_id}")
 
-        # 5. Publish message to kafka topics
+        # 5. Get group membership ids
+        group_members = await self.member_repo.get_all_members(group_id)
+
+        # 6. Publish message to kafka topics
+        group_members_ids = [member.user_id for member in group_members]
         user_to_add_identifier = user_to_add.email if user_to_add.email else user_to_add.username
 
-        await kafka_service.publish_group_user_added_message(
+        await kafka_service.publish_add_user_group_message(
             requester_id=requester_id,
             group_id=group_id,
             user_to_add_id=user_to_add.id,
             user_to_add_identifier=user_to_add_identifier,
+            group_members_ids=group_members_ids
         )
 
         return membership
@@ -172,6 +177,13 @@ class FamilyGroupService:
         await self.member_repo.remove_membership(target_user_id, group_id)
         logger.info(f"Removed user {target_user_id} from group {group_id}")
 
+        await kafka_service.publish_remove_user_group_message(
+            requester_id=requester_id,
+            group_id=group_id,
+            target_user_id=target_user_id,
+        )
+
+
     async def update_member_role(self, requester_id: UUID, group_id: UUID, target_user_id: UUID, new_role: GroupRole) -> GroupMembership:
         """Updates a member's role."""
         if not await self._is_head_chef(requester_id, group_id):
@@ -187,6 +199,16 @@ class FamilyGroupService:
             raise NotFound("Failed to update membership role.")
 
         logger.info(f"Updated role for user {target_user_id} in group {group_id} to {new_role}")
+
+
+        if new_role == GroupRole.HEAD_CHEF:
+            await kafka_service.publish_update_headchef_group_message(
+                requester_id=str(requester_id),
+                group_id=str(group_id),
+                target_user_id=str(target_user_id),
+                target_user_role=new_role
+            )
+
         return membership
 
 
@@ -220,6 +242,9 @@ class FamilyGroupService:
         # Regular member can leave
         await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
         logger.info(f"User {user_id} left group {group_id}")
+
+        # Publish user leave group events
+        await kafka_service.publish_user_leave_group_message(user_id=user_id, group_id=group_id)
 
 
     async def _is_head_chef(self, user_id: UUID, group_id: UUID) -> bool:

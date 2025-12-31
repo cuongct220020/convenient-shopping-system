@@ -183,6 +183,8 @@ class AuthService:
             logger.error(f"Error adding token to blocklist for jti {access_token_jti}: {str(e)}")
             # Don't raise the exception to allow the logout to complete
 
+        await kafka_service.publish_user_logout_message(user_id=user_id, jti=access_token_jti)
+
 
     @classmethod
     async def refresh_tokens(
