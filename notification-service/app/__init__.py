@@ -37,7 +37,7 @@ def register_listeners(sanic_app: Sanic):
     from app.hooks.database import setup_db, close_db
     from app.consumers.notification_consumer import consume_notifications, request_shutdown
     from app.services.email_service import EmailService
-    from app.services.notification_service import notification_service
+    from app.services.noti_service import notification_service
 
     # Database setup must be registered
     sanic_app.register_listener(setup_db, "before_server_start")

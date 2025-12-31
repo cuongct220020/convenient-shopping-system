@@ -159,28 +159,40 @@ class FamilyGroupService:
         return membership
 
 
-    async def remove_member(self, requester_id: UUID, group_id: UUID, target_user_id: UUID) -> None:
+    async def remove_member(
+        self,
+        requester_id: UUID,
+        requester_username: str,
+        requester_role: GroupRole,
+        group_id: UUID,
+        target_user_id: UUID
+    ):
         """Removes a member from the group."""
         # Logic:
         # - User can remove themselves.
         # - Head Chef can remove anyone.
         is_self = str(requester_id) == str(target_user_id)
-        is_head_chef = await self._is_head_chef(requester_id, group_id)
+        is_head_chef = requester_role == GroupRole.HEAD_CHEF
 
         if not is_self and not is_head_chef:
             raise Forbidden("You do not have permission to remove this member.")
 
-        existing = await self.member_repo.get_membership(target_user_id, group_id)
-        if not existing:
+        existing_member = await self.member_repo.get_membership(target_user_id, group_id)
+        if not existing_member:
              raise NotFound("Membership not found.")
+
 
         await self.member_repo.remove_membership(target_user_id, group_id)
         logger.info(f"Removed user {target_user_id} from group {group_id}")
 
+
         await kafka_service.publish_remove_user_group_message(
-            requester_id=requester_id,
-            group_id=group_id,
-            target_user_id=target_user_id,
+            requester_id=str(requester_id),
+            requester_username=str(requester_username),
+            requester_user_role=str(requester_role),
+            group_id=str(group_id),
+            target_user_id=str(target_user_id),
+            target_user_name=str(existing_member.username)
         )
 
 

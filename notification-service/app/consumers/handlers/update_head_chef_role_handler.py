@@ -1,45 +1,46 @@
+# notification-service/app/consumers/handlers/update_head_chef_role_handler.py
 from app.consumers.handlers.base_handler import BaseMessageHandler
 from app.services.websocket_notification_service import websocket_notification_service
 from shopping_shared.utils.logger_utils import get_logger
 
 
-logger = get_logger("UpdateHeadChefRoleHandler")
+logger = get_logger("Update Head Chef Role Handler")
 
 
 class UpdateHeadChefRoleHandler(BaseMessageHandler):
     async def handle(self, message: dict, app=None):
         """
         Handle the UPDATE_HEADCHEF_ROLE_EVENTS_TOPIC message.
-        
         Expected message format:
         {
-            "requester_id": "98cbaaea-0c03-4ac6-bdca-d835e86bbb6f",
-            "group_id": "f412d17c-f141-4589-bd06-f074f02a1f8b",
-            "old_head_chef_id": "04f83499-7b7f-46e4-a454-a9e39b2615c4",
-            "new_head_chef_id": "12345678-7b7f-46e4-a454-a9e39b261234",
-            "old_head_chef_identifier": "old_head@example.com",
-            "new_head_chef_identifier": "new_head@example.com",
-            "group_member_ids": ["user1_id", "user2_id", ...]  # All members in the group
+          "event_type": "group_head_chef_updated",
+          "requester_id": "uuid_string",
+          "requester_username": "string",
+          "group_id": "uuid_string",
+          "group_name": "string",
+          "old_head_chef_id": "uuid_string", // Can be null
+          "old_head_chef_identifier": "string", // Can be null
+          "new_head_chef_id": "uuid_string",
+          "new_head_chef_identifier": "string",
+          "timestamp": "iso8601_string"
         }
         """
         try:
+            event_type = message.get("event_type")
             requester_id = message.get("requester_id")
+            requester_username = message.get("requester_username")
             group_id = message.get("group_id")
+            group_name = message.get("group_name")
             old_head_chef_id = message.get("old_head_chef_id")
-            new_head_chef_id = message.get("new_head_chef_id")
             old_head_chef_identifier = message.get("old_head_chef_identifier")
+            new_head_chef_id = message.get("new_head_chef_id")
             new_head_chef_identifier = message.get("new_head_chef_identifier")
-            group_member_ids = message.get("group_member_ids", [])
+            timestamp = message.get("timestamp")
 
-            # Validate required fields
-            if not all([requester_id, group_id, old_head_chef_id, new_head_chef_id, 
-                       old_head_chef_identifier, new_head_chef_identifier, group_member_ids]):
+            # Validate required fields (allowing old_head_chef fields to be null)
+            if not all([event_type, requester_id, requester_username, group_id, group_name, new_head_chef_id, new_head_chef_identifier, timestamp]):
                 logger.error(f"Missing required fields in message: {message}")
                 return
-
-            # Initialize the websocket notification service with the app if provided
-            if app and websocket_notification_service.app is None:
-                websocket_notification_service.init_app(app)
 
             # Log the received message for debugging
             logger.info(
@@ -47,27 +48,24 @@ class UpdateHeadChefRoleHandler(BaseMessageHandler):
                 f"requester_id={requester_id}, "
                 f"group_id={group_id}, "
                 f"old_head_chef_id={old_head_chef_id}, "
-                f"new_head_chef_id={new_head_chef_id}, "
-                f"total_group_members={len(group_member_ids)}"
+                f"new_head_chef_id={new_head_chef_id}"
             )
 
-            # Send notification to all group members
-            await websocket_notification_service.send_head_chef_role_updated_notification(
+            # Send notification to all group members (group notification)
+            await websocket_notification_service.send_group_update_head_chef_role_notification(
+                event_type=event_type,
                 requester_id=requester_id,
+                requester_username=requester_username,
                 group_id=group_id,
+                group_name=group_name,
                 old_head_chef_id=old_head_chef_id,
-                new_head_chef_id=new_head_chef_id,
                 old_head_chef_identifier=old_head_chef_identifier,
+                new_head_chef_id=new_head_chef_id,
                 new_head_chef_identifier=new_head_chef_identifier,
-                group_member_ids=group_member_ids
+                timestamp=timestamp if timestamp else get_current_timestamp(),
             )
 
             logger.info(f"Successfully processed head chef role update event for group {group_id}")
-            
+
         except Exception as e:
             logger.error(f"Error processing head chef role update message: {e}", exc_info=True)
-
-    def _get_current_timestamp(self) -> str:
-        """Get current timestamp in ISO format."""
-        from datetime import datetime, timezone
-        return datetime.now(timezone.utc).isoformat() + "Z"

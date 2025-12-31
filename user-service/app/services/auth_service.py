@@ -128,6 +128,7 @@ class AuthService:
         token_data = jwt_handler.create_tokens(
             user_id=str(user.id),
             user_role=str(user.system_role.value) if hasattr(user.system_role, "value") else str(user.system_role),
+            username=str(user.username),
             email=str(user.email)
         )
 

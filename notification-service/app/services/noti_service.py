@@ -1,4 +1,4 @@
-# # notification-service/app/services/notification_service.py
+# # notification-service/app/services/noti_service.py
 # from typing import List, Optional
 # from uuid import UUID
 # from sanic import Sanic

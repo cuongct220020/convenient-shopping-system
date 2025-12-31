@@ -125,13 +125,19 @@ class KafkaService:
     async def publish_remove_user_group_message(
         self,
         requester_id: str,
+        requester_username: str,
+        requester_user_role: str,
         target_user_id: str,
+        target_user_name: str,
         group_id: str
     ):
         payload = self._build_payload(
             event_type="REMOVE_USER_GROUP",
             requester_id=str(requester_id),
+            requester_username=str(requester_username),
+            requester_user_role=str(requester_user_role),
             target_user_id=str(target_user_id),
+            target_user_name=str(target_user_name),
             group_id=str(group_id)
         )
 

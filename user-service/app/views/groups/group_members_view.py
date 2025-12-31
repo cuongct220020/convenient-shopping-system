@@ -234,11 +234,14 @@ class GroupMemberDetailView(BaseGroupView):
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):
         """Remove a specific member from a family group."""
         requester_id = request.ctx.auth_payload["sub"]
+        requester_username = request.ctx.auth_payload["email"]
+        requester_role = request.ctx.auth_payload["role"]
         service = self._get_service(request)
 
         try:
             await service.remove_member(
                 requester_id=requester_id,
+                requester_username=requester_username,
                 group_id=group_id,
                 target_user_id=user_id
             )
