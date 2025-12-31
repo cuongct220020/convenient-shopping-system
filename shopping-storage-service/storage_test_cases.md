@@ -313,3 +313,303 @@ Base URL: `http://localhost:8002/v1/storages`
    - Sau mỗi thao tác (create, update, delete), nên thực hiện GET để xác nhận dữ liệu đã được thay đổi đúng
    - Storage ID sẽ giữ nguyên khi update, chỉ thay đổi khi tạo mới
 
+---
+
+## 6. CREATE - Thêm Storable Units vào Storage
+
+**Lưu ý:** Các test case này giả định rằng bạn đã tạo storage với `storage_id = 1` từ các test case trước.
+
+Base URL: `http://localhost:8002/v1/storable_units`
+
+---
+
+### Test Case 6.1: Thêm unit cà chua bi (countable ingredient)
+**Method:** `POST`  
+**URL:** `http://localhost:8002/v1/storable_units/`  
+**Body:**
+```json
+{
+  "unit_name": "Cà chua bi",
+  "storage_id": 1,
+  "package_quantity": 15,
+  "component_id": 1,
+  "content_type": "countable_ingredient"
+}
+```
+
+**Expected Output:**
+- Status Code: `201 Created`
+- Response body chứa StorableUnitResponse với:
+  - `unit_id`: số nguyên (ID được tạo tự động)
+  - `unit_name`: `"Cà chua bi"`
+  - `storage_id`: 1
+  - `package_quantity`: 15
+  - `component_id`: 1
+  - `content_type`: `"countable_ingredient"`
+  - `content_quantity`: `null`
+  - `content_unit`: `null`
+  - `added_date`: timestamp hiện tại
+  - `expiration_date`: `null` (nếu không cung cấp)
+
+---
+
+### Test Case 6.2: Thêm unit sữa tươi 200ml (uncountable ingredient)
+**Method:** `POST`  
+**URL:** `http://localhost:8002/v1/storable_units/`  
+**Body:**
+```json
+{
+  "unit_name": "Sữa tươi 200ml",
+  "storage_id": 1,
+  "package_quantity": 4,
+  "component_id": 7,
+  "content_type": "uncountable_ingredient",
+  "content_quantity": 800.0,
+  "content_unit": "ML"
+}
+```
+
+**Expected Output:**
+- Status Code: `201 Created`
+- Response body chứa StorableUnitResponse với:
+  - `unit_name`: `"Sữa tươi 200ml"`
+  - `storage_id`: 1
+  - `package_quantity`: 4
+  - `component_id`: 7
+  - `content_type`: `"uncountable_ingredient"`
+  - `content_quantity`: 800.0 (4 hộp × 200ml = 800ml)
+  - `content_unit`: `"ML"`
+
+---
+
+### Test Case 6.3: Thêm unit sữa tươi 1000ml (uncountable ingredient)
+**Method:** `POST`  
+**URL:** `http://localhost:8002/v1/storable_units/`  
+**Body:**
+```json
+{
+  "unit_name": "Sữa tươi 1000ml",
+  "storage_id": 1,
+  "package_quantity": 2,
+  "component_id": 7,
+  "content_type": "uncountable_ingredient",
+  "content_quantity": 2000.0,
+  "content_unit": "ML"
+}
+```
+
+**Expected Output:**
+- Status Code: `201 Created`
+- Response body chứa StorableUnitResponse với:
+  - `unit_name`: `"Sữa tươi 1000ml"`
+  - `storage_id`: 1
+  - `package_quantity`: 2
+  - `component_id`: 7
+  - `content_type`: `"uncountable_ingredient"`
+  - `content_quantity`: 2000.0 (2 hộp × 1000ml = 2000ml)
+  - `content_unit`: `"ML"`
+
+---
+
+### Test Case 6.4: Thêm unit không có component_id (bún đậu mắm tôm)
+**Method:** `POST`  
+**URL:** `http://localhost:8002/v1/storable_units/`  
+**Body:**
+```json
+{
+  "unit_name": "Bún đậu mắm tôm",
+  "storage_id": 1,
+  "package_quantity": 1
+}
+```
+
+**Expected Output:**
+- Status Code: `201 Created`
+- Response body chứa StorableUnitResponse với:
+  - `unit_name`: `"Bún đậu mắm tôm"`
+  - `storage_id`: 1
+  - `package_quantity`: 1
+  - `component_id`: `null`
+  - `content_type`: `null`
+  - `content_quantity`: `null`
+  - `content_unit`: `null`
+
+---
+
+### Test Case 6.5: Verify các units đã được thêm vào storage
+**Method:** `GET`  
+**URL:** `http://localhost:8002/v1/storages/1`  
+**Expected Output:**
+- Status Code: `200 OK`
+- Response body là StorageResponse với:
+  - `storage_id`: 1
+  - `storable_units`: mảng chứa ít nhất 4 StorableUnitResponse:
+    - 1 unit với `unit_name`: `"Cà chua bi"`, `component_id`: 1, `package_quantity`: 15
+    - 1 unit với `unit_name`: `"Sữa tươi 200ml"`, `component_id`: 7, `content_quantity`: 800.0
+    - 1 unit với `unit_name`: `"Sữa tươi 1000ml"`, `component_id`: 7, `content_quantity`: 2000.0
+    - 1 unit với `unit_name`: `"Bún đậu mắm tôm"`, `component_id`: `null`
+
+---
+
+### Test Case 6.6: Lấy danh sách storable units theo storage_id
+**Method:** `GET`  
+**URL:** `http://localhost:8002/v1/storable_units/filter?storage_id=1`  
+**Expected Output:**
+- Status Code: `200 OK`
+- Response body là PaginationResponse chứa:
+  - `data`: mảng các StorableUnitResponse (ít nhất 4 items)
+  - `size`: số lượng units trong storage_id = 1
+  - `has_more`: boolean
+
+---
+
+## Lưu ý về Storable Units
+
+1. **Content Type:**
+   - `"countable_ingredient"`: Dùng cho các nguyên liệu đếm được (ví dụ: quả, cái)
+     - `content_quantity` và `content_unit` phải là `null`
+     - Số lượng được thể hiện qua `package_quantity`
+   - `"uncountable_ingredient"`: Dùng cho các nguyên liệu đo lường được (ví dụ: ml, g)
+     - `content_quantity` và `content_unit` phải được cung cấp
+     - `content_unit` có thể là `"G"` (gram) hoặc `"ML"` (milliliter)
+
+2. **Component ID và Content Type:**
+   - Nếu có `component_id`, phải có `content_type`
+   - Nếu không có `component_id`, không được có `content_type`
+   - Đây là constraint của database để đảm bảo tính nhất quán
+
+3. **Package Quantity:**
+   - Mặc định là 1 nếu không cung cấp
+   - Phải >= 1
+   - Đại diện cho số lượng package/unit (ví dụ: 15 quả, 4 hộp, 2 hộp)
+
+4. **Content Quantity:**
+   - Chỉ cần thiết khi `content_type = "uncountable_ingredient"`
+   - Phải > 0 nếu được cung cấp
+   - Đại diện cho tổng số lượng đo lường (ví dụ: 800ml = 4 hộp × 200ml)
+
+5. **Verification:**
+   - Sau khi thêm units, có thể verify bằng cách:
+     - GET storage theo ID để xem danh sách `storable_units`
+     - GET `/v1/storable_units/filter?storage_id={id}` để lấy danh sách units trong storage
+     - GET `/v1/storable_units/{unit_id}` để lấy thông tin chi tiết một unit
+
+---
+
+## 7. CONSUME - Tiêu thụ Storable Unit
+
+**Lưu ý:** Các test case này giả định rằng bạn đã có storable unit với `unit_id = 6` từ các test case trước.
+
+Base URL: `http://localhost:8002/v1/storable_units`
+
+---
+
+### Test Case 7.1: Consume số lượng 1 cho unit có id=6
+**Method:** `POST`  
+**URL:** `http://localhost:8002/v1/storable_units/6/consume?consume_quantity=1`  
+**Body:** Không có (empty body)
+
+**Expected Output:**
+- Status Code: `200 OK`
+- Response body là GenericResponse với:
+  - `message`: `"Consumed"` (nếu unit còn lại sau khi consume) hoặc `"Consumed and deleted"` (nếu unit đã hết và bị xóa)
+  - `data`: 
+    - Nếu unit còn lại: StorableUnitResponse với `package_quantity` đã giảm đi 1
+    - Nếu unit đã hết: `null` (unit đã bị xóa)
+
+**Ví dụ Response (nếu unit còn lại):**
+```json
+{
+  "message": "Consumed",
+  "data": {
+    "unit_id": 6,
+    "unit_name": "...",
+    "storage_id": 1,
+    "package_quantity": <giá_trị_cũ - 1>,
+    ...
+  }
+}
+```
+
+**Ví dụ Response (nếu unit đã hết):**
+```json
+{
+  "message": "Consumed and deleted",
+  "data": null
+}
+```
+
+---
+
+### Test Case 7.2: Verify unit đã được consume
+**Method:** `GET`  
+**URL:** `http://localhost:8002/v1/storable_units/6`  
+**Expected Output:**
+- Nếu unit còn lại sau khi consume:
+  - Status Code: `200 OK`
+  - Response body là StorableUnitResponse với `package_quantity` đã giảm đi 1 so với ban đầu
+- Nếu unit đã hết và bị xóa:
+  - Status Code: `404 Not Found`
+  - Response body:
+  ```json
+  {
+    "detail": "StorableUnit with id=6 not found"
+  }
+  ```
+
+---
+
+### Test Case 7.3: Consume với số lượng vượt quá (error case)
+**Method:** `POST`  
+**URL:** `http://localhost:8002/v1/storable_units/6/consume?consume_quantity=999999`  
+**Note:** Sử dụng số lượng lớn hơn `package_quantity` hiện tại của unit.  
+**Body:** Không có (empty body)
+
+**Expected Output:**
+- Status Code: `400 Bad Request`
+- Response body:
+```json
+{
+  "detail": "Cannot consume from StorableUnit with id=6: insufficient quantity (available: <số_lượng_còn_lại>, requested: 999999)"
+}
+```
+
+---
+
+### Test Case 7.4: Consume unit không tồn tại (error case)
+**Method:** `POST`  
+**URL:** `http://localhost:8002/v1/storable_units/99999/consume?consume_quantity=1`  
+**Body:** Không có (empty body)
+
+**Expected Output:**
+- Status Code: `404 Not Found`
+- Response body:
+```json
+{
+  "detail": "StorableUnit with id=99999 not found"
+}
+```
+
+---
+
+## Lưu ý về Consume
+
+1. **Consume Quantity:**
+   - Phải là số nguyên > 0
+   - Không thể consume nhiều hơn `package_quantity` hiện có
+   - Nếu consume bằng `package_quantity`, unit sẽ bị xóa
+
+2. **Response:**
+   - Nếu unit còn lại: trả về unit đã được cập nhật với `package_quantity` mới
+   - Nếu unit đã hết: trả về `null` và unit bị xóa khỏi database
+
+3. **Background Tasks:**
+   - Khi unit bị xóa (consume hết), hệ thống sẽ publish component existence update event
+   - Điều này giúp các service khác biết về sự thay đổi trong kho
+
+4. **Verification:**
+   - Sau khi consume, nên verify bằng cách GET unit theo ID
+   - Nếu unit đã bị xóa, sẽ nhận được 404 Not Found
+   - Có thể kiểm tra storage để xem unit đã bị xóa khỏi danh sách `storable_units`
+
+
