@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from enums.plan_status import PlanStatus
 from models.shopping_plan import ShoppingPlan
-from schemas.plan_schemas import PlanReport
+from schemas.plan_schemas import PlanReport, PlanResponse
 
 class PlanTransition:
     def _preconditions_check(self, plan: Optional[ShoppingPlan], allowed_status: PlanStatus | List[PlanStatus]):
@@ -19,7 +19,7 @@ class PlanTransition:
                 raise HTTPException(status_code=400,
                                     detail=f"Operation not allowed: plan status must be {allowed_status}, got {plan.plan_status}")
 
-    def assign(self, db: Session, id: int, assignee_id: int) -> ShoppingPlan:
+    def assign(self, db: Session, id: int, assignee_id: int) -> PlanResponse:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -32,10 +32,9 @@ class PlanTransition:
             plan.assignee_id = assignee_id
             plan.plan_status = PlanStatus.IN_PROGRESS
 
-            db.refresh(plan)
-            return plan
+            return PlanResponse.model_validate(plan)
 
-    def unassign(self, db: Session, id: int, assignee_id: int) -> ShoppingPlan:
+    def unassign(self, db: Session, id: int, assignee_id: int) -> PlanResponse:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -51,10 +50,9 @@ class PlanTransition:
             plan.assignee_id = None
             plan.plan_status = PlanStatus.CREATED
 
-            db.refresh(plan)
-            return plan
+            return PlanResponse.model_validate(plan)
 
-    def cancel(self, db: Session, id: int, assigner_id: int) -> ShoppingPlan:
+    def cancel(self, db: Session, id: int, assigner_id: int) -> PlanResponse:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -71,8 +69,7 @@ class PlanTransition:
             plan.assignee_id = None
             plan.plan_status = PlanStatus.CANCELLED
 
-            db.refresh(plan)
-            return plan
+            return PlanResponse.model_validate(plan)
 
     def check_completion(self, plan: ShoppingPlan, report: PlanReport):
         shopping_list = plan.shopping_list if isinstance(plan.shopping_list, list) else []
@@ -136,11 +133,11 @@ class PlanTransition:
                     return False, "Report incomplete", {"missing_items": missing_quantities}
 
             plan.plan_status = PlanStatus.COMPLETED
-            
-            db.refresh(plan)
-            return True, "Report accepted and plan completed", plan
+            validated_plan = PlanResponse.model_validate(plan)
 
-    def reopen(self, db: Session, id: int, assigner_id: int) -> ShoppingPlan:
+            return True, "Report accepted and plan completed", validated_plan
+
+    def reopen(self, db: Session, id: int, assigner_id: int) -> PlanResponse:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -155,21 +152,5 @@ class PlanTransition:
                                     detail=f"Operation not allowed: user {assigner_id} is not the assigner of this plan")
 
             plan.plan_status = PlanStatus.CREATED
-            
-            db.refresh(plan)
-            return plan
 
-    def expire(self, db: Session, id: int) -> ShoppingPlan:
-        with db.begin():
-            plan = db.execute(
-                select(ShoppingPlan)
-                .where(ShoppingPlan.plan_id == id)
-                .with_for_update()
-            ).scalar_one_or_none()
-
-            self._preconditions_check(plan, [PlanStatus.CREATED, PlanStatus.IN_PROGRESS])
-
-            plan.plan_status = PlanStatus.EXPIRED
-
-            db.refresh(plan)
-            return plan
+            return PlanResponse.model_validate(plan)

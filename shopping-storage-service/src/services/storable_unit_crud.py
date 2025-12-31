@@ -2,17 +2,16 @@ from fastapi import HTTPException
 from typing import Optional, Sequence, List
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import select, func, desc, RowMapping
+from sqlalchemy import select, func, RowMapping
 from sqlalchemy.inspection import inspect
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.storage import StorableUnit, Storage
-from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate
+from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse
 from messaging.producers.component_existence_producer import publish_component_existence_update
-import asyncio
 
 
 class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUpdate]):
-    def create(self, db: Session, obj_in: StorableUnitCreate) -> StorableUnit:
+    async def create(self, db: Session, obj_in: StorableUnitCreate) -> StorableUnit:
         db_obj = super().create(db, obj_in)
         storage = db.get(Storage, db_obj.storage_id)
         if storage:
@@ -24,14 +23,13 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                 .distinct()
             )
             unit_names = db.execute(stmt).scalars().all()
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.create_task(publish_component_existence_update(storage.group_id, unit_names))                   # type: ignore
-            else:
-                loop.run_until_complete(publish_component_existence_update(storage.group_id, unit_names))               # type: ignore
+            await publish_component_existence_update(
+                storage.group_id,                                                               # type: ignore
+                unit_names
+            )
         return db_obj
 
-    def consume(self, db: Session, id: int, consume_quantity: int) -> tuple[str, Optional[StorableUnit]]:
+    async def consume(self, db: Session, id: int,consume_quantity: int) -> tuple[str, Optional[StorableUnitResponse]]:
         try:
             with db.begin():
                 unit = db.execute(
@@ -61,15 +59,14 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                             .distinct()
                         )
                         unit_names = db.execute(stmt).scalars().all()
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
-                            asyncio.create_task(publish_component_existence_update(storage.group_id, unit_names))       # type: ignore
-                        else:
-                            loop.run_until_complete(publish_component_existence_update(storage.group_id, unit_names))   # type: ignore
+                        await publish_component_existence_update(
+                            storage.group_id,                                   # type: ignore
+                            unit_names
+                        )
                     return "Consumed and deleted", None
                 else:
                     unit.package_quantity -= consume_quantity
-                    return "Consumed", unit
+                    return "Consumed", StorableUnitResponse.model_validate(unit)
         except IntegrityError as e:
             raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
 
@@ -90,24 +87,24 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                         "unit_id", ref.unit_id,
                         "added_date", ref.added_date,
                         "expiration_date", ref.expiration_date,
-                    ).order_by(ref.added_date)
+                    )
                 ).label("batch"),
-                func.row_number().over(order_by=desc(ref.added_date)).label("row_num")          # type: ignore
+                func.min(ref.unit_id).label("row_num")
             )
             .where(ref.storage_id == storage_id)                                                # type: ignore
             .group_by(
                 ref.unit_name,
-                ref1.storage_id,  # type: ignore
-                ref.component_id,  # type: ignore
+                ref.storage_id,                                                                 # type: ignore
+                ref.component_id,                                                               # type: ignore
                 ref.content_type,
-                ref.content_quantity,  # type: ignore
+                ref.content_quantity,                                                           # type: ignore
                 ref.content_unit,
             )
         ).subquery()
         stmt = select(subq)
         if cursor is not None:
             stmt = stmt.where(subq.c.row_num > cursor)
-        stmt = stmt.limit(limit)
+        stmt = stmt.order_by(subq.c.row_num).limit(limit)
         return db.execute(stmt).mappings().all()
 
     def filter(
