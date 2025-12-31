@@ -1,5 +1,6 @@
 
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Enum, JSON
+from sqlalchemy import Integer, DateTime, ForeignKey, Enum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -16,8 +17,8 @@ class ShoppingPlan(Base):
     deadline: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     assigner_id: Mapped[int] = mapped_column(Integer, nullable=False)
     assignee_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    shopping_list: Mapped[list] = mapped_column(JSON, nullable=False)
-    others: Mapped[list] = mapped_column(JSON, nullable=True)
+    shopping_list: Mapped[list] = mapped_column(JSONB, nullable=False)
+    others: Mapped[list] = mapped_column(JSONB, nullable=True)
     plan_status: Mapped[PlanStatus] = mapped_column(Enum(PlanStatus), nullable=False, default=PlanStatus.CREATED)
 
     report: Mapped["Report"] = relationship(back_populates="plan")
@@ -28,7 +29,7 @@ class Report(Base):
     report_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     plan_id: Mapped[int] = mapped_column(ForeignKey("shopping_plans.plan_id"), nullable=False, unique=True)
     report_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
-    report_content: Mapped[list] = mapped_column(JSON, nullable=False)
+    report_content: Mapped[list] = mapped_column(JSONB, nullable=False)
     spent_amount: Mapped[int] = mapped_column(Integer, default=0)
 
     plan: Mapped["ShoppingPlan"] = relationship(
