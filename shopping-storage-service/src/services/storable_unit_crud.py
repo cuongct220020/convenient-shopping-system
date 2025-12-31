@@ -101,24 +101,24 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                         "unit_id", ref.unit_id,
                         "added_date", ref.added_date,
                         "expiration_date", ref.expiration_date,
-                    ).order_by(ref.added_date)
+                    )
                 ).label("batch"),
-                func.row_number().over(order_by=desc(ref.added_date)).label("row_num")          # type: ignore
+                func.min(ref.unit_id).label("row_num")
             )
             .where(ref.storage_id == storage_id)                                                # type: ignore
             .group_by(
                 ref.unit_name,
-                ref1.storage_id,  # type: ignore
-                ref.component_id,  # type: ignore
+                ref.storage_id,                                                                 # type: ignore
+                ref.component_id,                                                               # type: ignore
                 ref.content_type,
-                ref.content_quantity,  # type: ignore
+                ref.content_quantity,                                                           # type: ignore
                 ref.content_unit,
             )
         ).subquery()
         stmt = select(subq)
         if cursor is not None:
             stmt = stmt.where(subq.c.row_num > cursor)
-        stmt = stmt.limit(limit)
+        stmt = stmt.order_by(subq.c.row_num).limit(limit)
         return db.execute(stmt).mappings().all()
 
     def filter(
