@@ -9,6 +9,7 @@ import HealthProfile from '../pages/main/profile/HealthProfile'
 import Favorites from '../pages/main/profile/Favorites'
 import { RouteObject } from 'react-router-dom'
 import { Storage } from '../pages/main/food-storage/Storage'
+import { AddStorage } from '../pages/main/food-storage/AddStorage'
 
 const ProfileRoutes: RouteObject = {
   path: 'profile',
@@ -59,6 +60,10 @@ const FoodRoutes: RouteObject = {
     {
       index: true,
       element: <Storage />
+    },
+    {
+      path: 'storage/add',
+      element: <AddStorage />
     }
   ]
 }
