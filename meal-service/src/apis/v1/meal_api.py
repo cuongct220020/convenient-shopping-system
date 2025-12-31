@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import date
 from services.meal_command_handler import MealCommandHandler
 from services.meal_transition import MealTransition
-from schemas.meal_schemas import DailyMealsCommand, MealResponse
+from schemas.meal_schemas import DailyMealsCommand, MealResponse, MealMissingResponse
 from enums.meal_type import MealType
 from core.database import get_db
 
@@ -18,21 +18,21 @@ meal_router = APIRouter(
 
 @meal_router.get(
     "/",
-    response_model=list[MealResponse],
+    response_model=list[MealResponse | MealMissingResponse],
     status_code=status.HTTP_200_OK,
-    description="Get meals by date and optionally by meal_type. If meal_type is not provided, returns all meals for that date."
+    description="Get meals by date, group_id and optionally by meal_type. If meal_type is not provided, returns all meals (breakfast, lunch, dinner) for that date and group_id."
 )
-def get_meals(meal_date: date, meal_type: Optional[MealType], db: Session = Depends(get_db)):
-    return meal_command_handler.get(db, meal_date, meal_type)
+def get_meals(meal_date: date, group_id: int = Query(..., gt=0), meal_type: Optional[MealType] = None, db: Session = Depends(get_db)):
+    return meal_command_handler.get(db, meal_date, group_id, meal_type)
 
 @meal_router.post(
     "/command",
-    response_model=list[MealResponse | str],
+    response_model=list[MealResponse | MealMissingResponse],
     status_code=status.HTTP_200_OK,
     description="Process daily meal commands for upserting, deleting, or skipping meals."
 )
-async def process_daily_meal_command(daily_command: DailyMealsCommand, db: Session = Depends(get_db)):
-    responses = await meal_command_handler.handle(db, daily_command)
+def process_daily_meal_command(daily_command: DailyMealsCommand, db: Session = Depends(get_db)):
+    responses = meal_command_handler.handle(db, daily_command)
     return responses
 
 @meal_router.post(

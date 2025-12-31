@@ -10,7 +10,10 @@ class RecipeBase(BaseModel):
     recipe_name: str
     servings: int = Field(gt=0)
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        from_attributes=True,
+        extra="forbid"
+    )
 
 class MealCommand(BaseModel):
     action: MealAction
@@ -32,7 +35,13 @@ class MealResponse(BaseModel):
     date: date
     group_id: int
     meal_type: MealType
-    status: MealStatus
+    meal_status: MealStatus
     recipe_list: List[RecipeBase] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+class MealMissingResponse(BaseModel):
+    date: date
+    group_id: int
+    meal_type: MealType
+    detail: str

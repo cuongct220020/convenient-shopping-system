@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from enums.meal_status import MealStatus
 from models.meal import Meal
+from schemas.meal_schemas import MealResponse
 
 
 class MealTransition:
@@ -13,7 +14,7 @@ class MealTransition:
         if meal.meal_status != allowed_status:
             raise HTTPException(status_code=400, detail=f"Operation not allowed: meal status must be {allowed_status}, got {meal.meal_status}")
 
-    def cancel(self, db: Session, id: int) -> Meal:
+    def cancel(self, db: Session, id: int) -> MealResponse:
         with db.begin():
             meal = db.execute(
                 select(Meal)
@@ -25,10 +26,9 @@ class MealTransition:
 
             meal.meal_status = MealStatus.CANCELLED
 
-            db.refresh(meal)
-            return meal
+            return MealResponse.model_validate(meal)
 
-    def reopen(self, db: Session, id: int) -> Meal:
+    def reopen(self, db: Session, id: int) -> MealResponse:
         with db.begin():
             meal = db.execute(
                 select(Meal)
@@ -40,10 +40,9 @@ class MealTransition:
 
             meal.meal_status = MealStatus.CREATED
 
-            db.refresh(meal)
-            return meal
+            return MealResponse.model_validate(meal)
 
-    def finish(self, db: Session, id: int) -> Meal:
+    def finish(self, db: Session, id: int) -> MealResponse:
         with db.begin():
             meal = db.execute(
                 select(Meal)
@@ -55,6 +54,5 @@ class MealTransition:
 
             meal.meal_status = MealStatus.DONE
 
-            db.refresh(meal)
-            return meal
+            return MealResponse.model_validate(meal)
 
