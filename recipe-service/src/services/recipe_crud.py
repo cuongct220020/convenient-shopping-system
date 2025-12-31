@@ -56,14 +56,17 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
             .where(Recipe.component_id.in_(ids))
         ).scalars().all()
 
-    def search(self, db: Session, keyword: str, limit: int = 10) -> Sequence[Recipe]:
+    def search(self, db: Session, keyword: str, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Recipe]:
         keyword_lower = keyword.lower()
         stmt = select(Recipe).where(
             or_(
                 Recipe.component_name.ilike(f"%{keyword}%"),
                 Recipe.keywords.contains([keyword_lower])
             )
-        ).limit(limit)
+        )
+        if cursor is not None:
+            stmt = stmt.where(Recipe.component_id < cursor)
+        stmt = stmt.order_by(Recipe.component_id.desc()).limit(limit)
         return db.execute(stmt).scalars().all()
 
     async def get_flattened(

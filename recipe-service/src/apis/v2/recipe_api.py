@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status, Depends, Query, HTTPException, Path, Body
 from sqlalchemy.orm import Session
+from sqlalchemy import inspect
 from typing import List, Optional
 from services.recipe_crud import RecipeCRUD
 from services.recommender import Recommender
@@ -13,6 +14,7 @@ from schemas.recipe_schemas import (
     RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 )
 from .crud_router_base import create_crud_router
+from shared.shopping_shared.schemas.response_schema import PaginationResponse
 from core.database import get_db
 from utils.custom_mapping import recipe_detailed_mapping
 
@@ -48,16 +50,24 @@ def recommend_recipes(
 
 @recipe_router.get(
     "/search",
-    response_model=List[RecipeResponse],
+    response_model=PaginationResponse[RecipeResponse],  # type: ignore
     status_code=status.HTTP_200_OK,
-    description="Search for recipes by keyword in their names or ingredients. Returns a list of matching recipes."
+    description="Search for recipes by keyword in their names or ingredients with cursor-based pagination. Returns a paginated list of matching recipes."
 )
 async def search_recipes(
     keyword: str = Query(..., description="Keyword to search for in recipe names or ingredients"),
-    limit: int = Query(10, ge=1, description="Maximum number of results to return"),
+    cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
+    limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
-    return recipe_crud.search(db, keyword=keyword, limit=limit)
+    items = recipe_crud.search(db, keyword=keyword, cursor=cursor, limit=limit)
+    pk = inspect(Recipe).primary_key[0]
+    next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
+    return PaginationResponse(
+        data=list(items),
+        next_cursor=next_cursor,
+        size=len(items)
+    )
 
 @recipe_router.post(
     "/flattened",
