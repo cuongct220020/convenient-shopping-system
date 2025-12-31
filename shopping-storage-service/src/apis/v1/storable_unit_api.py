@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends, Body, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, status, Depends, Body, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import Optional, List
@@ -109,11 +109,8 @@ def get_many_units(
     status_code=status.HTTP_201_CREATED,
     description="Create a new StorableUnit."
 )
-def create_unit(
-        obj_in: StorableUnitCreate,
-        background_tasks: BackgroundTasks,
-        db: Session = Depends(get_db)):
-    return storable_unit_crud.create(db, obj_in, background_tasks)
+async def create_unit(obj_in: StorableUnitCreate, db: Session = Depends(get_db)):
+    return await storable_unit_crud.create(db, obj_in)
 
 
 @storable_unit_router.put(
@@ -139,14 +136,10 @@ def update_unit(id: int, obj_in: StorableUnitUpdate, db: Session = Depends(get_d
         "Returns 400 if the requested quantity exceeds available quantity."
     )
 )
-def consume_unit(
-        id: int,
-        background_tasks: BackgroundTasks,
-        consume_quantity: int = Body(..., gt=0),
-        db: Session = Depends(get_db)):
-    message, storable_unit = storable_unit_crud.consume(db, id, consume_quantity, background_tasks)
+async def consume_unit(id: int, consume_quantity: int = Query(..., gt=0), db: Session = Depends(get_db)):
+    message, storable_unit = await storable_unit_crud.consume(db, id, consume_quantity)
     return GenericResponse(
         message=message,
-        data=StorableUnitResponse.model_validate(storable_unit) if storable_unit else None
+        data=storable_unit if storable_unit else None
     )
 

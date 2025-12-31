@@ -1,22 +1,17 @@
-from fastapi import HTTPException, BackgroundTasks
+from fastapi import HTTPException
 from typing import Optional, Sequence, List
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import select, func, desc, RowMapping
+from sqlalchemy import select, func, RowMapping
 from sqlalchemy.inspection import inspect
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.storage import StorableUnit, Storage
-from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate
+from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse
 from messaging.producers.component_existence_producer import publish_component_existence_update
 
 
 class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUpdate]):
-    def create(
-        self,
-        db: Session,
-        obj_in: StorableUnitCreate,
-        background_tasks: Optional[BackgroundTasks] = None
-    ) -> StorableUnit:
+    async def create(self, db: Session, obj_in: StorableUnitCreate) -> StorableUnit:
         db_obj = super().create(db, obj_in)
         storage = db.get(Storage, db_obj.storage_id)
         if storage:
@@ -28,21 +23,13 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                 .distinct()
             )
             unit_names = db.execute(stmt).scalars().all()
-            background_tasks.add_task(
-                publish_component_existence_update,
+            await publish_component_existence_update(
                 storage.group_id,                                                               # type: ignore
                 unit_names
             )
-
         return db_obj
 
-    def consume(
-        self,
-        db: Session,
-        id: int,
-        consume_quantity: int,
-        background_tasks: Optional[BackgroundTasks] = None
-    ) -> tuple[str, Optional[StorableUnit]]:
+    async def consume(self, db: Session, id: int,consume_quantity: int) -> tuple[str, Optional[StorableUnitResponse]]:
         try:
             with db.begin():
                 unit = db.execute(
@@ -72,15 +59,14 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                             .distinct()
                         )
                         unit_names = db.execute(stmt).scalars().all()
-                        background_tasks.add_task(
-                            publish_component_existence_update,
+                        await publish_component_existence_update(
                             storage.group_id,                                   # type: ignore
                             unit_names
                         )
                     return "Consumed and deleted", None
                 else:
                     unit.package_quantity -= consume_quantity
-                    return "Consumed", unit
+                    return "Consumed", StorableUnitResponse.model_validate(unit)
         except IntegrityError as e:
             raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
 
