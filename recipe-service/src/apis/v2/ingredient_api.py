@@ -7,7 +7,7 @@ from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate, Ingre
 from models.recipe_component import Ingredient
 from enums.category import Category
 from .crud_router_base import create_crud_router
-from shared.shopping_shared.schemas.response_schema import PaginationResponse
+from shared.shopping_shared.schemas.response_schema import CursorPaginationResponse
 from core.database import get_db
 
 ingredient_crud = IngredientCRUD(Ingredient)
@@ -19,7 +19,7 @@ ingredient_router = APIRouter(
 
 @ingredient_router.get(
     "/search",
-    response_model=PaginationResponse[IngredientResponse],  # type: ignore
+    response_model=CursorPaginationResponse[IngredientResponse],  # type: ignore
     status_code=status.HTTP_200_OK,
     description="Search for ingredients by keyword in their names with cursor-based pagination. Returns a paginated list of matching ingredients."
 )
@@ -32,7 +32,7 @@ async def search_ingredients(
     items = ingredient_crud.search(db, keyword=keyword, cursor=cursor, limit=limit)
     pk = inspect(Ingredient).primary_key[0]
     next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
-    return PaginationResponse(
+    return CursorPaginationResponse(
         data=list(items),
         next_cursor=next_cursor,
         size=len(items)
@@ -40,7 +40,7 @@ async def search_ingredients(
 
 @ingredient_router.get(
     "/filter",
-    response_model=PaginationResponse[IngredientResponse],
+    response_model=CursorPaginationResponse[IngredientResponse],
     status_code=status.HTTP_200_OK,
     description="Filter ingredients by category with cursor-based pagination. Returns a paginated list of ingredients matching the specified category."
 )
@@ -53,7 +53,7 @@ def filter_ingredients_by_category(
     items = ingredient_crud.filter(db, category=category, cursor=cursor, limit=limit)
     pk = inspect(Ingredient).primary_key[0]
     next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
-    return PaginationResponse(
+    return CursorPaginationResponse(
         data=list(items),
         next_cursor=next_cursor,
         size=len(items)

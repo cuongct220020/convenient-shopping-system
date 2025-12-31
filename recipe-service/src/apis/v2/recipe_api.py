@@ -14,7 +14,7 @@ from schemas.recipe_schemas import (
     RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 )
 from .crud_router_base import create_crud_router
-from shared.shopping_shared.schemas.response_schema import PaginationResponse
+from shared.shopping_shared.schemas.response_schema import CursorPaginationResponse
 from core.database import get_db
 from utils.custom_mapping import recipe_detailed_mapping
 
@@ -50,7 +50,7 @@ def recommend_recipes(
 
 @recipe_router.get(
     "/search",
-    response_model=PaginationResponse[RecipeResponse],  # type: ignore
+    response_model=CursorPaginationResponse[RecipeResponse],  # type: ignore
     status_code=status.HTTP_200_OK,
     description="Search for recipes by keyword in their names or ingredients with cursor-based pagination. Returns a paginated list of matching recipes."
 )
@@ -63,7 +63,7 @@ async def search_recipes(
     items = recipe_crud.search(db, keyword=keyword, cursor=cursor, limit=limit)
     pk = inspect(Recipe).primary_key[0]
     next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
-    return PaginationResponse(
+    return CursorPaginationResponse(
         data=list(items),
         next_cursor=next_cursor,
         size=len(items)
