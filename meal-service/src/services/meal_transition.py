@@ -25,7 +25,6 @@ class MealTransition:
 
             meal.meal_status = MealStatus.CANCELLED
 
-            db.refresh(meal)
             return meal
 
     def reopen(self, db: Session, id: int) -> Meal:
@@ -40,7 +39,6 @@ class MealTransition:
 
             meal.meal_status = MealStatus.CREATED
 
-            db.refresh(meal)
             return meal
 
     def finish(self, db: Session, id: int) -> Meal:
@@ -55,6 +53,5 @@ class MealTransition:
 
             meal.meal_status = MealStatus.DONE
 
-            db.refresh(meal)
             return meal
 
