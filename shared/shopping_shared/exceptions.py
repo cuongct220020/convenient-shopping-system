@@ -65,6 +65,11 @@ class TooManyRequests(SharedAppException):
 
 # --- Internal Logic Exceptions ---
 
+class ServerError(SharedAppException):
+    """Status: 500 Server Error"""
+    status_code = 500
+    message = "An internal server error occurred."
+
 class DatabaseError(SharedAppException):
     """Raised for database-related errors."""
     status_code = 503

@@ -1,5 +1,0 @@
-sanic
-python-dotenv
-aiokafka
-
--e ../../shared

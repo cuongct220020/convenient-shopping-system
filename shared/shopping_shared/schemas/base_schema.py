@@ -7,9 +7,26 @@ class BaseSchema(BaseModel):
     It includes a common configuration.
     """
     model_config = ConfigDict(
-        from_attributes=True,  # Equivalent to orm_mode = True in Pydantic v1
+        from_attributes=True,
         extra='forbid',
-        populate_by_name=True, # Cho phép dùng alias
-        use_enum_values=True, # Tự động chuyển Enum thành giá trị của nó
-        arbitrary_types_allowed=True  # Cho phép sử dụng các kiểu tùy ý như SQLAlchemy model
+        populate_by_name=True,
+        use_enum_values=True,
+        arbitrary_types_allowed=True
     )
+
+    @classmethod
+    def model_json_schema(cls, *args, **kwargs):
+        kwargs.setdefault("ref_template", "#/components/schemas/{model}")
+        schema = super().model_json_schema(*args, **kwargs)
+        if "properties" in schema:
+            schema["properties"].pop("model_config", None)
+            schema["properties"].pop("config_dict", None)
+        return schema
+
+    @classmethod
+    def schema(cls, *args, **kwargs):
+        schema = super().schema(*args, **kwargs)
+        if "properties" in schema:
+            schema["properties"].pop("model_config", None)
+            schema["properties"].pop("config_dict", None)
+        return schema

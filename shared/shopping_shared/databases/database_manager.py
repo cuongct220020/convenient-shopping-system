@@ -1,6 +1,6 @@
 # shared/shopping_shared/databases/database_manager.py
 from contextlib import asynccontextmanager
-from typing import TypeAlias, Any, AsyncGenerator, Optional
+from typing import TypeAlias, Any, AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import (
 from shopping_shared.exceptions import DatabaseError
 from shopping_shared.utils.logger_utils import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("Database Manager")
 
 # Type alias for the session maker, following PascalCase convention
 AsyncSessionMaker: TypeAlias = async_sessionmaker[AsyncSession]

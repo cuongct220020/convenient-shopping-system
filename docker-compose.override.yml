@@ -1,8 +1,0 @@
-# convenient-shopping-system/docker-compose.override.yml
-
-# Ghi đè dịch vụ 'kong'
-# services:
-#   kong:
-#     volumes:
-#       # Ghi đè 'volumes' để trỏ đến tệp config local
-#       - ./api-gateway/kong.local.yml:/usr/local/kong/declarative/kong.yml
