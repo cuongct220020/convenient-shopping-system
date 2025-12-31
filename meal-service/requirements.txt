@@ -30,4 +30,4 @@ uvicorn==0.37.0
 watchfiles==1.1.0
 websockets==15.0.1
 
--e git+https://github.com/cuongct220020/IT4990-Convenient-Shopping-System.git@57f76b3beb24c2504877961a8f1a93cbee25a166#egg=shopping_shared[fastapi]&subdirectory=shared
+shopping_shared[fastapi] @ git+https://github.com/cuongct220020/IT4990-Convenient-Shopping-System.git@57f76b3beb24c2504877961a8f1a93cbee25a166#subdirectory=shared
