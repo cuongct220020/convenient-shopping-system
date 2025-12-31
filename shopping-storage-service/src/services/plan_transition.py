@@ -32,7 +32,6 @@ class PlanTransition:
             plan.assignee_id = assignee_id
             plan.plan_status = PlanStatus.IN_PROGRESS
 
-            db.refresh(plan)
             return plan
 
     def unassign(self, db: Session, id: int, assignee_id: int) -> ShoppingPlan:
@@ -51,7 +50,6 @@ class PlanTransition:
             plan.assignee_id = None
             plan.plan_status = PlanStatus.CREATED
 
-            db.refresh(plan)
             return plan
 
     def cancel(self, db: Session, id: int, assigner_id: int) -> ShoppingPlan:
@@ -71,7 +69,6 @@ class PlanTransition:
             plan.assignee_id = None
             plan.plan_status = PlanStatus.CANCELLED
 
-            db.refresh(plan)
             return plan
 
     def check_completion(self, plan: ShoppingPlan, report: PlanReport):
@@ -136,8 +133,7 @@ class PlanTransition:
                     return False, "Report incomplete", {"missing_items": missing_quantities}
 
             plan.plan_status = PlanStatus.COMPLETED
-            
-            db.refresh(plan)
+
             return True, "Report accepted and plan completed", plan
 
     def reopen(self, db: Session, id: int, assigner_id: int) -> ShoppingPlan:
@@ -155,21 +151,5 @@ class PlanTransition:
                                     detail=f"Operation not allowed: user {assigner_id} is not the assigner of this plan")
 
             plan.plan_status = PlanStatus.CREATED
-            
-            db.refresh(plan)
-            return plan
 
-    def expire(self, db: Session, id: int) -> ShoppingPlan:
-        with db.begin():
-            plan = db.execute(
-                select(ShoppingPlan)
-                .where(ShoppingPlan.plan_id == id)
-                .with_for_update()
-            ).scalar_one_or_none()
-
-            self._preconditions_check(plan, [PlanStatus.CREATED, PlanStatus.IN_PROGRESS])
-
-            plan.plan_status = PlanStatus.EXPIRED
-
-            db.refresh(plan)
             return plan
