@@ -38,6 +38,7 @@ def recipe_detailed_mapping(recipe: Recipe) -> RecipeDetailedResponse:
             level=recipe.level,
             default_servings=recipe.default_servings,
             instructions=recipe.instructions or [],
+            keywords=recipe.keywords or [],
             component_list=[
                 build_component_detail(cl)
                 for cl in recipe.component_list
