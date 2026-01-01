@@ -19,7 +19,7 @@ class AddUserGroupHandler(BaseMessageHandler):
           "requester_username": "string",
           "group_id": "uuid_string",
           "group_name": "string",
-          "group_member_ids": [uuid_string],
+          "group_members_ids": [uuid_string],
           "user_to_add_id": "uuid_string",
           "user_to_add_identifier": "string",
           "timestamp": "iso8601_string"
@@ -31,13 +31,13 @@ class AddUserGroupHandler(BaseMessageHandler):
             requester_username = message.get("requester_username")
             group_id = message.get("group_id")
             group_name = message.get("group_name")
-            group_member_ids = message.get("group_member_ids")
+            group_members_ids = message.get("group_members_ids")
             user_to_add_id = message.get("user_to_add_id")
             user_to_add_identifier = message.get("user_to_add_identifier")
             timestamp = message.get("timestamp")
 
             # Validate required fields
-            if not all([event_type, requester_id, requester_username, group_id, group_name, group_member_ids, user_to_add_id, user_to_add_identifier, timestamp]):
+            if not all([event_type, requester_id, group_id, group_name, user_to_add_id, user_to_add_identifier, timestamp]):
                 logger.error(f"Missing required fields in message: {message}")
                 return
 
@@ -57,7 +57,7 @@ class AddUserGroupHandler(BaseMessageHandler):
                 requester_username=requester_username,
                 group_id=group_id,
                 group_name=group_name,
-                group_member_ids=group_member_ids,
+                group_member_ids=group_members_ids,
                 user_to_add_id=user_to_add_id,
                 user_to_add_identifier=user_to_add_identifier,
                 timestamp=timestamp if timestamp else get_current_timestamp(),

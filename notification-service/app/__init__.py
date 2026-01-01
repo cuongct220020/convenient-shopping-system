@@ -17,7 +17,7 @@ def register_routes(sanic_app: Sanic):
             "message": "Notification Service is running"
         })
 
-    @sanic_app.route("/health", methods=["GET"])
+    @sanic_app.route("/api/v1/notification-service/health", methods=["GET"])
     async def health_check(request):
         """Health check endpoint."""
         return sanic_json({
@@ -34,8 +34,9 @@ def register_middleware(sanic_app: Sanic):
     """Register middleware for the Notification Service."""
     from app.hooks.request_authentication import auth_middleware
     from app.hooks.caching import inject_redis_client
-    sanic_app.register_middleware(auth_middleware, "request")
+    # Register inject_redis_client FIRST so auth_middleware can use it
     sanic_app.register_middleware(inject_redis_client, "request")
+    sanic_app.register_middleware(auth_middleware, "request")
 
 
 def register_listeners(sanic_app: Sanic):
@@ -68,8 +69,10 @@ def register_listeners(sanic_app: Sanic):
         #     else:
         #         logger.error("DB Engine not found in app.ctx during service init")
 
+    @sanic_app.listener("after_server_start")
+    async def start_consumer(app, loop):
+        """Start Kafka consumer after server is fully started."""
         logger.info("Starting Kafka consumer background task...")
-        # Pass the app instance to the consumer task so it can access app.ctx
         app.add_task(consume_notifications(app))
 
 

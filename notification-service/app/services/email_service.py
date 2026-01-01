@@ -25,11 +25,12 @@ class EmailService:
             logger.error("Email service not initialized.")
             return
 
-        sender_email = self.config.EMAIL_SENDER
-        password = self.config.EMAIL_PASSWORD
-        host = self.config.EMAIL_HOST
-        port = self.config.EMAIL_PORT
-        use_tls = getattr(self.config, 'EMAIL_USE_TLS', True)
+        # Access config safely (Sanic config behaves like a dict or object depending on version)
+        sender_email = getattr(self.config, 'EMAIL_SENDER', None) or self.config.get('EMAIL_SENDER')
+        password = getattr(self.config, 'EMAIL_PASSWORD', None) or self.config.get('EMAIL_PASSWORD')
+        host = getattr(self.config, 'EMAIL_HOST', None) or self.config.get('EMAIL_HOST')
+        port = getattr(self.config, 'EMAIL_PORT', None) or self.config.get('EMAIL_PORT')
+        use_tls = getattr(self.config, 'EMAIL_USE_TLS', None) or self.config.get('EMAIL_USE_TLS', True)
 
         message = MIMEMultipart("alternative")
         message["Subject"] = subject

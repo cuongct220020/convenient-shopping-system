@@ -278,11 +278,37 @@ class FamilyGroupService:
         # Get all members in the group to check if this is the last member
         all_members = await self.member_repo.get_all_members(group_id)
 
+        # Regular member (or HEAD_CHEF as the last member) can leave
+        # Fetch group name BEFORE removing the member to ensure group still exists
+        group = await self.get(group_id)
+        group_name = group.group_name
+
         # If user is HEAD_CHEF and there are other members, they cannot leave
         if membership.role == GroupRole.HEAD_CHEF and len(all_members) > 1:
-            raise Forbidden("HEAD_CHEF cannot leave group while other members exist. Please transfer ownership or remove other members first.")
+            new_head_chef = min(
+                (m for m in all_members if m.user_id != user_id),
+                key=lambda m: m.jointed_at
+            )
 
-        # If this is the last member (regardless of role), allow them to leave (equivalent to deleting the group)
+            await self.member_repo.update_role(
+                user_id=new_head_chef.user_id,
+                group_id=group_id,
+                new_role=GroupRole.HEAD_CHEF
+            )
+
+            logger.info(f"Transferred HEAD_CHEF from {user_id} to {new_head_chef.user_id}")
+
+            await kafka_service.publish_update_headchef_group_message(
+                requester_id=str(user_id),
+                requester_username=str(user_name),
+                group_id=str(group_id),
+                group_name=str(group_name),
+                old_head_chef_id=str(user_id),
+                old_head_chef_identifier=str(user_name),
+                new_head_chef_id=str(new_head_chef.user_id),
+                new_head_chef_identifier=str(new_head_chef.user.username) if new_head_chef.user.username else new_head_chef.user.email
+            )
+
         if len(all_members) <= 1:
             # Fetch group name BEFORE removing the member to ensure group still exists
             group = await self.get(group_id)
@@ -299,11 +325,6 @@ class FamilyGroupService:
                 group_name=group_name
             )
             return
-
-        # Regular member (or HEAD_CHEF as the last member) can leave
-        # Fetch group name BEFORE removing the member to ensure group still exists
-        group = await self.get(group_id)
-        group_name = group.group_name
 
         await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
         logger.info(f"User {user_id} left group {group_id}")

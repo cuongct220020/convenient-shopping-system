@@ -6,14 +6,23 @@ This service handles real-time notifications for the Convenient Shopping System.
 
 ## WebSocket Endpoints
 
-The service exposes two main WebSocket endpoints:
+The service exposes two main WebSocket endpoints. In a local development environment (via Kong Gateway), use the following URLs:
 
-*   **Group Notifications:** `ws://<gateway-host>/api/v1/notification-service/ws/notifications/groups/<group_id>`
-    *   For receiving notifications relevant to a specific family/group (e.g., member added/removed, role changes).
-*   **User Notifications:** `ws://<gateway-host>/api/v1/notification-service/ws/notifications/users/<user_id>`
-    *   For receiving personal notifications for a specific user (e.g., being added to a group, account alerts).
+*   **Group Notifications:**
+    *   URL: `ws://localhost:8000/ws/v1/notification-service/notifications/groups/<group_id>`
+    *   Usage: For receiving notifications relevant to a specific family/group (e.g., member added/removed, role changes).
+*   **User Notifications:**
+    *   URL: `ws://localhost:8000/ws/v1/notification-service/notifications/users/<user_id>`
+    *   Usage: For receiving personal notifications for a specific user (e.g., being added to a group, account alerts).
 
-*Note: These endpoints are typically accessed via the Kong API Gateway using WSS (secure WebSocket) in production.*
+**Authentication:**
+These endpoints are protected. You must provide a valid JWT token.
+1.  **Header:** `Authorization: Bearer <YOUR_JWT_TOKEN>` (Recommended for generic clients)
+2.  **Query Parameter:** Append `?jwt=<YOUR_JWT_TOKEN>` to the URL (Useful for browser/simple testing)
+
+    *Example:* `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/123e4567-e89b-12d3-a456-426614174000?jwt=eyJhbG...`
+
+*Note: In production, these endpoints are accessed via WSS (secure WebSocket).*
 
 ## Consumed Kafka Topics
 

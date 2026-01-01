@@ -16,7 +16,7 @@ class Config:
         'host': os.getenv('APP_HOST', 'localhost'),
         'port': int(os.getenv('APP_PORT', '8000')),
         'debug': os.getenv('DEBUG', True).lower() == 'true',
-        "access_log": False,
+        "access_log": True,
         "auto_reload": True,
         'workers': int(os.getenv('WORKERS', 1)),
     }
@@ -45,6 +45,13 @@ class Config:
     KAFKA = KafkaConfig(
         bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9094')
     )
+
+    # Email Settings
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'localhost')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 1025))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'false').lower() == 'true'
+    EMAIL_SENDER = os.getenv('EMAIL_SENDER', 'noreply@example.com')
+    EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', 'dummy')
 
     # # OpenAPI / Swagger Configuration
     # OAS_URL_PREFIX = "/api/v1/notification-service/docs"

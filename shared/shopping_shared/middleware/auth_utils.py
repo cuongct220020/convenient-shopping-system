@@ -66,24 +66,25 @@ async def validate_token_state(
 def extract_kong_headers(headers: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extracts and validates authentication headers injected by Kong.
-    
-    Returns:
-        A dictionary containing the auth payload (sub, role, etc.).
-    
-    Raises:
-        Unauthorized: If essential headers are missing.
+    Handles case-insensitive headers manually for compatibility.
     """
-    user_id = headers.get("x-user-id")
-    user_role = headers.get("x-user-role")
-    user_email = headers.get("x-user-email")
-    username = headers.get("x-user-username")
-    access_jti = headers.get("x-jti")
-    exp_str = headers.get("x-exp")
-    iat_str = headers.get("x-iat")
-    aud_str = headers.get("x-aud")
+    # Create a case-insensitive lookup dict
+    lookup_headers = {k.lower(): v for k, v in headers.items()}
+    
+    # Debug log specific headers
+    # logger.info(f"Auth Headers Received: {list(lookup_headers.keys())}")
+
+    user_id = lookup_headers.get("x-user-id")
+    user_role = lookup_headers.get("x-user-role")
+    user_email = lookup_headers.get("x-user-email")
+    username = lookup_headers.get("x-user-username")
+    access_jti = lookup_headers.get("x-jti")
+    exp_str = lookup_headers.get("x-exp")
+    iat_str = lookup_headers.get("x-iat")
+    aud_str = lookup_headers.get("x-aud")
 
     if not user_id:
-        logger.warning("Missing x-user-id header")
+        logger.warning(f"Missing x-user-id header. Available headers: {list(lookup_headers.keys())}")
         raise Unauthorized("Missing user identity from API Gateway.")
 
     if not access_jti:

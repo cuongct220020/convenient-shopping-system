@@ -10,6 +10,10 @@ app = create_app(Config)
 def run():
     """Checks configuration and runs the application."""
     try:
+        # Debug: Print all registered routes
+        for route in app.router.routes:
+            logger.info(f"Registered Route: {route.path}")
+
         app.run(**app.config["RUN_SETTING"])
     except KeyboardInterrupt:
         logger.info("Application stopped by user.")

@@ -204,7 +204,5 @@ class WebSocketNotificationService:
         logger.info(f"Successfully processed user left group event for user {user_identifier}")
 
 
-
-
 # Global instance
 websocket_notification_service = WebSocketNotificationService()
