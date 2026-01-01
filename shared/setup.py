@@ -8,7 +8,7 @@ setup(
     author='Đặng Tiến Cường',
         author_email='cuong.dt@example.com',
     install_requires=[
-        'sanic',
-        'pydantic' # pydantic is used in the error handler
+        'sanic==24.12.0', # Match the version used in services
+        'pydantic==2.10.6' # Match the version used in services
     ],
 )

@@ -86,7 +86,13 @@ http://localhost:8000/api/v1/user-service
 docker compose up -d
 ```
 
+```bash
+# Create admin
+docker exec -it user-service python /api/scripts/create_admin_user.py
+```
+
 ### Running Locally
+
 
 #### Running user service server
 ```bash
@@ -97,12 +103,6 @@ python3 run.py
 alembic upgrade head
 ```
 
-#### Running notification service server
-```bash
-cd notification-service
-pip install -r requirements.txt
-python3 run.py
-```
 
 #### Generate RSA Keys
 ```bash
