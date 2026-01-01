@@ -11,32 +11,26 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 logger = get_logger("Email Service")
 
 class EmailService:
-    def __init__(self, app: Optional[Sanic] = None):
-        self.app = app
-        self.config = None
-        if app:
-            self.init_app(app)
-
+    def __init__(self, config=None):
+        self.config = config
         self.jinja_env = Environment(
             loader=PackageLoader("app", "templates"),
             autoescape=select_autoescape()
         )
-
-    def init_app(self, app: Sanic):
-        self.app = app
-        self.config = app.config
-        logger.info("EmailService initialized (Async).")
+        if config:
+            logger.info("EmailService initialized (Async).")
 
     async def _send_email(self, to_email: str, subject: str, html_content: str):
         if not self.config:
             logger.error("Email service not initialized.")
             return
 
-        sender_email = self.config.EMAIL_SENDER
-        password = self.config.EMAIL_PASSWORD
-        host = self.config.EMAIL_HOST
-        port = self.config.EMAIL_PORT
-        use_tls = getattr(self.config, 'EMAIL_USE_TLS', True)
+        # Access config safely (Sanic config behaves like a dict or object depending on version)
+        sender_email = getattr(self.config, 'EMAIL_SENDER', None) or self.config.get('EMAIL_SENDER')
+        password = getattr(self.config, 'EMAIL_PASSWORD', None) or self.config.get('EMAIL_PASSWORD')
+        host = getattr(self.config, 'EMAIL_HOST', None) or self.config.get('EMAIL_HOST')
+        port = getattr(self.config, 'EMAIL_PORT', None) or self.config.get('EMAIL_PORT')
+        use_tls = getattr(self.config, 'EMAIL_USE_TLS', None) or self.config.get('EMAIL_USE_TLS', True)
 
         message = MIMEMultipart("alternative")
         message["Subject"] = subject

@@ -7,7 +7,6 @@ from sanic_ext.extensions.openapi.definitions import Response
 from app.decorators import validate_request, require_group_role
 from app.views.groups.base_group_view import BaseGroupView
 from app.enums import GroupRole
-from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.schemas.family_group_schema import (
     AddMemberRequestSchema,
     GroupMembershipUpdateSchema,
@@ -101,6 +100,7 @@ class GroupMembersView(BaseGroupView):
     async def post(self, request: Request, group_id: UUID):
         """Add a member to a specific family group."""
         requester_id = request.ctx.auth_payload["sub"]
+        requester_username = request.ctx.auth_payload["username"]
         validated_data = request.ctx.validated_data
         identifier = validated_data.identifier
 
@@ -121,6 +121,7 @@ class GroupMembersView(BaseGroupView):
             # Use the service method to add member by email (which internally handles the permission logic)
             membership = await service.add_member_by_identifier(
                 requester_id=requester_id,
+                requester_username=requester_username,
                 group_id=group_id,
                 user_to_add=target_user
             )
@@ -181,11 +182,15 @@ class GroupMemberDetailView(BaseGroupView):
         """Update the role of a specific member in a family group."""
         validated_data = request.ctx.validated_data
         requester_id = request.ctx.auth_payload["sub"]
+        requester_username = request.ctx.auth_payload["username"]
+        requester_email = request.ctx.auth_payload["email"]
         service = self._get_service(request)
 
         try:
             membership = await service.update_member_role(
                 requester_id=requester_id,
+                requester_username=requester_username,
+                requester_email=requester_email,
                 group_id=group_id,
                 target_user_id=user_id,
                 new_role=validated_data.role
@@ -235,11 +240,13 @@ class GroupMemberDetailView(BaseGroupView):
     async def delete(self, request: Request, group_id: UUID, user_id: UUID):
         """Remove a specific member from a family group."""
         requester_id = request.ctx.auth_payload["sub"]
+        requester_username = request.ctx.auth_payload["username"]
         service = self._get_service(request)
 
         try:
             await service.remove_member(
                 requester_id=requester_id,
+                requester_username=requester_username,
                 group_id=group_id,
                 target_user_id=user_id
             )
@@ -290,10 +297,12 @@ class GroupMemberMeView(BaseGroupView):
     async def delete(self, request: Request, group_id: UUID):
         """Allow a member to leave a specific family group."""
         user_id = request.ctx.auth_payload["sub"]
+        user_name = request.ctx.auth_payload["username"]
+        user_email = request.ctx.auth_payload["email"]
         service = self._get_service(request)
 
         try:
-            await service.leave_group(user_id, group_id)
+            await service.leave_group(user_id, user_name, user_email, group_id)
 
             # Use helper method from base class
             return self.success_response(

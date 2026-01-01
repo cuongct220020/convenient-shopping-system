@@ -128,6 +128,7 @@ class AuthService:
         token_data = jwt_handler.create_tokens(
             user_id=str(user.id),
             user_role=str(user.system_role.value) if hasattr(user.system_role, "value") else str(user.system_role),
+            username=str(user.username),
             email=str(user.email)
         )
 
@@ -182,6 +183,8 @@ class AuthService:
             # Log the error but continue
             logger.error(f"Error adding token to blocklist for jti {access_token_jti}: {str(e)}")
             # Don't raise the exception to allow the logout to complete
+
+        await kafka_service.publish_user_logout_message(user_id=user_id, jti=access_token_jti)
 
 
     @classmethod
