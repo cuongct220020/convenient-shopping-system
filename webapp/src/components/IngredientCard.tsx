@@ -17,6 +17,8 @@ interface IngredientCardProps {
   onToggle?: () => void;
   onPriceChange?: (value: string) => void;
   formatCurrency?: (val: number) => string;
+  showCheck?: boolean;
+  showPrice?: boolean;
 }
 
 export const IngredientCard = ({
@@ -25,9 +27,35 @@ export const IngredientCard = ({
   readonly = false,
   onToggle,
   onPriceChange,
-  formatCurrency
+  formatCurrency,
+  showPrice = false
 }: IngredientCardProps) => {
   const hasShoppingFeatures = onToggle !== undefined || onPriceChange !== undefined;
+
+  if (showPrice && formatCurrency) {
+    // Price display mode (for "Nguyên liệu đã mua" in completed plans)
+    return (
+      <div className="flex items-center justify-between p-3 bg-gray-100 rounded-xl mb-2">
+        <div className="flex items-center space-x-3">
+          <img
+            src={ingredient.image}
+            alt={ingredient.name}
+            className="w-12 h-12 object-cover rounded-lg"
+          />
+          <div>
+            <h4 className="font-bold text-sm text-gray-800">{ingredient.name}</h4>
+            <p className="text-xs text-gray-500">{ingredient.category}</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-gray-600">{ingredient.quantity}</span>
+          <span className="text-sm font-semibold text-[#C3485C]">
+            {formatCurrency(ingredient.price || 0)}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (hasShoppingFeatures) {
     // Shopping list mode (for ImplementPlan)

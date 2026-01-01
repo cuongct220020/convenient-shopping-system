@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, Check, Clock, User, DollarSign, Calendar, AlertTriangle, X, Settings, Edit2, Trash2 } from 'lucide-react';
+import { FileText, Check, Clock, User, DollarSign, Calendar, AlertTriangle, X, Settings, Edit2, Trash2, ArrowRight } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
 import { IngredientCard } from '../../../components/IngredientCard';
 
 // Define interface for dummy data
 interface IngredientReadonly {
-  id: number;
-  name: string;
-  category: string;
-  quantity: string;
-  image: string;
+  id: number
+  name: string
+  category: string
+  quantity: string
+  image: string
+  price?: number
 }
 
 // Hardcoded data to match the screenshot
 const planData = {
   title: "Mua đồ ăn tối",
-  status: "Đang chờ",
+  status: "Đã xong",
   creator: "Bùi Mạnh Hưng",
   budget: "500.000 VND",
   deadline: "21:00 - Thứ 4, 24/12/2025",
@@ -31,6 +32,11 @@ const ingredientsList: IngredientReadonly[] = [
   { id: 1, name: 'Bông cải', category: 'Rau', quantity: '100g', image: placeholderImage },
   { id: 2, name: 'Bông cải', category: 'Rau', quantity: '100g', image: placeholderImage },
   { id: 3, name: 'Bông cải', category: 'Rau', quantity: '100g', image: placeholderImage },
+];
+
+const boughtIngredientsList: IngredientReadonly[] = [
+  { id: 4, name: 'Cà rốt', category: 'Rau', quantity: '200g', image: placeholderImage, price: 15000 },
+  { id: 5, name: 'Khoai lang', category: 'Củ', quantity: '300g', image: placeholderImage, price: 25000 },
 ];
 
 export const PlanDetail = () => {
@@ -97,6 +103,14 @@ export const PlanDetail = () => {
   };
 
   const toggleSettings = () => setIsSettingsOpen(!isSettingsOpen);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      minimumFractionDigits: 0
+    }).format(value);
+  };
 
   return (
     <div className="bg-white min-h-screen relative pb-8" onClick={() => { if (isSettingsOpen) setIsSettingsOpen(false); }}>
@@ -189,30 +203,66 @@ export const PlanDetail = () => {
         </div>
 
         {/* Ingredient List Section */}
-        <h2 className="font-bold text-lg mb-4">Danh sách nguyên liệu</h2>
-        <div className="mb-10">
-          {ingredientsList.map((ingredient) => (
-            <IngredientCard
-              key={ingredient.id}
-              ingredient={ingredient}
-              onDelete={() => {}}
-              readonly
-            />
-          ))}
-        </div>
+        {planData.status === "Đã xong" ? (
+          <>
+            {/* Nguyên liệu đã mua */}
+            <h2 className="font-bold text-lg mb-4">Nguyên liệu đã mua</h2>
+            <div className="mb-10">
+              {boughtIngredientsList.map((ingredient) => (
+                <IngredientCard
+                  key={ingredient.id}
+                  ingredient={ingredient}
+                  onDelete={() => {}}
+                  readonly
+                  showPrice
+                  formatCurrency={formatCurrency}
+                />
+              ))}
+            </div>
+
+            {/* Nguyên liệu chưa mua */}
+            <h2 className="font-bold text-lg mb-4">Nguyên liệu chưa mua</h2>
+            <div className="mb-10">
+              {ingredientsList.map((ingredient) => (
+                <IngredientCard
+                  key={ingredient.id}
+                  ingredient={ingredient}
+                  onDelete={() => {}}
+                  readonly
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="font-bold text-lg mb-4">Danh sách nguyên liệu</h2>
+            <div className="mb-10">
+              {ingredientsList.map((ingredient) => (
+                <IngredientCard
+                  key={ingredient.id}
+                  ingredient={ingredient}
+                  onDelete={() => {}}
+                  readonly
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Footer Button */}
-        <div className="flex justify-center">
-          <Button
-            variant="primary"
-            size="fit"
-            icon={Check}
-            className="!px-10 !py-3 text-base rounded-2xl shadow-lg shadow-red-200/50"
-            onClick={() => setIsApproveModalOpen(true)}
-          >
-            Duyệt kế hoạch
-          </Button>
-        </div>
+        {planData.status !== "Đã xong" && (
+          <div className="flex justify-center">
+            <Button
+              variant="primary"
+              size="fit"
+              icon={planData.status === "Đang thực hiện" ? ArrowRight : Check}
+              className="!px-10 !py-3 text-base rounded-2xl shadow-lg shadow-red-200/50"
+              onClick={() => setIsApproveModalOpen(true)}
+            >
+              {planData.status === "Đang thực hiện" ? "Tiếp tục thực hiện kế hoạch" : "Duyệt kế hoạch"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* APPROVE PLAN CONFIRMATION MODAL */}
