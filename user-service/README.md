@@ -73,43 +73,52 @@ http://localhost:8000/api/v1/user-service
 ## Setup
 
 ### Prerequisites
-- Pull latest update on remote repository and at the root directory. 
+- Pull latest update on remote repository and at the root directory.
 - Docker Desktop (Docker Engine) is installed and running on your machine (for local development).
 - Python3.11+ is installed on your machine (for local development).
 - Create new .env file in the user-service, notification-service directory.
 - Copy the content of .env.example into the newly created .env file.
 - Update environment variables as needed
 
+### Generate RSA Keys
+```bash
+# Generate and verify RSA key pairs for JWT authentication
+cd user-service/scripts
+python3 generate_rsa_keys.py
+python3 verify_rsa_keys_pair.py
+```
+
+### Configure Kong Gateway
+1. Copy the generated public key from `user-service/secrets/jwt-public.pem`
+2. Paste it into the `api-gateway/kong.prod.yml` file in the JWT consumer configuration
+3. Verify the public key matches Kong configuration:
+```bash
+cd user-service/scripts
+python3 verify_kong_public_key.py kong.prod.yml
+```
+
 ### Running with Docker
 ```bash
 # From the project root directory
-docker compose up -d
+# If you have made code changes, use --build to rebuild images
+# Otherwise, use without --build for faster startup
+docker compose up -d --build
 ```
 
+### Initialize Admin User (after containers are running)
 ```bash
-# Create admin
-docker exec -it user-service python /api/scripts/create_admin_user.py
+# Create admin user with default credentials
+docker exec -it user-service python3 /user-service/scripts/create_admin_user.py
+
+# Or create admin user with custom parameters
+docker exec -it user-service python3 /user-service/scripts/create_admin_user.py --username "myadmin" --email "admin@example.com" --password "MySecurePassword123"
 ```
 
-### Running Locally
-
-
-#### Running user service server
+### Database Migrations (if needed after running)
 ```bash
-# From the user-service directory
-cd user-service
-pip install -r requirements.txt
-python3 run.py
+# Access container and run database migrations
+docker exec -it user-service bash
 alembic upgrade head
-```
-
-
-#### Generate RSA Keys
-```bash
-# Generate and verify RSA key pairs for JWT authentication
-python3 generate_rsa_keys.py
-python3 verify_rsa_keys_pair.py
-python3 verify_kong_public_key.py
 ```
 
 ## Testing
