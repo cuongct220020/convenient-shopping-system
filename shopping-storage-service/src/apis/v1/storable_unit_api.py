@@ -5,7 +5,7 @@ from typing import Optional, List
 from services.storable_unit_crud import StorableUnitCRUD
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse, StorableUnitStackedResponse
 from models.storage import StorableUnit
-from shared.shopping_shared.schemas.response_schema import GenericResponse, CursorPaginationResponse
+from shared.shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
 from core.database import get_db
 
 storable_unit_crud = StorableUnitCRUD(StorableUnit)

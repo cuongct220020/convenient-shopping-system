@@ -8,8 +8,11 @@ setup(
     author='Đặng Tiến Cường',
     author_email='cuong.dt@example.com',
     install_requires=[
+        'SQLAlchemy==2.0.43',
         'pydantic==2.11.9',
-        'SQLAlchemy==2.0.43'
+        'pydantic-settings==2.11.0',
+        'aiokafka==0.12.0',
+        'async-timeout==5.0.1'
     ],
     extras_require={
         'fastapi': [
@@ -17,7 +20,8 @@ setup(
             'anyio==4.11.0',
             'starlette==0.48.0',
             'greenlet==3.2.4',
-            'idna==3.10'
+            'idna==3.10',
+            'psycopg2-binary==2.9.10'
         ],
         'sanic': [
             'sanic==24.12.0'
