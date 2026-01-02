@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { LogIn, UserPlus } from 'lucide-react'
+import { LogIn, UserPlus, XCircle, Check } from 'lucide-react'
 import { InputField } from '../../components/InputField'
 import { Button } from '../../components/Button'
+import { authService, AuthService } from '../../services/auth'
+import { ok, Result } from 'neverthrow'
+import { i18n } from '../../utils/i18n/i18n'
+import { i18nKeys } from '../../utils/i18n/keys'
+import { LoadingOverlay } from '../../components/Loading'
+import { NotificationCard } from '../../components/NotificationCard'
+import { useIsMounted } from '../../hooks/useIsMounted'
+import { LocalStorage } from '../../services/storage/local'
+import { authController } from '../../controllers/authController'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -10,11 +19,11 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{
-    email: string | null
-    password: string | null
+    email: Result<void, i18nKeys>
+    password: Result<void, i18nKeys>
   }>({
-    email: null,
-    password: null
+    email: ok(),
+    password: ok()
   })
   const [touched, setTouched] = useState<{
     email: boolean
@@ -23,32 +32,13 @@ export default function Login() {
     email: false,
     password: false
   })
-
-  // Validation functions
-  const validateEmailOrUsername = (input: string): string | null => {
-    if (!input.trim()) {
-      return 'Email hoặc tên đăng nhập không được để trống'
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
-
-    const isEmail = emailRegex.test(input)
-    const isUsername = usernameRegex.test(input)
-
-    if (!isEmail && !isUsername) {
-      return 'Email hoặc tên đăng nhập không hợp lệ'
-    }
-
-    return null
-  }
-
-  const validatePassword = (password: string): string | null => {
-    if (!password.trim()) {
-      return 'Mật khẩu không được để trống'
-    }
-    return null
-  }
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPopup, setShowPopup] = useState({
+    yes: false,
+    title: '' as i18nKeys,
+    message: ''
+  })
+  const isMounted = useIsMounted()
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -57,7 +47,7 @@ export default function Login() {
     if (touched.email) {
       setErrors((prev) => ({
         ...prev,
-        email: validateEmailOrUsername(value)
+        email: AuthService.validateEmailOrUsername(value)
       }))
     }
   }
@@ -66,7 +56,7 @@ export default function Login() {
     setTouched((prev) => ({ ...prev, email: true }))
     setErrors((prev) => ({
       ...prev,
-      email: validateEmailOrUsername(email)
+      email: AuthService.validateEmailOrUsername(email)
     }))
   }
 
@@ -77,7 +67,7 @@ export default function Login() {
     if (touched.password) {
       setErrors((prev) => ({
         ...prev,
-        password: validatePassword(value)
+        password: AuthService.validatePassword(value)
       }))
     }
   }
@@ -86,16 +76,16 @@ export default function Login() {
     setTouched((prev) => ({ ...prev, password: true }))
     setErrors((prev) => ({
       ...prev,
-      password: validatePassword(password)
+      password: AuthService.validatePassword(password)
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validate all fields
-    const emailError = validateEmailOrUsername(email)
-    const passwordError = validatePassword(password)
+    const emailError = AuthService.validateEmailOrUsername(email)
+    const passwordError = AuthService.validatePassword(password)
 
     setErrors({
       email: emailError,
@@ -107,93 +97,174 @@ export default function Login() {
       password: true
     })
 
-    // If no errors, proceed with login
-    if (!emailError && !passwordError) {
-      console.log('Login attempt with:', email)
-      // Add actual login logic here
-      navigate('/auth/login-authentication')
+    if (emailError.isErr() || passwordError.isErr()) {
+      return
     }
+    console.info('Login attempt with:', email)
+    setIsLoading(true)
+    const response = await authService.logIn(email, password)
+    if (!isMounted.current) {
+      console.info(
+        'Login component was unmounted before async request finishes'
+      )
+      return
+    }
+    response
+      .map((body) => {
+        authController.saveUserAuth(body.data)
+        setIsLoading(false)
+        navigate('/main/profile')
+      })
+      .mapErr(async (e) => {
+        setIsLoading(false)
+        console.error('Login: ', e)
+        switch (e.type) {
+          case 'unverfified': {
+            // TODO: email must be a real email
+            const realEmail = AuthService.validateEmail(email).match(
+              () => email,
+              () => 'notAnEmail@gmail.com'
+            )
+            authService.sendOtpRequest('register', realEmail)
+            LocalStorage.inst.emailRequestingOtp = realEmail
+            navigate('/auth/login-authentication')
+            break
+          }
+          case 'network-error':
+            setShowPopup({
+              title: 'network_error',
+              message: e.desc ?? i18n.t('internal_error'),
+              yes: true
+            })
+            break
+          case 'incorrect-credentials':
+            setShowPopup({
+              title: 'incorrect_credentials',
+              message: i18n.t('recheck_credentials'),
+              yes: true
+            })
+            break
+          default:
+            setShowPopup({
+              title: 'error_occured',
+              message: i18n.t('internal_error'),
+              yes: true
+            })
+        }
+      })
   }
 
   return (
-    <>
-      {/* Logo & Header: ShopSense above Đăng nhập */}
-      <div className="mb-6 sm:mb-8 text-center">
-        {/* ShopSense Text with precise S coloring */}
-        <h1 className="mb-3 sm:mb-4 text-3xl sm:text-3xl md:text-4xl font-bold">
-          <span className="text-[#C3485C]">S</span>
-          <span className="text-[#f7b686]">hop</span>
-          <span className="text-[#C3485C]">S</span>
-          <span className="text-[#f7b686]">ense</span>
-        </h1>
+    <LoadingOverlay isLoading={isLoading}>
+      <div className="flex flex-1 flex-col items-center ">
+        {/* Logo & Header: ShopSense above Đăng nhập */}
+        <div className="mb-6 text-center sm:mb-8">
+          {/* ShopSense Text with precise S coloring */}
+          <h1 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-3xl md:text-4xl">
+            <span className="text-[#C3485C]">S</span>
+            <span className="text-[#f7b686]">hop</span>
+            <span className="text-[#C3485C]">S</span>
+            <span className="text-[#f7b686]">ense</span>
+          </h1>
 
-        {/* Đăng nhập Text */}
-        <h2 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Đăng nhập</h2>
-      </div>
-
-      {/* Login Form with max-width constraint */}
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 max-w-sm mx-auto">
-        <div>
-          <InputField
-            id="email-username"
-            label="Email"
-            subLabel="Tên đăng nhập"
-            placeholder="Nhập email hoặc tên đăng nhập"
-            value={email}
-            onChange={handleEmailChange}
-            onBlur={handleEmailBlur}
-            error={errors.email}
-          />
+          {/* Đăng nhập Text */}
+          <h2 className="text-2xl font-bold text-[#C3485C] sm:text-2xl md:text-3xl">
+            Đăng nhập
+          </h2>
         </div>
 
-        <div>
-          <InputField
-            id="password"
-            type="password"
-            label="Mật khẩu"
-            placeholder="Nhập mật khẩu"
-            value={password}
-            onChange={handlePasswordChange}
-            onBlur={handlePasswordBlur}
-            error={errors.password}
-          />
-        </div>
+        {/* Login Form with max-width constraint */}
+        <form
+          onSubmit={handleSubmit}
+          className="w-full max-w-sm space-y-4 px-3 sm:space-y-5"
+        >
+          <div>
+            <InputField
+              id="email-username"
+              label="Email"
+              subLabel="Tên đăng nhập"
+              placeholder="Nhập email hoặc tên đăng nhập"
+              value={email}
+              onChange={handleEmailChange}
+              onBlur={handleEmailBlur}
+              error={errors.email.isErr() ? i18n.t(errors.email.error) : null}
+            />
+          </div>
 
-        <div className="text-right">
-          <Link
-            to="/auth/forgot-password-email"
-            className="text-xs sm:text-sm font-bold text-[#C3485C] hover:underline"
+          <div>
+            <InputField
+              id="password"
+              type="password"
+              label="Mật khẩu"
+              placeholder="Nhập mật khẩu"
+              value={password}
+              onChange={handlePasswordChange}
+              onBlur={handlePasswordBlur}
+              error={
+                errors.password.isErr() ? i18n.t(errors.password.error) : null
+              }
+            />
+          </div>
+
+          <div className="text-right">
+            <Link
+              to="/auth/forgot-password-email"
+              className="text-xs font-bold text-[#C3485C] hover:underline sm:text-sm"
+            >
+              Quên mật khẩu?
+            </Link>
+          </div>
+
+          <Button
+            variant={isLoading ? 'disabled' : 'primary'}
+            icon={LogIn}
+            size="fit"
+            type="submit"
           >
-            Quên mật khẩu?
-          </Link>
+            Đăng nhập
+          </Button>
+        </form>
+
+        {/* Divider */}
+        <div className="relative mx-auto my-4 flex max-w-sm items-center text-sm sm:my-5">
+          <div className="flex-1 border-t border-gray-300"></div>
+          <span className="px-3 text-gray-400 sm:px-4">hoặc</span>
+          <div className="flex-1 border-t border-gray-300"></div>
         </div>
 
-        <Button variant="primary" icon={LogIn} size="fit" type="submit">
-          Đăng nhập
-        </Button>
-      </form>
-
-      {/* Divider */}
-      <div className="relative my-4 sm:my-5 flex items-center text-sm max-w-sm mx-auto">
-        <div className="flex-1 border-t border-gray-300"></div>
-        <span className="px-3 sm:px-4 text-gray-400">hoặc</span>
-        <div className="flex-1 border-t border-gray-300"></div>
-      </div>
-
-      {/* Register Button */}
-      <div className="max-w-sm mx-auto">
-        <Button
-          variant="secondary"
-          icon={UserPlus}
-          size="fit"
-          onClick={() => navigate('/auth/register')}
+        {/* Register Button */}
+        <div className="mx-auto max-w-sm">
+          <Button
+            variant={isLoading ? 'disabled' : 'secondary'}
+            icon={UserPlus}
+            size="fit"
+            onClick={() => navigate('/auth/register')}
           >
-          Đăng ký tài khoản
-        </Button>
-      </div>
+            Đăng ký tài khoản
+          </Button>
+        </div>
 
-      {/* Bottom Spacer for scrolling over background */}
-      <div className="h-16 sm:h-20"></div>
-    </>
+        {/* Bottom Spacer for scrolling over background */}
+        <div className="h-16 sm:h-20"></div>
+      </div>
+      {showPopup.yes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <NotificationCard
+            message={showPopup.message}
+            title={i18n.t(showPopup.title)}
+            icon={XCircle}
+            iconBgColor="bg-red-500"
+            buttonText={i18n.t('confirm')}
+            buttonIcon={Check}
+            onButtonClick={() => {
+              setShowPopup({
+                ...showPopup,
+                yes: false
+              })
+            }}
+          ></NotificationCard>
+        </div>
+      )}
+    </LoadingOverlay>
   )
 }

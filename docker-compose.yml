@@ -1,0 +1,371 @@
+networks:
+  shopping-network:
+    name: shopping-network
+    driver: bridge
+
+volumes:
+  postgres-data:
+    name: postgres-data
+  redis-data:
+    name: redis-data
+  kafka-data:
+    name: kafka-data
+  redis-insight-data:
+    name: redis-insight-data
+  es-data:
+    name: es-data
+
+services:
+  # PostgreSQL Service
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_DB_USER:-cuongct}
+      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:-cuongct090204}
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - shopping-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_DB_USER:-cuongct} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Database initialization service
+  db-init:
+    image: postgres:15-alpine
+    container_name: db-init
+    depends_on:
+      - postgres-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_DB_USER:-cuongct}
+      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:-cuongct090204}
+      POSTGRES_DB: postgres
+      PGHOST: postgres-db
+      PGUSER: ${POSTGRES_DB_USER:-cuongct}
+      PGPASSWORD: ${POSTGRES_DB_PASSWORD:-cuongct090204}
+      PGDATABASE: postgres
+    command: >
+      bash -c "
+        until pg_isready; do
+          echo 'Waiting for PostgreSQL to be ready...'
+          sleep 2
+        done &&
+        until psql -c 'CREATE DATABASE shopping_user_service_db;'; do
+          echo 'Creating shopping_user_service_db...'
+          sleep 2
+        done &&
+        until psql -c 'CREATE DATABASE shopping_notification_service_db;'; do
+          echo 'Creating shopping_notification_service_db...'
+          sleep 2
+        done &&
+        echo 'Databases created successfully' &&
+        # Create a marker file to indicate completion
+        touch /tmp/databases_created
+      "
+    healthcheck:
+      test: >
+        bash -c "
+          psql -d shopping_user_service_db -c 'SELECT 1;' > /dev/null 2>&1 &&
+          psql -d shopping_notification_service_db -c 'SELECT 1;' > /dev/null 2>&1 &&
+          [ -f /tmp/databases_created ]
+        "
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - shopping-network
+
+
+  # Redis Caching Service
+  redis-caching:
+    image: redis:8.4.0
+    container_name: redis-caching
+    hostname: redis-caching
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    networks:
+      - shopping-network
+
+
+  # Redis Insight for monitoring Redis
+  redis-insight:
+    image: redis/redisinsight:2.70
+    container_name: redis-insight
+    hostname: redis-insight
+    environment:
+      - RI_APP_ACCEPT_EULA=yes
+      - RI_APP_LOGIN_REQUIRED=false
+    ports:
+      - "5540:5540"
+    volumes:
+      - redis-insight-data:/data
+    networks:
+      - shopping-network
+    depends_on:
+      - redis-caching
+
+
+  # Kafka Broker Service
+  kafka-broker:
+    image: confluentinc/cp-kafka:7.7.7
+    container_name: kafka-broker
+    hostname: kafka-broker
+    environment:
+      # Basic Kafka Settings
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-broker:9093"
+
+      KAFKA_LISTENERS: "INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka-broker:9092,EXTERNAL://localhost:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+
+      # Kraft Mode Settings
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 24
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    ports:
+      - "9092:9092" # Internal communication
+      - "9094:9094" # External communication (Debug)
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - shopping-network
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9094 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+
+  # Kafka UI for managing and monitoring Kafka
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    hostname: kafka-ui
+    ports:
+      - "8080:8080"
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-kafka-broker
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker:9092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - shopping-network
+    restart: unless-stopped
+
+  # Mailpit - Email testing tool
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP server
+    networks:
+      - shopping-network
+    restart: unless-stopped
+
+  # Kong Gateway (Declarative mode - no database needed)
+  kong-gateway:
+    image: kong:3.9.1
+    container_name: kong-gateway
+    hostname: kong-gateway
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      REDIS_PASSWORD: myredis
+      KONG_UNTRUSTED_LUA: "on"
+    ports:
+      - "80:8000"         # HTTP Public
+      - "443:8443"        # HTTPS Public
+      - "8000:8000"       # Kong Proxy (HTTP Debug)
+      - "8001:8001"       # Admin API cho decK (Debug)
+    volumes:
+      - ${KONG_CONFIG_FILE}:/usr/local/kong/declarative/kong.yml
+      - ./user-service/secrets:/user-service/secrets
+    networks:
+      - shopping-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
+    hostname: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.ml.enabled=false
+      - ingest.geoip.downloader.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - shopping-network
+    restart: unless-stopped
+    profiles:
+      - elasticsearch
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:9200 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # User Service
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    hostname: user-service
+#    profiles:
+#      - user-service
+    depends_on:
+      - db-init
+      - redis-caching
+      - kafka-broker
+      - kong-gateway
+    environment:
+      - POSTGRES_DB_NAME=shopping_user_service_db
+      - POSTGRES_DB_PORT=5432
+
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:9092
+    env_file:
+      - .env
+      - user-service/.env
+    ports:
+      - "9001:8000" # Access via localhost:9001
+    volumes:
+      - ./user-service:/user-service
+      - /user-service/.venv  # Exclude virtual environment
+    networks:
+      - shopping-network
+    restart: unless-stopped
+#
+#
+#  recipe-service:
+#    build:
+#      context: .
+#      dockerfile: recipe-service/Dockerfile
+#    container_name: recipe-service
+#    profiles:
+#      - recipe-service
+#    ports:
+#      - "9002:8000"
+#
+#  meal-service:
+#    build:
+#      context: .
+#      dockerfile: meal-service/Dockerfile
+#    container_name: meal-service
+#    profiles:
+#      - meal-service
+#    ports:
+#      - "9003:8000"
+#
+#  shopping-storage-service:
+#    build:
+#      context: .
+#      dockerfile: shopping-storage-service/Dockerfile
+#    container_name: shopping-storage-service
+#    ports:
+#      - "9004:8000"
+#    profiles:
+#      - shopping-storage
+#    depends_on:
+#      - recipe-service
+#
+#
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    hostname: notification-service
+    profiles:
+      - notification-service
+    depends_on:
+      - db-init
+      - redis-caching
+      - kafka-broker
+    environment:
+      - POSTGRES_DB_NAME=shopping_notification_service_db
+      - POSTGRES_DB_PORT=5432
+
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+    env_file:
+      - .env
+      - notification-service/.env
+    ports:
+      - "9005:8000"
+    volumes:
+      - ./notification-service:/notification-service
+      - /notification-service/.venv  # Exclude virtual environment
+    networks:
+      - shopping-network
+    restart: unless-stopped

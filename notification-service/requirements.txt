@@ -1,0 +1,16 @@
+sanic==24.12.0
+sqlalchemy==2.0.36
+python-dotenv==1.0.1
+aiokafka==0.11.0
+pytest==8.3.4
+pytest-asyncio==0.25.3
+pytest-mock==3.14.0
+sanic-testing==23.12.0
+aiosmtplib==3.0.1
+jinja2==3.1.6
+orjson==3.10.15
+alembic==1.14.0
+redis==5.2.1
+websockets==12.0
+
+-e ../shared

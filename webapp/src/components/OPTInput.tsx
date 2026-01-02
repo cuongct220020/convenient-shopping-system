@@ -2,13 +2,15 @@ import React, { useRef, useState, useEffect } from 'react'
 
 interface OtpInputProps {
   length?: number
-  onComplete: (otp: string) => void
+  onComplete?: (otp: string) => void
+  onChange?: (otp: string) => void
   error?: boolean
 }
 
 export const OPTInput = ({
   length = 6,
-  onComplete,
+  onComplete = undefined,
+  onChange = undefined,
   error = false
 }: OtpInputProps) => {
   const [otp, setOtp] = useState<string[]>(new Array(length).fill(''))
@@ -35,8 +37,9 @@ export const OPTInput = ({
 
     // Call onComplete if all fields are filled
     const combinedOtp = newOtp.join('')
+    onChange?.(combinedOtp)
     if (combinedOtp.length === length) {
-      onComplete(combinedOtp)
+      onComplete?.(combinedOtp)
     }
 
     // Move to next input if value is entered and it's not the last one
@@ -74,8 +77,9 @@ export const OPTInput = ({
     setOtp(newOtp)
 
     const combinedOtp = newOtp.join('')
+    onChange?.(combinedOtp)
     if (combinedOtp.length === length) {
-      onComplete(combinedOtp)
+      onComplete?.(combinedOtp)
     }
 
     // Focus the slot after the pasted content
@@ -91,7 +95,7 @@ export const OPTInput = ({
           type="text"
           maxLength={1}
           ref={(el) => (inputRefs.current[index] = el)}
-          value={digit ? "*" : ""}
+          value={digit ? '*' : ''}
           // To hide the numbers like the image (using asterisks), you could change type to "password"
           // But standard OTP UX usually shows the number.
           // To visually match the image's grey boxes:

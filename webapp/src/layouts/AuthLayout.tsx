@@ -6,7 +6,8 @@ import loginBg from '../assets/login-bg.png'
 export default function AuthLayout() {
   const matches = useMatches()
   const currentMatch = matches[matches.length - 1]
-  const { backTo = '/', backText = 'Trang chủ' } = (currentMatch?.handle as any) || {}
+  const { backTo = '/', backText = 'Trang chủ' } =
+    (currentMatch?.handle as any) || {}
 
   return (
     <div className="relative min-h-screen w-screen overflow-hidden bg-gray-100 font-sans">
@@ -17,15 +18,16 @@ export default function AuthLayout() {
 
       {/* Main Content Container */}
       <div className="relative flex min-h-screen w-full">
-        <div className="relative flex w-full h-screen flex-col overflow-hidden bg-white">
+        <div className="relative flex h-screen w-full flex-col overflow-hidden bg-white">
           {/* Header: Back Button */}
-          <div className='px-2'>
+          <div className="px-2">
             <BackButton to={backTo} text={backText} />
           </div>
 
           {/* Scrollable Content Area */}
-          <div className="no-scrollbar relative z-10 flex-1 overflow-y-auto">
-            <div className="px-4 sm:px-6 md:px-8 pb-8 pt-2">
+          <div className="no-scrollbar relative z-10 flex flex-1 flex-col overflow-y-auto">
+            {/* <div className="flex flex-1 flex-col px-4 pb-8 pt-2 sm:px-6 md:px-8"> */}
+            <div className="flex flex-1 flex-col">
               <Outlet />
             </div>
           </div>
