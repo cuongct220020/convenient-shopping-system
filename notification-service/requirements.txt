@@ -13,4 +13,4 @@ alembic==1.14.0
 redis==5.2.1
 websockets==12.0
 
--e ../shared
+-e ../shared[sanic]

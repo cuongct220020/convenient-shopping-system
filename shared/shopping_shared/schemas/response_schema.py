@@ -24,3 +24,11 @@ class PaginationResponse(GenericResponse[list[T]]):
     page_size: int
     total_items: int
     total_pages: int
+
+class CursorPaginationResponse(GenericResponse[list[T]], Generic[T]):
+    """
+    A generic pagination response model to standardize API outputs for lists.
+    """
+    data: List[T]
+    next_cursor: Optional[int] = None
+    size: int
