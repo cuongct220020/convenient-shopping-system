@@ -13,7 +13,7 @@ setup(
             'pydantic==2.11.9',
             'pydantic-settings==2.11.0',
             'aiokafka==0.12.0',
-            'async-timeout==5.0.1'
+            'async-timeout==5.0.1',
             'fastapi==0.118.0',
             'anyio==4.11.0',
             'starlette==0.48.0',
