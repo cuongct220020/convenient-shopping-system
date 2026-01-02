@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-import { createBrowserRouter } from 'react-router-dom'
-=======
->>>>>>> origin/develop
 import AuthLayout from '../layouts/AuthLayout'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'

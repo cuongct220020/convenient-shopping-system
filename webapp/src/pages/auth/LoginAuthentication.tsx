@@ -100,50 +100,6 @@ export default function LoginAuthentication() {
   }
 
   return (
-<<<<<<< HEAD
-    <>
-      {/* Header: Xác thực tài khoản */}
-      <div className="mb-6 sm:mb-8 text-center">
-        {/* Xác thực tài khoản Text */}
-        <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#C3485C]">Xác thực tài khoản</h1>
-      </div>
-
-      <form onSubmit={handleSubmit} className="max-w-sm mx-auto">
-        {/* Description Text */}
-        <p className="mb-6 text-justify text-sm leading-relaxed text-gray-700">
-          Xin chào{' '}
-          <span className="font-bold text-[#C3485C]">{username}</span>, bạn
-          đã đăng nhập thành công. Bạn cần xác nhận tài khoản để tiếp tục
-          sử dụng ứng dụng. Vui lòng nhập mã 6 chữ số được gửi đến email
-          của bạn.
-        </p>
-
-        {/* OTP Input Component */}
-        <div className="mb-8 px-2">
-          <OPTInput length={6} onComplete={handleOtpComplete} />
-        </div>
-
-        {/* Submit Button */}
-        <div className="mb-6">
-          <Button type="submit" variant="primary" size="fit">
-            Xác nhận
-          </Button>
-        </div>
-
-        {/* Resend Timer */}
-        <button
-          type="button"
-          className="flex w-full items-center justify-center text-sm text-gray-500 transition-colors hover:text-[#C3485C]"
-        >
-          <RefreshCcw size={16} className="mr-2" />
-          <span>Gửi lại mã 00:59</span>
-        </button>
-
-        {/* Bottom Spacer */}
-        <div className="h-16 sm:h-20"></div>
-      </form>
-    </>
-=======
     <LoadingOverlay isLoading={isLoading}>
       <div className="flex flex-1 flex-col">
         {/* Header: Xác thực tài khoản */}
@@ -233,6 +189,5 @@ export default function LoginAuthentication() {
         )}
       </div>
     </LoadingOverlay>
->>>>>>> origin/develop
   )
 }
