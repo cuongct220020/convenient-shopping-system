@@ -10,12 +10,12 @@ interface NotificationCardProps {
   iconBgColor?: string
   buttonText?: string
   onButtonClick?: () => void
-  buttonVariant?: 'primary' | 'secondary'
+  buttonVariant?: 'primary' | 'secondary' | 'disabled'
   buttonIcon?: LucideIcon
   // Second button props
   button2Text?: string
   onButton2Click?: () => void
-  button2Variant?: 'primary' | 'secondary'
+  button2Variant?: 'primary' | 'secondary' | 'disabled'
   button2Icon?: LucideIcon
   titleColor?: string
   messageColor?: string
@@ -44,14 +44,18 @@ export function NotificationCard({
   return (
     <div className="rounded-2xl bg-white p-6 sm:p-8 md:p-10 text-center shadow-lg border border-gray-100 mx-auto w-full max-w-sm">
       {/* Title */}
-      <h1 className={`mb-6 text-xl sm:text-2xl md:text-3xl font-bold ${titleColor}`}>
+      <h1
+        className={`mb-6 text-xl sm:text-2xl md:text-3xl font-bold ${titleColor}`}
+      >
         {title}
       </h1>
 
       {/* Icon */}
       {Icon && (
         <div className="mb-6 flex justify-center">
-          <div className={`flex size-20 items-center justify-center rounded-full ${iconBgColor}`}>
+          <div
+            className={`flex size-20 items-center justify-center rounded-full ${iconBgColor}`}
+          >
             <Icon size={iconSize} className={iconColor} strokeWidth={2.5} />
           </div>
         </div>
@@ -67,12 +71,22 @@ export function NotificationCard({
       {(onButtonClick || onButton2Click) && (
         <div className="flex gap-3 justify-center">
           {onButtonClick && (
-            <Button variant={buttonVariant} size="fit" icon={buttonIcon} onClick={onButtonClick}>
+            <Button
+              variant={buttonVariant}
+              size="fit"
+              icon={buttonIcon}
+              onClick={onButtonClick}
+            >
               {buttonText}
             </Button>
           )}
           {onButton2Click && button2Text && (
-            <Button variant={button2Variant} size="fit" icon={button2Icon} onClick={onButton2Click}>
+            <Button
+              variant={button2Variant}
+              size="fit"
+              icon={button2Icon}
+              onClick={onButton2Click}
+            >
               {button2Text}
             </Button>
           )}

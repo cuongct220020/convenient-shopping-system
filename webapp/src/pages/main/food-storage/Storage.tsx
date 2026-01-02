@@ -1,7 +1,10 @@
-import { Plus, Trash } from 'lucide-react'
+import { AlertTriangle, Bell, Loader, Plus, Trash, X } from 'lucide-react'
 import { Button } from '../../../components/Button'
 import fridge from '../../../assets/fridge.png'
 import { useNavigate } from 'react-router-dom'
+import { NotificationCard } from '../../../components/NotificationCard'
+import { i18n } from '../../../utils/i18n/i18n'
+import { MouseEvent, useState } from 'react'
 
 function FridgeCardSkeleton() {
   return (
@@ -61,21 +64,90 @@ export function FridgeCard({
           icon={Trash}
           size="fit"
           variant={deleting ? 'disabled' : 'secondary'}
-          onClick={onDelete}
+          onClick={(e: MouseEvent) => {
+            e.stopPropagation()
+            onDelete?.()
+          }}
         />
       </div>
     </div>
   )
 }
 
+type DeleteStoragePopupProps = {
+  name: string
+  foodCount: number
+  deleting: boolean
+  onCancel?: () => unknown
+  onDelete?: () => unknown
+}
+
+function DeleteStoragePopup({
+  name,
+  foodCount,
+  deleting,
+  onCancel,
+  onDelete
+}: DeleteStoragePopupProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <NotificationCard
+        title={`Xóa ${name}`}
+        message={`Trong ${name} còn ${foodCount} thực phẩm. Bạn có chắc chắn muốn xóa?`}
+        icon={AlertTriangle}
+        iconBgColor="bg-red-500"
+        buttonIcon={deleting ? Loader : Trash}
+        buttonText={i18n.t(deleting ? 'deleting' : 'delete')}
+        buttonVariant={deleting ? 'disabled' : 'primary'}
+        onButtonClick={onDelete}
+        button2Icon={X}
+        button2Text={i18n.t('decline')}
+        button2Variant={deleting ? 'disabled' : 'secondary'}
+        onButton2Click={onCancel}
+      />
+    </div>
+  )
+}
+
+type DeleteState = {
+  show: boolean
+  deleting: boolean
+  name: string
+  foodCount: number
+}
+
 export function Storage() {
   const navigate = useNavigate()
+  const [deleteSt, setDeleteSt] = useState<DeleteState>({
+    show: false,
+    deleting: false,
+    foodCount: 0,
+    name: ''
+  })
+
+  const onDeleteStorageRequested = () =>
+    setDeleteSt({
+      show: true,
+      name: 'Tủ lạnh 1',
+      foodCount: 8,
+      deleting: false
+    })
+
+  const onDeleteStorageConfirmed = () => {
+    setDeleteSt((prev) => ({ ...prev, deleting: true }))
+    // Send API here
+  }
 
   return (
     <div className="flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-4">
-        <p className="text-xl font-bold text-red-600">Kho thực phẩm</p>
+        <div className="flex items-center gap-2">
+          <p className="whitespace-nowrap text-xl font-bold text-red-600">
+            Kho thực phẩm
+          </p>
+          <Button icon={Bell} variant="danger" />
+        </div>
         <Button icon={Plus} type="button" size="fit" variant="primary" />
       </div>
 
@@ -87,6 +159,7 @@ export function Storage() {
             count={8}
             imageUrl={fridge}
             onClick={() => navigate('storage/add')}
+            onDelete={onDeleteStorageRequested}
           />
           <FridgeCard name="Tủ lạnh 2" count={12} imageUrl={fridge} />
           <FridgeCard name="Tủ lạnh 3" count={5} imageUrl={fridge} />
@@ -94,6 +167,14 @@ export function Storage() {
           <FridgeCard name="Tủ lạnh 5" count={3} isLoading />
         </div>
       </div>
+
+      {deleteSt.show && (
+        <DeleteStoragePopup
+          {...deleteSt}
+          onCancel={() => setDeleteSt((prev) => ({ ...prev, show: false }))}
+          onDelete={onDeleteStorageConfirmed}
+        />
+      )}
     </div>
   )
 }

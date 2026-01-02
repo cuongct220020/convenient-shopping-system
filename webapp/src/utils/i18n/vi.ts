@@ -19,6 +19,8 @@ export const vi: Record<i18nKeys, string> = {
   internal_error: 'Có lỗi xảy ra, vui lòng thử lại sau',
   confirm: 'Đồng ý',
   decline: 'Hủy bỏ',
+  delete: 'Xóa',
+  deleting: 'Đang xóa',
   incorrect_credentials: 'Sai thông tin đăng nhập',
   recheck_credentials: 'Vui lòng kiểm tra lại thông tin bạn đã nhập',
   register_success_title: 'Đăng ký thành công',

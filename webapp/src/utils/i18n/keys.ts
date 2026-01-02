@@ -27,6 +27,8 @@ export type i18nKeys =
   | 'auth_failed'
   | 'confirm'
   | 'decline'
+  | 'delete'
+  | 'deleting'
   | 'storage_freezer'
   | 'storage_nonfreezer'
   | 'storage_bulk'
