@@ -1,120 +1,35 @@
 from sanic import Request
+from shopping_shared.middleware.sanic_auth import create_auth_middleware
 
-from app.services.redis_service import RedisService
-from shopping_shared.exceptions import Unauthorized
-from shopping_shared.utils.logger_utils import get_logger
+# Define configuration for the middleware
+IGNORE_PATHS = {
+    "/api/v1/user-service/health",
+    "/api/v1/user-service/docs",
+    "/api/v1/user-service/openapi.json",
+    "/api/v1/user-service/auth/login",
+    "/api/v1/user-service/auth/register",
+    "/api/v1/user-service/auth/otp/send",
+    "/api/v1/user-service/auth/otp/verify",
+    "/api/v1/user-service/auth/reset-password",
+    "/api/v1/user-service/auth/refresh-token"
+}
 
-logger = get_logger("Request Auth Middleware")
+IGNORE_PREFIXES = [
+    "/api/v1/user-service/docs/"
+]
+
+LOGOUT_PATH = "/api/v1/user-service/auth/logout"
+
+# Create the middleware instance using the shared factory
+# This function matches the signature expected by Sanic's register_middleware
+auth_middleware_handler = create_auth_middleware(
+    ignore_paths=IGNORE_PATHS,
+    ignore_prefixes=IGNORE_PREFIXES,
+    logout_path=LOGOUT_PATH
+)
 
 async def auth_middleware(request: Request):
     """
-    Middleware to extract auth info added by API Gateway (Kong).
+    Wrapper to call the generated middleware.
     """
-    logger.debug("Auth middleware start: %s %s", request.method, request.path)
-
-    if not _is_auth_required(request):
-        logger.debug("Auth middleware skipped for path: %s", request.path)
-        return  # skip public endpoints
-
-    # Check if this is a logout request, which may have an already-invalidated token
-    is_logout_request = request.path == "/api/v1/user-service/auth/logout"
-
-    user_id = request.headers.get("x-user-id")
-    user_role = request.headers.get("x-user-role")
-    user_email = request.headers.get("x-user-email")
-    access_jti = request.headers.get("x-jti")
-    exp_str = request.headers.get("x-exp")
-    iat_str = request.headers.get("x-iat")
-    aud_str = request.headers.get("x-aud")
-
-    if not user_id:
-        logger.warning("Missing x-user-id header")
-        raise Unauthorized("Missing user identity from API Gateway.")
-
-    if access_jti is None:
-        logger.warning("Missing x-jti header")
-        raise Unauthorized("Missing token identifier from API Gateway.")
-
-    # For logout requests, we allow blocked tokens (since that's the point of logout)
-    if not is_logout_request:
-        try:
-            if await RedisService.is_token_in_blocklist(access_token_jti=access_jti):
-                logger.info("Token jti found in blocklist: %s", access_jti)
-                raise Unauthorized("Access token has been revoked.")
-        except Exception as ex:
-            logger.exception("Error while checking token blocklist: %s", ex)
-            # escalate as unauthorized to be safe
-            raise Unauthorized("Failed to validate token.") from ex
-
-    try:
-        token_iat = int(iat_str)
-    except Exception:
-        logger.exception("Invalid iat header: %s", iat_str)
-        raise Unauthorized("Invalid token iat.")
-
-    try:
-        global_revoke_ts = await RedisService.get_global_revoke_timestamp(user_id)
-    except Exception as ex:
-        logger.exception("Failed to read global revoke timestamp for user %s: %s", user_id, ex)
-        global_revoke_ts = None
-
-    if global_revoke_ts and token_iat < global_revoke_ts:
-        logger.info("Token iat older than global revoke for user %s", user_id)
-        raise Unauthorized("Token has been revoked by a security event.")
-
-    try:
-        token_exp = int(exp_str) if exp_str else None
-    except (ValueError, TypeError):
-        logger.exception("Invalid exp header: %s", exp_str)
-        token_exp = None
-
-    request.ctx.auth_payload = {
-        "sub": user_id,
-        "role": user_role,
-        "email": user_email,
-        "jti": access_jti,
-        "exp": token_exp,
-        "iat": token_iat,
-        "aud": aud_str,
-    }
-    logger.debug("Auth payload attached to request.ctx for user %s", user_id)
-
-
-def _is_auth_required(request: Request) -> bool:
-    """
-    Xác định xem request hiện tại có cần xác thực hay không.
-    """
-    ignore_methods = {"OPTIONS"}
-
-    # Prefix cho các API
-    prefix = "/api/v1/user-service"
-
-    # Các đường dẫn không cần xác thực
-    ignore_paths = {
-        f"{prefix}/health",             # Trang chủ service
-        f"{prefix}/docs",               # Swagger UI
-        f"{prefix}/openapi.json",       # OpenAPI spec
-        f"{prefix}/auth/login",
-        f"{prefix}/auth/register",
-        f"{prefix}/auth/otp/send",
-        f"{prefix}/auth/otp/verify",
-        f"{prefix}/auth/reset-password",
-        f"{prefix}/auth/refresh-token"
-    }
-    ignore_prefixes = [f"{prefix}/docs/"]
-
-    if request.method in ignore_methods:
-        return False
-
-    for p_prefix in ignore_prefixes:
-        if request.path.startswith(p_prefix):
-            return False
-
-    if request.path in ignore_paths:
-        return False
-
-    # Special handling for logout - it needs authentication but should handle invalid tokens gracefully
-    if request.path == f"{prefix}/auth/logout":
-        return True  # Logout still needs authentication but will handle invalid tokens specially
-
-    return True
+    await auth_middleware_handler(request)

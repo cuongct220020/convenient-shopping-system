@@ -115,33 +115,43 @@ services:
                 - |
                   local cjson = require "cjson"
                   local jwt_token = kong.request.get_header("Authorization")
+                  local token_str = nil
+                  
                   if jwt_token then
                     local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
-                    if token then
-                      local parts = {}
-                      for part in string.gmatch(token, "([^.]+)") do
-                        table.insert(parts, part)
+                    token_str = token
+                  end
+                  
+                  if not token_str then
+                    token_str = kong.request.get_query_arg("jwt")
+                  end
+
+                  if token_str then
+                    local parts = {}
+                    for part in string.gmatch(token_str, "([^.]+)") do
+                      table.insert(parts, part)
+                    end
+                    if #parts >= 2 then
+                      local payload_b64 = parts[2]
+                      payload_b64 = string.gsub(payload_b64, "-", "+")
+                      payload_b64 = string.gsub(payload_b64, "_", "/")
+                      local remainder = #payload_b64 % 4
+                      if remainder > 0 then
+                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
                       end
-                      if #parts >= 2 then
-                        local payload_b64 = parts[2]
-                        payload_b64 = string.gsub(payload_b64, "-", "+")
-                        payload_b64 = string.gsub(payload_b64, "_", "/")
-                        local remainder = #payload_b64 % 4
-                        if remainder > 0 then
-                          payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
-                        end
-                        local payload_str = ngx.decode_base64(payload_b64)
-                        if payload_str then
-                          local status, claims = pcall(cjson.decode, payload_str)
-                          if status and claims then
-                            if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
-                            if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
-                            if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
-                            if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
-                            if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
-                            if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
-                            if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
-                          end
+                      local payload_str = ngx.decode_base64(payload_b64)
+                      if payload_str then
+                        local status, claims = pcall(cjson.decode, payload_str)
+                        if status and claims then
+                          -- Debug Log
+                          print("Kong Claims: ", cjson.encode(claims))
+                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
+                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
+                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
+                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
+                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
+                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
+                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
                         end
                       end
                     end
@@ -173,33 +183,236 @@ services:
                 - |
                   local cjson = require "cjson"
                   local jwt_token = kong.request.get_header("Authorization")
+                  local token_str = nil
+                  
                   if jwt_token then
                     local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
-                    if token then
-                      local parts = {}
-                      for part in string.gmatch(token, "([^.]+)") do
-                        table.insert(parts, part)
+                    token_str = token
+                  end
+                  
+                  if not token_str then
+                    token_str = kong.request.get_query_arg("jwt")
+                  end
+
+                  if token_str then
+                    local parts = {}
+                    for part in string.gmatch(token_str, "([^.]+)") do
+                      table.insert(parts, part)
+                    end
+                    if #parts >= 2 then
+                      local payload_b64 = parts[2]
+                      payload_b64 = string.gsub(payload_b64, "-", "+")
+                      payload_b64 = string.gsub(payload_b64, "_", "/")
+                      local remainder = #payload_b64 % 4
+                      if remainder > 0 then
+                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
                       end
-                      if #parts >= 2 then
-                        local payload_b64 = parts[2]
-                        payload_b64 = string.gsub(payload_b64, "-", "+")
-                        payload_b64 = string.gsub(payload_b64, "_", "/")
-                        local remainder = #payload_b64 % 4
-                        if remainder > 0 then
-                          payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
+                      local payload_str = ngx.decode_base64(payload_b64)
+                      if payload_str then
+                        local status, claims = pcall(cjson.decode, payload_str)
+                        if status and claims then
+                          -- Debug Log
+                          print("Kong Claims: ", cjson.encode(claims))
+                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
+                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
+                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
+                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
+                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
+                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
+                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
                         end
-                        local payload_str = ngx.decode_base64(payload_b64)
-                        if payload_str then
-                          local status, claims = pcall(cjson.decode, payload_str)
-                          if status and claims then
-                            if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
-                            if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
-                            if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
-                            if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
-                            if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
-                            if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
-                            if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
-                          end
+                      end
+                    end
+                  end
+
+#  - name: recipe-service
+#    url: http://host.docker.internal:9002
+#  - name: meal-service
+#    url: http://host.docker.internal:9003
+#  - name: shopping-storage-service
+#    url: http://host.docker.internal:9004
+
+
+  - name: notification-service
+    url: http://host.docker.internal:9005
+    connect_timeout: 60000
+    write_timeout: 3600000 # 1 hour for WebSocket
+    read_timeout: 3600000  # 1 hour for WebSocket
+
+    routes:
+      - name: notification-service-websocket-groups
+        paths:
+          - /ws/v1/notification-service/notifications/groups
+        strip_path: false
+        protocols:
+          - http
+          - https
+        plugins:
+          - name: cors
+            config:
+              origins:
+                - "*"
+              credentials: true
+              methods:
+                - GET
+                - POST
+                - PUT
+                - DELETE
+                - OPTIONS
+                - PATCH
+                - HEAD
+                - CONNECT  # Important for WebSocket
+                - TRACE
+              headers:
+                - "*"
+          # JWT verification for WebSocket
+          - name: jwt
+            config:
+              uri_param_names:
+                - jwt
+              header_names:
+                - Authorization
+              cookie_names:
+                - jwt_token
+              claims_to_verify:
+                - exp
+              key_claim_name: iss
+              secret_is_base64: false
+              run_on_preflight: true
+
+          # Extract JWT claims and add as headers for WebSocket
+          - name: post-function
+            config:
+              access:
+                - |
+                  local cjson = require "cjson"
+                  local jwt_token = kong.request.get_header("Authorization")
+                  local token_str = nil
+                  
+                  if jwt_token then
+                    local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
+                    token_str = token
+                  end
+                  
+                  if not token_str then
+                    token_str = kong.request.get_query_arg("jwt")
+                  end
+
+                  if token_str then
+                    local parts = {}
+                    for part in string.gmatch(token_str, "([^.]+)") do
+                      table.insert(parts, part)
+                    end
+                    if #parts >= 2 then
+                      local payload_b64 = parts[2]
+                      payload_b64 = string.gsub(payload_b64, "-", "+")
+                      payload_b64 = string.gsub(payload_b64, "_", "/")
+                      local remainder = #payload_b64 % 4
+                      if remainder > 0 then
+                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
+                      end
+                      local payload_str = ngx.decode_base64(payload_b64)
+                      if payload_str then
+                        local status, claims = pcall(cjson.decode, payload_str)
+                        if status and claims then
+                          -- Debug Log
+                          print("Kong Claims: ", cjson.encode(claims))
+                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
+                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
+                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
+                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
+                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
+                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
+                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
+                        end
+                      end
+                    end
+                  end
+
+      - name: notification-service-websocket-users
+        paths:
+          - /ws/v1/notification-service/notifications/users
+        strip_path: false
+        protocols:
+          - http
+          - https
+        plugins:
+          - name: cors
+            config:
+              origins:
+                - "*"
+              credentials: true
+              methods:
+                - GET
+                - POST
+                - PUT
+                - DELETE
+                - OPTIONS
+                - PATCH
+                - HEAD
+                - CONNECT  # Important for WebSocket
+                - TRACE
+              headers:
+                - "*"
+          # JWT verification for WebSocket
+          - name: jwt
+            config:
+              uri_param_names:
+                - jwt
+              header_names:
+                - Authorization
+              cookie_names:
+                - jwt_token
+              claims_to_verify:
+                - exp
+              key_claim_name: iss
+              secret_is_base64: false
+              run_on_preflight: true
+
+          # Extract JWT claims and add as headers for WebSocket
+          - name: post-function
+            config:
+              access:
+                - |
+                  local cjson = require "cjson"
+                  local jwt_token = kong.request.get_header("Authorization")
+                  local token_str = nil
+                  
+                  if jwt_token then
+                    local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
+                    token_str = token
+                  end
+                  
+                  if not token_str then
+                    token_str = kong.request.get_query_arg("jwt")
+                  end
+
+                  if token_str then
+                    local parts = {}
+                    for part in string.gmatch(token_str, "([^.]+)") do
+                      table.insert(parts, part)
+                    end
+                    if #parts >= 2 then
+                      local payload_b64 = parts[2]
+                      payload_b64 = string.gsub(payload_b64, "-", "+")
+                      payload_b64 = string.gsub(payload_b64, "_", "/")
+                      local remainder = #payload_b64 % 4
+                      if remainder > 0 then
+                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
+                      end
+                      local payload_str = ngx.decode_base64(payload_b64)
+                      if payload_str then
+                        local status, claims = pcall(cjson.decode, payload_str)
+                        if status and claims then
+                          -- Debug Log
+                          print("Kong Claims: ", cjson.encode(claims))
+                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
+                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
+                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
+                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
+                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
+                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
+                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
                         end
                       end
                     end

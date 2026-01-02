@@ -81,7 +81,13 @@ class GroupMembershipRepository(
         result = await self.session.execute(stmt)
         return result.scalars().first()
 
-    async def add_membership(self, user_id: UUID, group_id: UUID, role: GroupRole, added_by_user_id: Optional[UUID] = None) -> GroupMembership:
+    async def add_membership(
+        self,
+        user_id: UUID,
+        group_id: UUID,
+        role: GroupRole,
+        added_by_user_id: Optional[UUID] = None
+    ) -> GroupMembership:
         """Adds a user to a group with a specific role."""
         membership = GroupMembership(
             user_id=user_id,

@@ -1,0 +1,18 @@
+sanic==24.12.0
+sanic-ext==24.12.0
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+redis==5.2.1
+pydantic==2.10.6
+pydantic[email]==2.10.6
+alembic==1.14.0
+python-dotenv==1.0.1
+passlib[bcrypt]==1.7.4
+PyJWT[crypto]==2.10.1
+cryptography==46.0.3
+greenlet==3.1.1
+aiokafka==0.11.0
+orjson==3.10.15
+PyYAML==6.0.3
+
+-e ../shared[sanic]
