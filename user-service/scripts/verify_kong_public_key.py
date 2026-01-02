@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to verify if the RSA public key in user-service/secrets/jwt-public.pem 
-matches the one configured in api-gateway/kong.dev.yml.
+Script to verify if the RSA public key in user-service/secrets/jwt-public.pem
+matches the one configured in the specified Kong config file.
 """
 
 import sys
@@ -17,14 +17,14 @@ def normalize_pem(pem_str):
     content_lines = [line for line in lines if not line.startswith("---")]
     return "".join(content_lines).strip()
 
-def verify_kong_key():
+def verify_kong_key(config_file="kong.dev.yml"):
     # Define paths
     base_dir = Path(__file__).parent.parent.parent
     public_key_path = base_dir / "user-service" / "secrets" / "jwt-public.pem"
-    kong_config_path = base_dir / "api-gateway" / "kong.dev.yml"
+    kong_config_path = base_dir / "api-gateway" / config_file
 
     print("=" * 60)
-    print("🔍 Kong Public Key Verifier")
+    print(f"🔍 Kong Public Key Verifier (Config: {config_file})")
     print("=" * 60)
 
     # 1. Check if files exist
@@ -50,7 +50,7 @@ def verify_kong_key():
         # Structure: consumers -> shopping-user-service -> jwt_secrets -> rsa_public_key
         kong_pem = None
         target_consumer = "shopping-user-service"
-        
+
         consumers = kong_config.get("consumers", [])
         for consumer in consumers:
             if consumer.get("username") == target_consumer:
@@ -59,7 +59,7 @@ def verify_kong_key():
                     # Taking the first secret
                     kong_pem = jwt_secrets[0].get("rsa_public_key")
                     break
-        
+
         if not kong_pem:
             print(f"❌ Error: Could not find 'rsa_public_key' for consumer '{target_consumer}' in Kong config.")
             sys.exit(1)
@@ -68,11 +68,11 @@ def verify_kong_key():
 
         # 5. Compare
         if normalized_local == normalized_kong:
-            print("\n✅ Success: Local public key and Kong Gateway config MATCH!")
+            print(f"\n✅ Success: Local public key and Kong Gateway config ({config_file}) MATCH!")
             print("   Kong is using the correct public key for JWT verification.")
         else:
-            print("\n❌ Failure: Local public key and Kong config DO NOT match!")
-            print("   You need to update 'rsa_public_key' in api-gateway/kong.dev.yml")
+            print(f"\n❌ Failure: Local public key and Kong config ({config_file}) DO NOT match!")
+            print(f"   You need to update 'rsa_public_key' in api-gateway/{config_file}")
             sys.exit(1)
 
     except Exception as e:
@@ -81,5 +81,19 @@ def verify_kong_key():
 
     print("=" * 60)
 
+def main():
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+        if not config_file.endswith('.yml') and not config_file.endswith('.yaml'):
+            print("❌ Error: Config file must be a YAML file (.yml or .yaml)")
+            print("Usage: python3 verify_kong_public_key.py [config_file]")
+            print("Example: python3 verify_kong_public_key.py kong.dev.yml")
+            print("Example: python3 verify_kong_public_key.py kong.prod.yml")
+            sys.exit(1)
+    else:
+        config_file = "kong.dev.yml"  # Default to dev config
+
+    verify_kong_key(config_file)
+
 if __name__ == "__main__":
-    verify_kong_key()
+    main()
