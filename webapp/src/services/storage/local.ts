@@ -2,15 +2,26 @@ import z from 'zod'
 import { Constant } from '../../utils/constants'
 import { Time } from '../../utils/time'
 import { assert } from '../../utils/assert'
+import { UserAuthSchema, UserAuthSchemaZ } from '../schema/authSchema'
+
+const SavedUserAuthSchemaZ = UserAuthSchemaZ.and(
+  z.object({
+    token_last_refresh_timestamp: z.number()
+  })
+)
+
+type SavedUserAuthSchema = z.infer<typeof SavedUserAuthSchemaZ>
 
 const DefaultDataSchema = z.object({
   otpExpireTime: z.number(),
-  emailRequestingOtp: z.string().or(z.undefined())
+  emailRequestingOtp: z.string().or(z.undefined()),
+  auth: SavedUserAuthSchemaZ.or(z.undefined())
 })
 type DataType = z.infer<typeof DefaultDataSchema>
 const DEFAULT_DATA: DataType = {
   otpExpireTime: 0,
-  emailRequestingOtp: undefined
+  emailRequestingOtp: undefined,
+  auth: undefined
 } as const
 
 export class LocalStorage {
@@ -57,6 +68,23 @@ export class LocalStorage {
 
   public get emailRequestingOtp(): string | null {
     return this.data.emailRequestingOtp ?? null
+  }
+
+  public get auth(): SavedUserAuthSchema | null {
+    return this.data.auth ?? null
+  }
+
+  // TODO: expire time
+  public set auth(auth: UserAuthSchema | null) {
+    if (!auth) {
+      this.data.auth = undefined
+    } else {
+      this.data.auth = {
+        ...auth,
+        token_last_refresh_timestamp: Time.now
+      }
+    }
+    this.save()
   }
 
   private save() {

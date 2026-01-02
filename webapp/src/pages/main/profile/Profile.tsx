@@ -1,7 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, Info, HeartPulse, Heart, LogOut } from 'lucide-react'
-
 const Profile = () => {
   const navigate = useNavigate()
   return (

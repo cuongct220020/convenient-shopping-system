@@ -42,10 +42,10 @@ export function NotificationCard({
   const Icon = icon
 
   return (
-    <div className="rounded-2xl bg-white p-6 sm:p-8 md:p-10 text-center shadow-lg border border-gray-100 mx-auto w-full max-w-sm">
+    <div className="mx-auto w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-lg sm:p-8 md:p-10">
       {/* Title */}
       <h1
-        className={`mb-6 text-xl sm:text-2xl md:text-3xl font-bold ${titleColor}`}
+        className={`mb-6 text-xl font-bold sm:text-2xl md:text-3xl ${titleColor}`}
       >
         {title}
       </h1>
@@ -69,7 +69,7 @@ export function NotificationCard({
 
       {/* Button(s) */}
       {(onButtonClick || onButton2Click) && (
-        <div className="flex gap-3 justify-center">
+        <div className="flex justify-center gap-3">
           {onButtonClick && (
             <Button
               variant={buttonVariant}

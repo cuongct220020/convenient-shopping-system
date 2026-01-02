@@ -25,6 +25,9 @@ export const vi: Record<i18nKeys, string> = {
   recheck_credentials: 'Vui lòng kiểm tra lại thông tin bạn đã nhập',
   register_success_title: 'Đăng ký thành công',
   register_login_to_continue: 'Vui lòng đăng nhập để tiếp tục',
+  register_credentials_existed_msg:
+    'Bạn vui lòng sử dụng tên đăng nhập và email khác',
+  register_credentials_existed_ttl: 'Tên đăng nhập hoặc email đã được đăng ký',
   auth_failed: 'Xác thực thất bại',
   auth_succeeded: 'Xác thực thành công',
   otp_unverified: 'Mã xác nhận không đúng hoặc đã hết hạn. Vui lòng thử lại.',
@@ -40,5 +43,7 @@ export const vi: Record<i18nKeys, string> = {
   invalid_storage_name:
     'Tên kho chứa phải có ít nhất 3 ký tự, chỉ bao gồm chữ cái a-z, A-Z, chữ số 0-9 và kí tự "-", "_"',
   notification: 'Thông báo',
-  notification_none: 'Hiện không có thông báo nào'
+  notification_none: 'Hiện không có thông báo nào',
+  reset_password_no_email_title: 'Email chưa được đăng ký',
+  reset_password_no_email_msg: 'Vui lòng kiểm tra lại email của bạn'
 }

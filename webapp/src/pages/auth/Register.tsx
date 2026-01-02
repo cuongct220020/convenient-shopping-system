@@ -149,6 +149,13 @@ export default function Register() {
       (err) => {
         setLoading(false)
         switch (err.type) {
+          case 'credentials-existed':
+            setShowPopup({
+              yes: true,
+              message: i18n.t('register_credentials_existed_msg'),
+              title: 'register_credentials_existed_ttl'
+            })
+            break
           default:
             setShowPopup({
               yes: true,

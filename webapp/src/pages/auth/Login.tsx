@@ -11,6 +11,7 @@ import { LoadingOverlay } from '../../components/Loading'
 import { NotificationCard } from '../../components/NotificationCard'
 import { useIsMounted } from '../../hooks/useIsMounted'
 import { LocalStorage } from '../../services/storage/local'
+import { authController } from '../../controllers/authController'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -109,7 +110,8 @@ export default function Login() {
       return
     }
     response
-      .map(() => {
+      .map((body) => {
+        authController.saveUserAuth(body.data)
         setIsLoading(false)
         navigate('/main/profile')
       })

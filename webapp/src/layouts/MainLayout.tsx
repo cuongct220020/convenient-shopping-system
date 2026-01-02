@@ -25,14 +25,14 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="relative min-h-screen bg-white">
       {/* Main Content Area - Renders the specific screen content */}
       <main className="pb-16">
         <Outlet />
       </main>
 
       {/* Bottom Navigation Bar - Fixed at bottom */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 border-t border-gray-200 px-2.5 py-2.5 h-16 flex justify-around items-center max-w-sm mx-auto w-full z-50">
+      <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-16 w-full max-w-sm items-center justify-around border-t border-gray-200 bg-gray-100 p-2.5">
         {/* Tab 1: Nutrition (Apple) */}
         <TabItem
           isActive={currentActiveTab === 'nutrition'}
@@ -42,7 +42,7 @@ export default function MainLayout() {
             size={24}
             className={
               currentActiveTab === 'nutrition'
-                ? 'text-red-700 fill-red-700'
+                ? 'fill-red-700 text-red-700'
                 : 'text-gray-400'
             }
           />
@@ -98,7 +98,7 @@ export default function MainLayout() {
             size={24}
             className={
               currentActiveTab === 'profile'
-                ? 'text-red-700 fill-red-700'
+                ? 'fill-red-700 text-red-700'
                 : 'text-gray-400'
             }
           />
@@ -120,7 +120,7 @@ const TabItem: React.FC<TabItemProps> = ({ isActive, children, onPress }) => {
     <button
       onClick={onPress}
       className={`
-        w-12 h-10 flex justify-center items-center rounded-xl
+        flex h-10 w-12 items-center justify-center rounded-xl
         transition-colors duration-200 hover:bg-red-100
         ${isActive ? 'bg-orange-100' : ''}
       `}
