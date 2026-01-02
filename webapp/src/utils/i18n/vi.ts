@@ -38,5 +38,7 @@ export const vi: Record<i18nKeys, string> = {
   storage_nonfreezer: 'Tủ thường',
   empty_storage_name: 'Tên kho chứa không được để trống',
   invalid_storage_name:
-    'Tên kho chứa phải có ít nhất 3 ký tự, chỉ bao gồm chữ cái a-z, A-Z, chữ số 0-9 và kí tự "-", "_"'
+    'Tên kho chứa phải có ít nhất 3 ký tự, chỉ bao gồm chữ cái a-z, A-Z, chữ số 0-9 và kí tự "-", "_"',
+  notification: 'Thông báo',
+  notification_none: 'Hiện không có thông báo nào'
 }

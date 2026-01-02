@@ -34,3 +34,5 @@ export type i18nKeys =
   | 'storage_bulk'
   | 'empty_storage_name'
   | 'invalid_storage_name'
+  | 'notification'
+  | 'notification_none'

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { NotificationCard } from '../../../components/NotificationCard'
 import { i18n } from '../../../utils/i18n/i18n'
 import { MouseEvent, useState } from 'react'
+import { NotificationList } from '../../../components/NotificationList'
 
 function FridgeCardSkeleton() {
   return (
@@ -109,6 +110,41 @@ function DeleteStoragePopup({
   )
 }
 
+type NotificationPopupProps = {
+  onClose?: () => unknown
+}
+function NotificationPopup({ onClose }: NotificationPopupProps) {
+  const [noti, setNoti] = useState([
+    {
+      title: 'notif 1',
+      timestamp: '2h truoc',
+      content: 'lorem ipsum 12312313213 sdfljsldf',
+      id: 1
+    },
+    {
+      title: 'fff notif 1',
+      timestamp: 'f2h truoc',
+      content: 'lorem ipsum 12312313213 sdfljsldf',
+      id: 2
+    },
+    {
+      title: 'notif f 1',
+      timestamp: '2h tfdruoc',
+      content: 'lorem ipsum 12312313213 sdfljsldf',
+      id: 3
+    }
+  ])
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <NotificationList
+        notifications={noti}
+        onClose={onClose}
+        onDelete={(id) => setNoti((prev) => prev.filter((e) => e.id !== id))}
+      />
+    </div>
+  )
+}
+
 type DeleteState = {
   show: boolean
   deleting: boolean
@@ -124,6 +160,7 @@ export function Storage() {
     foodCount: 0,
     name: ''
   })
+  const [showNoti, setShowNoti] = useState(false)
 
   const onDeleteStorageRequested = () =>
     setDeleteSt({
@@ -138,6 +175,10 @@ export function Storage() {
     // Send API here
   }
 
+  const onNotiPopupClose = () => {
+    setShowNoti(false)
+  }
+
   return (
     <div className="flex flex-col">
       {/* Header */}
@@ -146,7 +187,11 @@ export function Storage() {
           <p className="whitespace-nowrap text-xl font-bold text-red-600">
             Kho thực phẩm
           </p>
-          <Button icon={Bell} variant="danger" />
+          <Button
+            icon={Bell}
+            variant="danger"
+            onClick={() => setShowNoti(true)}
+          />
         </div>
         <Button icon={Plus} type="button" size="fit" variant="primary" />
       </div>
@@ -175,6 +220,8 @@ export function Storage() {
           onDelete={onDeleteStorageConfirmed}
         />
       )}
+
+      {showNoti && <NotificationPopup onClose={onNotiPopupClose} />}
     </div>
   )
 }
