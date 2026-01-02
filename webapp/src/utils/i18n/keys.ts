@@ -27,3 +27,8 @@ export type i18nKeys =
   | 'auth_failed'
   | 'confirm'
   | 'decline'
+  | 'storage_freezer'
+  | 'storage_nonfreezer'
+  | 'storage_bulk'
+  | 'empty_storage_name'
+  | 'invalid_storage_name'

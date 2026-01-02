@@ -81,7 +81,7 @@ export function Storage() {
 
       {/* Grid container */}
       <div className="px-4">
-        <div className="mx-auto grid max-w-6xl grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-4">
+        <div className="mx-auto grid max-w-6xl grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
           <FridgeCard
             name="Tủ lạnh 1"
             count={8}
