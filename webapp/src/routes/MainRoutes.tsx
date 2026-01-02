@@ -10,6 +10,7 @@ import Favorites from '../pages/main/profile/Favorites'
 import { RouteObject } from 'react-router-dom'
 import { Storage } from '../pages/main/food-storage/Storage'
 import { AddStorage } from '../pages/main/food-storage/AddStorage'
+import { StorageDetails } from '../pages/main/food-storage/StorageDetails'
 
 const ProfileRoutes: RouteObject = {
   path: 'profile',
@@ -64,6 +65,10 @@ const FoodRoutes: RouteObject = {
     {
       path: 'storage/add',
       element: <AddStorage />
+    },
+    {
+      path: 'storage/items',
+      element: <StorageDetails />
     }
   ]
 }

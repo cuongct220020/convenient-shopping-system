@@ -193,7 +193,13 @@ export function Storage() {
             onClick={() => setShowNoti(true)}
           />
         </div>
-        <Button icon={Plus} type="button" size="fit" variant="primary" />
+        <Button
+          icon={Plus}
+          type="button"
+          size="fit"
+          variant="primary"
+          onClick={() => navigate('storage/add')}
+        />
       </div>
 
       {/* Grid container */}
@@ -203,7 +209,7 @@ export function Storage() {
             name="Tủ lạnh 1"
             count={8}
             imageUrl={fridge}
-            onClick={() => navigate('storage/add')}
+            onClick={() => navigate('storage/items')}
             onDelete={onDeleteStorageRequested}
           />
           <FridgeCard name="Tủ lạnh 2" count={12} imageUrl={fridge} />
