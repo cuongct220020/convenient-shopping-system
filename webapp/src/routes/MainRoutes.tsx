@@ -11,6 +11,8 @@ import { RouteObject } from 'react-router-dom'
 import { Storage } from '../pages/main/food-storage/Storage'
 import { AddStorage } from '../pages/main/food-storage/AddStorage'
 import { StorageDetails } from '../pages/main/food-storage/StorageDetails'
+import { StorageItemDetail } from '../pages/main/food-storage/StorageItemDetail'
+import { AddStorageItem } from '../pages/main/food-storage/AddStorageItem'
 
 const ProfileRoutes: RouteObject = {
   path: 'profile',
@@ -69,7 +71,12 @@ const FoodRoutes: RouteObject = {
     {
       path: 'storage/items',
       element: <StorageDetails />
-    }
+    },
+    {
+      path: 'storage/items/detail',
+      element: <StorageItemDetail />
+    },
+    { path: 'storage/items/add', element: <AddStorageItem /> }
   ]
 }
 

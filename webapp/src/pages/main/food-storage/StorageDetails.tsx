@@ -2,6 +2,7 @@ import { Info, Plus } from 'lucide-react'
 import { BackButton } from '../../../components/BackButton'
 import { Time } from '../../../utils/time'
 import { Button } from '../../../components/Button'
+import { useNavigate } from 'react-router-dom'
 
 type StorageItemExpirationLevel = 'no' | 'almost' | 'expired'
 type StorageItemProps = {
@@ -17,6 +18,7 @@ function StorageItem({
   expirationDate,
   level
 }: StorageItemProps) {
+  const navigate = useNavigate()
   const colorStr =
     level === 'no'
       ? 'bg-gray-200'
@@ -35,6 +37,7 @@ function StorageItem({
         <button
           type="button"
           className="transition-all duration-200 active:scale-95"
+          onClick={() => navigate('detail')}
         >
           <Info />
         </button>
@@ -45,6 +48,7 @@ function StorageItem({
 }
 
 export function StorageDetails() {
+  const navigate = useNavigate()
   const exampleStorageDetails = {
     name: 'Tủ lạnh',
     items: [
@@ -97,7 +101,13 @@ export function StorageDetails() {
           <StorageItem {...item} key={item.key} />
         ))}
         <div className="mx-auto">
-          <Button icon={Plus} type="button" variant="icon" size="fit" />
+          <Button
+            icon={Plus}
+            type="button"
+            variant="icon"
+            size="fit"
+            onClick={() => navigate('add')}
+          />
         </div>
       </div>
     </div>
