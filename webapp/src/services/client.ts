@@ -184,6 +184,44 @@ export function httpPut<T>(
   })
 }
 
+export function httpPatch<T>(
+  client: AxiosInstance,
+  url: string,
+  data: T
+): ResultAsync<RequestOk, RequestError> {
+  return ResultAsync.fromThrowable(
+    () => client.patch(url, data),
+    (e): RequestError => {
+      if (!axios.isAxiosError(e) || e.response === undefined) {
+        return {
+          type: 'network-error',
+          desc: null
+        }
+      }
+      const status = e.response.status
+      switch (status) {
+        case 401:
+          return { type: 'unauthorized', desc: null }
+        case 404:
+          return { type: 'path-not-found', desc: null }
+        case 403:
+          return { type: 'forbidden', desc: null }
+        case 409:
+          return { type: 'conflict', desc: null }
+        default:
+          return {
+            type: 'network-error',
+            desc: `HTTP ${status}`
+          }
+      }
+    }
+  )().map((response) => {
+    return {
+      body: response.data
+    }
+  })
+}
+
 export function httpDelete(
   client: AxiosInstance,
   url: string

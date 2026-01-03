@@ -147,11 +147,11 @@ export const AddMemberResponseSchema = z.object({
 })
 export type AddMemberResponse = z.infer<typeof AddMemberResponseSchema>
 
-// Remove member response schema
+// Remove member response schema (API returns data: null on success)
 export const RemoveMemberResponseSchema = z.object({
   status: z.literal('success'),
   message: z.string().nullable(),
-  data: FamilyGroupDetailedSchema
+  data: FamilyGroupDetailedSchema.nullable()
 })
 export type RemoveMemberResponse = z.infer<typeof RemoveMemberResponseSchema>
 
@@ -168,6 +168,17 @@ export const SetLeaderResponseSchema = z.object({
   data: FamilyGroupDetailedSchema
 })
 export type SetLeaderResponse = z.infer<typeof SetLeaderResponseSchema>
+
+// Update member role response schema
+// For PATCH /groups/{id}/members/{userId} endpoint
+export const UpdateMemberRoleResponseSchema = z.object({
+  status: z.literal('success'),
+  message: z.string().nullable(),
+  data: z.unknown().nullable()
+})
+export type UpdateMemberRoleResponse = z.infer<
+  typeof UpdateMemberRoleResponseSchema
+>
 
 // Leave group response schema
 export const LeaveGroupResponseSchema = z.object({

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
+import { ResultAsync } from 'neverthrow'
 import {
   Settings,
   Users,
@@ -392,12 +393,20 @@ const GroupDetail = () => {
   }
 
   const handleSetLeader = async () => {
-    if (!id || !selectedMemberForLeader) return
+    if (!id || !selectedMemberForLeader || !groupData?.currentUserId) return
 
     setIsSettingLeader(true)
     setSetLeaderError(null)
 
-    const result = await groupService.setLeader(id, selectedMemberForLeader.id)
+    // Transfer leadership by making both requests in parallel
+    // (to avoid losing permission after first request completes)
+    const currentLeaderId = groupData!.currentUserId
+    const targetMemberId = selectedMemberForLeader.id
+
+    const result = await ResultAsync.combine([
+      groupService.updateMemberRole(id, targetMemberId, 'head_chef'),
+      groupService.updateMemberRole(id, currentLeaderId, 'member')
+    ])
 
     result.match(
       () => {
@@ -409,11 +418,11 @@ const GroupDetail = () => {
       },
       (error) => {
         console.error('Failed to set leader:', error)
-        if (error.type === 'unauthorized') {
+        if (error[0]?.type === 'unauthorized' || error[1]?.type === 'unauthorized') {
           setSetLeaderError('Bạn cần đăng nhập để thực hiện thao tác này')
-        } else if (error.type === 'not-found') {
+        } else if (error[0]?.type === 'not-found' || error[1]?.type === 'not-found') {
           setSetLeaderError('Không tìm thấy nhóm')
-        } else if (error.type === 'forbidden') {
+        } else if (error[0]?.type === 'forbidden' || error[1]?.type === 'forbidden') {
           setSetLeaderError('Bạn không có quyền thực hiện thao tác này')
         } else {
           setSetLeaderError('Không thể đặt làm trưởng nhóm')
@@ -425,7 +434,13 @@ const GroupDetail = () => {
   }
 
   const handleRemoveMember = async () => {
-    if (!id || !selectedMemberForRemoval) return
+    if (!id || !selectedMemberForRemoval || !groupData) return
+
+    // Only head_chef can remove members
+    if (groupData?.currentUserRole !== 'head_chef') {
+      setRemoveMemberError('Chỉ trưởng nhóm mới có quyền xóa thành viên')
+      return
+    }
 
     setIsRemovingMember(true)
     setRemoveMemberError(null)
@@ -437,11 +452,17 @@ const GroupDetail = () => {
 
     result.match(
       () => {
+        // Update local state: remove the member from the list
+        setGroupData({
+          ...groupData,
+          members: groupData.members.filter(
+            (m) => m.id !== selectedMemberForRemoval.id
+          ),
+          memberCount: groupData.memberCount - 1
+        })
         setIsRemoveMemberModalOpen(false)
         setSelectedMemberForRemoval(null)
         setOpenMemberMenuId(null)
-        // Refresh group data
-        window.location.reload()
       },
       (error) => {
         console.error('Failed to remove member:', error)

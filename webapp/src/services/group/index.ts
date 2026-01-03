@@ -6,6 +6,7 @@ import {
   httpGet,
   httpPost,
   httpPut,
+  httpPatch,
   httpDelete,
   ResponseError
 } from '../client'
@@ -18,6 +19,7 @@ import {
   AddMemberResponseSchema,
   RemoveMemberResponseSchema,
   SetLeaderResponseSchema,
+  UpdateMemberRoleResponseSchema,
   LeaveGroupResponseSchema,
   type GroupListResponse,
   type GroupCreateResponse,
@@ -26,6 +28,7 @@ import {
   type AddMemberResponse,
   type RemoveMemberResponse,
   type SetLeaderResponse,
+  type UpdateMemberRoleResponse,
   type LeaveGroupResponse
 } from '../schema/groupSchema'
 
@@ -270,6 +273,7 @@ export class GroupService {
 
   /**
    * Set a member as the group leader (head_chef)
+   * @deprecated Use updateMemberRole instead for role management
    */
   public setLeader(
     groupId: string,
@@ -292,6 +296,44 @@ export class GroupService {
       })
       .andThen((response) =>
         parseZodObject(SetLeaderResponseSchema, response.body).mapErr(
+          (e): GroupError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
+   * Update a member's role in the group
+   * @param groupId - The group ID
+   * @param userId - The user ID whose role will be updated
+   * @param role - The new role ('head_chef' | 'member')
+   */
+  public updateMemberRole(
+    groupId: string,
+    userId: string,
+    role: 'head_chef' | 'member' | null
+  ): ResultAsync<UpdateMemberRoleResponse, GroupError> {
+    return httpPatch(
+      this.clients.auth,
+      AppUrl.GROUP_MEMBER_BY_ID(groupId, userId),
+      { role }
+    )
+      .mapErr((e): GroupError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          case 'path-not-found':
+            return { ...e, type: 'not-found' }
+          case 'forbidden':
+            return { ...e, type: 'validation-error' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(UpdateMemberRoleResponseSchema, response.body).mapErr(
           (e): GroupError => ({
             type: 'invalid-response-format',
             desc: e
