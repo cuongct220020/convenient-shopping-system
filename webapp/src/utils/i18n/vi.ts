@@ -39,6 +39,7 @@ export const vi: Record<i18nKeys, string> = {
   storage_bulk: 'Kho chứa khác',
   storage_freezer: 'Tủ đông',
   storage_nonfreezer: 'Tủ thường',
+  storage_fridge: 'Tủ lạnh',
   empty_storage_name: 'Tên kho chứa không được để trống',
   invalid_storage_name:
     'Tên kho chứa phải có ít nhất 3 ký tự, chỉ bao gồm chữ cái a-z, A-Z, chữ số 0-9 và kí tự "-", "_"',

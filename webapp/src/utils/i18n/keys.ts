@@ -38,6 +38,7 @@ export type i18nKeys =
   | 'storage_freezer'
   | 'storage_nonfreezer'
   | 'storage_bulk'
+  | 'storage_fridge'
   | 'empty_storage_name'
   | 'invalid_storage_name'
   | 'notification'

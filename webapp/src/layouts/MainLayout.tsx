@@ -1,23 +1,19 @@
 import React from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Apple, Soup, BookOpen, Star, User } from 'lucide-react'
+import { Apple, Soup, Star, User, Archive } from 'lucide-react'
 
 // Define the available tab names
-type TabName = 'nutrition' | 'food' | 'diary' | 'favorites' | 'profile'
+const TabNames = ['nutrition', 'food', 'meal', 'favorites', 'profile'] as const
+type TabName = (typeof TabNames)[number]
 
 export default function MainLayout() {
   const navigate = useNavigate()
   const location = useLocation()
 
   // Determine active tab from current location
-  const currentActiveTab = (() => {
+  const currentActiveTab = ((): TabName => {
     const path = location.pathname
-    if (path.includes('/nutrition')) return 'nutrition'
-    if (path.includes('/food')) return 'food'
-    if (path.includes('/diary')) return 'diary'
-    if (path.includes('/favorites')) return 'favorites'
-    if (path.includes('/profile')) return 'profile'
-    return 'profile' // default
+    return TabNames.find((e) => path.includes(`/${e}`)) ?? 'profile'
   })()
 
   const handlePress = (tab: TabName) => {
@@ -53,7 +49,7 @@ export default function MainLayout() {
           isActive={currentActiveTab === 'food'}
           onPress={() => handlePress('food')}
         >
-          <Soup
+          <Archive
             size={24}
             className={
               currentActiveTab === 'food' ? 'text-red-700' : 'text-gray-400'
@@ -63,13 +59,13 @@ export default function MainLayout() {
 
         {/* Tab 3: Diary (Book) */}
         <TabItem
-          isActive={currentActiveTab === 'diary'}
-          onPress={() => handlePress('diary')}
+          isActive={currentActiveTab === 'meal'}
+          onPress={() => handlePress('meal')}
         >
-          <BookOpen
+          <Soup
             size={24}
             className={
-              currentActiveTab === 'diary' ? 'text-red-700' : 'text-gray-400'
+              currentActiveTab === 'meal' ? 'text-red-700' : 'text-gray-400'
             }
           />
         </TabItem>

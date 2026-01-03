@@ -1,6 +1,11 @@
 import { i18nKeys } from './i18n/keys'
 
-export const FoodStorageCategories = ['freezer', 'non-freezer', 'bulk'] as const
+export const FoodStorageCategories = [
+  'freezer',
+  'non-freezer',
+  'bulk',
+  'fridge'
+] as const
 
 export type FoodStorageCategory = (typeof FoodStorageCategories)[number]
 
@@ -12,6 +17,8 @@ export function foodStorageCategoryStr(e: FoodStorageCategory): i18nKeys {
       return 'storage_freezer'
     case 'non-freezer':
       return 'storage_nonfreezer'
+    case 'fridge':
+      return 'storage_fridge'
     default:
       throw new Error('Unimplemented')
   }

@@ -13,6 +13,7 @@ import { AddStorage } from '../pages/main/food-storage/AddStorage'
 import { StorageDetails } from '../pages/main/food-storage/StorageDetails'
 import { StorageItemDetail } from '../pages/main/food-storage/StorageItemDetail'
 import { AddStorageItem } from '../pages/main/food-storage/AddStorageItem'
+import { Meal } from '../pages/main/meal/Meal'
 
 const ProfileRoutes: RouteObject = {
   path: 'profile',
@@ -80,9 +81,9 @@ const FoodRoutes: RouteObject = {
   ]
 }
 
-const DiaryRoutes: RouteObject = {
-  path: 'diary',
-  element: <div>Diary Screen</div>
+const MealRoutes: RouteObject = {
+  path: 'meal',
+  children: [{ index: true, element: <Meal /> }]
 }
 
 const FavoriteRoutes: RouteObject = {
@@ -101,7 +102,7 @@ export const MainRoutes: RouteObject = {
     ProfileRoutes,
     NutritionRoutes,
     FoodRoutes,
-    DiaryRoutes,
+    MealRoutes,
     FavoriteRoutes
   ]
 }
