@@ -61,6 +61,7 @@ class JWTHandler:
         token_type: str,
         expiry_delta: timedelta,
         user_role: str | None = None,
+        username: str | None = None,
         email: str | None = None
     ) -> Tuple[dict, str]:
         """Create common token payload and JTI."""
@@ -70,19 +71,21 @@ class JWTHandler:
         expiry_time = issued_at_time + expiry_delta
 
         payload = {
-            'iss': self.issuer,
-            'token_type': token_type,
-            'exp': int(expiry_time.timestamp()),  # Convert to Unix timestamp
-            'iat': issued_at_timestamp,  # Convert to Unix timestamp
-            'sub': str(user_id),
-            'jti': jti,
-            'aud': self.audience,
+            "iss": self.issuer,
+            "token_type": token_type,
+            "exp": int(expiry_time.timestamp()),  # Convert to Unix timestamp
+            "iat": issued_at_timestamp,  # Convert to Unix timestamp
+            "sub": str(user_id),
+            "jti": jti,
+            "aud": self.audience,
         }
 
         if user_role:
-            payload['system_role'] = user_role
+            payload["system_role"] = user_role
         if email:
-            payload['email'] = email
+            payload["email"] = email
+        if username:
+            payload["username"] = username
 
         return payload, jti
 
@@ -90,6 +93,7 @@ class JWTHandler:
         self,
         user_id: str,
         user_role: str | None = None,
+        username: str | None = None,
         email: str | None = None
     ) -> Tuple[str, str, int]:
         """Build Access Token with short expiry."""
@@ -99,6 +103,7 @@ class JWTHandler:
             token_type='access',
             expiry_delta=expiry_delta,
             user_role=user_role,
+            username=username,
             email=email
         )
 
@@ -108,7 +113,11 @@ class JWTHandler:
         return token, jti, self.access_token_expire_minutes
 
     def _build_refresh_token(
-            self, user_id: str, user_role: str | None = None, email: str | None = None
+            self,
+            user_id: str,
+            user_role: str | None = None,
+            username: str | None = None,
+            email: str | None = None
     ) -> Tuple[str, str, int]:
         """Build Refresh Token with long expiry."""
         expiry_delta = timedelta(days=self.refresh_token_expire_days)
@@ -117,6 +126,7 @@ class JWTHandler:
             token_type='refresh',
             expiry_delta=expiry_delta,
             user_role=user_role,
+            username=username,
             email=email
         )
 
@@ -129,11 +139,12 @@ class JWTHandler:
         self,
         user_id: str,
         user_role: str | None = None,
+        username: str | None = None,
         email: str | None = None
     ) -> TokenData:
         """Create both access and refresh tokens."""
-        access_token, access_jti, at_expires_in_minutes = self._build_access_token(user_id, user_role, email)
-        refresh_token, refresh_jti, rt_ttl_seconds = self._build_refresh_token(user_id, user_role, email)
+        access_token, access_jti, at_expires_in_minutes = self._build_access_token(user_id, user_role, username, email)
+        refresh_token, refresh_jti, rt_ttl_seconds = self._build_refresh_token(user_id, user_role, username, email)
 
         return TokenData(
             access_token=access_token,
