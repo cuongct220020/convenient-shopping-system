@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends, Body, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, status, Depends, Body, HTTPException, Query, BackgroundTasks, Path
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import Optional, List
@@ -22,11 +22,11 @@ storable_unit_router = APIRouter(
     description="Filter StorableUnits by group_id, storage_id, and/or unit_name. Supports pagination with cursor and limit."
 )
 def filter_units(
-    group_id: Optional[int] = Query(None),
-    storage_id: Optional[int] = Query(None),
-    unit_name: Optional[List[str]] = Query(None),
-    cursor: Optional[int] = Query(None, ge=0),
-    limit: int = Query(100, ge=1),
+    group_id: Optional[int] = Query(None, ge=1, description="Filter by group ID"),
+    storage_id: Optional[int] = Query(None, ge=1, description="Filter by storage ID"),
+    unit_name: Optional[List[str]] = Query(None, description="Filter by unit name(s)"),
+    cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
+    limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
     storable_units = storable_unit_crud.filter(
@@ -53,9 +53,9 @@ def filter_units(
     description="Retrieve a list of stacked StorableUnits. Units are grouped by common fields (unit_name, storage_id, component_id, content_type, content_quantity, content_unit). Supports pagination with cursor and limit."
 )
 def get_stacked_units(
-    storage_id: int,
-    cursor: Optional[int] = Query(None, ge=0),
-    limit: int = Query(100, ge=1),
+    storage_id: int = Query(..., ge=1, description="The storage ID to get stacked units from"),
+    cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
+    limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
     storable_units = storable_unit_crud.get_stacked(db, storage_id, cursor, limit)
@@ -75,7 +75,7 @@ def get_stacked_units(
     status_code=status.HTTP_200_OK,
     description="Retrieve a StorableUnit by its unique ID. Returns 404 if the StorableUnit does not exist."
 )
-def get_unit(id: int, db: Session = Depends(get_db)):
+def get_unit(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
     storable_unit = storable_unit_crud.get(db, id)
     if storable_unit is None:
         raise HTTPException(status_code=404, detail=f"StorableUnit with id={id} not found")
@@ -89,8 +89,8 @@ def get_unit(id: int, db: Session = Depends(get_db)):
     description="Retrieve a list of StorableUnits. Supports pagination with cursor and limit."
 )
 def get_many_units(
-    cursor: Optional[int] = Query(None, ge=0),
-    limit: int = Query(100, ge=1),
+    cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
+    limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
     storable_units = storable_unit_crud.get_many(db, cursor=cursor, limit=limit)
@@ -110,7 +110,7 @@ def get_many_units(
     description="Create a new StorableUnit."
 )
 def create_unit(
-        obj_in: StorableUnitCreate,
+        obj_in: StorableUnitCreate = Body(..., description="Data to create a new StorableUnit"),
         background_tasks: BackgroundTasks,
         db: Session = Depends(get_db)):
     return storable_unit_crud.create(db, obj_in, background_tasks)
@@ -122,7 +122,11 @@ def create_unit(
     status_code=status.HTTP_200_OK,
     description="Update a StorableUnit by its unique ID. Returns 404 if the StorableUnit does not exist."
 )
-def update_unit(id: int, obj_in: StorableUnitUpdate, db: Session = Depends(get_db)):
+def update_unit(
+    id: int = Path(..., ge=1),
+    obj_in: StorableUnitUpdate = Body(..., description="Data to update the StorableUnit"),
+    db: Session = Depends(get_db)
+):
     storable_unit = storable_unit_crud.get(db, id)
     if storable_unit is None:
         raise HTTPException(status_code=404, detail=f"StorableUnit with id={id} not found")
@@ -140,10 +144,11 @@ def update_unit(id: int, obj_in: StorableUnitUpdate, db: Session = Depends(get_d
     )
 )
 def consume_unit(
-        id: int,
-        background_tasks: BackgroundTasks,
-        consume_quantity: int = Query(..., gt=0),
-        db: Session = Depends(get_db)):
+    id: int = Path(..., ge=1),
+    background_tasks: BackgroundTasks,
+    consume_quantity: int = Query(..., ge=1, description="The quantity to consume"),
+    db: Session = Depends(get_db)
+):
     message, storable_unit = storable_unit_crud.consume(db, id, consume_quantity, background_tasks)
     return GenericResponse(
         message=message,
