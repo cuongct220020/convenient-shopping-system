@@ -1,16 +1,14 @@
 # user-service/app/services/family_group_service.py
+from datetime import datetime, UTC
 from uuid import UUID
 from typing import Sequence
 
-from app.models import FamilyGroup, GroupMembership, User
+from app.models import FamilyGroup, GroupMembership
 from app.enums import GroupRole
-from app.schemas.family_group_schema import (
-    FamilyGroupCreateSchema,
-    FamilyGroupUpdateSchema
-)
+from app.repositories.user_repository import UserRepository
+from app.schemas.family_group_schema import FamilyGroupCreateSchema, FamilyGroupUpdateSchema
 from app.repositories.family_group_repository import FamilyGroupRepository
 from app.repositories.group_membership_repository import GroupMembershipRepository
-from app.repositories.user_repository import UserRepository
 from app.services.kafka_service import kafka_service
 
 from shopping_shared.exceptions import Forbidden, NotFound, Conflict
@@ -31,30 +29,6 @@ class FamilyGroupService:
         self.member_repo = member_repo
         self.user_repo = user_repo
 
-    # --- Standard CRUD operations ---
-
-    async def get(self, group_id: UUID) -> FamilyGroup:
-        """Get a family group by ID."""
-        group = await self.repository.get_by_id(group_id)
-        if not group:
-            raise NotFound(f"Family group with id {group_id} not found")
-        return group
-
-
-    async def get_all(self, page: int = 1, page_size: int = 100):
-        """Get paginated list of family groups."""
-        return await self.repository.get_paginated(page=page, page_size=page_size)
-
-
-    async def get_group_members(self, group_id: UUID) -> Sequence[GroupMembership]:
-        """
-        Get all members of a group with basic User info.
-        Used for the 'List View'.
-        """
-        # Ensure group exists
-        await self.get(group_id)
-        return await self.member_repo.get_all_members(group_id)
-
 
     async def get_group_with_members(self, group_id: UUID) -> FamilyGroup:
         """
@@ -72,7 +46,7 @@ class FamilyGroupService:
         Used for the 'Detail View'.
         """
         # Ensure group exists
-        await self.get(group_id)
+        await self.repository.get_by_id(group_id)
         
         member = await self.member_repo.get_member_detailed(group_id, user_id)
         if not member:
@@ -80,33 +54,37 @@ class FamilyGroupService:
         
         return member
 
-    async def update(self, group_id: UUID, update_data: FamilyGroupUpdateSchema) -> FamilyGroup:
-        """Update a family group."""
-        updated = await self.repository.update(group_id, update_data)
-        if not updated:
-            raise NotFound(f"Family group with id {group_id} not found")
-        
-        # Fetch fresh data with relationships loaded
-        group = await self.repository.get_with_details(group_id)
-        
-        logger.info(f"Updated family group {group_id}")
-        return group
 
-    async def delete(self, group_id: UUID) -> None:
-        """Deletes a group (Admin/Internal use)."""
-        await self.repository.delete(group_id)
+    async def get_user_groups(self, user_id: UUID) -> Sequence[tuple[GroupMembership, int]]:
+        """
+        Get all groups that a user is a member of.
+        Returns: List of (membership, member_count)
+        """
+        return await self.member_repo.get_user_groups(user_id)
 
-    # --- Business logic methods ---
-    async def create_group(self, user_id: UUID, group_data: FamilyGroupCreateSchema) -> FamilyGroup:
+
+    async def create_group_by_user(
+        self,
+        user_id: UUID,
+        group_data: FamilyGroupCreateSchema
+    ) -> FamilyGroup:
         """Creates a new family group, assigns creator, and adds creator as HEAD_CHEF."""
-        # 1. Create Group
-        data = group_data.model_dump()
-        data['created_by_user_id'] = user_id
-        # Use repository.create_group which accepts dict and bypasses schema validation
-        group = await self.repository.create_group(data)
+
+        # 1. Create Group using BaseRepository's create
+        # Note: created_by_user_id is set manually as it's likely not in the schema
+        group = await self.repository.create(group_data)
+        
+        group.created_by_user_id = user_id
+        group.created_at = datetime.now(UTC)
+        await self.repository.session.flush()
 
         # 2. Add Creator as HEAD_CHEF member (creator adds themselves)
-        await self.member_repo.add_membership(user_id, group.id, GroupRole.HEAD_CHEF, user_id)
+        await self.member_repo.add_membership(
+            user_id=user_id,
+            group_id=group.id,
+            role=GroupRole.HEAD_CHEF,
+            added_by_user_id=user_id
+        )
         
         # 3. Fetch full group details for response
         full_group = await self.repository.get_with_details(group.id)
@@ -115,11 +93,32 @@ class FamilyGroupService:
         return full_group
 
 
-    async def delete_group_by_creator(self, user_id: UUID, group_id: UUID) -> None:
+    async def update_group_info_by_head_chef(
+        self,
+        user_id: UUID,
+        group_id: UUID,
+        validated_data: FamilyGroupUpdateSchema
+    ) -> FamilyGroup:
+        """Updates group details. Only HEAD_CHEF can update."""
+        
+        # 1. Check permission
+        if not await self._is_head_chef(user_id, group_id):
+            raise Forbidden("Only Head Chef can update group details.")
+
+        # 2. Update group
+        updated_group = await self.repository.update(group_id, validated_data)
+        
+        if not updated_group:
+            raise NotFound(f"Group with id {group_id} not found")
+
+        # 3. Return full details
+        return await self.repository.get_with_details(group_id)
+
+
+    async def delete_group_by_head_chef(self, user_id: UUID, group_id: UUID) -> None:
         """Deletes a group. Only the creator (Head Chef) can delete."""
-        group = await self.get(group_id)
-        if str(group.created_by_user_id) != str(user_id):
-            raise Forbidden("Only the group creator can delete this group.")
+        if not await self._is_head_chef(user_id, group_id):
+            raise Forbidden("Only the head_chef can delete this group.")
 
         await self.repository.delete(group_id)
         logger.info(f"Deleted family group {group_id} by user {user_id}")
@@ -130,25 +129,36 @@ class FamilyGroupService:
         requester_id: UUID,
         requester_username: str,
         group_id: UUID,
-        user_to_add: User
+        user_to_add_identifier: str
     ) -> GroupMembership:
         """Adds a user to the group by email or username"""
+
+        # Find the target user by identifier (email or username)
+        # First, try to find by email
+        target_user = await self.user_repo.get_by_email(user_to_add_identifier)
+
+        # If not found by email, try to find by username
+        if not target_user:
+            target_user = await self.user_repo.get_by_username(user_to_add_identifier)
+
+        if not target_user:
+            raise NotFound(f"User with identifier '{user_to_add_identifier}' not found")
 
         # 1. Check permission (Only HEAD_CHEF can add)
         if not await self._is_head_chef(requester_id, group_id): # Add 'await' here
             raise Forbidden("Only Head Chef can add members.")
 
         # 2. Check existing membership
-        existing = await self.member_repo.get_membership(user_to_add.id, group_id)
+        existing = await self.member_repo.get_membership(target_user.id, group_id)
         if existing:
             raise Conflict("User is already a member of this group.")
 
         # 3. Get group name and group membership ids *before* adding the member
-        group = await self.get(group_id) # Fetch group to get its name
+        group = await self.repository.get_by_id(group_id) # Fetch group to get its name
         group_members = await self.member_repo.get_all_members(group_id) # Fetch members before adding
         group_name = group.group_name
         group_members_ids = [member.user_id for member in group_members]
-        user_to_add_identifier = user_to_add.email if user_to_add.email else user_to_add.username
+        user_to_add_identifier = self._get_user_identifier(target_user)
 
         # 4. Publish message to kafka topics
         await kafka_service.publish_add_user_group_message(
@@ -156,19 +166,19 @@ class FamilyGroupService:
             requester_username=requester_username,
             group_id=group_id,
             group_name=group_name,
-            user_to_add_id=user_to_add.id,
+            user_to_add_id=target_user.id,
             user_to_add_identifier=user_to_add_identifier,
             group_members_ids=group_members_ids
         )
 
         # 5. Add Member (requester adds target user)
-        logger.info(f"Added user {user_to_add.id} to group {group_id}")
-        membership = await self.member_repo.add_membership(user_to_add.id, group_id, GroupRole.MEMBER, requester_id)
+        logger.info(f"Added user {target_user.id} to group {group_id}")
+        membership = await self.member_repo.add_membership(target_user.id, group_id, GroupRole.MEMBER, requester_id)
 
         return membership
 
 
-    async def remove_member(
+    async def remove_member_by_head_chef(
         self,
         requester_id: UUID,
         requester_username: str,
@@ -187,13 +197,13 @@ class FamilyGroupService:
         # Fetch the existing member details to get their identifier
         existing_member = await self.get_group_member_detailed(group_id, target_user_id)
         # Access the user's email/username from the fetched member object
-        target_user_identifier = existing_member.user.email if existing_member.user.email else existing_member.user.username
+        target_user_identifier = self._get_user_identifier(existing_member.user)
 
         if not existing_member:
              raise NotFound("Membership not found.")
 
         # Fetch group name BEFORE removing the member to ensure group still exists
-        group = await self.get(group_id)
+        group = await self.repository.get_by_id(group_id)
         group_name = group.group_name
 
         await self.member_repo.remove_membership(target_user_id, group_id)
@@ -222,7 +232,7 @@ class FamilyGroupService:
         if not await self._is_head_chef(requester_id, group_id):
             raise Forbidden("Only Head Chef can update roles.")
 
-        group = await self.get(group_id)
+        group = await self.repository.get_by_id(group_id)
         group_name = group.group_name
 
         # Check if the target user is actually a member of the group
@@ -239,7 +249,7 @@ class FamilyGroupService:
 
         if new_role == GroupRole.HEAD_CHEF:
             # Access the user's email/username from the fetched membership object
-            target_user_identifier = existing_membership.user.username if existing_membership.user.username else existing_membership.user.email
+            target_user_identifier = self._get_user_identifier(existing_membership.user)
 
             await kafka_service.publish_update_headchef_group_message(
                 requester_id=str(requester_id),
@@ -253,13 +263,6 @@ class FamilyGroupService:
             )
 
         return membership
-
-
-    async def get_user_groups(self, user_id: UUID) -> Sequence[GroupMembership]:
-        """
-        Get all groups that a user is a member of.
-        """
-        return await self.member_repo.get_user_groups(user_id)
 
 
     async def leave_group(
@@ -280,7 +283,7 @@ class FamilyGroupService:
 
         # Regular member (or HEAD_CHEF as the last member) can leave
         # Fetch group name BEFORE removing the member to ensure group still exists
-        group = await self.get(group_id)
+        group = await self.repository.get_by_id(group_id)
         group_name = group.group_name
 
         # If user is HEAD_CHEF and there are other members, they cannot leave
@@ -306,12 +309,12 @@ class FamilyGroupService:
                 old_head_chef_id=str(user_id),
                 old_head_chef_identifier=str(user_name),
                 new_head_chef_id=str(new_head_chef.user_id),
-                new_head_chef_identifier=str(new_head_chef.user.username) if new_head_chef.user.username else new_head_chef.user.email
+                new_head_chef_identifier=self._get_user_identifier(new_head_chef.user)
             )
 
         if len(all_members) <= 1:
             # Fetch group name BEFORE removing the member to ensure group still exists
-            group = await self.get(group_id)
+            group = await self.repository.get_by_id(group_id)
             group_name = group.group_name
 
             await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
@@ -337,6 +340,11 @@ class FamilyGroupService:
             group_name=group_name
         )
 
+
+    @staticmethod
+    def _get_user_identifier(user) -> str:
+        """Helper to get user identifier (username or email) for Kafka events."""
+        return user.username if user.username else user.email
 
     async def _is_head_chef(self, user_id: UUID, group_id: UUID) -> bool:
         """Helper to check if user is HEAD_CHEF of the group."""

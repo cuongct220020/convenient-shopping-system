@@ -26,24 +26,42 @@ class GroupMembershipRepository(
     def __init__(self, session: AsyncSession):
         super().__init__(GroupMembership, session)
 
-    async def get_user_groups(self, user_id: UUID) -> Sequence[GroupMembership]:
+
+    async def get_user_groups(self, user_id: UUID) -> Sequence[tuple[GroupMembership, int]]:
         """
-        Get all groups that a user is a member of with Group info, memberships and creator eagerly loaded.
+        Get all groups that a user is a member of.
+        Returns a list of tuples: (membership, member_count).
+        Optimized to avoid N+1 queries by counting members in the database.
         """
+        from sqlalchemy import func
+
+        # Subquery to count members per group
+        member_count_subquery = (
+            select(func.count(GroupMembership.user_id))
+            .where(GroupMembership.group_id == FamilyGroup.id)
+            .correlate(FamilyGroup)
+            .scalar_subquery()
+        )
+
         stmt = (
-            select(GroupMembership)
+            select(GroupMembership, member_count_subquery.label("member_count"))
+            .join(GroupMembership.group)
             .where(GroupMembership.user_id == user_id)
             .options(
-                selectinload(GroupMembership.group)
-                .selectinload(FamilyGroup.group_memberships),
                 selectinload(GroupMembership.group)
                 .selectinload(FamilyGroup.creator)
             )
         )
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        # Convert Row objects to explicit tuples to fix type warnings
+        return [(row[0], row[1]) for row in result.all()]
 
-    async def get_membership(self, user_id: UUID, group_id: UUID) -> Optional[GroupMembership]:
+
+    async def get_membership(
+        self,
+        user_id: UUID,
+        group_id: UUID
+    ) -> Optional[GroupMembership]:
         """Fetch membership by composite key (user_id, group_id)."""
         return await self.session.get(GroupMembership, (user_id, group_id))
 
@@ -52,13 +70,11 @@ class GroupMembershipRepository(
         Fetch all members of a group with User info eagerly loaded.
         Optimized for List View.
         """
-        stmt = (
-            select(GroupMembership)
-            .where(GroupMembership.group_id == group_id)
-            .options(selectinload(GroupMembership.user))  # Load User info to avoid N+1
+        return await self.get_many(
+            filters={"group_id": group_id},
+            load_options=[selectinload(GroupMembership.user)]
         )
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
+
 
     async def get_member_detailed(self, group_id: UUID, user_id: UUID) -> Optional[GroupMembership]:
         """
@@ -80,6 +96,7 @@ class GroupMembershipRepository(
         )
         result = await self.session.execute(stmt)
         return result.scalars().first()
+
 
     async def add_membership(
         self,
@@ -112,14 +129,25 @@ class GroupMembershipRepository(
         result = await self.session.execute(stmt)
         return result.scalars().first()
 
-    async def remove_membership(self, user_id: UUID, group_id: UUID) -> None:
+
+    async def remove_membership(
+            self,
+            user_id: UUID,
+            group_id: UUID
+    ) -> None:
         """Removes a user from a group."""
         membership = await self.get_membership(user_id, group_id)
         if membership:
             await self.session.delete(membership)
             await self.session.flush()
 
-    async def update_role(self, user_id: UUID, group_id: UUID, new_role: GroupRole) -> Optional[GroupMembership]:
+
+    async def update_role(
+        self,
+        user_id: UUID,
+        group_id: UUID,
+        new_role: GroupRole
+    ) -> Optional[GroupMembership]:
         """Updates the role of a user in a group."""
         stmt = (
             select(GroupMembership)
@@ -136,15 +164,3 @@ class GroupMembershipRepository(
             membership.role = new_role
             await self.session.flush()
         return membership
-
-    async def get_members_by_role(self, group_id: UUID, role: GroupRole) -> Sequence[GroupMembership]:
-        """Fetch all members of a group with a specific role."""
-        stmt = (
-            select(GroupMembership)
-            .where(
-                GroupMembership.group_id == group_id,
-                GroupMembership.role == role
-            )
-        )
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
