@@ -1,95 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Search, Check } from 'lucide-react';
+import { Camera, Check } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
-import { UserCardProps, UserCard } from '../../../components/UserCard';
-
-// 1. Define a Mock User to simulate the database found result
-const MOCK_DB_USER = {
-  id: 'user-hung-123',
-  name: 'Bùi Mạnh Hưng',
-  role: 'Thành viên',
-  email: 'hungdeptrai@gmail.com',
-};
+import { groupService } from '../../../services/group';
 
 const AddGroup: React.FC = () => {
   const navigate = useNavigate();
 
   // --- State Management ---
   const [groupName, setGroupName] = useState('');
-  const [memberSearch, setMemberSearch] = useState('');
 
-  // Search states
-  const [searchResult, setSearchResult] = useState<typeof MOCK_DB_USER | null>(null);
-  const [showNotFound, setShowNotFound] = useState(false);
+  // Loading and error states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Selected members list (Initialized with current user)
-  const [selectedMembers, setSelectedMembers] = useState<UserCardProps[]>([
-    {
-      id: 'user-me',
-      name: 'Bạn (Tôi)',
-      role: 'Trưởng nhóm',
-      isRemovable: false,
-    },
-  ]);
+  const handleSubmit = async () => {
+    // Validate group name
+    if (!groupName.trim()) {
+      setSubmitError('Vui lòng nhập tên nhóm');
+      return;
+    }
 
-  // --- Search Logic (Debounced) ---
-  useEffect(() => {
-    // 300ms delay to simulate network request and avoid flickering
-    const delayDebounceFn = setTimeout(() => {
-      if (!memberSearch.trim()) {
-        setSearchResult(null);
-        setShowNotFound(false);
-        return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const result = await groupService.createGroup(groupName.trim());
+
+    result.match(
+      () => {
+        // Success - navigate back to list
+        navigate('/main/family-group');
+      },
+      (error) => {
+        console.error('Failed to create group:', error);
+        if (error.type === 'unauthorized') {
+          setSubmitError('Bạn cần đăng nhập để tạo nhóm');
+        } else if (error.type === 'validation-error') {
+          setSubmitError('Dữ liệu không hợp lệ');
+        } else if (error.type === 'network-error') {
+          setSubmitError('Lỗi kết nối mạng');
+        } else {
+          setSubmitError('Không thể tạo nhóm');
+        }
       }
+    );
 
-      // Check if this user is already added to the list
-      const isAlreadyAdded = selectedMembers.some(
-        (m) => m.email === memberSearch || (memberSearch === MOCK_DB_USER.email && m.email === MOCK_DB_USER.email)
-      );
-
-      if (isAlreadyAdded) {
-        setSearchResult(null);
-        setShowNotFound(true); // Treat already added as "not found" for adding purposes
-        return;
-      }
-
-      // Simulate finding the specific user from the screenshot
-      if (memberSearch === 'hungdeptrai@gmail.com') {
-        setSearchResult(MOCK_DB_USER);
-        setShowNotFound(false);
-      } else {
-        setSearchResult(null);
-        setShowNotFound(true);
-      }
-    }, 300);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [memberSearch, selectedMembers]);
-
-  // --- Handlers ---
-  const handleAddMember = (user: typeof MOCK_DB_USER) => {
-    const newUser: UserCardProps = {
-      id: user.id,
-      name: user.name,
-      role: user.role,
-      email: user.email,
-      isRemovable: true,
-    };
-
-    setSelectedMembers((prev) => [...prev, newUser]);
-    setMemberSearch(''); // Clear search input
-    setSearchResult(null); // Clear result
-  };
-
-  const handleRemoveMember = (id: string | number) => {
-    setSelectedMembers((prev) => prev.filter((member) => member.id !== id));
-  };
-
-  const handleSubmit = () => {
-    navigate('/main/family-group');
+    setIsSubmitting(false);
   };
 
   return (
@@ -130,69 +88,22 @@ const AddGroup: React.FC = () => {
           value={groupName}
           onChange={(e) => setGroupName(e.target.value)}
         />
-
-        {/* Member Search Section */}
-        <div className="relative">
-          <InputField
-            label="Thêm thành viên"
-            labelClassName="after:content-['*'] after:ml-0.5 after:text-red-500"
-            placeholder="Ví dụ: hungdeptrai@gmail.com"
-            icon={<Search size={20} />}
-            value={memberSearch}
-            onChange={(e) => setMemberSearch(e.target.value)}
-          />
-
-          {/* --- UI State: Not Found --- */}
-          {showNotFound && (
-            <div className="flex flex-col items-center justify-center py-6 text-gray-400">
-              <Search size={24} className="mb-2 opacity-50" />
-              <p className="text-sm font-medium">
-                Không tồn tại tài khoản với email trên
-              </p>
-            </div>
-          )}
-
-          {/* --- UI State: Found Result (Add Candidate) --- */}
-          {searchResult && (
-            <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-              <UserCard
-                id={searchResult.id}
-                name={searchResult.name}
-                role={searchResult.role}
-                email={searchResult.email}
-                variant="candidate"
-                onAdd={() => handleAddMember(searchResult)}
-              />
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* 4. Selected Members List */}
-      <div className="mt-8">
-        <h2 className="text-sm font-bold text-gray-700 mb-4 uppercase">
-          THÀNH VIÊN ĐÃ CHỌN ({selectedMembers.length})
-        </h2>
-        <div className="flex flex-col gap-3">
-          {selectedMembers.map((member) => (
-            <UserCard
-              key={member.id}
-              {...member}
-              onRemove={handleRemoveMember}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* 5. Submit Button */}
+      {/* 4. Submit Button */}
       <div className="mt-10">
+        {submitError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{submitError}</p>
+          </div>
+        )}
         <Button
-          variant="primary"
+          variant={isSubmitting ? 'disabled' : 'primary'}
           onClick={handleSubmit}
           size="fit"
           icon={Check}
         >
-          Tạo nhóm
+          {isSubmitting ? 'Đang tạo...' : 'Tạo nhóm'}
         </Button>
       </div>
     </div>
