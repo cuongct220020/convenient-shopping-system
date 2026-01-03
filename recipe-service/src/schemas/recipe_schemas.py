@@ -5,7 +5,7 @@ from enums.level import Level
 from .ingredient_schemas import IngredientResponse
 
 class ComponentBase(BaseModel):
-    component_id: int
+    component_id: int = Field(ge=1)
     quantity: float = Field(gt=0)
 
 class RecipeBase(BaseModel):
