@@ -7,7 +7,7 @@ from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate, Ingre
 from models.recipe_component import Ingredient
 from enums.category import Category
 from .crud_router_base import create_crud_router
-from shared.shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
+from shared.shopping_shared.schemas.response_schema import CursorPaginationResponse
 from core.database import get_db
 
 ingredient_crud = IngredientCRUD(Ingredient)

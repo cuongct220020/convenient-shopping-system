@@ -8,13 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc git && \
 COPY shared /app/shared
 COPY shopping-storage-service /app/shopping-storage-service
 
-RUN pip install --no-cache-dir -e /app/shared[fastapi]
-
 WORKDIR /app/shopping-storage-service
-RUN grep -v "^-e.*shared" requirements.txt > requirements-docker.txt || true
-RUN pip install --no-cache-dir -r requirements-docker.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PYTHONPATH=/app/shopping-storage-service/src:/app
+ENV PYTHONPATH=/app/shopping-storage-service/src
 
 EXPOSE 8002
 

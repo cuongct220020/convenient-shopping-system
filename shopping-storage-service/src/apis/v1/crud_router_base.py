@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
 from core.database import get_db
 from shared.shopping_shared.crud.crud_base import CRUDBase
-from shared.shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
+from shared.shopping_shared.schemas.response_schema import CursorPaginationResponse
 
 """
     Generic CRUD router factory for reuse across CRUD operations of different models

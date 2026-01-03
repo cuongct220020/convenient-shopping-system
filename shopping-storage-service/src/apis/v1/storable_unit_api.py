@@ -1,11 +1,11 @@
-from fastapi import APIRouter, status, Depends, Body, HTTPException, Query
+from fastapi import APIRouter, status, Depends, Body, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import Optional, List
 from services.storable_unit_crud import StorableUnitCRUD
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse, StorableUnitStackedResponse
 from models.storage import StorableUnit
-from shared.shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
+from shared.shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 from core.database import get_db
 
 storable_unit_crud = StorableUnitCRUD(StorableUnit)
@@ -17,7 +17,7 @@ storable_unit_router = APIRouter(
 
 @storable_unit_router.get(
     "/filter",
-    response_model=CursorPaginationResponse[StorableUnitResponse],
+    response_model=PaginationResponse[StorableUnitResponse],
     status_code=status.HTTP_200_OK,
     description="Filter StorableUnits by group_id, storage_id, and/or unit_name. Supports pagination with cursor and limit."
 )
@@ -39,7 +39,7 @@ def filter_units(
     )
     pk = inspect(StorableUnit).primary_key[0]
     next_cursor = getattr(storable_units[-1], pk.name) if storable_units and len(storable_units) == limit else None
-    return CursorPaginationResponse(
+    return PaginationResponse(
         data=[StorableUnitResponse.model_validate(u) for u in storable_units],
         next_cursor=next_cursor,
         size=len(storable_units),
@@ -48,7 +48,7 @@ def filter_units(
 
 @storable_unit_router.get(
     "/stacked",
-    response_model=CursorPaginationResponse[StorableUnitStackedResponse],
+    response_model=PaginationResponse[StorableUnitStackedResponse],
     status_code=status.HTTP_200_OK,
     description="Retrieve a list of stacked StorableUnits. Units are grouped by common fields (unit_name, storage_id, component_id, content_type, content_quantity, content_unit). Supports pagination with cursor and limit."
 )
@@ -61,7 +61,7 @@ def get_stacked_units(
     storable_units = storable_unit_crud.get_stacked(db, storage_id, cursor, limit)
     data = [StorableUnitStackedResponse(**unit) for unit in storable_units]
     next_cursor = storable_units[-1]["row_num"] if storable_units and len(storable_units) == limit else None
-    return CursorPaginationResponse(
+    return PaginationResponse(
         data=data,
         next_cursor=next_cursor,
         size=len(storable_units),
@@ -84,7 +84,7 @@ def get_unit(id: int, db: Session = Depends(get_db)):
 
 @storable_unit_router.get(
     "/",
-    response_model=CursorPaginationResponse[StorableUnitResponse],
+    response_model=PaginationResponse[StorableUnitResponse],
     status_code=status.HTTP_200_OK,
     description="Retrieve a list of StorableUnits. Supports pagination with cursor and limit."
 )
@@ -96,7 +96,7 @@ def get_many_units(
     storable_units = storable_unit_crud.get_many(db, cursor=cursor, limit=limit)
     pk = inspect(StorableUnit).primary_key[0]
     next_cursor = getattr(storable_units[-1], pk.name) if storable_units and len(storable_units) == limit else None
-    return CursorPaginationResponse(
+    return PaginationResponse(
         data=list(storable_units),
         next_cursor=next_cursor,
         size=len(storable_units),
@@ -109,8 +109,11 @@ def get_many_units(
     status_code=status.HTTP_201_CREATED,
     description="Create a new StorableUnit."
 )
-async def create_unit(obj_in: StorableUnitCreate, db: Session = Depends(get_db)):
-    return await storable_unit_crud.create(db, obj_in)
+def create_unit(
+        obj_in: StorableUnitCreate,
+        background_tasks: BackgroundTasks,
+        db: Session = Depends(get_db)):
+    return storable_unit_crud.create(db, obj_in, background_tasks)
 
 
 @storable_unit_router.put(
@@ -136,10 +139,14 @@ def update_unit(id: int, obj_in: StorableUnitUpdate, db: Session = Depends(get_d
         "Returns 400 if the requested quantity exceeds available quantity."
     )
 )
-async def consume_unit(id: int, consume_quantity: int = Query(..., gt=0), db: Session = Depends(get_db)):
-    message, storable_unit = await storable_unit_crud.consume(db, id, consume_quantity)
+def consume_unit(
+        id: int,
+        background_tasks: BackgroundTasks,
+        consume_quantity: int = Query(..., gt=0),
+        db: Session = Depends(get_db)):
+    message, storable_unit = storable_unit_crud.consume(db, id, consume_quantity, background_tasks)
     return GenericResponse(
         message=message,
-        data=storable_unit if storable_unit else None
+        data=StorableUnitResponse.model_validate(storable_unit) if storable_unit else None
     )
 

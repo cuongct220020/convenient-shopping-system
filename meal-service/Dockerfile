@@ -10,7 +10,7 @@ COPY meal-service /app/meal-service
 WORKDIR /app/meal-service
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PYTHONPATH=/app/meal-service/src:/app
+ENV PYTHONPATH=/app/meal-service/src
 
 EXPOSE 8003
 

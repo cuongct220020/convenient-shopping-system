@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends, Body, Query
+from fastapi import APIRouter, status, Depends, Body, BackgroundTasks, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import Any, Optional
@@ -8,7 +8,7 @@ from services.report_process import report_process
 from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse, PlanReport
 from models.shopping_plan import ShoppingPlan
 from enums.plan_status import PlanStatus
-from shared.shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
+from shared.shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
 from .crud_router_base import create_crud_router
 from core.database import get_db
 
@@ -22,7 +22,7 @@ plan_router = APIRouter(
 
 @plan_router.get(
     "/filter",
-    response_model=CursorPaginationResponse[PlanResponse],
+    response_model=PaginationResponse[PlanResponse],
     status_code=status.HTTP_200_OK,
     description="Filter shopping plans by group_id and/or plan_status. Supports sorting by last_modified or deadline, and pagination with cursor and limit."
 )
@@ -46,7 +46,7 @@ def filter_plans(
     )
     pk = inspect(ShoppingPlan).primary_key[0]
     next_cursor = getattr(plans[-1], pk.name) if plans and len(plans) == limit else None
-    return CursorPaginationResponse(
+    return PaginationResponse(
         data=[PlanResponse.model_validate(plan) for plan in plans],
         next_cursor=next_cursor,
         size=len(plans),
@@ -118,16 +118,17 @@ def cancel_plan(id: int, assigner_id: int = Query(..., gt=0), db: Session = Depe
         "After successful report, items from report_content will be added to their respective storages as StorableUnits."
     )
 )
-async def report_plan(
+def report_plan(
     id: int, 
     report: PlanReport, 
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     assignee_id: int = Query(..., gt=0),
     confirm: bool = Query(True)
 ):
     is_completed, message, data = plan_transition.report(db, id, assignee_id, report, confirm)
     if is_completed:
-        await report_process(report, db)
+        background_tasks.add_task(report_process, report)
     return GenericResponse(message=message, data=data)
 
 @plan_router.post(
