@@ -7,62 +7,101 @@ import NewPassword from '../pages/main/profile/NewPassword'
 import PersonalProfile from '../pages/main/profile/PersonalProfile'
 import HealthProfile from '../pages/main/profile/HealthProfile'
 import Favorites from '../pages/main/profile/Favorites'
+import { RouteObject } from 'react-router-dom'
+import { Storage } from '../pages/main/food-storage/Storage'
+import { AddStorage } from '../pages/main/food-storage/AddStorage'
+import { StorageDetails } from '../pages/main/food-storage/StorageDetails'
+import { StorageItemDetail } from '../pages/main/food-storage/StorageItemDetail'
+import { AddStorageItem } from '../pages/main/food-storage/AddStorageItem'
 
-export const MainRoutes = {
-  path: '/main',
-  element: <MainLayout />,
+const ProfileRoutes: RouteObject = {
+  path: 'profile',
   children: [
     {
       index: true,
       element: <Profile />
     },
     {
-      path: 'profile',
-      element: <Profile />
-    },
-    {
-      path: 'profile/login-information',
+      path: 'login-information',
       element: <LoginInformation />
     },
     {
-      path: 'profile/old-password',
+      path: 'old-password',
       element: <OldPassword />
     },
     {
-      path: 'profile/authentication',
+      path: 'authentication',
       element: <Authentication />
     },
     {
-      path: 'profile/new-password',
+      path: 'new-password',
       element: <NewPassword />
     },
     {
-      path: 'profile/personal-profile',
+      path: 'personal-profile',
       element: <PersonalProfile />
     },
     {
-      path: 'profile/health-profile',
+      path: 'health-profile',
       element: <HealthProfile />
     },
     {
-      path: 'profile/favorites',
-      element: <Favorites />
-    },
-    {
-      path: 'nutrition',
-      element: <div>Nutrition Screen</div>
-    },
-    {
-      path: 'meals',
-      element: <div>Meals Screen</div>
-    },
-    {
-      path: 'diary',
-      element: <div>Diary Screen</div>
-    },
-    {
       path: 'favorites',
-      element: <div>Favorites Screen</div>
+      element: <Favorites />
     }
+  ]
+}
+
+const NutritionRoutes: RouteObject = {
+  path: 'nutrition',
+  element: <div>Nutrition Screen</div>
+}
+
+const FoodRoutes: RouteObject = {
+  path: 'food',
+  children: [
+    {
+      index: true,
+      element: <Storage />
+    },
+    {
+      path: 'storage/add',
+      element: <AddStorage />
+    },
+    {
+      path: 'storage/items',
+      element: <StorageDetails />
+    },
+    {
+      path: 'storage/items/detail',
+      element: <StorageItemDetail />
+    },
+    { path: 'storage/items/add', element: <AddStorageItem /> }
+  ]
+}
+
+const DiaryRoutes: RouteObject = {
+  path: 'diary',
+  element: <div>Diary Screen</div>
+}
+
+const FavoriteRoutes: RouteObject = {
+  path: 'nutrition',
+  element: <div>Favorite Screen</div>
+}
+
+export const MainRoutes: RouteObject = {
+  path: 'main',
+  element: <MainLayout />,
+  children: [
+    {
+      index: true,
+      element: <Profile />
+    },
+    ProfileRoutes,
+    NutritionRoutes,
+    FoodRoutes,
+    DiaryRoutes,
+    FavoriteRoutes
   ]
 }

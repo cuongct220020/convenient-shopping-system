@@ -1,8 +1,8 @@
-import { ReactNode } from 'react'
+import { MouseEvent, ReactNode } from 'react'
 
 interface ButtonProps {
   children?: ReactNode
-  onClick?: () => void
+  onClick?: (e: MouseEvent) => void
   variant?: 'primary' | 'secondary' | 'text' | 'icon' | 'danger' | 'disabled'
   icon?: React.ComponentType<{ size?: number | string; className?: string }>
   className?: string

@@ -19,6 +19,8 @@ export const vi: Record<i18nKeys, string> = {
   internal_error: 'Có lỗi xảy ra, vui lòng thử lại sau',
   confirm: 'Đồng ý',
   decline: 'Hủy bỏ',
+  delete: 'Xóa',
+  deleting: 'Đang xóa',
   incorrect_credentials: 'Sai thông tin đăng nhập',
   recheck_credentials: 'Vui lòng kiểm tra lại thông tin bạn đã nhập',
   register_success_title: 'Đăng ký thành công',
@@ -34,6 +36,14 @@ export const vi: Record<i18nKeys, string> = {
   reset_password_success_title: 'Đổi mật khẩu thành công',
   reset_password_login_to_continue:
     'Mật khẩu của bạn đã được cập nhật, vui lòng đăng nhập bằng mật khẩu mới để tiếp tục.',
+  storage_bulk: 'Kho chứa khác',
+  storage_freezer: 'Tủ đông',
+  storage_nonfreezer: 'Tủ thường',
+  empty_storage_name: 'Tên kho chứa không được để trống',
+  invalid_storage_name:
+    'Tên kho chứa phải có ít nhất 3 ký tự, chỉ bao gồm chữ cái a-z, A-Z, chữ số 0-9 và kí tự "-", "_"',
+  notification: 'Thông báo',
+  notification_none: 'Hiện không có thông báo nào',
   reset_password_no_email_title: 'Email chưa được đăng ký',
   reset_password_no_email_msg: 'Vui lòng kiểm tra lại email của bạn'
 }
