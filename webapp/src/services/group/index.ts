@@ -194,8 +194,6 @@ export class GroupService {
         }
       })
       .andThen((response) => {
-        // Log raw response for debugging
-        console.log('GroupService: Raw /members response:', response.body)
         return parseZodObject(GroupDetailResponseSchema, response.body).mapErr(
           (e): GroupError => ({
             type: 'invalid-response-format',
@@ -308,7 +306,7 @@ export class GroupService {
   public leaveGroup(
     groupId: string
   ): ResultAsync<LeaveGroupResponse, GroupError> {
-    return httpPost(this.clients.auth, AppUrl.GROUP_LEAVE(groupId), {})
+    return httpDelete(this.clients.auth, AppUrl.GROUP_LEAVE(groupId))
       .mapErr((e): GroupError => {
         switch (e.type) {
           case 'unauthorized':

@@ -6,15 +6,27 @@ export type GroupRole = z.infer<typeof GroupRoleSchema>
 
 // User core info schema - lenient version to handle partial data from API
 // Using z.any() and transforming to handle any data from API
+// API returns user_id, but we support both id and user_id for compatibility
 export const UserCoreInfoSchema = z.object({
-  id: z.any(),
+  id: z.any().optional(),
+  user_id: z.any().optional(),
   username: z.any(),
   email: z.any(),
   phone_num: z.any().nullable(),
   first_name: z.any().nullable(),
   last_name: z.any().nullable(),
   avatar_url: z.any().nullable()
-})
+}).transform((data) => ({
+  // Normalize to always have id field
+  id: data.id ?? data.user_id,
+  user_id: data.user_id ?? data.id,
+  username: data.username,
+  email: data.email,
+  phone_num: data.phone_num,
+  first_name: data.first_name,
+  last_name: data.last_name,
+  avatar_url: data.avatar_url
+}))
 export type UserCoreInfo = z.infer<typeof UserCoreInfoSchema>
 
 // User group schema (for list view)

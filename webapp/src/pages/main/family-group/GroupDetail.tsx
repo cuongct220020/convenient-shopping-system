@@ -61,6 +61,7 @@ const GroupDetail = () => {
   const [groupData, setGroupData] = useState<{
     id: string
     name: string
+    avatarUrl: string | null
     memberCount: number
     adminName: string
     members: Array<{
@@ -130,11 +131,6 @@ const GroupDetail = () => {
           // API returns 'members' field, not 'group_memberships'
           const memberships = group.members || group.group_memberships || []
 
-          console.log(
-            'GroupDetail: Members from /members endpoint:',
-            memberships
-          )
-
           // Map members to display format
           const members = memberships.map((membership: GroupMembership) => {
             const role = membership.role as 'head_chef' | 'member'
@@ -160,11 +156,10 @@ const GroupDetail = () => {
             currentUserRole = currentUserMembership.role
           }
 
-          console.log('GroupDetail: Current user role:', currentUserRole)
-
           setGroupData({
             id: group.id,
             name: group.group_name,
+            avatarUrl: group.group_avatar_url,
             memberCount: memberships.length,
             adminName: getDisplayName(group.creator),
             members,
@@ -546,6 +541,7 @@ const GroupDetail = () => {
         setGroupData({
           id: group.id,
           name: group.group_name,
+          avatarUrl: group.group_avatar_url,
           memberCount: memberships.length,
           adminName: getDisplayName(group.creator),
           members,
@@ -712,7 +708,11 @@ const GroupDetail = () => {
       <div className="px-4 pb-4">
         {/* Group Info */}
         <div className="mt-4 flex flex-col items-center">
-          <div className="mb-4 size-24 rounded-full bg-gray-200"></div>
+          <img
+            src={groupData.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/3253/3253272.png'}
+            alt={groupData.name}
+            className="mb-4 size-24 rounded-full object-cover"
+          />
           <h2 className="text-2xl font-bold text-gray-900">{groupData.name}</h2>
           <div className="mt-2 flex items-center space-x-4 text-sm text-gray-600">
             <div className="flex items-center">
@@ -724,7 +724,7 @@ const GroupDetail = () => {
               <span>{groupData.adminName}</span>
             </div>
           </div>
-          {activeTab === 'members' && (
+          {activeTab === 'members' && isHeadChef && (
             <Button
               variant="primary"
               size="fit"

@@ -128,21 +128,13 @@ const AddMember = ({ groupId, onMemberAdded, onCancel }: AddMemberProps) => {
       )}
 
       {/* Buttons */}
-      <div className="flex gap-3">
-        <div className="w-1/2">
-          <Button
-            variant={isLoading ? 'disabled' : 'secondary'}
-            onClick={onCancel}
-            className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]"
-          >
-            Hủy
-          </Button>
-        </div>
-        <div className="w-1/2">
+      <div className="flex justify-center gap-3">
+        <div className="">
           <Button
             variant={isLoading ? 'disabled' : 'primary'}
             onClick={handleAddMember}
-            icon={isLoading ? Loader2 : UserPlus}
+            icon={isLoading ? Loader2 : undefined}
+            size="fit"
             className="bg-[#C3485C] hover:bg-[#a83648]"
           >
             {isLoading ? (
@@ -153,6 +145,16 @@ const AddMember = ({ groupId, onMemberAdded, onCancel }: AddMemberProps) => {
             ) : (
               'Thêm thành viên'
             )}
+          </Button>
+        </div>
+        <div className="">
+          <Button
+            variant={isLoading ? 'disabled' : 'secondary'}
+            onClick={onCancel}
+            size="fit"
+            className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]"
+          >
+            Hủy
           </Button>
         </div>
       </div>
