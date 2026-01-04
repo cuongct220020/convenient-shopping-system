@@ -22,6 +22,7 @@ class UserTagBulkAddSchema(BaseSchema):
     tag_values: List[str] = Field(
         ...,
         description="List of tag codes to add",
+        examples=[["0102", "0212", "0302"]],
         min_length=1,
         max_length=50  # Limit number of tags at once
     )
@@ -43,6 +44,7 @@ class UserTagDeleteSchema(BaseSchema):
     tag_values: List[str] = Field(
         ...,
         description="List of tag codes to delete",
+        examples=[["0102", "0212"]],
         min_length=1,
         max_length=50  # Limit number of tags at once
     )
@@ -70,6 +72,7 @@ class UserTagUpdateByCategorySchema(BaseSchema):
     tag_values: List[str] = Field(
         ...,
         description="List of tag values to set for this category (empty list removes all)",
+        examples=[["0102", "0103"]],
         max_length=20  # Limit number of tags in a category
     )
 
@@ -96,12 +99,36 @@ class UserTagUpdateByCategorySchema(BaseSchema):
 @openapi.component
 class UserTagSchema(BaseSchema):
     """Schema for individual tag response."""
-    id: int
-    tag_value: str
-    tag_category: str
-    tag_name: str
-    description: Optional[str] = None
-    created_at: Optional[str] = None
+    id: int = Field(
+        ...,
+        description="The unique identifier of the tag",
+        examples=[1]
+    )
+    tag_value: str = Field(
+        ...,
+        description="The tag code value",
+        examples=["0102"]
+    )
+    tag_category: str = Field(
+        ...,
+        description="The category of the tag",
+        examples=["age", "medical", "allergy", "diet", "taste"]
+    )
+    tag_name: str = Field(
+        ...,
+        description="The name of the tag",
+        examples=["Adult", "Diabetes", "Dairy Allergy"]
+    )
+    description: Optional[str] = Field(
+        None,
+        description="The description of the tag",
+        examples=["Adult age group", "Diabetes condition", "Dairy allergy"]
+    )
+    created_at: Optional[str] = Field(
+        None,
+        description="The creation timestamp of the tag",
+        examples=["2023-01-01T00:00:00Z"]
+    )
 
 
 @openapi.component
@@ -109,38 +136,106 @@ class UserTagsByCategorySchema(BaseSchema):
     """Schema for grouping user tags by category."""
     age: List[UserTagSchema] = Field(
         default_factory=list,
-        description="Age group tags (01xx)"
+        description="Age group tags (01xx)",
+        examples=[[{
+            "id": 1,
+            "tag_value": "0102",
+            "tag_category": "age",
+            "tag_name": "Adult",
+            "description": "Adult age group"
+        }]]
     )
     medical: List[UserTagSchema] = Field(
         default_factory=list,
-        description="Medical condition tags (02xx)"
+        description="Medical condition tags (02xx)",
+        examples=[[{
+            "id": 2,
+            "tag_value": "0212",
+            "tag_category": "medical",
+            "tag_name": "Diabetes",
+            "description": "Diabetes condition"
+        }]]
     )
     allergy: List[UserTagSchema] = Field(
         default_factory=list,
-        description="Allergy tags (03xx)"
+        description="Allergy tags (03xx)",
+        examples=[[{
+            "id": 3,
+            "tag_value": "0302",
+            "tag_category": "allergy",
+            "tag_name": "Dairy Allergy",
+            "description": "Dairy allergy"
+        }]]
     )
     diet: List[UserTagSchema] = Field(
         default_factory=list,
-        description="Special diet tags (04xx)"
+        description="Special diet tags (04xx)",
+        examples=[[{
+            "id": 4,
+            "tag_value": "0401",
+            "tag_category": "diet",
+            "tag_name": "Vegetarian",
+            "description": "Vegetarian diet"
+        }]]
     )
     taste: List[UserTagSchema] = Field(
         default_factory=list,
-        description="Taste preference tags (05xx)"
+        description="Taste preference tags (05xx)",
+        examples=[[{
+            "id": 5,
+            "tag_value": "0501",
+            "tag_category": "taste",
+            "tag_name": "Spicy",
+            "description": "Prefers spicy food"
+        }]]
     )
 
 
 @openapi.component
 class UserTagsResponseSchema(BaseSchema):
     """Enhanced response schema for user tags."""
-    data: UserTagsByCategorySchema
-    total_tags: int
-    categories_count: Dict[str, int]
+    data: UserTagsByCategorySchema = Field(
+        ...,
+        description="The categorized user tags"
+    )
+    total_tags: int = Field(
+        ...,
+        description="Total number of tags",
+        examples=[5]
+    )
+    categories_count: Dict[str, int] = Field(
+        ...,
+        description="Count of tags in each category",
+        examples=[{"age": 1, "medical": 1, "allergy": 1, "diet": 1, "taste": 1}]
+    )
 
 
 @openapi.component
 class BulkTagOperationResponseSchema(BaseSchema):
     """Response schema for bulk tag operations."""
-    success_count: int
-    failed_count: int
-    errors: List[Dict[str, str]]
-    processed_tags: List[UserTagSchema]
+    success_count: int = Field(
+        ...,
+        description="Number of tags processed successfully",
+        examples=[3]
+    )
+    failed_count: int = Field(
+        ...,
+        description="Number of tags that failed to process",
+        examples=[0]
+    )
+    errors: List[Dict[str, str]] = Field(
+        default=[],
+        description="List of errors that occurred during processing",
+        examples=[[{"tag_value": "0102", "error": "Invalid tag format"}]]
+    )
+    processed_tags: List[UserTagSchema] = Field(
+        default=[],
+        description="List of tags that were processed successfully",
+        examples=[[{
+            "id": 1,
+            "tag_value": "0102",
+            "tag_category": "age",
+            "tag_name": "Adult",
+            "description": "Adult age group"
+        }]]
+    )
