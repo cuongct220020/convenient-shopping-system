@@ -18,14 +18,15 @@ class UserAdminCreateSchema(UserCreateSchema):
     Inherits fields: username, email, password, first_name, last_name.
     Adds: system_role, is_active.
     """
-    system_role: SystemRole = SystemRole.USER
-    is_active: bool = True
+    system_role: SystemRole = Field(SystemRole.USER, description="The system role of the user")
+    is_active: bool = Field(True, description="Whether the user is active")
 
 
 @openapi.component
 class UserAdminViewSchema(UserDetailedProfileSchema):
     """Detailed user view for administrators."""
     system_role: SystemRole
+    is_active: bool = Field(..., description="Whether the user is active")
     created_at: datetime
     last_login: Optional[datetime] = None
 
@@ -37,10 +38,10 @@ class UserAdminUpdateSchema(UserInfoUpdateSchema):
     Inherits core info update fields (username, email, names, phone, avatar).
     Adds admin-specific fields and nested profile updates.
     """
-    system_role: Optional[SystemRole] = None
-    is_active: Optional[bool] = None
-    identity_profile: Optional[UserIdentityProfileUpdateSchema] = None
-    health_profile: Optional[UserHealthProfileUpdateSchema] = None
+    system_role: Optional[SystemRole] = Field(None, description="The system role of the user")
+    is_active: Optional[bool] = Field(None, description="Whether the user is active")
+    identity_profile: Optional[UserIdentityProfileUpdateSchema] = Field(None)
+    health_profile: Optional[UserHealthProfileUpdateSchema] = Field(None)
 
 
 @openapi.component

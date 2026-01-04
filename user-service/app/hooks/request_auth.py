@@ -11,7 +11,8 @@ IGNORE_PATHS = {
     "/api/v1/user-service/auth/otp/send",
     "/api/v1/user-service/auth/otp/verify",
     "/api/v1/user-service/auth/reset-password",
-    "/api/v1/user-service/auth/refresh-token"
+    "/api/v1/user-service/auth/refresh-token",
+    "/api/v1/user-service/groups/<group_id:uuid>/members/<user_id:uuid>/access-check"
 }
 
 IGNORE_PREFIXES = [

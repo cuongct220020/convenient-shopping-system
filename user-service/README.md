@@ -117,8 +117,7 @@ docker exec -it user-service python3 /user-service/scripts/create_admin_user.py 
 ### Database Migrations (if needed after running)
 ```bash
 # Access container and run database migrations
-docker exec -it user-service bash
-alembic upgrade head
+docker exec -it user-service alembic upgrade head
 ```
 
 ## Testing
