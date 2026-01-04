@@ -15,6 +15,8 @@ from app.enums import GroupRole
 
 from shopping_shared.exceptions import Conflict, NotFound
 from shopping_shared.utils.logger_utils import get_logger
+from app.services.redis_service import redis_service
+from shopping_shared.caching.redis_keys import RedisKeys
 
 logger = get_logger("Admin Service")
 
@@ -76,6 +78,9 @@ class AdminUserService:
             # Create user and get result optimized (1 DB Transaction)
             # create_user_with_dict includes optimization to avoid extra SELECT queries
             user = await self.user_repo.create_user_with_dict(new_user_data)
+            
+            # Invalidate list cache
+            await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
         except IntegrityError as e:
             logger.error(f"Integrity error creating user: {e}")
             # Fallback in case race condition passed the first check
@@ -176,6 +181,10 @@ class AdminUserService:
         # 6. Re-fetch with full relationship
         updated_user = await self.user_repo.get_user_with_profiles(user_id)
 
+        # Invalidate caches
+        await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
+        await redis_service.delete_pattern(RedisKeys.admin_user_detail_key(str(user_id)))
+
         return updated_user
 
 
@@ -188,6 +197,10 @@ class AdminUserService:
              # Optimization: soft_delete failure implies user is not found or already deleted.
              # No need for an extra SELECT query to confirm.
              raise NotFound(f"User with id {user_id} not found")
+
+        # Invalidate caches
+        await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
+        await redis_service.delete_pattern(RedisKeys.admin_user_detail_key(str(user_id)))
 
         logger.info(f"Admin deleted user: {user_id}")
 
