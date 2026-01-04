@@ -8,7 +8,8 @@ from app.views.groups import (
     GroupMemberDetailView,
     GroupMemberMeView,
     MemberIdentityProfileView,
-    MemberHealthProfileView
+    MemberHealthProfileView,
+    GroupAccessCheckView
 )
 
 
@@ -32,3 +33,6 @@ group_bp.add_route(GroupMemberDetailView.as_view(), '/<group_id:uuid>/members/<u
 # Cross-member profile viewing
 group_bp.add_route(MemberIdentityProfileView.as_view(), '/<group_id:uuid>/members/<user_id:uuid>/identity-profile', name='member_identity_profile')
 group_bp.add_route(MemberHealthProfileView.as_view(), '/<group_id:uuid>/members/<user_id:uuid>/health-profile', name='member_health_profile')
+
+# Internal group access check
+group_bp.add_route(GroupAccessCheckView.as_view(), '/<group_id:uuid>/members/<user_id:uuid>/access-check', name='group_access_check')
