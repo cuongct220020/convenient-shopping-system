@@ -1,7 +1,7 @@
 # user-service/app/services/family_group_service.py
 from datetime import datetime, UTC
 from uuid import UUID
-from typing import Sequence
+from typing import Sequence, Tuple
 
 from app.models import FamilyGroup, GroupMembership
 from app.enums import GroupRole
@@ -340,6 +340,21 @@ class FamilyGroupService:
             group_name=group_name
         )
 
+    async def check_group_access(
+        self,
+        user_id: UUID,
+        group_id: UUID,
+        check_head_chef: bool
+    ) -> Tuple[bool, bool]:
+
+        is_group_membership = await self._is_group_membership(user_id=user_id, group_id=group_id)
+        if check_head_chef:
+            is_head_chef = await self._is_head_chef(user_id=user_id, group_id=group_id)
+
+            return is_group_membership, is_head_chef
+
+        return is_group_membership, False
+
 
     @staticmethod
     def _get_user_identifier(user) -> str:
@@ -350,3 +365,8 @@ class FamilyGroupService:
         """Helper to check if user is HEAD_CHEF of the group."""
         membership = await self.member_repo.get_membership(user_id, group_id)
         return membership and membership.role == GroupRole.HEAD_CHEF
+
+    async def _is_group_membership(self, user_id: UUID, group_id: UUID) -> bool:
+        """Helper to check if user is member of the group."""
+        membership = await self.member_repo.get_membership(user_id, group_id)
+        return True if membership is not None else False
