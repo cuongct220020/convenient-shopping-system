@@ -1,9 +1,11 @@
 # user-service/app/repositories/user_repository.py
-from typing import Optional
+from typing import Optional, List, Dict
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, or_, func
+from sqlalchemy.orm import selectinload
 
-
+from app.models import UserIdentityProfile
 from app.models.user import User
 from app.schemas.user_schema import UserCreateSchema, UserInfoUpdateSchema
 from shopping_shared.databases.base_repository import BaseRepository
@@ -18,6 +20,37 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
 
     def __init__(self, session: AsyncSession):
         super().__init__(User, session)
+
+    async def check_conflicts(self, username: str, email: str, phone_num: Optional[str] = None) -> List[str]:
+        """
+        Checks if a user with the same username, email, or phone number already exists.
+        Returns a list of unique conflict messages.
+        Executes a single DB query instead of multiple sequential ones.
+        """
+        conflicts = []
+        conditions = [func.lower(User.username) == func.lower(username), func.lower(User.email) == func.lower(email)]
+        
+        if phone_num:
+            conditions.append(func.lower(User.phone_num) == func.lower(phone_num))
+
+        # Check for any conflicts, excluding deleted users
+        stmt = select(User.username, User.email, User.phone_num).where(or_(*conditions)).where(User.is_deleted.is_(False))
+        
+        result = await self.session.execute(stmt)
+        # Fetch all matching records (there could be multiple conflicts)
+        existing_records = result.all()
+        
+        for record in existing_records:
+            r_username, r_email, r_phone = record
+            
+            if r_username and r_username.lower() == username.lower():
+                conflicts.append(f"User with username '{username}' already exists.")
+            if r_email and r_email.lower() == email.lower():
+                conflicts.append(f"User with email '{email}' already exists.")
+            if phone_num and r_phone and r_phone.lower() == phone_num.lower():
+                 conflicts.append(f"User with phone number '{phone_num}' already exists.")
+
+        return list(set(conflicts))
 
     async def get_by_username(self, username: str) -> Optional[User]:
         """Fetches user by username."""
@@ -36,65 +69,83 @@ class UserRepository(BaseRepository[User, UserCreateSchema, UserInfoUpdateSchema
         return await self.update_field(user_id, "password_hash", hashed_password)
 
 
-    async def create_user(self, user_data: dict) -> User:
+    async def get_user_for_registration_check(
+        self,
+        username,
+        email,
+        phone_num: Optional[str] = None
+    ) -> dict:
+        conditions = [
+            func.lower(User.username) == func.lower(username),
+            func.lower(User.email) == func.lower(email),
+        ]
+
+        if phone_num:
+            conditions.append(func.lower(User.phone_num) == func.lower(phone_num))
+
+        stmt = select(User).where(or_(*conditions)).where(User.is_deleted.is_(False))
+        result = await self.session.execute(stmt)
+        users = result.scalars().all()
+
+        result_dict: Dict[str, Optional[User]] = {
+            "username_match": None,
+            "email_match": None,
+            "phone_match": None,
+        }
+
+        for user in users:
+            if user.username and user.username.lower() == username.lower():
+                result_dict["username_match"] = user
+            if user.email and user.email.lower() == email.lower():
+                result_dict["email_match"] = user
+            if user.phone_num and user.phone_num.lower() == phone_num.lower():
+                result_dict["phone_match"] = user
+
+        return result_dict
+
+    async def create_user_with_dict(self, user_data: dict) -> User:
         """
-        Creates a new user from a dictionary.
-        Useful when the service has pre-processed data (e.g. hashed password).
+        Creates a new user from a dictionary and optimizes response.
+        Sets profile relations to None to prevent unnecessary lazy-load queries
+        since a newly created user definitely has no profiles yet.
         """
         user = User(**user_data)
         self.session.add(user)
         await self.session.flush()
         await self.session.refresh(user)
+        
+        # Optimization: Prevent extra SELECT queries when serializing
+        user.identity_profile = None
+        user.health_profile = None
+        
         return user
 
-
-    async def update(self, user_id: UUID, data: UserInfoUpdateSchema) -> Optional[User]:
-        """
-        Updates an existing user record, handling unique constraints properly.
-        Specifically handles phone number updates to avoid self-referencing unique constraint violations.
-        """
-        instance = await self.get_by_id(user_id)
-        if instance:
-            # Use exclude_unset to only update fields that were provided in the request
-            update_data = data.model_dump(exclude_unset=True)
-
-            # Handle phone number update carefully to avoid unique constraint issues
-            if 'phone_num' in update_data:
-                new_phone = update_data['phone_num']
-                # If the new phone number is the same as the current one, skip the update
-                if new_phone == instance.phone_num:
-                    del update_data['phone_num']
-
-            for key, value in update_data.items():
-                setattr(instance, key, value)
-            self.session.add(instance)
-            await self.session.flush()
-            await self.session.refresh(instance)
-        return instance
 
     async def get_user_with_profiles(self, user_id: UUID) -> Optional[User]:
         """
         Gets user with eager-loaded identity and health profiles.
         Useful for /users/me endpoint to return complete user data.
         """
-        from sqlalchemy.orm import selectinload
-
         load_options = [
-            selectinload(User.identity_profile),
+            selectinload(User.identity_profile).selectinload(UserIdentityProfile.address),
             selectinload(User.health_profile)
         ]
         return await self.get_by_id(user_id, load_options=load_options)
 
+
     async def get_by_identifier(self, identifier: str) -> Optional[User]:
         """
-        Fetches user by either username or email.
+        Fetches user by either username or email using a single optimized query.
         """
-        # First try to get by username
-        user = await self.get_by_field_case_insensitive("username", identifier)
-        if user:
-            return user
-
-        # If not found by username, try by email
-        user = await self.get_by_field_case_insensitive("email", identifier)
-        return user
+        stmt = select(User).where(
+            or_(
+                func.lower(User.username) == func.lower(identifier),
+                func.lower(User.email) == func.lower(identifier)
+            )
+        )
+        # Apply default soft-delete filter
+        stmt = stmt.where(User.is_deleted.is_(False))
+        
+        result = await self.session.execute(stmt.limit(1))
+        return result.scalars().first()
 

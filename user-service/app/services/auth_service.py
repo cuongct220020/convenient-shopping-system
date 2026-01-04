@@ -2,7 +2,6 @@
 from typing import Tuple, cast
 from uuid import UUID
 
-from pydantic import EmailStr, ValidationError, TypeAdapter
 from sqlalchemy import func
 
 from app.enums import OtpAction
@@ -37,23 +36,28 @@ class AuthService:
         reg_data: RegisterRequestSchema,
         user_repo: UserRepository
     ) -> User:
-        """Handles the first step of registration: creating an inactive user and sending a verification OTP."""
-        existing_user = await user_repo.get_by_username(reg_data.username)
-        if existing_user and existing_user.is_active:
+
+        conflict_users = await user_repo.get_user_for_registration_check(
+            username=reg_data.username,
+            email=reg_data.email,
+            phone_num=reg_data.phone_num
+        )
+
+        if conflict_users["username_match"] and conflict_users["username_match"].is_active:
             raise Conflict("An account with this username already exists.")
-
-        # Check if email already exists
-        existing_email_user = await user_repo.get_by_email(str(reg_data.email))
-        if existing_email_user and existing_email_user.is_active:
+        if conflict_users["email_match"] and conflict_users["email_match"].is_active:
             raise Conflict("An account with this email already exists.")
+        if (reg_data.phone_num and
+            conflict_users["phone_match"] and
+            conflict_users["phone_match"].is_active):
+            raise Conflict("An account with this phone number already exists.")
 
-        # Check if phone number already exists (if provided)
-        if reg_data.phone_num:
-            existing_phone_user = await user_repo.get_by_field_case_insensitive("phone_num", reg_data.phone_num)
-            if existing_phone_user and existing_phone_user.is_active:
-                raise Conflict("An account with this phone number already exists.")
+        user = (
+            conflict_users["username_match"] or
+            conflict_users["email_match"] or
+            conflict_users["phone_match"]
+        )
 
-        user = existing_user
         if not user:
             hashed_password = hash_password(reg_data.password.get_secret_value())
 
@@ -68,7 +72,7 @@ class AuthService:
             }
 
             try:
-                user = await user_repo.create_user(user_data_dict)
+                user = await user_repo.create_user_with_dict(user_data_dict)
             except Exception as e:
                 # Handle database constraint violations
                 from sqlalchemy.exc import IntegrityError
@@ -105,17 +109,7 @@ class AuthService:
         """
         user_identifier = login_data.identifier
 
-        try:
-            # Check if identifier looks like an email
-            TypeAdapter(EmailStr).validate_python(user_identifier)
-            is_email = True
-        except (ValidationError, ValueError):
-            is_email = False
-
-        if is_email:
-            user = await user_repo.get_by_email(user_identifier)
-        else:
-            user = await user_repo.get_by_username(user_identifier)
+        user = await user_repo.get_by_identifier(user_identifier)
 
         if not user or not await verify_password(login_data.password, str(user.password_hash)):
             raise Unauthorized("Invalid username or password")

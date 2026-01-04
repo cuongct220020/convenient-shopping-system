@@ -103,31 +103,39 @@ class GroupMembershipRepository(
         user_id: UUID,
         group_id: UUID,
         role: GroupRole,
-        added_by_user_id: Optional[UUID] = None
+        added_by_user_id: Optional[UUID] = None,
+        user: Optional[User] = None
     ) -> GroupMembership:
-        """Adds a user to a group with a specific role."""
+        """Adds a user to a group. Optimized to avoid redundant SELECT if user object is provided."""
         membership = GroupMembership(
             user_id=user_id,
             group_id=group_id,
             role=role,
             added_by_user_id=added_by_user_id
         )
+        
+        if user:
+            # Optimization: Assign the already fetched user object to the relationship
+            # This prevents SQLAlchemy from needing to fetch it again later.
+            membership.user = user
+            
         self.session.add(membership)
         await self.session.flush()
 
-        # Return the membership with user relationship loaded by fetching it again
-        from sqlalchemy.orm import selectinload
-        from sqlalchemy import select
-        stmt = (
-            select(GroupMembership)
-            .where(
-                GroupMembership.user_id == user_id,
-                GroupMembership.group_id == group_id
+        # If user wasn't provided, we fetch with relation to avoid lazy-load issues later
+        if not user:
+            stmt = (
+                select(GroupMembership)
+                .where(
+                    GroupMembership.user_id == user_id,
+                    GroupMembership.group_id == group_id
+                )
+                .options(selectinload(GroupMembership.user))
             )
-            .options(selectinload(GroupMembership.user))
-        )
-        result = await self.session.execute(stmt)
-        return result.scalars().first()
+            result = await self.session.execute(stmt)
+            return result.scalars().first()
+            
+        return membership
 
 
     async def remove_membership(
