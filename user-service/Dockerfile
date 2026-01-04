@@ -67,4 +67,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Khuyên dùng: Gọi qua python module để tránh lỗi path tuyệt đối
-CMD ["sh", "-c", "python3 -m alembic upgrade head && python3 run.py"]
+CMD ["python3", "run.py"]

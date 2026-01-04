@@ -1,8 +1,8 @@
-"""upgrade_user_service_schema_v2
+"""latest database schema
 
-Revision ID: cffbc8170d44
-Revises: fb7c7f6757be
-Create Date: 2025-12-24 16:55:15.356246+00:00
+Revision ID: b890a2f1134d
+Revises: 
+Create Date: 2026-01-04 16:09:19.839435+00:00
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'cffbc8170d44'
-down_revision: Union[str, Sequence[str], None] = 'fb7c7f6757be'
+revision: str = 'b890a2f1134d'
+down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
