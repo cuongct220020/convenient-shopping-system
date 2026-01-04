@@ -10,13 +10,13 @@ consumers:
         algorithm: RS256
         rsa_public_key: |
           -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtt7T6+sFZc8b2VprMhdv
-          /6w5KKjQzXKtpRgd6g0rltPDcQaBjeNK1kHdf6wcxSezxoXDiX4TuzQf72xSzaKS
-          krZAfdFXdQnyEv62+hpHS4rxANaVPWG7wz57bNzZpLi3gN3hLuRhqjrx0iu1oI/0
-          SGNBZmDCiIPUVaAAVPO5OOMyWdgs08USP7ZekYFJb9P0nHO2kc5p0+2zIQOwTtT6
-          f6PiHmMEMX4D8yH0+xzriLGiFcYMyOCmkfxQBP/T/E5X4774xvg/kmnZF2gwTtn/
-          mWY4rsltvNd6lsGpdJZxuWZO5A/TdeR+s+JwgtirmWKN9Xi+Qr12DSnKPtEOwY/I
-          3wIDAQAB
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAql9s1fi44bkXwSvCaz/v
+          843ml0c2tEDuOVJjywBw5pq8Ch8orC0GQZBWXjfkpwgTek754lN52zHrMdsUBYOl
+          euC+1DvYDGe7Sv0nE2tzm/GQvBKB1/JO0A+sveWO7fQp0l5MkAmFHwgK9UgBRG7y
+          G9IZissR2MFGfZxMwP6k0+TvP7RVW867Wil6/BwuKlwzw25yOGNu6FQJBA66b2KG
+          HlX1ObeS7UBpKM/T8q1UrbA5d4cQTVCdGz7rzFbuQ3q4WjCWrYziwklB+AJZ+AF2
+          CfUbv1xbZCuxnP4FazqX0TQUbn0mffilwrgNbxQNz41oDs32nxK7pcSPh8sfI0nG
+          oQIDAQAB
           -----END PUBLIC KEY-----
 
 
