@@ -14,6 +14,7 @@ from app.views.groups import (
 
 
 group_bp = Blueprint('group_bp', url_prefix='/groups')
+group_internal_bp = Blueprint('group_internal_bp', url_prefix='/groups/internal')
 
 # /groups (POST: create group)
 group_bp.add_route(GroupView.as_view(), '/', name='groups')
@@ -35,4 +36,4 @@ group_bp.add_route(MemberIdentityProfileView.as_view(), '/<group_id:uuid>/member
 group_bp.add_route(MemberHealthProfileView.as_view(), '/<group_id:uuid>/members/<user_id:uuid>/health-profile', name='member_health_profile')
 
 # Internal group access check
-group_bp.add_route(GroupAccessCheckView.as_view(), '/<group_id:uuid>/members/<user_id:uuid>/access-check', name='group_access_check')
+group_internal_bp.add_route(GroupAccessCheckView.as_view(), '/<group_id:uuid>/members/<user_id:uuid>/access-check', name='group_access_check')

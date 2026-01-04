@@ -55,7 +55,7 @@ class MeIdentityProfileView(BaseAPIView):
         user_identity_profile_service = UserIdentityProfileService(user_identity_profile_repo)
 
         try:
-            profile = await user_identity_profile_service.get(user_id)
+            profile = await user_identity_profile_service.get_identity_profile(user_id)
             data = UserIdentityProfileSchema.model_validate(profile)
 
             # Use helper method from base class
@@ -82,6 +82,7 @@ class MeIdentityProfileView(BaseAPIView):
     @openapi.definition(
         summary="Update authenticated user's identity profile",
         description="Updates the identity profile information for the authenticated user. If no profile exists, creates a new one. Only provided fields will be updated.",
+        body=get_openapi_body(UserIdentityProfileUpdateSchema),
         tag=["User Profile"],
         secured={"bearerAuth": []},
         response=[
@@ -105,7 +106,7 @@ class MeIdentityProfileView(BaseAPIView):
         user_identity_profile_service = UserIdentityProfileService(user_identity_profile_repo)
 
         try:
-            updated_profile = await user_identity_profile_service.update(user_id, validated_data)
+            updated_profile = await user_identity_profile_service.update_identity_profile(user_id, validated_data)
 
             # Use helper method from base class
             return self.success_response(
@@ -137,10 +138,6 @@ class MeIdentityProfileView(BaseAPIView):
 class MeHealthProfileView(BaseAPIView):
     """Manages the health profile for the authenticated user."""
 
-    # @openapi.summary("Get health profile")
-    # @openapi.description("Retrieves the health profile (height, weight, etc.) of the authenticated user.")
-    # @openapi.tag("Profile")
-
     @openapi.definition(
         summary="Retrieve authenticated user's health profile",
         description="Retrieves the health profile information for the authenticated user, including height, weight, medical conditions, allergies, and other health-related details.",
@@ -166,7 +163,7 @@ class MeHealthProfileView(BaseAPIView):
         user_health_service = UserHealthProfileService(user_health_profile_repo)
 
         try:
-            profile = await user_health_service.get(user_id)
+            profile = await user_health_service.get_health_profile(user_id)
             data = UserHealthProfileSchema.model_validate(profile)
 
             # Use helper method from base class
@@ -192,6 +189,7 @@ class MeHealthProfileView(BaseAPIView):
     @openapi.definition(
         summary="Update authenticated user's health profile",
         description="Updates the health profile information for the authenticated user. If no profile exists, creates a new one. Only provided fields will be updated.",
+        body=get_openapi_body(UserHealthProfileUpdateSchema),
         tag=["User Profile"],
         secured={"bearerAuth": []},
         response=[
@@ -215,7 +213,7 @@ class MeHealthProfileView(BaseAPIView):
         user_health_service = UserHealthProfileService(user_health_profile_repo)
 
         try:
-            updated_profile = await user_health_service.update(user_id, validated_data)
+            updated_profile = await user_health_service.update_health_profile(user_id, validated_data)
         except NotFound:
             # Upsert logic
             create_data = validated_data.model_dump()
