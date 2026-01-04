@@ -12,8 +12,8 @@ import {
 type TabName = 'ingredient-recipe' | 'food-storage' | 'meal' | 'family-group' | 'profile';
 
 export default function MainLayout() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useNavigate()
+  const location = useLocation()
 
   // Determine active tab from current location
   const currentActiveTab = (() => {
@@ -27,11 +27,11 @@ export default function MainLayout() {
   })();
 
   const handlePress = (tab: TabName) => {
-    navigate(`/main/${tab}`);
-  };
+    navigate(`/main/${tab}`)
+  }
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="relative min-h-screen bg-white">
       {/* Main Content Area - Renders the specific screen content */}
       <main className="pb-16 max-w-sm mx-auto w-full">
         <Outlet />
@@ -99,17 +99,16 @@ export default function MainLayout() {
             className={currentActiveTab === 'profile' ? 'text-[#C3485C] fill-[#C3485C]' : 'text-gray-400'}
           />
         </TabItem>
-
       </nav>
     </div>
-  );
+  )
 }
 
 // Helper component for individual tabs
 interface TabItemProps {
-  isActive: boolean;
-  children: React.ReactNode;
-  onPress: () => void;
+  isActive: boolean
+  children: React.ReactNode
+  onPress: () => void
 }
 
 const TabItem: React.FC<TabItemProps> = ({ isActive, children, onPress }) => {
@@ -124,5 +123,5 @@ const TabItem: React.FC<TabItemProps> = ({ isActive, children, onPress }) => {
     >
       {children}
     </button>
-  );
-};
+  )
+}

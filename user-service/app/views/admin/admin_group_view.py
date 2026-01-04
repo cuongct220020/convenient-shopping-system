@@ -159,7 +159,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         service = self._get_service(request)
 
         try:
-            group = await service.get_group_by_id(group_id)
+            group = await service.get_group_with_details(group_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -203,7 +203,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         service = self._get_service(request)
 
         try:
-            updated_group = await service.update_group(group_id, validated_data)
+            updated_group = await service.update_group_by_admin(group_id, validated_data)
 
             # Use helper method from base class
             return self.success_response(
@@ -244,7 +244,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         service = self._get_service(request)
 
         try:
-            await service.delete_group(group_id)
+            await service.delete_group_by_admin(group_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -328,11 +328,11 @@ class AdminGroupMembersView(BaseAdminGroupsView):
         Add a member to a group (Admin).
         POST /api/v1/user-service/admin/groups/<group_id>/members/
         """
+        admin_user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
         service = self._get_service(request)
 
         try:
-            admin_user_id = UUID(request.ctx.auth_payload["sub"])
             membership = await service.add_member_by_admin(group_id, validated_data.identifier, admin_user_id)
             return self.success_response(
                 data=GroupMembershipSchema.model_validate(membership),
@@ -379,12 +379,9 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
                 new_role=validated_data.role
             )
 
-            # Convert to GroupMembershipSchema for proper response format
-            membership_schema = GroupMembershipSchema.model_validate(updated_membership)
-
             # Use helper method from base class
             return self.success_response(
-                data=membership_schema,
+                data=GroupMembershipSchema.model_validate(updated_membership),
                 message="Member role updated successfully",
                 status_code=200
             )
@@ -397,6 +394,7 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
                 message="Failed to update member role",
                 status_code=500
             )
+
 
     @openapi.definition(
         summary="Remove a member from family group (Admin)",

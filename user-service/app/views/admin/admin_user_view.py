@@ -156,7 +156,7 @@ class AdminUsersView(BaseAdminUserView):
         service = self._get_service(request)
 
         try:
-            user = await service.create_user(validated_data)
+            user = await service.create_user_by_admin(validated_data)
 
             # Use helper method from base class
             return self.success_response(
@@ -202,7 +202,7 @@ class AdminUserDetailView(BaseAdminUserView):
         service = self._get_service(request)
 
         try:
-            user = await service.get_user(user_id)
+            user = await service.get_user_by_admin(user_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -247,7 +247,7 @@ class AdminUserDetailView(BaseAdminUserView):
         service = self._get_service(request)
 
         try:
-            user = await service.update_user(user_id, validated_data)
+            user = await service.update_user_by_admin(user_id, validated_data)
 
             # Use helper method from base class
             return self.success_response(
@@ -290,7 +290,7 @@ class AdminUserDetailView(BaseAdminUserView):
         service = self._get_service(request)
 
         try:
-            await service.delete_user(user_id)
+            await service.delete_user_by_admin(user_id)
 
             # Use helper method from base class
             return self.success_response(

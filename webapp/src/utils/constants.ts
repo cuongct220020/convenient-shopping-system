@@ -1,3 +1,22 @@
+import { i18nKeys } from './i18n/keys'
+
+export const FoodStorageCategories = ['freezer', 'non-freezer', 'bulk'] as const
+
+export type FoodStorageCategory = (typeof FoodStorageCategories)[number]
+
+export function foodStorageCategoryStr(e: FoodStorageCategory): i18nKeys {
+  switch (e) {
+    case 'bulk':
+      return 'storage_bulk'
+    case 'freezer':
+      return 'storage_freezer'
+    case 'non-freezer':
+      return 'storage_nonfreezer'
+    default:
+      throw new Error('Unimplemented')
+  }
+}
+
 export const Constant = {
   keys: {
     localStorage: 'ShopSense',

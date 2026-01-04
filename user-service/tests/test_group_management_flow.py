@@ -190,29 +190,39 @@ def run_test():
     else:
         print(f"{Colors.FAIL}❌ Promotion failed: {promote_res}{Colors.ENDC}")
 
-    # 11. Try to make User A leave (should fail since there are other members and User A is HEAD_CHEF)
-    print(f"\n{Colors.BOLD}[11] User A trying to leave group (should fail)...{Colors.ENDC}")
-    status, leave_res = make_request(f"{BASE_URL}/groups/{group_id}/members/me", "DELETE", headers=headers_a)
-    if status == 403:
-        print(f"{Colors.OKGREEN}✓ User A correctly prevented from leaving (HEAD_CHEF cannot leave with other members).{Colors.ENDC}")
-    else:
-        print(f"{Colors.FAIL}❌ Unexpected result when User A tried to leave: {leave_res}{Colors.ENDC}")
-
-    # 12. User A kicks User C (so User A becomes the only member and can then leave)
-    print(f"\n{Colors.BOLD}[12] User A kicking User C to become the only member...{Colors.ENDC}")
-    status, kick_res = make_request(f"{BASE_URL}/groups/{group_id}/members/{user_c['id']}", "DELETE", headers=headers_a)
-    if status == 200:
-        print(f"{Colors.OKGREEN}✓ User C kicked successfully.{Colors.ENDC}")
-    else:
-        print(f"{Colors.FAIL}❌ Failed to kick User C: {kick_res}{Colors.ENDC}")
-
-    # 13. Now User A can leave since they are the last member
-    print(f"\n{Colors.BOLD}[13] User A leaving group (now last member)...{Colors.ENDC}")
+    # 11. User A leaves the group (Should succeed and transfer HEAD_CHEF to C)
+    print(f"\n{Colors.BOLD}[11] User A leaving group (Should succeed & transfer ownership)...{Colors.ENDC}")
     status, leave_res = make_request(f"{BASE_URL}/groups/{group_id}/members/me", "DELETE", headers=headers_a)
     if status == 200:
-        print(f"{Colors.OKGREEN}✓ User A left as the last member (group effectively deleted).{Colors.ENDC}")
+        print(f"{Colors.OKGREEN}✓ User A left successfully. Ownership should be transferred to User C.{Colors.ENDC}")
     else:
-        print(f"{Colors.FAIL}❌ Failed to leave as last member: {leave_res}{Colors.ENDC}")
+        print(f"{Colors.FAIL}❌ User A failed to leave: {leave_res}{Colors.ENDC}")
+        sys.exit(1)
+
+    # 12. Login as User C to verify ownership and clean up
+    print(f"\n{Colors.BOLD}[12] Logging in as User C to verify ownership...{Colors.ENDC}")
+    token_c = login_user(user_c['email'], user_c['password'])
+    headers_c = {"Authorization": f"Bearer {token_c}"}
+    
+    status, group_info = make_request(f"{BASE_URL}/groups/{group_id}", "GET", headers=headers_c)
+    if status == 200:
+        # Check if C is now HEAD_CHEF
+        members = group_info['data']['members']
+        user_c_member = next((m for m in members if m['user']['user_id'] == user_c['id']), None)
+        if user_c_member and user_c_member['role'] == 'head_chef':
+             print(f"{Colors.OKGREEN}✓ Verified: User C is now HEAD_CHEF.{Colors.ENDC}")
+        else:
+             print(f"{Colors.FAIL}❌ User C is not HEAD_CHEF! Role: {user_c_member['role'] if user_c_member else 'None'}{Colors.ENDC}")
+    else:
+        print(f"{Colors.FAIL}❌ Failed to get group info as User C: {group_info}{Colors.ENDC}")
+
+    # 13. User C leaves (Group should be deleted as C is last member)
+    print(f"\n{Colors.BOLD}[13] User C leaving group (Last member)...{Colors.ENDC}")
+    status, leave_res_c = make_request(f"{BASE_URL}/groups/{group_id}/members/me", "DELETE", headers=headers_c)
+    if status == 200:
+        print(f"{Colors.OKGREEN}✓ User C left as the last member (group effectively deleted).{Colors.ENDC}")
+    else:
+        print(f"{Colors.FAIL}❌ Failed to leave as last member: {leave_res_c}{Colors.ENDC}")
 
     # 14. Verify group no longer exists by trying to access it
     print(f"\n{Colors.BOLD}[14] Verifying group no longer exists...{Colors.ENDC}")

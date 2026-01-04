@@ -65,13 +65,11 @@ class MeTagsView(BaseAPIView):
                 status_code=500
             )
 
-    # @openapi.summary("Add tags to user")
-    # @openapi.description("Adds one or more tags to the authenticated user's profile.")
-    # @openapi.tag("Profile - Tags")
 
     @openapi.definition(
         summary="Add tags to authenticated user's profile",
         description="Adds one or more tags to the authenticated user's profile. This endpoint allows users to enhance their profile with custom tags for better categorization and personalization.",
+        body=get_openapi_body(UserTagBulkAddSchema),
         tag=["User Profile Tags"],
         secured={"bearerAuth": []},
         response=[
@@ -118,6 +116,7 @@ class MeTagsCategoryView(BaseAPIView):
     @openapi.definition(
         summary="Update tags in a specific category",
         description="Replaces all existing tags in a specific category with new ones for the authenticated user. This operation completely overwrites the tags in the specified category.",
+        body=get_openapi_body(UserTagUpdateByCategorySchema),
         tag=["User Profile Tags"],
         secured={"bearerAuth": []},
         response=[
@@ -173,6 +172,7 @@ class MeTagsDeleteView(BaseAPIView):
     @openapi.definition(
         summary="Remove tags from authenticated user's profile",
         description="Deletes one or more specified tags from the authenticated user's profile. This operation removes the selected tags and returns the updated tag list.",
+        body=get_openapi_body(UserTagDeleteSchema),
         tag=["User Profile Tags"],
         secured={"bearerAuth": []},
         response=[
