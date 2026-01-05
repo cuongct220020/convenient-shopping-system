@@ -53,20 +53,29 @@ services:
       PGDATABASE: postgres
     command: >
       bash -c "
+        # Hàm wait for postgres
         until pg_isready; do
           echo 'Waiting for PostgreSQL to be ready...'
           sleep 2
         done &&
-        until psql -c 'CREATE DATABASE shopping_user_service_db;'; do
-          echo 'Creating shopping_user_service_db...'
-          sleep 2
-        done &&
-        until psql -c 'CREATE DATABASE shopping_notification_service_db;'; do
-          echo 'Creating shopping_notification_service_db...'
-          sleep 2
-        done &&
-        echo 'Databases created successfully' &&
-        # Create a marker file to indicate completion
+        
+        # Check và tạo shopping_user_service_db (chỉ tạo nếu chưa có)
+        if ! psql -lqt | cut -d \| -f 1 | grep -qw shopping_user_service_db; then
+          psql -c 'CREATE DATABASE shopping_user_service_db;'
+          echo 'Created shopping_user_service_db'
+        else
+          echo 'Database shopping_user_service_db already exists'
+        fi &&
+
+        # Check và tạo shopping_notification_service_db (chỉ tạo nếu chưa có)
+        if ! psql -lqt | cut -d \| -f 1 | grep -qw shopping_notification_service_db; then
+          psql -c 'CREATE DATABASE shopping_notification_service_db;'
+          echo 'Created shopping_notification_service_db'
+        else
+          echo 'Database shopping_notification_service_db already exists'
+        fi &&
+        
+        echo 'Databases check completed successfully' &&
         touch /tmp/databases_created
       "
     healthcheck:
@@ -296,8 +305,8 @@ services:
     ports:
       - "9001:8000" # Access via localhost:9001
     volumes:
-      - ./user-service:/user-service
-      - /user-service/.venv  # Exclude virtual environment
+      - ./user-service:/app/user-service
+      - /app/user-service/.venv  # Exclude virtual environment
     networks:
       - shopping-network
     restart: unless-stopped
@@ -413,8 +422,8 @@ services:
     ports:
       - "9005:8000" # Access via localhost:9005
     volumes:
-      - ./notification-service:/notification-service
-      - /notification-service/.venv  # Exclude virtual environment
+      - ./notification-service:/app/notification-service
+      - /app/notification-service/.venv  # Exclude virtual environment
     networks:
       - shopping-network
     restart: unless-stopped
