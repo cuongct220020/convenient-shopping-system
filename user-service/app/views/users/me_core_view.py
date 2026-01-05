@@ -4,6 +4,7 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request
+from app.decorators.cache_response import cache_response
 from app.views.base_view import BaseAPIView
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
@@ -11,8 +12,11 @@ from app.schemas.user_schema import UserInfoUpdateSchema, UserCoreInfoSchema
 
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
+from shopping_shared.caching.redis_keys import RedisKeys
+
 
 logger = get_logger("Me Core View")
+
 
 class MeView(BaseAPIView):
     """View to manage the authenticated user's core information."""
@@ -30,6 +34,7 @@ class MeView(BaseAPIView):
             )
         ]
     )
+    @cache_response(key_pattern=RedisKeys.USER_CORE, ttl=900)
     async def get(self, request: Request):
         """
         Get current user info.

@@ -4,6 +4,7 @@ from typing import Tuple, Sequence
 
 from sqlalchemy.exc import IntegrityError
 
+from app.enums import GroupRole
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.repositories.family_group_repository import FamilyGroupRepository
@@ -11,10 +12,12 @@ from app.repositories.group_membership_repository import GroupMembershipReposito
 from app.schemas.user_admin_schema import UserAdminUpdateSchema, UserAdminCreateSchema
 from app.models.family_group import GroupMembership
 from app.utils.password_utils import hash_password
-from app.enums import GroupRole
+from app.services.redis_service import redis_service
+
 
 from shopping_shared.exceptions import Conflict, NotFound
 from shopping_shared.utils.logger_utils import get_logger
+from shopping_shared.caching.redis_keys import RedisKeys
 
 logger = get_logger("Admin Service")
 
@@ -27,7 +30,7 @@ class AdminUserService:
     async def get_user_by_admin(self, user_id: UUID):
         """Fetch a user by ID for admin."""
         user = await self.user_repo.get_user_with_profiles(user_id)
-        if not user:
+        if not user or user.is_deleted == True:
             raise NotFound(f"User with id {user_id} not found")
         return user
 
@@ -76,6 +79,9 @@ class AdminUserService:
             # Create user and get result optimized (1 DB Transaction)
             # create_user_with_dict includes optimization to avoid extra SELECT queries
             user = await self.user_repo.create_user_with_dict(new_user_data)
+            
+            # Invalidate list cache
+            await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
         except IntegrityError as e:
             logger.error(f"Integrity error creating user: {e}")
             # Fallback in case race condition passed the first check
@@ -176,6 +182,10 @@ class AdminUserService:
         # 6. Re-fetch with full relationship
         updated_user = await self.user_repo.get_user_with_profiles(user_id)
 
+        # Invalidate caches
+        await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
+        await redis_service.delete_key(RedisKeys.admin_user_detail_key(str(user_id)))
+
         return updated_user
 
 
@@ -183,13 +193,22 @@ class AdminUserService:
         """Delete a user by an admin. Using soft_delete."""
         # soft_delete returns False if user doesn't exist OR is already deleted
         deleted = await self.user_repo.soft_delete(user_id)
-        
+
         if not deleted:
              # Optimization: soft_delete failure implies user is not found or already deleted.
              # No need for an extra SELECT query to confirm.
              raise NotFound(f"User with id {user_id} not found")
 
         logger.info(f"Admin deleted user: {user_id}")
+
+        # Invalidate caches (do this after successful deletion to avoid rollback on cache errors)
+        try:
+            await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
+            # Delete the specific user detail cache entry
+            await redis_service.delete_key(RedisKeys.admin_user_detail_key(str(user_id)))
+        except Exception as e:
+            # Log cache invalidation errors but don't let them affect the main operation
+            logger.error(f"Error invalidating cache after user deletion: {e}", exc_info=True)
 
 
 
@@ -246,6 +265,10 @@ class AdminGroupService:
         if not updated_group:
             raise NotFound(f"Group with id {group_id} not found")
 
+        # Invalidate caches
+        await redis_service.delete_pattern(RedisKeys.ADMIN_GROUPS_LIST_WILDCARD)
+        await redis_service.delete_pattern(RedisKeys.admin_group_detail_key(str(group_id)))
+
         return updated_group
 
 
@@ -255,6 +278,10 @@ class AdminGroupService:
         if not group:
             raise NotFound(f"Group with id {group_id} not found")
         await self.group_repo.delete(group_id)
+        
+        # Invalidate caches
+        await redis_service.delete_pattern(RedisKeys.ADMIN_GROUPS_LIST_WILDCARD)
+        await redis_service.delete_pattern(RedisKeys.admin_group_detail_key(str(group_id)))
 
 
     # ===== Group Membership Management by Admin =====
@@ -282,6 +309,10 @@ class AdminGroupService:
                 added_by_user_id=added_by_user_id,
                 user=user_to_add
             )
+
+            # Invalidate members list cache
+            await redis_service.delete_pattern(RedisKeys.admin_group_members_list_key(str(group_id)))
+
             return membership
         except IntegrityError:
             # This happens if (user_id, group_id) already exists in the database
@@ -289,7 +320,6 @@ class AdminGroupService:
         except Exception as e:
             logger.error(f"Error adding member to group {group_id} for user {user_to_add.id}: {str(e)}", exc_info=True)
             raise
-
 
     async def remove_member_by_admin(
         self,
@@ -303,6 +333,9 @@ class AdminGroupService:
 
         await self.member_repo.remove_membership(user_id, group_id)
 
+        # Invalidate members list cache
+        await redis_service.delete_pattern(RedisKeys.admin_group_members_list_key(str(group_id)))
+
 
     async def update_member_role_by_admin(self, group_id: UUID, user_id: UUID, new_role: GroupRole):
         """Admin updates member role directly."""
@@ -310,6 +343,10 @@ class AdminGroupService:
             membership = await self.member_repo.update_role(user_id, group_id, new_role)
             if not membership:
                 raise NotFound("Membership not found.")
+            
+            # Invalidate members list cache
+            await redis_service.delete_pattern(RedisKeys.admin_group_members_list_key(str(group_id)))
+
             return membership
         except Exception as e:
             logger.error(f"Error updating member role for user {user_id} in group {group_id}: {str(e)}", exc_info=True)
