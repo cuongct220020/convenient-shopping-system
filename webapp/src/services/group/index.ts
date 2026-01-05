@@ -21,6 +21,8 @@ import {
   SetLeaderResponseSchema,
   UpdateMemberRoleResponseSchema,
   LeaveGroupResponseSchema,
+  UserIdentityProfileSchema,
+  UserHealthProfileSchema,
   type GroupListResponse,
   type GroupCreateResponse,
   type GroupUpdateResponse,
@@ -29,7 +31,9 @@ import {
   type RemoveMemberResponse,
   type SetLeaderResponse,
   type UpdateMemberRoleResponse,
-  type LeaveGroupResponse
+  type LeaveGroupResponse,
+  type UserIdentityProfile,
+  type UserHealthProfile
 } from '../schema/groupSchema'
 
 type GroupError = ResponseError<
@@ -204,6 +208,72 @@ export class GroupService {
           })
         )
       })
+  }
+
+  /**
+   * Get a member's identity profile within a group
+   * Uses the /groups/{groupId}/members/{userId}/identity-profile endpoint
+   * Returns the profile object directly (not wrapped in {status, message, data})
+   */
+  public getMemberIdentityProfile(
+    groupId: string,
+    userId: string
+  ): ResultAsync<UserIdentityProfile, GroupError> {
+    return httpGet(
+      this.clients.auth,
+      AppUrl.GROUP_MEMBER_IDENTITY_PROFILE(groupId, userId)
+    )
+      .mapErr((e): GroupError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          case 'path-not-found':
+            return { ...e, type: 'not-found' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(UserIdentityProfileSchema, response.body).mapErr(
+          (e): GroupError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
+   * Get a member's health profile within a group
+   * Uses the /groups/{groupId}/members/{userId}/health-profile endpoint
+   * Returns the profile object directly (not wrapped in {status, message, data})
+   */
+  public getMemberHealthProfile(
+    groupId: string,
+    userId: string
+  ): ResultAsync<UserHealthProfile, GroupError> {
+    return httpGet(
+      this.clients.auth,
+      AppUrl.GROUP_MEMBER_HEALTH_PROFILE(groupId, userId)
+    )
+      .mapErr((e): GroupError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          case 'path-not-found':
+            return { ...e, type: 'not-found' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(UserHealthProfileSchema, response.body).mapErr(
+          (e): GroupError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
   }
 
   /**

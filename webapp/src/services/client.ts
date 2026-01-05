@@ -15,6 +15,10 @@ export class AppUrl {
   static readonly GROUP_MEMBERS = (id: string) => `api/v1/user-service/groups/${id}/members`
   static readonly GROUP_MEMBER_BY_ID = (groupId: string, userId: string) =>
     `api/v1/user-service/groups/${groupId}/members/${userId}`
+  static readonly GROUP_MEMBER_IDENTITY_PROFILE = (groupId: string, userId: string) =>
+    `api/v1/user-service/groups/${groupId}/members/${userId}/identity-profile`
+  static readonly GROUP_MEMBER_HEALTH_PROFILE = (groupId: string, userId: string) =>
+    `api/v1/user-service/groups/${groupId}/members/${userId}/health-profile`
   static readonly GROUP_LEADER = (id: string) => `api/v1/user-service/groups/${id}/leader`
   static readonly GROUP_LEAVE = (id: string) => `api/v1/user-service/groups/${id}/members/me`
   static readonly USERS_ME = 'api/v1/user-service/users/me'

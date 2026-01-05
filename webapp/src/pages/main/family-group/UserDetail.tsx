@@ -111,13 +111,13 @@ const UserDetail = () => {
         const userResult = await userService.getUserById(userId);
         const user = userResult.isOk() ? userResult.value.data : null;
 
-        // Fetch identity profile
-        const identityResult = await userService.getUserIdentityProfile(userId);
-        const identityProfile = identityResult.isOk() ? identityResult.value.data : null;
+        // Fetch identity profile using group-specific endpoint
+        const identityResult = await groupService.getMemberIdentityProfile(id, userId);
+        const identityProfile = identityResult.isOk() ? identityResult.value : null;
 
-        // Fetch health profile
-        const healthResult = await userService.getUserHealthProfile(userId);
-        const healthProfile = healthResult.isOk() ? healthResult.value.data : null;
+        // Fetch health profile using group-specific endpoint
+        const healthResult = await groupService.getMemberHealthProfile(id, userId);
+        const healthProfile = healthResult.isOk() ? healthResult.value : null;
 
         setUserData({
           user,
@@ -426,7 +426,7 @@ const UserDetail = () => {
         )}
         {activeTab === 'favorite-dishes' && (
           <div className="text-center text-gray-500 py-8">
-            <p>Chưa có món ăn yêu thích.</p>
+            <p>Chưa cập nhật</p>
           </div>
         )}
       </div>
