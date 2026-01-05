@@ -4,6 +4,7 @@ from typing import Tuple, Sequence
 
 from sqlalchemy.exc import IntegrityError
 
+from app.enums import GroupRole
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.repositories.family_group_repository import FamilyGroupRepository
@@ -11,11 +12,11 @@ from app.repositories.group_membership_repository import GroupMembershipReposito
 from app.schemas.user_admin_schema import UserAdminUpdateSchema, UserAdminCreateSchema
 from app.models.family_group import GroupMembership
 from app.utils.password_utils import hash_password
-from app.enums import GroupRole
+from app.services.redis_service import redis_service
+
 
 from shopping_shared.exceptions import Conflict, NotFound
 from shopping_shared.utils.logger_utils import get_logger
-from app.services.redis_service import redis_service
 from shopping_shared.caching.redis_keys import RedisKeys
 
 logger = get_logger("Admin Service")
@@ -259,6 +260,10 @@ class AdminGroupService:
         if not updated_group:
             raise NotFound(f"Group with id {group_id} not found")
 
+        # Invalidate caches
+        await redis_service.delete_pattern(RedisKeys.ADMIN_GROUPS_LIST_WILDCARD)
+        await redis_service.delete_pattern(RedisKeys.admin_group_detail_key(str(group_id)))
+
         return updated_group
 
 
@@ -268,6 +273,10 @@ class AdminGroupService:
         if not group:
             raise NotFound(f"Group with id {group_id} not found")
         await self.group_repo.delete(group_id)
+        
+        # Invalidate caches
+        await redis_service.delete_pattern(RedisKeys.ADMIN_GROUPS_LIST_WILDCARD)
+        await redis_service.delete_pattern(RedisKeys.admin_group_detail_key(str(group_id)))
 
 
     # ===== Group Membership Management by Admin =====
@@ -295,6 +304,10 @@ class AdminGroupService:
                 added_by_user_id=added_by_user_id,
                 user=user_to_add
             )
+
+            # Invalidate members list cache
+            await redis_service.delete_pattern(RedisKeys.admin_group_members_list_key(str(group_id)))
+
             return membership
         except IntegrityError:
             # This happens if (user_id, group_id) already exists in the database
@@ -302,7 +315,6 @@ class AdminGroupService:
         except Exception as e:
             logger.error(f"Error adding member to group {group_id} for user {user_to_add.id}: {str(e)}", exc_info=True)
             raise
-
 
     async def remove_member_by_admin(
         self,
@@ -316,6 +328,9 @@ class AdminGroupService:
 
         await self.member_repo.remove_membership(user_id, group_id)
 
+        # Invalidate members list cache
+        await redis_service.delete_pattern(RedisKeys.admin_group_members_list_key(str(group_id)))
+
 
     async def update_member_role_by_admin(self, group_id: UUID, user_id: UUID, new_role: GroupRole):
         """Admin updates member role directly."""
@@ -323,6 +338,10 @@ class AdminGroupService:
             membership = await self.member_repo.update_role(user_id, group_id, new_role)
             if not membership:
                 raise NotFound("Membership not found.")
+            
+            # Invalidate members list cache
+            await redis_service.delete_pattern(RedisKeys.admin_group_members_list_key(str(group_id)))
+
             return membership
         except Exception as e:
             logger.error(f"Error updating member role for user {user_id} in group {group_id}: {str(e)}", exc_info=True)

@@ -5,6 +5,7 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request, require_system_role
+from app.decorators.cache_response import cache_response
 from app.views.base_view import BaseAPIView
 from app.enums import SystemRole
 from app.repositories.family_group_repository import FamilyGroupRepository
@@ -19,6 +20,7 @@ from shopping_shared.exceptions import NotFound, Conflict
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
+from shopping_shared.caching.redis_keys import RedisKeys
 
 logger = get_logger("Admin Group View")
 
@@ -67,6 +69,7 @@ class AdminGroupsView(BaseAdminGroupsView):
         ]
     )
     @require_system_role(SystemRole.ADMIN)
+    @cache_response(RedisKeys.ADMIN_GROUPS_LIST, ttl=60, page=1, page_size=10)
     async def get(self, request: Request):
         """
         List all family groups with pagination.
@@ -151,6 +154,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         ]
     )
     @require_system_role(SystemRole.ADMIN)
+    @cache_response(RedisKeys.ADMIN_GROUPS_DETAIL, ttl=300)
     async def get(self, request: Request, group_id: UUID):
         """
         Get a specific family group by ID.
@@ -279,6 +283,7 @@ class AdminGroupMembersView(BaseAdminGroupsView):
         ]
     )
     @require_system_role(SystemRole.ADMIN)
+    @cache_response(key_pattern=RedisKeys.ADMIN_GROUP_MEMBERS_LIST, ttl=60)
     async def get(self, request: Request, group_id: UUID):
         """
         List all members of a specific family group.

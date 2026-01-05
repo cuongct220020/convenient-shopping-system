@@ -15,9 +15,23 @@ class RedisKeys:
     # Admin: User List
     ADMIN_USERS_LIST = f"{USER_SERVICE}:admin:users:list:p{{page}}:s{{page_size}}"
     ADMIN_USERS_LIST_WILDCARD = f"{USER_SERVICE}:admin:users:list:*"
-    
+
     # Admin: User Detail
     ADMIN_USER_DETAIL = f"{USER_SERVICE}:admin:users:detail:{{user_id}}"
+
+    # Admin: Group List
+    ADMIN_GROUPS_LIST = f"{USER_SERVICE}:admin:groups:list:p{{page}}:s{{page_size}}"
+    ADMIN_GROUPS_LIST_WILDCARD = f"{USER_SERVICE}:admin:groups:list:*"
+
+    # Admin: Group Detail
+    ADMIN_GROUPS_DETAIL = f"{USER_SERVICE}:admin:groups:detail:{{group_id}}"
+
+    # Admin Group Member LIST
+    ADMIN_GROUP_MEMBERS_LIST = f"{USER_SERVICE}:admin:groups:{{group_id}}:members"
+
+    # Group Management
+    GROUP_USERS_LIST = f"{USER_SERVICE}:groups:user:{{user_id}}:list"
+    GROUP_USERS_DETAIL = f"{USER_SERVICE}:groups:user:detail:{{group_id}}"
 
 
     # --- Dynamic Key Generators (Methods used by Services) ---
@@ -55,3 +69,13 @@ class RedisKeys:
     def admin_user_detail_key(user_id: str) -> str:
         """Returns the specific key for a user detail using the constant pattern."""
         return RedisKeys.ADMIN_USER_DETAIL.format(user_id=user_id)
+
+    @staticmethod
+    def admin_group_detail_key(group_id: str) -> str:
+        """Returns the specific key for a group detail using the constant pattern."""
+        return RedisKeys.ADMIN_GROUPS_DETAIL.format(group_id=group_id)
+
+    @staticmethod
+    def admin_group_members_list_key(group_id: str) -> str:
+        """Returns the specific key for a group's members list using the constant pattern."""
+        return RedisKeys.ADMIN_GROUP_MEMBERS_LIST.format(group_id=group_id)
