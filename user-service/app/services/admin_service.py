@@ -30,7 +30,7 @@ class AdminUserService:
     async def get_user_by_admin(self, user_id: UUID):
         """Fetch a user by ID for admin."""
         user = await self.user_repo.get_user_with_profiles(user_id)
-        if not user:
+        if not user or user.is_deleted == True:
             raise NotFound(f"User with id {user_id} not found")
         return user
 
@@ -184,7 +184,7 @@ class AdminUserService:
 
         # Invalidate caches
         await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
-        await redis_service.delete_pattern(RedisKeys.admin_user_detail_key(str(user_id)))
+        await redis_service.delete_key(RedisKeys.admin_user_detail_key(str(user_id)))
 
         return updated_user
 
@@ -193,17 +193,22 @@ class AdminUserService:
         """Delete a user by an admin. Using soft_delete."""
         # soft_delete returns False if user doesn't exist OR is already deleted
         deleted = await self.user_repo.soft_delete(user_id)
-        
+
         if not deleted:
              # Optimization: soft_delete failure implies user is not found or already deleted.
              # No need for an extra SELECT query to confirm.
              raise NotFound(f"User with id {user_id} not found")
 
-        # Invalidate caches
-        await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
-        await redis_service.delete_pattern(RedisKeys.admin_user_detail_key(str(user_id)))
-
         logger.info(f"Admin deleted user: {user_id}")
+
+        # Invalidate caches (do this after successful deletion to avoid rollback on cache errors)
+        try:
+            await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
+            # Delete the specific user detail cache entry
+            await redis_service.delete_key(RedisKeys.admin_user_detail_key(str(user_id)))
+        except Exception as e:
+            # Log cache invalidation errors but don't let them affect the main operation
+            logger.error(f"Error invalidating cache after user deletion: {e}", exc_info=True)
 
 
 

@@ -212,6 +212,18 @@ class RedisService:
 
 
     @classmethod
+    async def delete_key(cls, key: str):
+        """Deletes a specific key."""
+        try:
+            result = await redis_manager.client.delete(key)
+            if result > 0:
+                logger.info(f"Deleted key: {key}")
+            else:
+                logger.debug(f"Key not found for deletion: {key}")
+        except Exception as e:
+            logger.error(f"Failed to delete key {key}: {e}")
+
+    @classmethod
     async def delete_pattern(cls, pattern: str):
         """Deletes all keys matching the pattern."""
         try:
@@ -219,7 +231,7 @@ class RedisService:
             keys = []
             async for key in redis_manager.client.scan_iter(match=pattern):
                 keys.append(key)
-            
+
             if keys:
                 await redis_manager.client.delete(*keys)
                 logger.info(f"Deleted {len(keys)} keys matching {pattern}")

@@ -10,6 +10,8 @@ from app.schemas.family_group_schema import FamilyGroupCreateSchema, FamilyGroup
 from app.repositories.family_group_repository import FamilyGroupRepository
 from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.services.kafka_service import kafka_service
+from app.services.redis_service import redis_service
+from shopping_shared.caching.redis_keys import RedisKeys
 
 from shopping_shared.exceptions import Forbidden, NotFound, Conflict
 from shopping_shared.utils.logger_utils import get_logger
@@ -75,6 +77,10 @@ class FamilyGroupService:
         full_group = await self.repository.get_with_details(group.id)
         
         logger.info(f"Created family group {group.id} with HEAD_CHEF {user_id}")
+
+        # 4. Invalidate user's group list cache
+        await redis_service.delete_pattern(RedisKeys.user_groups_list_key(user_id=str(user_id)))
+
         return full_group
 
 
@@ -96,6 +102,9 @@ class FamilyGroupService:
         if not updated_group:
             raise NotFound(f"Group with id {group_id} not found")
 
+        # Invalidate cache
+        await redis_service.delete_pattern(RedisKeys.group_detail_key(str(group_id)))
+
         # 3. Return full details
         return await self.repository.get_with_details(group_id)
 
@@ -106,6 +115,11 @@ class FamilyGroupService:
             raise Forbidden("Only the head_chef can delete this group.")
 
         await self.repository.delete(group_id)
+        
+        # Invalidate cache
+        await redis_service.delete_pattern(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_pattern(RedisKeys.user_groups_list_key(user_id=str(user_id)))
+        
         logger.info(f"Deleted family group {group_id} by user {user_id}")
 
 
@@ -158,6 +172,11 @@ class FamilyGroupService:
         logger.info(f"Added user {target_user.id} to group {group_id}")
         membership = await self.member_repo.add_membership(target_user.id, group_id, GroupRole.MEMBER, requester_id)
 
+        # Invalidate cache
+        await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(target_user.id)))
+        await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
+
         return membership
 
 
@@ -189,6 +208,11 @@ class FamilyGroupService:
 
         await self.member_repo.remove_membership(target_user_id, group_id)
         logger.info(f"Removed user {target_user_id} from group {group_id}")
+
+        # Invalidate cache
+        await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(target_user_id)))
+        await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
 
         await kafka_service.publish_remove_user_group_message(
             requester_id=str(requester_id),
@@ -226,6 +250,11 @@ class FamilyGroupService:
             raise NotFound("Failed to update membership role.")
 
         logger.info(f"Updated role for user {target_user_id} in group {group_id} to {new_role}")
+
+        # Invalidate cache
+        await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(target_user_id)))
+        await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
 
 
         if new_role == GroupRole.HEAD_CHEF:
@@ -312,6 +341,11 @@ class FamilyGroupService:
 
         await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
         logger.info(f"User {user_id} left group {group_id}")
+
+        # Invalidate cache
+        await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(user_id)))
+        await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
 
         # Publish user leave group events
         await kafka_service.publish_user_leave_group_message(

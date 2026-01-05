@@ -4,6 +4,8 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request
+from app.decorators.cache_response import cache_response
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.views.base_view import BaseAPIView
 from app.repositories.user_profile_repository import (
     UserIdentityProfileRepository,
@@ -19,6 +21,7 @@ from app.schemas.user_profile_schema import (
     UserHealthProfileSchema,
     UserHealthProfileUpdateSchema
 )
+from shopping_shared.caching.redis_keys import RedisKeys
 
 from shopping_shared.exceptions import NotFound
 from shopping_shared.utils.logger_utils import get_logger
@@ -44,6 +47,7 @@ class MeIdentityProfileView(BaseAPIView):
             )
         ]
     )
+    @cache_response(key_pattern=RedisKeys.USER_PROFILE_IDENTITY, ttl=900)
     async def get(self, request: Request):
         """
         Retrieves the identity profile of the authenticated user.
@@ -52,7 +56,8 @@ class MeIdentityProfileView(BaseAPIView):
         user_id = request.ctx.auth_payload["sub"]
 
         user_identity_profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
-        user_identity_profile_service = UserIdentityProfileService(user_identity_profile_repo)
+        group_membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        user_identity_profile_service = UserIdentityProfileService(user_identity_profile_repo, group_membership_repo)
 
         try:
             profile = await user_identity_profile_service.get_identity_profile(user_id)
@@ -103,7 +108,8 @@ class MeIdentityProfileView(BaseAPIView):
         validated_data = request.ctx.validated_data
 
         user_identity_profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
-        user_identity_profile_service = UserIdentityProfileService(user_identity_profile_repo)
+        group_membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
+        user_identity_profile_service = UserIdentityProfileService(user_identity_profile_repo, group_membership_repo)
 
         try:
             updated_profile = await user_identity_profile_service.update_identity_profile(user_id, validated_data)
@@ -151,6 +157,7 @@ class MeHealthProfileView(BaseAPIView):
             )
         ]
     )
+    @cache_response(key_pattern=RedisKeys.USER_PROFILE_HEALTH, ttl=900)
     async def get(self, request: Request):
         """
         Retrieves the health profile of the authenticated user.
@@ -160,7 +167,8 @@ class MeHealthProfileView(BaseAPIView):
         user_id = request.ctx.auth_payload["sub"]
 
         user_health_profile_repo = UserHealthProfileRepository(request.ctx.db_session)
-        user_health_service = UserHealthProfileService(user_health_profile_repo)
+        group_membership_repo = GroupMembershipRepository(request.ctx.db_session)
+        user_health_service = UserHealthProfileService(user_health_profile_repo, group_membership_repo)
 
         try:
             profile = await user_health_service.get_health_profile(user_id)
@@ -210,7 +218,8 @@ class MeHealthProfileView(BaseAPIView):
         validated_data = request.ctx.validated_data
 
         user_health_profile_repo = UserHealthProfileRepository(request.ctx.db_session)
-        user_health_service = UserHealthProfileService(user_health_profile_repo)
+        group_membership_repo = GroupMembershipRepository(request.ctx.db_session)
+        user_health_service = UserHealthProfileService(user_health_profile_repo, group_membership_repo)
 
         try:
             updated_profile = await user_health_service.update_health_profile(user_id, validated_data)

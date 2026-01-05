@@ -53,6 +53,13 @@ def cache_response(key_pattern: str, ttl: int, **defaults):
                     for k, v in req.args.items():
                         format_data[k] = v[0] if v else ""
 
+                # Special handling: Inject user_id from auth_payload if present
+                # This allows caching per-user without user_id in path/query
+                if hasattr(req, "ctx") and hasattr(req.ctx, "auth_payload") and req.ctx.auth_payload:
+                    sub = req.ctx.auth_payload.get("sub")
+                    if sub and "user_id" not in format_data:
+                        format_data["user_id"] = sub
+
                 key = key_pattern.format(**format_data)
             except KeyError as e:
                 # This happens if key_pattern expects a param that is missing (e.g. {id} but not in kwargs)
@@ -65,7 +72,7 @@ def cache_response(key_pattern: str, ttl: int, **defaults):
             # 3. Try to get from Cache
             cached_data = await redis_service.get_cache(key)
             if cached_data:
-                # logger.debug(f"Cache HIT: {key}")
+                logger.debug(f"Cache HIT: {key}")
                 # We assume the cached data is the dict that goes into json response
                 return sanic_json(cached_data)
 

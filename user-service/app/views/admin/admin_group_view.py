@@ -154,7 +154,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         ]
     )
     @require_system_role(SystemRole.ADMIN)
-    @cache_response(RedisKeys.ADMIN_GROUPS_DETAIL, ttl=300)
+    @cache_response(RedisKeys.ADMIN_GROUP_DETAIL, ttl=300)
     async def get(self, request: Request, group_id: UUID):
         """
         Get a specific family group by ID.

@@ -4,6 +4,7 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request
+from app.decorators.cache_response import cache_response
 from app.views.base_view import BaseAPIView
 
 from app.schemas.user_tag_schema import (
@@ -15,8 +16,10 @@ from app.schemas.user_tag_schema import (
 from app.services.user_tag_service import UserTagService
 from app.repositories.user_tag_repository import UserTagRepository
 
+from shopping_shared.caching.redis_keys import RedisKeys
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
+
 
 logger = get_logger("Me Tag View")
 
@@ -36,6 +39,7 @@ class MeTagsView(BaseAPIView):
             )
         ]
     )
+    @cache_response(key_pattern=RedisKeys.USER_TAGS, ttl=900)
     async def get(self, request: Request):
         """
         Get all tags for current user, grouped by category.

@@ -5,6 +5,7 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request, require_group_role
+from app.decorators.cache_response import cache_response
 from app.views.groups.base_group_view import BaseGroupView
 from app.enums import GroupRole
 from app.schemas.family_group_schema import (
@@ -18,6 +19,7 @@ from shopping_shared.exceptions import NotFound, Forbidden, Conflict
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
+from shopping_shared.caching.redis_keys import RedisKeys
 
 logger = get_logger("Group Members View")
 
@@ -44,6 +46,7 @@ class GroupMembersView(BaseGroupView):
         ]
     )
     @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
+    @cache_response(key_pattern=RedisKeys.GROUP_MEMBERS_LIST, ttl=120)
     async def get(self, request: Request, group_id: UUID):
         """List all members of a specific family group."""
         service = self._get_service(request)
@@ -58,20 +61,20 @@ class GroupMembersView(BaseGroupView):
 
             return self.success_response(
                 data=group_detailed,
-                message="Group members listed successfully",
+                message="Group members listed successfully.",
                 status_code=200
             )
         except NotFound:
             logger.error(f"Group with id {group_id} not found")
             return self.error_response(
-                message="Group not found",
+                message="Group not found.",
                 status_code=404
             )
         except Exception as e:
-            logger.error("Error listing group members", exc_info=e)
+            logger.error("Error listing group members.", exc_info=e)
             # Use helper method from base class
             return self.error_response(
-                message="Failed to list group members",
+                message="Failed to list group members.",
                 status_code=500
             )
 

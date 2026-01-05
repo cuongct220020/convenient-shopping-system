@@ -10,28 +10,30 @@ class RedisKeys:
     USER_SERVICE = "user-service"
 
     # --- Cache Patterns (Constants used for Decorators & Wildcard Deletion) ---
-    # Patterns contain placeholders like {page}, {id} for decorators to fill.
+
+    # User Core & Profile (Unified for both 'Me' and 'Member' views)
+    USER_CORE = f"{USER_SERVICE}:users:{{user_id}}:core"
+    USER_PROFILE_IDENTITY = f"{USER_SERVICE}:users:{{user_id}}:profile:identity"
+    USER_PROFILE_HEALTH = f"{USER_SERVICE}:users:{{user_id}}:profile:health"
+    USER_TAGS = f"{USER_SERVICE}:users:{{user_id}}:tags"
     
-    # Admin: User List
+    # User's Groups (List of groups a user belongs to)
+    USER_GROUPS_LIST = f"{USER_SERVICE}:users:{{user_id}}:groups"
+
+    # Group Public/Member Views
+    GROUP_DETAIL = f"{USER_SERVICE}:groups:{{group_id}}:detail"
+    GROUP_MEMBERS_LIST = f"{USER_SERVICE}:groups:{{group_id}}:members"
+
+    # Admin User Keys
     ADMIN_USERS_LIST = f"{USER_SERVICE}:admin:users:list:p{{page}}:s{{page_size}}"
     ADMIN_USERS_LIST_WILDCARD = f"{USER_SERVICE}:admin:users:list:*"
+    ADMIN_USER_DETAIL = f"{USER_SERVICE}:admin:users:{{user_id}}:detail"
 
-    # Admin: User Detail
-    ADMIN_USER_DETAIL = f"{USER_SERVICE}:admin:users:detail:{{user_id}}"
-
-    # Admin: Group List
+    # Admin Group Keys
     ADMIN_GROUPS_LIST = f"{USER_SERVICE}:admin:groups:list:p{{page}}:s{{page_size}}"
     ADMIN_GROUPS_LIST_WILDCARD = f"{USER_SERVICE}:admin:groups:list:*"
-
-    # Admin: Group Detail
-    ADMIN_GROUPS_DETAIL = f"{USER_SERVICE}:admin:groups:detail:{{group_id}}"
-
-    # Admin Group Member LIST
+    ADMIN_GROUP_DETAIL = f"{USER_SERVICE}:admin:groups:{{group_id}}:detail"
     ADMIN_GROUP_MEMBERS_LIST = f"{USER_SERVICE}:admin:groups:{{group_id}}:members"
-
-    # Group Management
-    GROUP_USERS_LIST = f"{USER_SERVICE}:groups:user:{{user_id}}:list"
-    GROUP_USERS_DETAIL = f"{USER_SERVICE}:groups:user:detail:{{group_id}}"
 
 
     # --- Dynamic Key Generators (Methods used by Services) ---
@@ -63,19 +65,44 @@ class RedisKeys:
         """Key for Idempotency Locks/Results."""
         return f"{RedisKeys.USER_SERVICE}:idempotency:{user_id}:{idem_key}"
 
-    # --- Helper methods to format patterns manually (if needed outside decorators) ---
+    # --- Helper methods to format patterns manually ---
+    
+    @staticmethod
+    def user_core_key(user_id: str) -> str:
+        return RedisKeys.USER_CORE.format(user_id=user_id)
+
+    @staticmethod
+    def user_profile_identity_key(user_id: str) -> str:
+        return RedisKeys.USER_PROFILE_IDENTITY.format(user_id=user_id)
+
+    @staticmethod
+    def user_profile_health_key(user_id: str) -> str:
+        return RedisKeys.USER_PROFILE_HEALTH.format(user_id=user_id)
+
+    @staticmethod
+    def user_tags_key(user_id: str) -> str:
+        return RedisKeys.USER_TAGS.format(user_id=user_id)
+    
+    @staticmethod
+    def user_groups_list_key(user_id: str) -> str:
+        return RedisKeys.USER_GROUPS_LIST.format(user_id=user_id)
+
+    @staticmethod
+    def group_detail_key(group_id: str) -> str:
+        return RedisKeys.GROUP_DETAIL.format(group_id=group_id)
+
+    @staticmethod
+    def group_members_list_key(group_id: str) -> str:
+        return RedisKeys.GROUP_MEMBERS_LIST.format(group_id=group_id)
 
     @staticmethod
     def admin_user_detail_key(user_id: str) -> str:
-        """Returns the specific key for a user detail using the constant pattern."""
         return RedisKeys.ADMIN_USER_DETAIL.format(user_id=user_id)
 
     @staticmethod
     def admin_group_detail_key(group_id: str) -> str:
-        """Returns the specific key for a group detail using the constant pattern."""
-        return RedisKeys.ADMIN_GROUPS_DETAIL.format(group_id=group_id)
+        return RedisKeys.ADMIN_GROUP_DETAIL.format(group_id=group_id)
 
     @staticmethod
     def admin_group_members_list_key(group_id: str) -> str:
-        """Returns the specific key for a group's members list using the constant pattern."""
         return RedisKeys.ADMIN_GROUP_MEMBERS_LIST.format(group_id=group_id)
