@@ -1,3 +1,4 @@
+import uuid
 from typing import Dict, Any
 from core.database import get_db
 from models.component_existence import ComponentExistence
@@ -5,7 +6,9 @@ from models.component_existence import ComponentExistence
 
 async def handle_component_existence_update(data: Dict[str, Any]):
     db = next(get_db())
-    group_id = data.get("group_id")
+    group_id_raw = data.get("group_id")
+    # Convert to UUID if it's a string
+    group_id = uuid.UUID(group_id_raw) if isinstance(group_id_raw, str) else group_id_raw
     unit_names = data.get("unit_names", [])
 
     with db.begin():

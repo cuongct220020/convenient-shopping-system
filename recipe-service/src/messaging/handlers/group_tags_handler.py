@@ -1,3 +1,4 @@
+import uuid
 from typing import Dict, Any
 from core.database import get_db
 from models.group_preference import GroupPreference
@@ -5,7 +6,9 @@ from models.group_preference import GroupPreference
 
 async def handle_group_tags_update(data: Dict[str, Any]):
     db = next(get_db())
-    group_id = data.get("group_id")
+    group_id_raw = data.get("group_id")
+    # Convert to UUID if it's a string
+    group_id = uuid.UUID(group_id_raw) if isinstance(group_id_raw, str) else group_id_raw
     group_tag_list = data.get("group_tag_list", [])
 
     with db.begin():
