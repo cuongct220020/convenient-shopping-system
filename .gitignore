@@ -218,6 +218,10 @@ __marimo__/
 
 # VSCode
 .vscode/
+
+.env
+
+#*.db
 .DS_Store
 
 shopping_shared.egg-info
