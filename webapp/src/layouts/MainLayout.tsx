@@ -1,9 +1,15 @@
-import React from 'react'
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Apple, Soup, BookOpen, Star, User } from 'lucide-react'
+import React from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Apple,
+  Soup,
+  BookOpen,
+  ShoppingCart,
+  User
+} from 'lucide-react';
 
 // Define the available tab names
-type TabName = 'nutrition' | 'food' | 'diary' | 'favorites' | 'profile'
+type TabName = 'ingredient-recipe' | 'food-storage' | 'meal' | 'family-group' | 'profile';
 
 export default function MainLayout() {
   const navigate = useNavigate()
@@ -11,14 +17,14 @@ export default function MainLayout() {
 
   // Determine active tab from current location
   const currentActiveTab = (() => {
-    const path = location.pathname
-    if (path.includes('/nutrition')) return 'nutrition'
-    if (path.includes('/food')) return 'food'
-    if (path.includes('/diary')) return 'diary'
-    if (path.includes('/favorites')) return 'favorites'
-    if (path.includes('/profile')) return 'profile'
-    return 'profile' // default
-  })()
+    const path = location.pathname;
+    if (path.includes('/ingredient-recipe')) return 'ingredient-recipe';
+    if (path.includes('/food-storage')) return 'food-storage';
+    if (path.includes('/meal')) return 'meal';
+    if (path.includes('/family-group')) return 'family-group';
+    if (path.includes('/profile')) return 'profile';
+    return 'profile'; // default
+  })();
 
   const handlePress = (tab: TabName) => {
     navigate(`/main/${tab}`)
@@ -27,80 +33,70 @@ export default function MainLayout() {
   return (
     <div className="relative min-h-screen bg-white">
       {/* Main Content Area - Renders the specific screen content */}
-      <main className="pb-16">
+      <main className="pb-16 max-w-sm mx-auto w-full">
         <Outlet />
       </main>
 
       {/* Bottom Navigation Bar - Fixed at bottom */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-16 w-full max-w-sm items-center justify-around border-t border-gray-200 bg-gray-100 p-2.5">
-        {/* Tab 1: Nutrition (Apple) */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 px-2.5 py-2.5 h-16 flex justify-around items-center max-w-sm mx-auto w-full z-50">
+
+        {/* Tab 1: Ingredient Recipe (Apple) */}
         <TabItem
-          isActive={currentActiveTab === 'nutrition'}
-          onPress={() => handlePress('nutrition')}
+          isActive={currentActiveTab === 'ingredient-recipe'}
+          onPress={() => handlePress('ingredient-recipe')}
         >
           <Apple
             size={24}
-            className={
-              currentActiveTab === 'nutrition'
-                ? 'fill-red-700 text-red-700'
-                : 'text-gray-400'
-            }
+            strokeWidth={2.5}
+            className={currentActiveTab === 'ingredient-recipe' ? 'text-[#C3485C] fill-[#C3485C]' : 'text-gray-400'}
           />
         </TabItem>
 
-        {/* Tab 2: Meals (Bowl) */}
+        {/* Tab 2: Food Storage (Bowl) */}
         <TabItem
-          isActive={currentActiveTab === 'food'}
-          onPress={() => handlePress('food')}
+          isActive={currentActiveTab === 'food-storage'}
+          onPress={() => handlePress('food-storage')}
         >
           <Soup
             size={24}
-            className={
-              currentActiveTab === 'food' ? 'text-red-700' : 'text-gray-400'
-            }
+            strokeWidth={2.5}
+            className={currentActiveTab === 'food-storage' ? 'text-[#C3485C]' : 'text-gray-400'}
           />
         </TabItem>
 
-        {/* Tab 3: Diary (Book) */}
+        {/* Tab 3: Meal (Book) */}
         <TabItem
-          isActive={currentActiveTab === 'diary'}
-          onPress={() => handlePress('diary')}
+          isActive={currentActiveTab === 'meal'}
+          onPress={() => handlePress('meal')}
         >
           <BookOpen
             size={24}
-            className={
-              currentActiveTab === 'diary' ? 'text-red-700' : 'text-gray-400'
-            }
+            strokeWidth={2.5}
+            className={currentActiveTab === 'meal' ? 'text-[#C3485C]' : 'text-gray-400'}
           />
         </TabItem>
 
-        {/* Tab 4: Favorites (Star) */}
+        {/* Tab 4: Family Group (Shopping) */}
         <TabItem
-          isActive={currentActiveTab === 'favorites'}
-          onPress={() => handlePress('favorites')}
+          isActive={currentActiveTab === 'family-group'}
+          onPress={() => handlePress('family-group')}
         >
-          <Star
+          <ShoppingCart
             size={24}
-            className={
-              currentActiveTab === 'favorites'
-                ? 'text-red-700'
-                : 'text-gray-400'
-            }
+            strokeWidth={2.5}
+            className={currentActiveTab === 'family-group' ? 'text-[#C3485C]' : 'text-gray-400'}
           />
         </TabItem>
 
-        {/* Tab 5: Profile (User) - Active in screenshots */}
+        {/* Tab 5: Profile (User)1*/}
         <TabItem
           isActive={currentActiveTab === 'profile'}
           onPress={() => handlePress('profile')}
         >
           <User
             size={24}
-            className={
-              currentActiveTab === 'profile'
-                ? 'fill-red-700 text-red-700'
-                : 'text-gray-400'
-            }
+            strokeWidth={2.5}
+            className={currentActiveTab === 'profile' ? 'text-[#C3485C] fill-[#C3485C]' : 'text-gray-400'}
           />
         </TabItem>
       </nav>
@@ -120,9 +116,9 @@ const TabItem: React.FC<TabItemProps> = ({ isActive, children, onPress }) => {
     <button
       onClick={onPress}
       className={`
-        flex h-10 w-12 items-center justify-center rounded-xl
-        transition-colors duration-200 hover:bg-red-100
-        ${isActive ? 'bg-orange-100' : ''}
+        w-12 h-10 flex justify-center items-center rounded-xl
+        transition-colors duration-200 hover:bg-[#FFD7C1]
+        ${isActive ? 'bg-[#FFD7C1]' : ''}
       `}
     >
       {children}
