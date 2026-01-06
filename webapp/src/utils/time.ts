@@ -12,4 +12,14 @@ export class Time {
       .toString()
       .padStart(2, '0')}:${(time % 60).toString().padStart(2, '0')}`
   }
+
+  public static DD_MM_YYYY(time: number | Date) {
+    if (typeof time === 'number') {
+      time = new Date(time * 1000)
+    }
+    const dd = time.getDate().toString().padStart(2, '0')
+    const mm = (time.getMonth() + 1).toString().padStart(2, '0')
+    const yyyy = time.getFullYear()
+    return `${dd}/${mm}/${yyyy}`
+  }
 }

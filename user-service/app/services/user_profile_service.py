@@ -21,14 +21,15 @@ class UserIdentityProfileService:
     def __init__(self, repo: UserIdentityProfileRepository):
         self.repository = repo
 
-    async def get(self, user_id: UUID) -> UserIdentityProfile:
+    async def get_identity_profile(self, user_id: UUID) -> UserIdentityProfile:
         """
         Get identity profile by user_id. Always returns a profile (creates default if not exists).
         Use case: GET /users/me/profile/identity
         """
         return await self.repository.get_or_create_for_user(user_id)
 
-    async def update(self, user_id: UUID, update_data: UserIdentityProfileUpdateSchema) -> UserIdentityProfile:
+
+    async def update_identity_profile(self, user_id: UUID, update_data: UserIdentityProfileUpdateSchema) -> UserIdentityProfile:
         """
         Update identity profile. Creates default profile first if doesn't exist, then updates.
         Use case: PATCH /users/me/profile/identity
@@ -89,14 +90,16 @@ class UserHealthProfileService:
     def __init__(self, repo: UserHealthProfileRepository):
         self.repository = repo
 
-    async def get(self, user_id: UUID) -> UserHealthProfile:
+
+    async def get_health_profile(self, user_id: UUID) -> UserHealthProfile:
         """
         Get health profile by user_id. Always returns a profile (creates default if not exists).
         Use case: GET /users/me/profile/health
         """
         return await self.repository.get_or_create_for_user(user_id)
 
-    async def update(self, user_id: UUID, update_data: UserHealthProfileUpdateSchema) -> UserHealthProfile:
+
+    async def update_health_profile(self, user_id: UUID, update_data: UserHealthProfileUpdateSchema) -> UserHealthProfile:
         """
         Update health profile. Creates default profile first if doesn't exist, then updates.
         Use case: PATCH /users/me/profile/health

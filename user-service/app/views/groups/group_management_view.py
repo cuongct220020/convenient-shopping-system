@@ -50,7 +50,7 @@ class GroupView(BaseGroupView):
         service = self._get_service(request)
 
         try:
-            group = await service.create_group(
+            group = await service.create_group_by_user(
                 user_id=user_id,
                 group_data=validated_data
             )
@@ -68,6 +68,7 @@ class GroupView(BaseGroupView):
                 message="Failed to create group",
                 status_code=500
             )
+
 
     @openapi.definition(
         summary="List authenticated user's family groups",
@@ -93,11 +94,11 @@ class GroupView(BaseGroupView):
         service = self._get_service(request)
 
         try:
-            memberships = await service.get_user_groups(user_id)
+            memberships_data = await service.get_user_groups(user_id)
 
             # Convert memberships to user group details
             groups = []
-            for membership in memberships:
+            for membership, member_count in memberships_data:
                 # Get the group details
                 group = membership.group
 
@@ -108,7 +109,7 @@ class GroupView(BaseGroupView):
                     group_avatar_url=group.group_avatar_url,
                     creator=group.creator,
                     role_in_group=membership.role,
-                    member_count=len(group.group_memberships)  # Use the eager loaded memberships for count
+                    member_count=member_count
                 )
 
                 groups.append(user_group)
@@ -133,10 +134,6 @@ class GroupView(BaseGroupView):
 class GroupDetailView(BaseGroupView):
     """Handles operations on a specific family group."""
 
-    decorators = [
-        require_group_role(GroupRole.HEAD_CHEF),  # Only HEAD_CHEF can manage group details
-    ]
-
     @openapi.definition(
         summary="Retrieve detailed family group information",
         description="Retrieves comprehensive details of a specific family group, including group information, member list, and their roles within the group.",
@@ -160,6 +157,7 @@ class GroupDetailView(BaseGroupView):
             )
         ]
     )
+    @require_group_role(GroupRole.HEAD_CHEF)
     async def get(self, request: Request, group_id: UUID):
         """Get details of a specific family group."""
         service = self._get_service(request)
@@ -215,13 +213,19 @@ class GroupDetailView(BaseGroupView):
         ]
     )
     @validate_request(FamilyGroupUpdateSchema)
+    @require_group_role(GroupRole.HEAD_CHEF)
     async def put(self, request: Request, group_id: UUID):
         """Update details of a specific family group."""
+        user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
         service = self._get_service(request)
 
         try:
-            updated_group = await service.update(group_id, validated_data)
+            updated_group = await service.update_group_info_by_head_chef(
+                user_id=user_id,
+                group_id=group_id,
+                validated_data=validated_data
+            )
 
             # Use helper method from base class
             return self.success_response(
@@ -260,13 +264,17 @@ class GroupDetailView(BaseGroupView):
             Response(content=get_openapi_body(GenericResponse), status=404, description="Family group not found.")
         ]
     )
+    @require_group_role(GroupRole.HEAD_CHEF)
     async def delete(self, request: Request, group_id: UUID):
         """Delete a specific family group."""
         user_id = request.ctx.auth_payload["sub"]
         service = self._get_service(request)
 
         try:
-            await service.delete_group_by_creator(user_id, group_id)
+            await service.delete_group_by_head_chef(
+                user_id=user_id,
+                group_id=group_id
+            )
 
             # Use helper method from base class
             return self.success_response(

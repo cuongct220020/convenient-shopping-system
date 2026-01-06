@@ -102,28 +102,17 @@ class GroupMembersView(BaseGroupView):
         requester_id = request.ctx.auth_payload["sub"]
         requester_username = request.ctx.auth_payload["username"]
         validated_data = request.ctx.validated_data
-        identifier = validated_data.identifier
+        user_to_add_identifier = validated_data.identifier
 
         service = self._get_service(request)
 
         try:
-            # Find the target user by identifier (email or username)
-            # First, try to find by email
-            target_user = await service.user_repo.get_by_email(identifier)
-
-            # If not found by email, try to find by username
-            if not target_user:
-                target_user = await service.user_repo.get_by_username(identifier)
-
-            if not target_user:
-                raise NotFound(f"User with identifier '{identifier}' not found")
-
             # Use the service method to add member by email (which internally handles the permission logic)
             membership = await service.add_member_by_identifier(
                 requester_id=requester_id,
                 requester_username=requester_username,
                 group_id=group_id,
-                user_to_add=target_user
+                user_to_add_identifier=user_to_add_identifier
             )
 
             # Use helper method from base class
@@ -133,19 +122,19 @@ class GroupMembersView(BaseGroupView):
                 status_code=201
             )
         except NotFound as e:
-            logger.error(f"User not found: {identifier}", exc_info=e)
+            logger.error(f"User not found: {user_to_add_identifier}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=404
             )
         except Forbidden as e:
-            logger.error(f"Permission denied adding member: {identifier}", exc_info=e)
+            logger.error(f"Permission denied adding member: {user_to_add_identifier}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=403
             )
         except Conflict as e:
-            logger.warning(f"Conflict when adding member: {identifier}", exc_info=e)
+            logger.warning(f"Conflict when adding member: {user_to_add_identifier}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=409
@@ -244,7 +233,7 @@ class GroupMemberDetailView(BaseGroupView):
         service = self._get_service(request)
 
         try:
-            await service.remove_member(
+            await service.remove_member_by_head_chef(
                 requester_id=requester_id,
                 requester_username=requester_username,
                 group_id=group_id,
@@ -302,7 +291,12 @@ class GroupMemberMeView(BaseGroupView):
         service = self._get_service(request)
 
         try:
-            await service.leave_group(user_id, user_name, user_email, group_id)
+            await service.leave_group(
+                user_id=user_id,
+                user_name=user_name,
+                user_email=user_email,
+                group_id=group_id
+            )
 
             # Use helper method from base class
             return self.success_response(

@@ -41,7 +41,7 @@ class MeView(BaseAPIView):
         user_service = UserService(user_repo=user_repo)
 
         try:
-            user = await user_service.get(user_id)
+            user = await user_service.get_user_core_info(user_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -86,7 +86,7 @@ class MeView(BaseAPIView):
         user_service = UserService(user_repo=user_repo)
 
         try:
-            updated_user = await user_service.update(user_id, validated_data)
+            updated_user = await user_service.update_user_core_info(user_id, validated_data)
 
             # Use helper method from base class
             return self.success_response(
