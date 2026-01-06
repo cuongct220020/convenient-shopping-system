@@ -7,14 +7,14 @@ from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate, Ingre
 from models.recipe_component import Ingredient
 from enums.category import Category
 from .crud_router_base import create_crud_router
-from shared.shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
+from shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
 from core.database import get_db
 
 ingredient_crud = IngredientCRUD(Ingredient)
 
 ingredient_router = APIRouter(
     prefix="/v2/ingredients",
-    tags=["ingredients"]
+    tags=["Ingredients"]
 )
 
 @ingredient_router.get(
@@ -45,7 +45,7 @@ async def search_ingredients(
     description="Filter ingredients by category with cursor-based pagination. Returns a paginated list of ingredients matching the specified category."
 )
 def filter_ingredients_by_category(
-    category: Category = Query(..., description="Category to filter ingredients by", examples=[Category.vegetables, Category.fresh_meat]),
+    category: Category = Query(..., description="Category to filter ingredients by", example=Category.vegetables),
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
     limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)

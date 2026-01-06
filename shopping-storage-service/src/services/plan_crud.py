@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import select, desc
 from fastapi import HTTPException
-from shared.shopping_shared.crud.crud_base import CRUDBase
+from shopping_shared.crud.crud_base import CRUDBase
 from models.shopping_plan import ShoppingPlan
 from schemas.plan_schemas import PlanCreate, PlanUpdate
 from enums.plan_status import PlanStatus

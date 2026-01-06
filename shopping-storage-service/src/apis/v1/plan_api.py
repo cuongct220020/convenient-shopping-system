@@ -10,7 +10,7 @@ from services.report_process import report_process
 from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse, PlanReport
 from models.shopping_plan import ShoppingPlan
 from enums.plan_status import PlanStatus
-from shared.shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
+from shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
 from .crud_router_base import create_crud_router
 from core.database import get_db
 
