@@ -1,20 +1,17 @@
+import uuid
 from fastapi import APIRouter, status, Depends, Query, HTTPException, Body, Path
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import List, Optional
-
 from services.recipe_crud import RecipeCRUD
 from services.recommender import Recommender
 from models.recipe_component import Recipe
 from schemas.recipe_flattened_schemas import RecipeQuantityInput, FlattenedIngredientsResponse, FlattenedIngredientItem
 from schemas.recipe_schemas import RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 from .crud_router_base import create_crud_router
+from shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
 from core.database import get_db
 from utils.custom_mapping import recipe_detailed_mapping
-
-
-from shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
-from shopping_shared.middleware.fastapi_auth import CurrentUser
 
 recipe_crud = RecipeCRUD(Recipe)
 
@@ -30,22 +27,19 @@ recipe_router = APIRouter(
     description="Get recommended recipes for a group based on ingredient availability and tag preferences. Returns top 10 recipes."
 )
 def recommend_recipes(
-    current_user: CurrentUser,
-    group_id: int = Query(..., ge=1, description="Group ID to get recommendations for"),
+    group_id: uuid.UUID = Query(..., description="Group ID to get recommendations for"),
     db: Session = Depends(get_db)
 ):
-    # Verify user has access to the group
-    # TODO: Add group membership validation
     recommender = Recommender(db)
     recipe_ids = recommender.recommend(db, group_id)
-
+    
     if not recipe_ids:
         return []
-
+    
     recipes = recipe_crud.get_detail(db, recipe_ids)
     recipe_map = {r.component_id: r for r in recipes}
     sorted_recipes = [recipe_map[rid] for rid in recipe_ids if rid in recipe_map]
-
+    
     return [RecipeResponse.model_validate(r, from_attributes=True) for r in sorted_recipes]
 
 @recipe_router.get(
@@ -55,7 +49,6 @@ def recommend_recipes(
     description="Search for recipes by keyword in their names or ingredients with cursor-based pagination. Returns a paginated list of matching recipes."
 )
 async def search_recipes(
-    current_user: CurrentUser,
     keyword: str = Query(..., description="Keyword to search for in recipe names or ingredients"),
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
     limit: int = Query(100, ge=1, description="Maximum number of results to return"),
@@ -81,7 +74,6 @@ async def search_recipes(
     )
 )
 async def get_recipe_flattened(
-    current_user: CurrentUser,
     recipes_with_quantity: list[RecipeQuantityInput] = Body(
         ...,
         description="List of recipes with their quantities to aggregate",
@@ -91,7 +83,7 @@ async def get_recipe_flattened(
         ]
     ),
     check_existence: bool = Query(False, description="Check if ingredients exist in group inventory"),
-    group_id: Optional[int] = Query(None, ge=1, description="Group ID to check ingredient existence (required if check_existence is True)"),
+    group_id: Optional[uuid.UUID] = Query(None, description="Group ID to check ingredient existence (required if check_existence is True)"),
     db: Session = Depends(get_db)
 ):
     if check_existence and group_id is None:
@@ -99,12 +91,7 @@ async def get_recipe_flattened(
             status_code=400,
             detail="group_id is required when check_existence is True"
         )
-
-    # Verify user has access to the group if check_existence is True
-    if check_existence and group_id:
-        # TODO: Add group membership validation
-        pass
-
+    
     result = await recipe_crud.get_flattened(recipes_with_quantity, group_id, check_existence, db)
 
     ingredients = [
@@ -115,7 +102,7 @@ async def get_recipe_flattened(
         )
         for quantity, ingredient_response, available in result
     ]
-
+    
     return FlattenedIngredientsResponse(ingredients=ingredients)
 
 @recipe_router.put(
@@ -128,9 +115,7 @@ async def get_recipe_flattened(
             "Returns 400 if component list of the Recipe contains the Recipe itself to prevent infinite loop."
     )
 )
-def update_recipe(current_user: CurrentUser, id: int = Path(..., ge=1, description="The unique identifier of the Recipe to update"), obj_in: RecipeUpdate = Body(..., description="Data to update the Recipe"), db: Session = Depends(get_db)):
-    # Verify user has permission to update the recipe
-    # TODO: Add recipe ownership/permission validation
+def update_recipe(id: int = Path(..., ge=1, description="The unique identifier of the Recipe to update"), obj_in: RecipeUpdate = Body(..., description="Data to update the Recipe"), db: Session = Depends(get_db)):
     db_obj = recipe_crud.get(db, id)
     if db_obj is None:
         raise HTTPException(status_code=404, detail=f"Recipe with id={id} not found")
@@ -145,7 +130,7 @@ crud_router: APIRouter = create_crud_router(
     crud_base=recipe_crud,
     create_schema=RecipeCreate,
     update_schema=RecipeUpdate,
-    response_schema=RecipeResponse
+    response_schema=RecipeResponse,
 )
 
 recipe_router.include_router(crud_router)
@@ -156,9 +141,7 @@ recipe_router.include_router(crud_router)
     status_code=status.HTTP_200_OK,
     description=f"Retrieve a Recipe with detailed information about the components by its unique ID. Returns 404 if the Recipe does not exist."
 )
-def get_recipe_detailed(current_user: CurrentUser, id: int = Path(..., ge=1, description="The unique identifier of the Recipe"), db: Session = Depends(get_db)):
-    # Verify user has access to the recipe
-    # TODO: Add recipe access validation if needed
+def get_recipe_detailed(id: int = Path(..., ge=1, description="The unique identifier of the Recipe"), db: Session = Depends(get_db)):
     recipes = recipe_crud.get_detail(db, [id])
     if not recipes:
         raise HTTPException(status_code=404, detail=f"Recipe with id={id} not found")

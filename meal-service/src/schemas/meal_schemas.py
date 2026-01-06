@@ -1,3 +1,4 @@
+import uuid
 from datetime import date
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
@@ -23,7 +24,7 @@ class MealCommand(BaseModel):
 
 class DailyMealsCommand(BaseModel):
     date: date
-    group_id: int = Field(gt=0)
+    group_id: uuid.UUID
     breakfast: MealCommand
     lunch: MealCommand
     dinner: MealCommand
@@ -33,7 +34,7 @@ class DailyMealsCommand(BaseModel):
 class MealResponse(BaseModel):
     meal_id: int
     date: date
-    group_id: int
+    group_id: uuid.UUID
     meal_type: MealType
     meal_status: MealStatus
     recipe_list: List[RecipeBase] = []
@@ -42,6 +43,6 @@ class MealResponse(BaseModel):
 
 class MealMissingResponse(BaseModel):
     date: date
-    group_id: int
+    group_id: uuid.UUID
     meal_type: MealType
     detail: str

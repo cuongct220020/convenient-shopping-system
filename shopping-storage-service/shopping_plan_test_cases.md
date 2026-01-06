@@ -357,6 +357,19 @@ Base URL: `http://localhost:8002/v1/shopping_plans`
 
 ---
 
+### Test Case 6.2.1: Lọc plans theo deadline (theo ngày)
+**Method:** `GET`  
+**URL:** `http://localhost:8002/v1/shopping_plans/filter?group_id=1&deadline=2025-12-31T12:00:00`  
+**Note:** Param `deadline` nhận kiểu `datetime` nhưng hệ thống chỉ dùng **phần ngày** để lọc (mọi plan có deadline trong ngày 2025-12-31 sẽ match).  
+
+**Expected Output:**
+- Status Code: `200 OK`
+- Response body là PaginationResponse chứa:
+  - `data`: mảng các PlanResponse có `deadline` nằm trong ngày `2025-12-31`
+  - `next_cursor`: có thể `null` nếu ít dữ liệu
+
+---
+
 ### Test Case 6.3: Lấy plan theo ID và verify report
 **Method:** `GET`  
 **URL:** `http://localhost:8002/v1/shopping_plans/{plan_id}`  

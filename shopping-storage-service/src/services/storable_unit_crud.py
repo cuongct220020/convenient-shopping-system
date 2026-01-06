@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from typing import Optional, Sequence, List
+from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import select, func, RowMapping
@@ -7,7 +8,8 @@ from sqlalchemy.inspection import inspect
 from shopping_shared.crud.crud_base import CRUDBase
 from models.storage import StorableUnit, Storage
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse
-from messaging.producers.component_existence_producer import publish_component_existence_update
+from core.messaging import kafka_manager
+from shopping_shared.messaging.topics import COMPONENT_EXISTENCE_TOPIC
 
 
 class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUpdate]):
@@ -23,9 +25,18 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                 .distinct()
             )
             unit_names = db.execute(stmt).scalars().all()
-            await publish_component_existence_update(
-                storage.group_id,                                                               # type: ignore
-                unit_names
+            payload = {
+                "event_type": "update_component_existence",
+                "data": {
+                    "group_id": storage.group_id,  # type: ignore
+                    "unit_names": unit_names,
+                },
+            }
+            await kafka_manager.send_message(
+                topic=COMPONENT_EXISTENCE_TOPIC,
+                value=payload,
+                key=str(storage.group_id),  # type: ignore
+                wait=True,
             )
         return db_obj
 
@@ -59,9 +70,18 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                             .distinct()
                         )
                         unit_names = db.execute(stmt).scalars().all()
-                        await publish_component_existence_update(
-                            storage.group_id,                                   # type: ignore
-                            unit_names
+                        payload = {
+                            "event_type": "update_component_existence",
+                            "data": {
+                                "group_id": storage.group_id,  # type: ignore
+                                "unit_names": unit_names,
+                            },
+                        }
+                        await kafka_manager.send_message(
+                            topic=COMPONENT_EXISTENCE_TOPIC,
+                            value=payload,
+                            key=str(storage.group_id),  # type: ignore
+                            wait=True,
                         )
                     return "Consumed and deleted", None
                 else:
@@ -110,7 +130,7 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
     def filter(
         self,
         db: Session,
-        group_id: Optional[int] = None,
+        group_id: Optional[UUID] = None,
         storage_id: Optional[int] = None,
         unit_name: Optional[List[str]] = None,
         cursor: Optional[int] = None,

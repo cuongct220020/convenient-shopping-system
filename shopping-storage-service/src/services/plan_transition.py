@@ -1,4 +1,5 @@
 from typing import Optional, Any, List
+from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -19,7 +20,7 @@ class PlanTransition:
                 raise HTTPException(status_code=400,
                                     detail=f"Operation not allowed: plan status must be {allowed_status}, got {plan.plan_status}")
 
-    def assign(self, db: Session, id: int, assignee_id: int) -> PlanResponse:
+    def assign(self, db: Session, id: int, assignee_id: UUID) -> PlanResponse:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -34,7 +35,7 @@ class PlanTransition:
 
             return PlanResponse.model_validate(plan)
 
-    def unassign(self, db: Session, id: int, assignee_id: int) -> PlanResponse:
+    def unassign(self, db: Session, id: int, assignee_id: UUID) -> PlanResponse:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -52,7 +53,7 @@ class PlanTransition:
 
             return PlanResponse.model_validate(plan)
 
-    def cancel(self, db: Session, id: int, assigner_id: int) -> PlanResponse:
+    def cancel(self, db: Session, id: int, assigner_id: UUID) -> PlanResponse:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -62,7 +63,7 @@ class PlanTransition:
 
             self._preconditions_check(plan, [PlanStatus.CREATED, PlanStatus.IN_PROGRESS])
 
-            if plan.assignee_id != assigner_id:
+            if plan.assigner_id != assigner_id:
                 raise HTTPException(status_code=403,
                                     detail=f"Operation not allowed: user {assigner_id} is not the assigner of this plan")
 
@@ -113,7 +114,7 @@ class PlanTransition:
         is_complete = len(missing_quantities) == 0
         return is_complete, missing_quantities
 
-    def report(self, db: Session, id: int, assignee_id: int, report: PlanReport, confirm: bool = True) -> tuple[bool, str, Any]:
+    def report(self, db: Session, id: int, assignee_id: UUID, report: PlanReport, confirm: bool = True) -> tuple[bool, str, Any]:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -137,7 +138,7 @@ class PlanTransition:
 
             return True, "Report accepted and plan completed", validated_plan
 
-    def reopen(self, db: Session, id: int, assigner_id: int) -> PlanResponse:
+    def reopen(self, db: Session, id: int, assigner_id: UUID) -> PlanResponse:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -147,7 +148,7 @@ class PlanTransition:
 
             self._preconditions_check(plan, PlanStatus.CANCELLED)
 
-            if plan.assignee_id != assigner_id:
+            if plan.assigner_id != assigner_id:
                 raise HTTPException(status_code=403,
                                     detail=f"Operation not allowed: user {assigner_id} is not the assigner of this plan")
 

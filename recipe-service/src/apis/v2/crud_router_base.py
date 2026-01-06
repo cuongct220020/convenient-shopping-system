@@ -4,10 +4,8 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
 from core.database import get_db
-
 from shopping_shared.crud.crud_base import CRUDBase
 from shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
-from shopping_shared.middleware.fastapi_auth import CurrentUser
 
 """
     Generic CRUD router factory for reuse across CRUD operations of different models
@@ -36,9 +34,7 @@ def create_crud_router(
         status_code=status.HTTP_200_OK,
         description=f"Retrieve a {crud_base.model.__name__} by its unique ID. Returns 404 if the {crud_base.model.__name__} does not exist."
     )
-    def get_item(current_user: CurrentUser, id: int = Path(..., ge=1), db: Session = Depends(get_db)):
-        # Verify user has access to the resource
-        # TODO: Add resource access validation
+    def get_item(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         obj = crud_base.get(db, id)
         if obj is None:
             raise HTTPException(status_code=404, detail=f"{crud_base.model.__name__} with id={id} not found")
@@ -54,13 +50,10 @@ def create_crud_router(
         )
     )
     def get_many_items(
-        current_user: CurrentUser,
         cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
         limit: int = Query(100, ge=1, description="Maximum number of results to return"),
         db: Session = Depends(get_db)
     ):
-        # Verify user has access to the resources
-        # TODO: Add resource access validation
         items = crud_base.get_many(db, cursor=cursor, limit=limit)
         pk = inspect(crud_base.model).primary_key[0]
         next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
@@ -76,10 +69,8 @@ def create_crud_router(
         status_code=status.HTTP_201_CREATED,
         description=f"Create a new {crud_base.model.__name__} with the provided data. Returns the created {crud_base.model.__name__}."
     )
-    def create_item(current_user: CurrentUser, obj_in: create_schema = Body(...), db: Session = Depends(get_db)):
-        # type: ignore
+    def create_item(obj_in: create_schema = Body(...), db: Session = Depends(get_db)):      # type: ignore
         return crud_base.create(db, obj_in)
-
 
     @router.put(
         "/{id}",
@@ -90,9 +81,7 @@ def create_crud_router(
                 f"Returns 404 if the {crud_base.model.__name__} does not exist."
         )
     )
-    def update_item(current_user: CurrentUser, id: int = Path(..., ge=1), obj_in: update_schema = Body(...), db: Session = Depends(get_db)):         # type: ignore
-        # Verify user has permission to update the resource
-        # TODO: Add permission validation
+    def update_item(id: int = Path(..., ge=1), obj_in: update_schema = Body(...), db: Session = Depends(get_db)):         # type: ignore
         db_obj = crud_base.get(db, id)
         if db_obj is None:
             raise HTTPException(status_code=404, detail=f"{crud_base.model.__name__} with id={id} not found")
@@ -106,9 +95,7 @@ def create_crud_router(
                 f"Returns 204 No Content on success. Returns 404 if the {crud_base.model.__name__} does not exist."
         )
     )
-    def delete_item(current_user: CurrentUser, id: int = Path(..., ge=1), db: Session = Depends(get_db)):
-        # Verify user has permission to delete the resource
-        # TODO: Add permission validation
+    def delete_item(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         db_obj = crud_base.get(db, id)
         if db_obj is None:
             raise HTTPException(status_code=404, detail=f"{crud_base.model.__name__} with id={id} not found")

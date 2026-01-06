@@ -3,6 +3,7 @@ from core.database import engine, Base
 from core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from core.admin_middleware import AdminMiddleware
 from apis.v2.ingredient_api import ingredient_router
 from apis.v2.recipe_api import recipe_router
 from messaging.manager import kafka_manager
@@ -50,6 +51,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(AdminMiddleware)
 
 app.include_router(ingredient_router)
 app.include_router(recipe_router)

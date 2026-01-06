@@ -62,12 +62,12 @@ Có 2 cách để chạy service:
 
 ```bash
 # Từ thư mục meal-service
-uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+uvicorn main:app --host 0.0.0.0 --port 9003 --reload
 ```
 
 **Tham số:**
 - `--host 0.0.0.0`: Lắng nghe trên tất cả interfaces
-- `--port 8003`: Port mặc định của service
+- `--port 9003`: Port mặc định của service
 - `--reload`: Tự động reload khi code thay đổi (chỉ dùng cho development)
 
 ### Cách 2: Chạy trực tiếp với Python
@@ -77,14 +77,15 @@ uvicorn main:app --host 0.0.0.0 --port 8003 --reload
 python main.py
 ```
 
-Service sẽ chạy trên `http://0.0.0.0:8003` (có thể truy cập từ `http://localhost:8003`).
+**Lưu ý:** `python main.py` sẽ chạy theo port được cấu hình trong code (hiện tại là `8000`).
+Nếu muốn chạy đúng port hệ thống (`9003`), hãy dùng uvicorn với `--port 9003`.
 
 ## 📚 Xem API Documentation
 
 FastAPI tự động tạo interactive API documentation. Sau khi service đã chạy, mở trình duyệt và truy cập:
 
 ```
-http://localhost:8003/docs
+http://localhost:9003/docs
 ```
 
 Swagger UI cung cấp:
@@ -107,7 +108,7 @@ docker build -t meal-service -f meal-service/Dockerfile .
 ```bash
 docker run -d \
   --name meal-service \
-  -p 8003:8003 \
+  -p 9003:8000 \
   --env-file .env \
   --network shopping-network \
   meal-service
@@ -116,7 +117,7 @@ docker run -d \
 **Lưu ý:**
 - Đảm bảo file `.env` có đầy đủ các biến môi trường
 - Container cần kết nối đến PostgreSQL (có thể qua Docker network)
-- Port 8003 sẽ được expose ra host
+- Port `9003` sẽ được expose ra host (container listen `8000`)
 
 ### Xem logs
 
@@ -150,18 +151,18 @@ Service cung cấp các endpoints chính:
 - Cài đặt shared package: `pip install -e ../shared[fastapi]`
 - Kiểm tra `PYTHONPATH` nếu cần
 
-### Port 8003 đã được sử dụng
+### Port 9003 đã được sử dụng
 
-- Thay đổi port trong `main.py` hoặc dùng `--port` với uvicorn:
+- Dùng port khác với uvicorn:
   ```bash
-  uvicorn main:app --port 8004 --reload
+  uvicorn main:app --port 9006 --reload
   ```
 
 ## 📝 Notes
 
 - Service sử dụng CORS middleware cho phép tất cả origins (chỉ dùng cho development)
 - Database migrations được quản lý bằng Alembic
-- Service chạy trên port 8003 mặc định
+- Port hệ thống khuyến nghị cho Meal Service: `9003`
 - Service có tích hợp scheduler để chạy các scheduled tasks (ví dụ: expire meals)
 
 ## 🔗 Liên kết hữu ích
