@@ -4,6 +4,7 @@ import { LocalStorage } from './storage/local'
 
 export class AppUrl {
   static readonly BASE = import.meta.env.VITE_API_BASE_URL
+  static readonly SHOPPING_BASE = import.meta.env.VITE_SHOPPING_API_BASE_URL
   static readonly AUTH = 'api/v1/user-service/auth'
   static readonly LOGIN = this.AUTH + '/login'
   static readonly REGISTER = this.AUTH + '/register'
@@ -30,16 +31,23 @@ export class AppUrl {
     `api/v1/user-service/users/${id}/profile/identity`
   static readonly USER_HEALTH_PROFILE_BY_ID = (id: string) =>
     `api/v1/user-service/users/${id}/profile/health`
+  static readonly ADMIN_USERS = 'api/v1/user-service/admin/users'
+  static readonly SHOPPING_PLANS_FILTER = 'v1/shopping_plans/filter'
 }
 
 export type Clients = {
   pub: AxiosInstance
   auth: AxiosInstance
+  shopping: AxiosInstance
 }
 function initClient(): Clients {
   axios.defaults.baseURL = AppUrl.BASE
   const pub = axios.create({ url: AppUrl.BASE })
   const auth = axios.create({ url: AppUrl.BASE })
+  const shopping = axios.create({
+    url: AppUrl.SHOPPING_BASE,
+    baseURL: AppUrl.SHOPPING_BASE
+  })
 
   // Add token injection to auth client
   auth.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -50,7 +58,16 @@ function initClient(): Clients {
     return config
   })
 
-  return { pub, auth }
+  // Add token injection to shopping client
+  shopping.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    const token = LocalStorage.inst.auth?.access_token
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  })
+
+  return { pub, auth, shopping }
 }
 export const httpClients = initClient()
 

@@ -253,3 +253,35 @@ export const UserHealthProfileResponseSchema = z.object({
 export type UserHealthProfileResponse = z.infer<
   typeof UserHealthProfileResponseSchema
 >
+
+// Admin user info schema (extends UserCoreInfoSchema with additional fields)
+export const AdminUserInfoSchema = z.object({
+  user_id: z.string().uuid(),
+  username: z.string(),
+  email: z.string(),
+  phone_num: z.string().nullable(),
+  first_name: z.string().nullable(),
+  last_name: z.string().nullable(),
+  avatar_url: z.string().nullable(),
+  identity_profile: z.unknown().nullable(),
+  health_profile: z.unknown().nullable(),
+  system_role: z.enum(['user', 'admin']),
+  is_active: z.boolean(),
+  created_at: z.string(),
+  last_login: z.string().nullable()
+})
+export type AdminUserInfo = z.infer<typeof AdminUserInfoSchema>
+
+// Admin users list response schema (paginated)
+export const AdminUsersListResponseSchema = z.object({
+  status: z.literal('success'),
+  message: z.string().nullable(),
+  data: z.object({
+    data: z.array(AdminUserInfoSchema),
+    page: z.number(),
+    page_size: z.number(),
+    total_items: z.number(),
+    total_pages: z.number()
+  })
+})
+export type AdminUsersListResponse = z.infer<typeof AdminUsersListResponseSchema>
