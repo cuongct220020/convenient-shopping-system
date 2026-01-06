@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, Depends, Query, status
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -22,7 +23,7 @@ meal_router = APIRouter(
     status_code=status.HTTP_200_OK,
     description="Get meals by date, group_id and optionally by meal_type. If meal_type is not provided, returns all meals (breakfast, lunch, dinner) for that date and group_id."
 )
-def get_meals(meal_date: date, group_id: int = Query(..., gt=0), meal_type: Optional[MealType] = None, db: Session = Depends(get_db)):
+def get_meals(meal_date: date, group_id: uuid.UUID = Query(...), meal_type: Optional[MealType] = None, db: Session = Depends(get_db)):
     return meal_command_handler.get(db, meal_date, group_id, meal_type)
 
 @meal_router.post(
