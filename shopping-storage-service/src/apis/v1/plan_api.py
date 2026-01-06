@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import Any, Optional
 from uuid import UUID
-from services.plan_crud import PLanCRUD
+from services.plan_crud import PlanCRUD
 from services.plan_transition import PlanTransition
 from services.report_process import report_process
 from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse, PlanReport
@@ -14,7 +14,7 @@ from shared.shopping_shared.schemas.cursor_pagination_schema import GenericRespo
 from .crud_router_base import create_crud_router
 from core.database import get_db
 
-plan_crud = PLanCRUD(ShoppingPlan)
+plan_crud = PlanCRUD(ShoppingPlan)
 plan_transition = PlanTransition()
 
 plan_router = APIRouter(
