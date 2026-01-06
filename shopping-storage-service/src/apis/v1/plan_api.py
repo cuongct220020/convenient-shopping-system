@@ -8,7 +8,7 @@ from services.report_process import report_process
 from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse, PlanReport
 from models.shopping_plan import ShoppingPlan
 from enums.plan_status import PlanStatus
-from shared.shopping_shared.schemas.response_schema import GenericResponse, PaginationResponse
+from shared.shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
 from .crud_router_base import create_crud_router
 from core.database import get_db
 
@@ -22,7 +22,7 @@ plan_router = APIRouter(
 
 @plan_router.get(
     "/filter",
-    response_model=PaginationResponse[PlanResponse],
+    response_model=CursorPaginationResponse[PlanResponse],
     status_code=status.HTTP_200_OK,
     description="Filter shopping plans by group_id and/or plan_status. Supports sorting by last_modified or deadline, and pagination with cursor and limit."
 )
@@ -46,11 +46,10 @@ def filter_plans(
     )
     pk = inspect(ShoppingPlan).primary_key[0]
     next_cursor = getattr(plans[-1], pk.name) if plans and len(plans) == limit else None
-    return PaginationResponse(
+    return CursorPaginationResponse(
         data=[PlanResponse.model_validate(plan) for plan in plans],
         next_cursor=next_cursor,
         size=len(plans),
-        has_more=len(plans) == limit
     )
 
 crud_router = create_crud_router(
@@ -131,9 +130,9 @@ def cancel_plan(
     )
 )
 def report_plan(
+    background_tasks: BackgroundTasks,
     id: int = Path(..., ge=1),
     report: PlanReport = Body(..., description="Report data containing the items purchased"),
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     assignee_id: int = Query(..., ge=1, description="The ID of the user reporting the plan completion"),
     confirm: bool = Query(True, description="If True, immediately complete without validation. If False, validate report content first")

@@ -5,16 +5,10 @@ from typing import List, Optional
 from services.recipe_crud import RecipeCRUD
 from services.recommender import Recommender
 from models.recipe_component import Recipe
-from schemas.recipe_flattened_schemas import (
-    RecipeQuantityInput,
-    FlattenedIngredientsResponse,
-    FlattenedIngredientItem
-)
-from schemas.recipe_schemas import (
-    RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
-)
+from schemas.recipe_flattened_schemas import RecipeQuantityInput, FlattenedIngredientsResponse, FlattenedIngredientItem
+from schemas.recipe_schemas import RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 from .crud_router_base import create_crud_router
-from shared.shopping_shared.schemas.response_schema import CursorPaginationResponse
+from shared.shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
 from core.database import get_db
 from utils.custom_mapping import recipe_detailed_mapping
 
