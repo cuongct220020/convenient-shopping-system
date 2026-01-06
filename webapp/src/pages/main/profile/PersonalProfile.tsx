@@ -1,39 +1,109 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
 import { NotificationCard } from '../../../components/NotificationCard';
 import { Save, X } from 'lucide-react';
+import { userService } from '../../../services/user';
+import type { UserIdentityProfile } from '../../../services/schema/groupSchema';
 
 const PersonalProfile = () => {
-  // State for gender selection to mimic the radio button behavior in the image
-  const [gender, setGender] = useState<'nam' | 'nu' | 'khac'>('nam');
+  // State for gender selection
+  const [gender, setGender] = useState<'male' | 'female' | 'other' | null>(null);
 
   // State for edit mode
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // State for loading
+  const [isLoading, setIsLoading] = useState(true);
+
+  // State for save operation
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   // State for form values
   const [formData, setFormData] = useState({
     fullName: '',
-    address: 'Số 12A đường Ngô Quyền, quận Hoàn Kiếm',
-    job: 'Huấn luyện viên thể hình',
+    address: '',
+    occupation: '',
     phoneNumber: '',
-    dateOfBirth: '28/10/2000'
+    dateOfBirth: ''
   });
 
   // State for modal visibility and original values
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [originalValues, setOriginalValues] = useState({
     fullName: '',
-    address: 'Số 12A đường Ngô Quyền, quận Hoàn Kiếm',
-    job: 'Huấn luyện viên thể hình',
+    address: '',
+    occupation: '',
     phoneNumber: '',
-    dateOfBirth: '28/10/2000',
-    gender: 'nam' as 'nam' | 'nu' | 'khac'
+    dateOfBirth: '',
+    gender: null as 'male' | 'female' | 'other' | null
   });
+
+  // Fetch user profile data on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      // Fetch both current user info and identity profile in parallel
+      const [userResult, identityResult] = await Promise.all([
+        userService.getCurrentUser(),
+        userService.getMyIdentityProfile()
+      ]);
+
+      let fullName = '';
+      let phoneNumber = '';
+      let address = '';
+      let occupation = '';
+      let dateOfBirth = '';
+      let genderValue: 'male' | 'female' | 'other' | null = null;
+
+      // Process current user data
+      if (userResult.isOk()) {
+        const userData = userResult.value.data;
+        fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+        phoneNumber = userData.phone_num || '';
+      }
+
+      // Process identity profile data
+      if (identityResult.isOk()) {
+        const profile = identityResult.value.data;
+        genderValue = profile.gender;
+        address = formatAddress(profile.address);
+        occupation = profile.occupation || '';
+        dateOfBirth = profile.date_of_birth || '';
+      }
+
+      // Update state with fetched data
+      setGender(genderValue);
+      setFormData({
+        fullName,
+        address,
+        occupation,
+        phoneNumber,
+        dateOfBirth
+      });
+      setOriginalValues({
+        fullName,
+        address,
+        occupation,
+        phoneNumber,
+        dateOfBirth,
+        gender: genderValue
+      });
+
+      setIsLoading(false);
+    };
+    fetchProfile();
+  }, []);
+
+  const formatAddress = (address: UserIdentityProfile['address']): string => {
+    if (!address) return '';
+    const parts = [address.ward, address.district, address.city, address.province].filter(Boolean);
+    return parts.join(', ');
+  };
 
   return (
     <div className="flex-1 p-5 bg-white overflow-y-auto max-w-sm mx-auto w-full pb-24">
-      
+
       {/* Back Navigation */}
       <BackButton to="/main/profile" text="Quay lại" className="mb-6" />
 
@@ -42,7 +112,12 @@ const PersonalProfile = () => {
         Hồ sơ cá nhân
       </h1>
 
-      <div className="flex flex-col gap-6">
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
         
         {/* Full Name */}
         <InfoSection
@@ -57,16 +132,18 @@ const PersonalProfile = () => {
         <InfoSection
           label="Địa chỉ"
           value={formData.address}
+          isPlaceholder={!formData.address}
           isEditMode={isEditMode}
           onChange={(value) => setFormData({...formData, address: value})}
         />
 
-        {/* Job */}
+        {/* Occupation */}
         <InfoSection
           label="Nghề nghiệp"
-          value={formData.job}
+          value={formData.occupation}
+          isPlaceholder={!formData.occupation}
           isEditMode={isEditMode}
-          onChange={(value) => setFormData({...formData, job: value})}
+          onChange={(value) => setFormData({...formData, occupation: value})}
         />
 
         {/* Phone Number */}
@@ -82,73 +159,103 @@ const PersonalProfile = () => {
         <InfoSection
           label="Ngày sinh"
           value={formData.dateOfBirth}
+          isPlaceholder={!formData.dateOfBirth}
           isEditMode={isEditMode}
+          type="date"
           onChange={(value) => setFormData({...formData, dateOfBirth: value})}
         />
 
-        {/* Gender Selection */}
-        <div>
-          <h3 className="font-bold text-black mb-3 text-base">Giới tính</h3>
+          {/* Gender Selection */}
+          <div>
+            <h3 className="font-bold text-black mb-3 text-base">Giới tính</h3>
+            {isEditMode ? (
+              <div className="flex items-center gap-8">
+                <RadioButton
+                  label="Nam"
+                  selected={gender === 'male'}
+                  onClick={() => setGender('male')}
+                />
+                <RadioButton
+                  label="Nữ"
+                  selected={gender === 'female'}
+                  onClick={() => setGender('female')}
+                />
+                <RadioButton
+                  label="Khác"
+                  selected={gender === 'other'}
+                  onClick={() => setGender('other')}
+                />
+              </div>
+            ) : (
+              <span className={`text-base ${!gender ? 'text-gray-400' : 'text-gray-800'}`}>
+                {!gender ? 'Chưa có thông tin' : gender === 'male' ? 'Nam' : gender === 'female' ? 'Nữ' : 'Khác'}
+              </span>
+            )}
+          </div>
+
+          {/* Edit/Save/Cancel Buttons */}
           {isEditMode ? (
-            <div className="flex items-center gap-8">
-              <RadioButton
-                label="Nam"
-                selected={gender === 'nam'}
-                onClick={() => setGender('nam')}
-              />
-              <RadioButton
-                label="Nữ"
-                selected={gender === 'nu'}
-                onClick={() => setGender('nu')}
-              />
-              <RadioButton
-                label="Khác"
-                selected={gender === 'khac'}
-                onClick={() => setGender('khac')}
-              />
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  // Check if values have changed
+                  const hasChanges =
+                    formData.fullName !== originalValues.fullName ||
+                    formData.address !== originalValues.address ||
+                    formData.occupation !== originalValues.occupation ||
+                    formData.phoneNumber !== originalValues.phoneNumber ||
+                    formData.dateOfBirth !== originalValues.dateOfBirth ||
+                    gender !== originalValues.gender;
+
+                  if (hasChanges) {
+                    setShowConfirmModal(true);
+                  } else {
+                    // No changes, just exit edit mode
+                    setIsEditMode(false);
+                  }
+                }}
+                variant="primary"
+                size="fit"
+              >
+                Lưu
+              </Button>
+              <Button
+                onClick={() => {
+                  // Revert changes and exit edit mode
+                  setFormData({
+                    fullName: originalValues.fullName,
+                    address: originalValues.address,
+                    occupation: originalValues.occupation,
+                    phoneNumber: originalValues.phoneNumber,
+                    dateOfBirth: originalValues.dateOfBirth
+                  });
+                  setGender(originalValues.gender);
+                  setIsEditMode(false);
+                }}
+                variant="secondary"
+                size="fit"
+              >
+                Hủy
+              </Button>
             </div>
           ) : (
-            <span className="text-base text-gray-800">
-              {gender === 'nam' ? 'Nam' : gender === 'nu' ? 'Nữ' : 'Khác'}
-            </span>
+            <Button
+              onClick={() => {
+                // Entering edit mode, store current values
+                setOriginalValues({
+                  ...formData,
+                  gender
+                });
+                setIsEditMode(true);
+              }}
+              variant="primary"
+              size="fit"
+            >
+              Chỉnh sửa
+            </Button>
           )}
         </div>
-
-        {/* Edit/Save Button */}
-        <Button
-          onClick={() => {
-            if (isEditMode) {
-              // Check if values have changed
-              const hasChanges =
-                formData.fullName !== originalValues.fullName ||
-                formData.address !== originalValues.address ||
-                formData.job !== originalValues.job ||
-                formData.phoneNumber !== originalValues.phoneNumber ||
-                formData.dateOfBirth !== originalValues.dateOfBirth ||
-                gender !== originalValues.gender;
-
-              if (hasChanges) {
-                setShowConfirmModal(true);
-              } else {
-                // No changes, just exit edit mode
-                setIsEditMode(false);
-              }
-            } else {
-              // Entering edit mode, store current values
-              setOriginalValues({
-                ...formData,
-                gender
-              });
-              setIsEditMode(true);
-            }
-          }}
-          variant="secondary"
-          size="fit"
-        >
-          {isEditMode ? 'Lưu' : 'Chỉnh sửa'}
-        </Button>
-
-      </div>
+      )}
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
@@ -157,17 +264,70 @@ const PersonalProfile = () => {
             title="Xác nhận thay đổi"
             message="Bạn có chắc chắn muốn lưu thay đổi thông tin cá nhân không?"
             iconBgColor="bg-yellow-500"
-            buttonText="Xác nhận"
+            buttonText={isSaving ? "Đang lưu..." : "Xác nhận"}
             buttonIcon={Save}
-            onButtonClick={() => {
-              // Save the changes
-              console.log('Saving:', { formData, gender });
-              setOriginalValues({
-                ...formData,
-                gender
-              });
-              setShowConfirmModal(false);
-              setIsEditMode(false);
+            onButtonClick={async () => {
+              setIsSaving(true);
+              setSaveError(null);
+
+              // Prepare identity profile update data
+              // Note: fullName and phoneNumber are currently read-only as the API
+              // doesn't support updating first_name, last_name, or phone_num
+              const identityUpdateData: {
+                gender?: 'male' | 'female' | 'other';
+                date_of_birth?: string | null;
+                occupation?: string | null;
+                address?: UserIdentityProfile['address'];
+              } = {};
+
+              if (gender !== originalValues.gender && gender) {
+                identityUpdateData.gender = gender;
+              }
+              if (formData.dateOfBirth !== originalValues.dateOfBirth) {
+                identityUpdateData.date_of_birth = formData.dateOfBirth || null;
+              }
+              if (formData.occupation !== originalValues.occupation) {
+                identityUpdateData.occupation = formData.occupation || null;
+              }
+              if (formData.address !== originalValues.address) {
+                // Parse address string back to object format
+                // Address format: "ward, district, city, province"
+                const parts = formData.address.split(',').map(s => s.trim());
+                identityUpdateData.address = {
+                  ward: parts[0] || null,
+                  district: parts[1] || null,
+                  city: parts[2] || null,
+                  province: parts[3] || null
+                };
+              }
+
+              // Call API if there are changes to identity profile
+              if (Object.keys(identityUpdateData).length === 0) {
+                // If nothing changed, just exit edit mode
+                setIsEditMode(false);
+                setShowConfirmModal(false);
+                setIsSaving(false);
+                return;
+              }
+
+              const result = await userService.updateMyIdentityProfile(identityUpdateData);
+
+              result.match(
+                () => {
+                  // Update successful
+                  setOriginalValues({
+                    ...formData,
+                    gender
+                  });
+                  setShowConfirmModal(false);
+                  setIsEditMode(false);
+                },
+                () => {
+                  setSaveError('Không thể lưu thay đổi. Vui lòng thử lại.');
+                }
+              );
+
+              setIsSaving(false);
             }}
             button2Text="Hủy"
             button2Icon={X}
@@ -176,13 +336,27 @@ const PersonalProfile = () => {
               setFormData({
                 fullName: originalValues.fullName,
                 address: originalValues.address,
-                job: originalValues.job,
+                occupation: originalValues.occupation,
                 phoneNumber: originalValues.phoneNumber,
                 dateOfBirth: originalValues.dateOfBirth
               });
               setGender(originalValues.gender);
               setShowConfirmModal(false);
+              setSaveError(null);
             }}
+          />
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {saveError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <NotificationCard
+            title="Lỗi"
+            message={saveError}
+            iconBgColor="bg-red-500"
+            buttonText="Đóng"
+            onButtonClick={() => setSaveError(null)}
           />
         </div>
       )}
@@ -198,15 +372,16 @@ interface InfoSectionProps {
   isPlaceholder?: boolean;
   isEditMode?: boolean;
   onChange?: (value: string) => void;
+  type?: 'text' | 'date';
 }
 
-const InfoSection = ({ label, value, isPlaceholder = false, isEditMode = false, onChange }: InfoSectionProps) => {
+const InfoSection = ({ label, value, isPlaceholder = false, isEditMode = false, onChange, type = 'text' }: InfoSectionProps) => {
   return (
     <div>
       <h3 className="font-bold text-black mb-2 text-base">{label}</h3>
       {isEditMode ? (
         <input
-          type="text"
+          type={type}
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           placeholder={isPlaceholder ? "Chưa có thông tin" : ""}

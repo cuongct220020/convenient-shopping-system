@@ -8,6 +8,7 @@ export class AppUrl {
   static readonly AUTH = 'api/v1/user-service/auth'
   static readonly LOGIN = this.AUTH + '/login'
   static readonly REGISTER = this.AUTH + '/register'
+  static readonly LOGOUT = this.AUTH + '/logout'
   static readonly SEND_OTP = this.AUTH + '/otp/send'
   static readonly VERIFY_OTP = this.AUTH + '/otp/verify'
   static readonly RESET_PASSWORD = this.AUTH + '/reset-password'
@@ -26,6 +27,9 @@ export class AppUrl {
   static readonly USERS_ME_IDENTITY_PROFILE = 'api/v1/user-service/users/me/profile/identity'
   static readonly USERS_ME_HEALTH_PROFILE = 'api/v1/user-service/users/me/profile/health'
   static readonly USER_SEARCH = 'api/v1/user-service/users/search'
+  static readonly USERS_ME_EMAIL_REQUEST_CHANGE = 'api/v1/user-service/users/me/email/request-change'
+  static readonly USERS_ME_EMAIL_CONFIRM_CHANGE = 'api/v1/user-service/users/me/email/confirm-change'
+  static readonly CHANGE_PASSWORD = 'api/v1/user-service/users/me/change-password'
   static readonly USER_BY_ID = (id: string) => `api/v1/user-service/users/${id}`
   static readonly USER_IDENTITY_PROFILE_BY_ID = (id: string) =>
     `api/v1/user-service/users/${id}/profile/identity`

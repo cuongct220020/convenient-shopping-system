@@ -6,6 +6,7 @@ import {
   httpClients,
   httpGet,
   httpPost,
+  httpPatch,
   ResponseError
 } from '../client'
 import { parseZodObject } from '../../utils/zod-result'
@@ -14,12 +15,15 @@ import {
   CurrentUserResponseSchema,
   UserIdentityProfileSchema,
   UserIdentityProfileResponseSchema,
+  UserIdentityProfileUpdateResponseSchema,
+  type UserIdentityProfileUpdate,
   UserHealthProfileSchema,
   UserHealthProfileResponseSchema,
   SearchUsersResponseSchema,
   AdminUsersListResponseSchema,
   type CurrentUserResponse,
   type UserIdentityProfileResponse,
+  type UserIdentityProfileUpdateResponse,
   type UserHealthProfileResponse,
   type SearchUsersResponse,
   type UserCoreInfo,
@@ -36,6 +40,93 @@ export class UserService {
    */
   public getCurrentUser(): ResultAsync<CurrentUserResponse, UserError> {
     return httpGet(this.clients.auth, AppUrl.USERS_ME)
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(CurrentUserResponseSchema, response.body).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
+   * Update current user's profile information
+   */
+  public updateCurrentUser(
+    data: { email?: string; username?: string }
+  ): ResultAsync<CurrentUserResponse, UserError> {
+    return httpPatch(this.clients.auth, AppUrl.USERS_ME, data)
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(CurrentUserResponseSchema, response.body).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
+   * Request email change - sends OTP to new email
+   */
+  public requestEmailChange(
+    newEmail: string
+  ): ResultAsync<{ status: string; message: string | null }, UserError> {
+    return httpPost(this.clients.auth, AppUrl.USERS_ME_EMAIL_REQUEST_CHANGE, {
+      new_email: newEmail
+    })
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(
+          z.object({
+            status: z.string(),
+            message: z.string().nullable()
+          }),
+          response.body
+        ).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
+   * Confirm email change with OTP
+   */
+  public confirmEmailChange(
+    newEmail: string,
+    otpCode: string
+  ): ResultAsync<CurrentUserResponse, UserError> {
+    return httpPost(this.clients.auth, AppUrl.USERS_ME_EMAIL_CONFIRM_CHANGE, {
+      new_email: newEmail,
+      otp_code: otpCode
+    })
       .mapErr((e): UserError => {
         switch (e.type) {
           case 'unauthorized':
@@ -197,6 +288,31 @@ export class UserService {
   }
 
   /**
+   * Update current user's identity profile
+   */
+  public updateMyIdentityProfile(
+    data: UserIdentityProfileUpdate
+  ): ResultAsync<UserIdentityProfileUpdateResponse, UserError> {
+    return httpPatch(this.clients.auth, AppUrl.USERS_ME_IDENTITY_PROFILE, data)
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(UserIdentityProfileUpdateResponseSchema, response.body).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
    * Get current user's health profile
    */
   public getMyHealthProfile(): ResultAsync<UserHealthProfileResponse, UserError> {
@@ -211,6 +327,66 @@ export class UserService {
       })
       .andThen((response) =>
         parseZodObject(UserHealthProfileResponseSchema, response.body).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
+   * Change password
+   */
+  public changePassword(
+    data: { current_password: string; new_password: string }
+  ): ResultAsync<{ status: string; message: string | null }, UserError> {
+    return httpPost(this.clients.auth, AppUrl.CHANGE_PASSWORD, data)
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(
+          z.object({
+            status: z.string(),
+            message: z.string().nullable()
+          }),
+          response.body
+        ).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
+   * Logout current user
+   */
+  public logout(): ResultAsync<{ status: string; message: string | null }, UserError> {
+    return httpPost(this.clients.auth, AppUrl.LOGOUT, {})
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(
+          z.object({
+            status: z.string(),
+            message: z.string().nullable()
+          }),
+          response.body
+        ).mapErr(
           (e): UserError => ({
             type: 'invalid-response-format',
             desc: e

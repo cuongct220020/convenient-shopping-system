@@ -1,17 +1,108 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
-import { NotificationCard } from '../../../components/NotificationCard';
-import { Lock, Save, X } from 'lucide-react';
+import { InputField } from '../../../components/InputField';
+import { Lock, Eye, EyeOff } from 'lucide-react';
+import { userService } from '../../../services/user';
 
 const LoginInformation = () => {
-  const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(false);
-  const [email, setEmail] = useState('your-email@gmail.com');
-  const [username, setUsername] = useState('linhsieungausrp3z');
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [originalValues, setOriginalValues] = useState({ email: '', username: '' });
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showRepeatPassword, setShowRepeatPassword] = useState(false);
+
+  // Form state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [repeatPassword, setRepeatPassword] = useState('');
+
+  // Validation and loading state
+  const [errors, setErrors] = useState<{
+    currentPassword?: string;
+    newPassword?: string;
+    repeatPassword?: string;
+    general?: string;
+  }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    userService.getCurrentUser().match(
+      (response) => {
+        setEmail(response.data.email);
+        setUsername(response.data.username);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Failed to fetch user:', error);
+        setIsLoading(false);
+      }
+    );
+  }, []);
+
+  const validateForm = (): boolean => {
+    const newErrors: typeof errors = {};
+
+    if (!currentPassword) {
+      newErrors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại';
+    }
+
+    if (!newPassword) {
+      newErrors.newPassword = 'Vui lòng nhập mật khẩu mới';
+    } else if (newPassword.length < 6) {
+      newErrors.newPassword = 'Mật khẩu mới phải có ít nhất 6 ký tự';
+    }
+
+    if (!repeatPassword) {
+      newErrors.repeatPassword = 'Vui lòng nhập lại mật khẩu mới';
+    } else if (newPassword !== repeatPassword) {
+      newErrors.repeatPassword = 'Mật khẩu nhập lại không khớp';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    setErrors({});
+
+    userService
+      .changePassword({
+        current_password: currentPassword,
+        new_password: newPassword
+      })
+      .match(
+        () => {
+          setIsSubmitting(false);
+          setIsModalOpen(false);
+          setCurrentPassword('');
+          setNewPassword('');
+          setRepeatPassword('');
+        },
+        (error) => {
+          setIsSubmitting(false);
+          setErrors({
+            general: error.desc || 'Đổi mật khẩu thất bại. Vui lòng thử lại.'
+          });
+        }
+      );
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setRepeatPassword('');
+    setErrors({});
+  };
+
   return (
     <div className="flex-1 p-5 bg-white overflow-y-auto max-w-sm mx-auto w-full">
 
@@ -24,110 +115,131 @@ const LoginInformation = () => {
       </h1>
 
       <div className="flex flex-col gap-8">
-        
-        {/* Email Section */}
-        <div>
-          <h3 className="font-bold text-black mb-2 text-base">Email</h3>
-          {isEditing ? (
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C3485C] focus:border-transparent"
-              placeholder="Nhập email"
-            />
-          ) : (
-            <span className="text-gray-800 text-base">
-              {email}
-            </span>
-          )}
-        </div>
-
-        {/* Username Section */}
-        <div>
-          <h3 className="font-bold text-black mb-2 text-base">Tên đăng nhập</h3>
-          {isEditing ? (
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C3485C] focus:border-transparent"
-              placeholder="Nhập tên đăng nhập"
-            />
-          ) : (
-            <span className="text-gray-800 text-base">
-              {username}
-            </span>
-          )}
-        </div>
-
-        {/* Edit/Save Button */}
-        <div className="flex justify-end">
-          <Button
-            variant="secondary"
-            size="fit"
-            onClick={() => {
-              if (isEditing) {
-                // Check if values have changed
-                if (email !== originalValues.email || username !== originalValues.username) {
-                  setShowConfirmModal(true);
-                } else {
-                  // No changes, just exit edit mode
-                  setIsEditing(false);
-                }
-              } else {
-                // Entering edit mode, store current values
-                setOriginalValues({ email, username });
-                setIsEditing(true);
-              }
-            }}
-          >
-            {isEditing ? 'Lưu' : 'Chỉnh sửa'}
-          </Button>
-        </div>
-
-        {/* Password Section */}
-        <div>
-          <h3 className="font-bold text-black mb-2 text-base">Mật khẩu</h3>
-          <div>
-            <Button
-              variant="secondary"
-              icon={Lock}
-              size="fit"
-              onClick={() => navigate('/main/profile/old-password')}
-            >
-              Đổi mật khẩu
-            </Button>
+        {isLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <span className="text-gray-500">Đang tải...</span>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Email Section */}
+            <div>
+              <h3 className="font-bold text-black mb-2 text-base">Email</h3>
+              <span className="text-gray-800 text-base">
+                {email}
+              </span>
+            </div>
 
+            {/* Username Section */}
+            <div>
+              <h3 className="font-bold text-black mb-2 text-base">Tên đăng nhập</h3>
+              <span className="text-gray-800 text-base">
+                {username}
+              </span>
+            </div>
+
+            {/* Password Section */}
+            <div>
+              <Button
+                variant="primary"
+                icon={Lock}
+                size="fit"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Đổi mật khẩu
+              </Button>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <NotificationCard
-            title="Xác nhận thay đổi"
-            message="Bạn có chắc chắn muốn lưu thay đổi thông tin đăng nhập không?"
-            iconBgColor="bg-yellow-500"
-            buttonText="Xác nhận"
-            buttonIcon={Save}
-            onButtonClick={() => {
-              // Save the changes
-              console.log('Saving:', { email, username });
-              setOriginalValues({ email, username });
-              setShowConfirmModal(false);
-              setIsEditing(false);
-            }}
-            button2Text="Hủy"
-            button2Icon={X}
-            onButton2Click={() => {
-              // Revert changes
-              setEmail(originalValues.email);
-              setUsername(originalValues.username);
-              setShowConfirmModal(false);
-            }}
-          />
+      {/* Password Change Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-black mb-6">Đổi mật khẩu</h2>
+
+            <div className="flex flex-col gap-4">
+              {/* Current Password */}
+              <div className="relative">
+                <InputField
+                  label="Mật khẩu hiện tại"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  error={errors.currentPassword}
+                  placeholder="Nhập mật khẩu hiện tại"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+                >
+                  {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              {/* New Password */}
+              <div className="relative">
+                <InputField
+                  label="Mật khẩu mới"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  error={errors.newPassword}
+                  placeholder="Nhập mật khẩu mới"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+                >
+                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              {/* Repeat Password */}
+              <div className="relative">
+                <InputField
+                  label="Nhập lại mật khẩu mới"
+                  type={showRepeatPassword ? 'text' : 'password'}
+                  value={repeatPassword}
+                  onChange={(e) => setRepeatPassword(e.target.value)}
+                  error={errors.repeatPassword}
+                  placeholder="Nhập lại mật khẩu mới"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRepeatPassword(!showRepeatPassword)}
+                  className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+                >
+                  {showRepeatPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              {/* General Error */}
+              {errors.general && (
+                <p className="text-sm text-red-600">{errors.general}</p>
+              )}
+
+              {/* Buttons */}
+              <div className="flex gap-3 mt-2">
+                <Button
+                  variant={isSubmitting ? 'disabled' : 'secondary'}
+                  size="full"
+                  onClick={handleCancel}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  variant={isSubmitting ? 'disabled' : 'primary'}
+                  size="full"
+                  onClick={handleSubmit}
+                >
+                  {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
