@@ -299,7 +299,13 @@ services:
         paths:
           - /docs/meal-service
         strip_path: true
-        plugins: []
+        plugins:
+          - name: post-function
+            config:
+              access:
+                - |
+                  kong.service.request.set_path("/docs")
+
 
 
   # 3. Recipe Service
@@ -388,8 +394,12 @@ services:
         paths:
           - /docs/recipe-service
         strip_path: true
-        plugins: []
-
+        plugins:
+          - name: post-function
+            config:
+              access:
+                - |
+                  kong.service.request.set_path("/docs")
 
   # 4. Shopping storage service
   - name: shopping-storage-service
@@ -475,8 +485,12 @@ services:
         paths:
           - /docs/shopping-storage-service
         strip_path: true
-        plugins: []
-
+        plugins:
+          - name: post-function
+            config:
+              access:
+                - |
+                  kong.service.request.set_path("/docs")
 
   # 5. Notification service
   - name: notification-service

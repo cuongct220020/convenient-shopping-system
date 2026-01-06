@@ -1,5 +1,5 @@
 # Stage 1: Dependencies Builder
-FROM python:3.13-slim as dependencies-builder
+FROM python:3.13-slim AS dependencies-builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir /app/shared[fastapi] && \
     pip install --no-cache-dir -r requirements-docker.txt
 
 # Stage 2: Runtime
-FROM python:3.13-slim as runtime
+FROM python:3.13-slim AS runtime
 
 WORKDIR /app/shopping-storage-service
 
