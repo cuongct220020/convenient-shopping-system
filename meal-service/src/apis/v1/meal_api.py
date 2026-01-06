@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, HTTPException
 from typing import Optional
 from sqlalchemy.orm import Session
 from datetime import date
@@ -32,7 +32,17 @@ def get_meals(meal_date: date, group_id: uuid.UUID = Query(...), meal_type: Opti
     status_code=status.HTTP_200_OK,
     description="Process daily meal commands for upserting, deleting, or skipping meals."
 )
-def process_daily_meal_command(daily_command: DailyMealsCommand, db: Session = Depends(get_db)):
+def process_daily_meal_command(
+    daily_command: DailyMealsCommand, 
+    group_id: uuid.UUID = Query(..., description="Group ID for authorization check"),
+    db: Session = Depends(get_db)
+):
+    # Validate that group_id in query matches group_id in body
+    if daily_command.group_id != group_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="group_id in query parameter must match group_id in request body"
+        )
     responses = meal_command_handler.handle(db, daily_command)
     return responses
 
@@ -46,8 +56,12 @@ def process_daily_meal_command(daily_command: DailyMealsCommand, db: Session = D
         "After cancellation, the meal status will be CANCELLED."
     )
 )
-def cancel_meal(id: int, db: Session = Depends(get_db)):
-    return meal_transition.cancel(db, id)
+def cancel_meal(
+    id: int, 
+    group_id: uuid.UUID = Query(..., description="Group ID for authorization check"),
+    db: Session = Depends(get_db)
+):
+    return meal_transition.cancel(db, id, group_id)
 
 
 @meal_router.post(
@@ -60,8 +74,12 @@ def cancel_meal(id: int, db: Session = Depends(get_db)):
         "After reopening, the meal status will be CREATED."
     )
 )
-def reopen_meal(id: int, db: Session = Depends(get_db)):
-    return meal_transition.reopen(db, id)
+def reopen_meal(
+    id: int, 
+    group_id: uuid.UUID = Query(..., description="Group ID for authorization check"),
+    db: Session = Depends(get_db)
+):
+    return meal_transition.reopen(db, id, group_id)
 
 
 @meal_router.post(
@@ -74,6 +92,10 @@ def reopen_meal(id: int, db: Session = Depends(get_db)):
         "After finishing, the meal status will be DONE."
     )
 )
-def finish_meal(id: int, db: Session = Depends(get_db)):
-    return meal_transition.finish(db, id)
+def finish_meal(
+    id: int, 
+    group_id: uuid.UUID = Query(..., description="Group ID for authorization check"),
+    db: Session = Depends(get_db)
+):
+    return meal_transition.finish(db, id, group_id)
 
