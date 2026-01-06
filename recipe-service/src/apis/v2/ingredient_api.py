@@ -10,7 +10,6 @@ from .crud_router_base import create_crud_router
 from core.database import get_db
 
 from shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
-from shopping_shared.middleware.fastapi_auth import CurrentUser
 
 ingredient_crud = IngredientCRUD(Ingredient)
 
@@ -26,7 +25,6 @@ ingredient_router = APIRouter(
     description="Search for ingredients by keyword in their names with cursor-based pagination. Returns a paginated list of matching ingredients."
 )
 async def search_ingredients(
-        current_user: CurrentUser,
         keyword: str = Query(..., description="Keyword to search for in ingredient names"),
         cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
         limit: int = Query(100, ge=1, description="Maximum number of results to return"),
@@ -48,7 +46,6 @@ async def search_ingredients(
     description="Filter ingredients by category with cursor-based pagination. Returns a paginated list of ingredients matching the specified category."
 )
 def filter_ingredients_by_category(
-    current_user: CurrentUser,
     category: Category = Query(..., description="Category to filter ingredients by", examples=[Category.vegetables, Category.fresh_meat]),
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
     limit: int = Query(100, ge=1, description="Maximum number of results to return"),

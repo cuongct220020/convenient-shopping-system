@@ -2,7 +2,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from fastapi import status
-from shopping_shared.middleware.auth_utils import extract_kong_headers
+from shopping_shared.middleware.fastapi_auth import get_current_user
 from shopping_shared.exceptions import Unauthorized
 from shopping_shared.utils.logger_utils import get_logger
 
@@ -15,7 +15,7 @@ class AdminMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         
         try:
-            auth_payload = extract_kong_headers(dict(request.headers))
+            auth_payload = await get_current_user(request)
             user_role = auth_payload.get("role")
 
             if user_role != "admin":

@@ -6,6 +6,7 @@ from core.head_chef_middleware import HeadChefMiddleware
 from apis.v1.meal_api import meal_router
 from tasks.scheduler import setup_scheduler
 from shopping_shared.caching.redis_manager import redis_manager
+from core.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
