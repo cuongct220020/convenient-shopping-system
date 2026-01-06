@@ -4,7 +4,9 @@ from sanic import Request
 from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
+from app.decorators.cache_response import cache_response
 from app.enums import GroupRole
+from shopping_shared.caching.redis_keys import RedisKeys
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
@@ -88,6 +90,7 @@ class GroupView(BaseGroupView):
             )
         ]
     )
+    @cache_response(key_pattern=RedisKeys.USER_GROUPS_LIST, ttl=300)
     async def get(self, request: Request):
         """List all groups the authenticated user is a member of."""
         user_id = request.ctx.auth_payload["sub"]
@@ -158,6 +161,7 @@ class GroupDetailView(BaseGroupView):
         ]
     )
     @require_group_role(GroupRole.HEAD_CHEF)
+    @cache_response(key_pattern=RedisKeys.GROUP_DETAIL, ttl=300)
     async def get(self, request: Request, group_id: UUID):
         """Get details of a specific family group."""
         service = self._get_service(request)

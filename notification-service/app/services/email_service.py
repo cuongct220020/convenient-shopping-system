@@ -2,9 +2,7 @@
 import aiosmtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from sanic import Sanic
 from shopping_shared.utils.logger_utils import get_logger
-from typing import Optional
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 

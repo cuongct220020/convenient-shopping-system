@@ -5,6 +5,7 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import require_group_role
+from app.decorators.cache_response import cache_response
 from app.enums import GroupRole
 from app.views.base_view import BaseAPIView
 from app.repositories.user_profile_repository import (
@@ -20,6 +21,7 @@ from app.schemas.user_profile_schema import (
     UserIdentityProfileSchema,
     UserHealthProfileSchema
 )
+from shopping_shared.caching.redis_keys import RedisKeys
 
 from shopping_shared.exceptions import NotFound
 from shopping_shared.schemas.response_schema import GenericResponse
@@ -51,6 +53,7 @@ class MemberIdentityProfileView(BaseAPIView):
         ]
     )
     @require_group_role(GroupRole.MEMBER, GroupRole.HEAD_CHEF)
+    @cache_response(key_pattern=RedisKeys.USER_PROFILE_IDENTITY, ttl=900)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get identity profile of a specific group member."""
         profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
@@ -106,6 +109,7 @@ class MemberHealthProfileView(BaseAPIView):
         ]
     )
     @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
+    @cache_response(key_pattern=RedisKeys.USER_PROFILE_HEALTH, ttl=900)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get health profile of a specific group member."""
         profile_repo = UserHealthProfileRepository(session=request.ctx.db_session)
