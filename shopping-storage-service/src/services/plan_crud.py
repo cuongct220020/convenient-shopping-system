@@ -1,6 +1,7 @@
+from datetime import datetime, time, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import select, asc, desc
+from sqlalchemy import select, desc
 from fastapi import HTTPException
 from shared.shopping_shared.crud.crud_base import CRUDBase
 from models.shopping_plan import ShoppingPlan
@@ -18,16 +19,11 @@ class PLanCRUD(CRUDBase[ShoppingPlan, PlanCreate, PlanUpdate]):
         db: Session,
         group_id: Optional[int] = None,
         plan_status: Optional[PlanStatus] = None,
-        sort_by: str = "last_modified",
-        order: str = "desc",
+        deadline: Optional[datetime] = None,
         cursor: Optional[int] = None,
         limit: int = 100
     ):
         stmt = select(ShoppingPlan)
-        if sort_by == "last_modified":
-            sort_column = ShoppingPlan.last_modified
-        else:
-            sort_column = ShoppingPlan.deadline
 
         if group_id is not None:
             stmt = stmt.where(ShoppingPlan.group_id == group_id)
@@ -35,16 +31,20 @@ class PLanCRUD(CRUDBase[ShoppingPlan, PlanCreate, PlanUpdate]):
         if plan_status is not None:
             stmt = stmt.where(ShoppingPlan.plan_status == plan_status)
 
-        if order == "asc":
-            stmt = stmt.order_by(asc(sort_column))
-        else:
-            stmt = stmt.order_by(desc(sort_column))
+        if deadline is not None:
+            # Filter by deadline day (ignore time portion)
+            day = deadline.date()
+            start = datetime.combine(day, time.min)
+            if deadline.tzinfo is not None:
+                start = start.replace(tzinfo=deadline.tzinfo)
+            end = start + timedelta(days=1)
+            stmt = stmt.where(ShoppingPlan.deadline >= start, ShoppingPlan.deadline < end)
+
+        # Use stable ordering for cursor pagination
+        stmt = stmt.order_by(desc(ShoppingPlan.plan_id))
 
         if cursor is not None:
-            if order == "asc":
-                stmt = stmt.where(ShoppingPlan.plan_id > cursor)
-            else:
-                stmt = stmt.where(ShoppingPlan.plan_id < cursor)
+            stmt = stmt.where(ShoppingPlan.plan_id < cursor)
 
         stmt = stmt.limit(limit)
         return db.execute(stmt).scalars().all()

@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, status, Depends, Body, BackgroundTasks, Query, Path
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
@@ -24,13 +25,19 @@ plan_router = APIRouter(
     "/filter",
     response_model=CursorPaginationResponse[PlanResponse],
     status_code=status.HTTP_200_OK,
-    description="Filter shopping plans by group_id and/or plan_status. Supports sorting by last_modified or deadline, and pagination with cursor and limit."
+    description=(
+        "Filter shopping plans by group_id and/or plan_status and/or deadline (by day). "
+        "Supports pagination with cursor and limit."
+    )
 )
 def filter_plans(
     group_id: Optional[int] = Query(None, ge=1, description="Filter by group ID"),
     plan_status: Optional[PlanStatus] = Query(None, description="Filter by plan status", examples=[PlanStatus.CREATED, PlanStatus.IN_PROGRESS]),
-    sort_by: str = Query("last_modified", regex="^(last_modified|deadline)$", description="Field to sort by (last_modified or deadline)"),
-    order: str = Query("desc", regex="^(asc|desc)$", description="Sort order (asc or desc)"),
+    deadline: Optional[datetime] = Query(
+        None,
+        description="Filter by deadline day (datetime format; only the date portion is used)",
+        examples=["2025-12-31T00:00:00"]
+    ),
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
     limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
@@ -39,8 +46,7 @@ def filter_plans(
         db,
         group_id=group_id,
         plan_status=plan_status,
-        sort_by=sort_by,
-        order=order,
+        deadline=deadline,
         cursor=cursor,
         limit=limit
     )
