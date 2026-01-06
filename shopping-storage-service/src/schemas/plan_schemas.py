@@ -15,7 +15,7 @@ class PlanItemBase(BaseModel):
 class PlanCreate(BaseModel):
     group_id: UUID
     deadline: datetime
-    assigner_id: int = Field(gt=0)
+    assigner_id: UUID
     shopping_list: List[PlanItemBase]
     others: Optional[dict] = None
 
@@ -33,8 +33,8 @@ class PlanResponse(BaseModel):
     group_id: UUID
     deadline: datetime
     last_modified: datetime
-    assigner_id: int
-    assignee_id: Optional[int]
+    assigner_id: UUID
+    assignee_id: Optional[UUID]
     shopping_list: List[PlanItemBase]
     others: dict
     plan_status: PlanStatus

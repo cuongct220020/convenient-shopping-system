@@ -82,7 +82,7 @@ plan_router.include_router(crud_router)
 )
 def assign_plan(
     id: int = Path(..., ge=1),
-    assignee_id: int = Query(..., ge=1, description="The ID of the user to assign the plan to"),
+    assignee_id: UUID = Query(..., description="The UUID of the user to assign the plan to"),
     db: Session = Depends(get_db)
 ):
     return plan_transition.assign(db, id, assignee_id)
@@ -100,7 +100,7 @@ def assign_plan(
 )
 def unassign_plan(
     id: int = Path(..., ge=1),
-    assignee_id: int = Query(..., ge=1, description="The ID of the user to unassign from the plan"),
+    assignee_id: UUID = Query(..., description="The UUID of the user to unassign from the plan"),
     db: Session = Depends(get_db)
 ):
     return plan_transition.unassign(db, id, assignee_id)
@@ -118,7 +118,7 @@ def unassign_plan(
 )
 def cancel_plan(
     id: int = Path(..., ge=1),
-    assigner_id: int = Query(..., ge=1, description="The ID of the user who created the plan"),
+    assigner_id: UUID = Query(..., description="The UUID of the user who created the plan"),
     db: Session = Depends(get_db)
 ):
     return plan_transition.cancel(db, id, assigner_id)
@@ -141,7 +141,7 @@ def report_plan(
     id: int = Path(..., ge=1),
     report: PlanReport = Body(..., description="Report data containing the items purchased"),
     db: Session = Depends(get_db),
-    assignee_id: int = Query(..., ge=1, description="The ID of the user reporting the plan completion"),
+    assignee_id: UUID = Query(..., description="The UUID of the user reporting the plan completion"),
     confirm: bool = Query(True, description="If True, immediately complete without validation. If False, validate report content first")
 ):
     is_completed, message, data = plan_transition.report(db, id, assignee_id, report, confirm)
@@ -161,7 +161,7 @@ def report_plan(
 )
 def reopen_plan(
     id: int = Path(..., ge=1),
-    assigner_id: int = Query(..., ge=1, description="The ID of the user who created the plan"),
+    assigner_id: UUID = Query(..., description="The UUID of the user who created the plan"),
     db: Session = Depends(get_db)
 ):
     return plan_transition.reopen(db, id, assigner_id)
