@@ -27,10 +27,12 @@ import { UserCard } from '../../../components/UserCard'
 import AddMember from './AddMember'
 import { groupService } from '../../../services/group'
 import { userService } from '../../../services/user'
+import { shoppingPlanService } from '../../../services/shopping-plan'
 import type {
   UserCoreInfo,
   GroupMembership
 } from '../../../services/schema/groupSchema'
+import type { PlanResponse } from '../../../services/schema/shoppingPlanSchema'
 
 // Helper function to map backend role to UI role
 function mapRoleToUI(
@@ -106,6 +108,11 @@ const GroupDetail = () => {
   const [timeFilter, setTimeFilter] = useState<TimeFilterType>('week')
   const [selectedDate, setSelectedDate] = useState(new Date())
   const calendarScrollRef = useRef<HTMLDivElement>(null)
+
+  // Shopping Plans Data State
+  const [shoppingPlans, setShoppingPlans] = useState<PlanResponse[]>([])
+  const [isPlansLoading, setIsPlansLoading] = useState(false)
+  const [plansError, setPlansError] = useState<string | null>(null)
 
   // Fetch current user and group data on mount
   useEffect(() => {
@@ -209,6 +216,37 @@ const GroupDetail = () => {
       })
     })
   }, [timeFilter, selectedDate])
+
+  // Fetch shopping plans when shopping-plan tab is active
+  useEffect(() => {
+    const fetchShoppingPlans = async () => {
+      if (!id) return
+
+      setIsPlansLoading(true)
+      setPlansError(null)
+
+      const result = await shoppingPlanService.filterPlans(id, {
+        sortBy: 'deadline',
+        order: 'asc'
+      })
+
+      result.match(
+        (response) => {
+          setShoppingPlans(response.data.items)
+        },
+        (error) => {
+          console.error('Failed to fetch shopping plans:', error)
+          setPlansError('Không thể tải kế hoạch mua sắm')
+        }
+      )
+
+      setIsPlansLoading(false)
+    }
+
+    if (activeTab === 'shopping-plan') {
+      fetchShoppingPlans()
+    }
+  }, [activeTab, id])
 
   // Generate dates based on selected filter
   const getWeekDates = () => {
@@ -967,12 +1005,75 @@ const GroupDetail = () => {
                 </div>
               </div>
 
-              {/* Plans List - Empty State */}
+              {/* Plans List */}
               <div className="w-full">
-                <p className="px-6 text-center text-sm leading-relaxed text-gray-800">
-                  Nhóm chưa có kế hoạch mua sắm nào cả. Hãy tạo kế hoạch mua sắm
-                  mới!
-                </p>
+                {isPlansLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="size-8 animate-spin rounded-full border-b-2 border-[#C3485C]"></div>
+                  </div>
+                ) : plansError ? (
+                  <div className="px-6 py-8 text-center">
+                    <p className="text-sm text-red-500">{plansError}</p>
+                  </div>
+                ) : shoppingPlans.length === 0 ? (
+                  <div className="w-full px-6 py-8 text-center">
+                    <p className="text-sm leading-relaxed text-gray-800">
+                      Nhóm chưa có kế hoạch mua sắm nào cả. Hãy tạo kế hoạch
+                      mua sắm mới!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {shoppingPlans.map((plan) => (
+                      <div
+                        key={plan.plan_id}
+                        className="cursor-pointer rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md"
+                        onClick={() =>
+                          navigate(
+                            `/main/family-group/${groupData.id}/plan/${plan.plan_id}`
+                          )
+                        }
+                      >
+                        <div className="mb-2 flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-900">
+                              {plan.shopping_list.length} món cần mua
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Deadline:{' '}
+                              {new Date(plan.deadline).toLocaleDateString(
+                                'vi-VN',
+                                {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }
+                              )}
+                            </p>
+                          </div>
+                          {renderStatusBadge(plan.plan_status)}
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {plan.shopping_list.slice(0, 3).map((item, idx) => (
+                            <span
+                              key={idx}
+                              className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                            >
+                              {item.component_name}
+                            </span>
+                          ))}
+                          {plan.shopping_list.length > 3 && (
+                            <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">
+                              +{plan.shopping_list.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Floating Action Button for Create Plan */}

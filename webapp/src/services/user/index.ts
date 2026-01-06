@@ -17,11 +17,13 @@ import {
   UserHealthProfileSchema,
   UserHealthProfileResponseSchema,
   SearchUsersResponseSchema,
+  AdminUsersListResponseSchema,
   type CurrentUserResponse,
   type UserIdentityProfileResponse,
   type UserHealthProfileResponse,
   type SearchUsersResponse,
-  type UserCoreInfo
+  type UserCoreInfo,
+  type AdminUsersListResponse
 } from '../schema/groupSchema'
 
 type UserError = ResponseError<'not-found' | 'validation-error' | 'unauthorized'>
@@ -209,6 +211,39 @@ export class UserService {
       })
       .andThen((response) =>
         parseZodObject(UserHealthProfileResponseSchema, response.body).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
+   * Get list of users (admin endpoint with pagination)
+   * @param page - Page number (default: 1)
+   * @param pageSize - Number of items per page (default: 10)
+   */
+  public getUsersList(
+    page: number = 1,
+    pageSize: number = 10
+  ): ResultAsync<AdminUsersListResponse, UserError> {
+    return httpGet(
+      this.clients.auth,
+      `${AppUrl.ADMIN_USERS}?page=${page}&page_size=${pageSize}`
+    )
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          case 'forbidden':
+            return { ...e, type: 'validation-error' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(AdminUsersListResponseSchema, response.body).mapErr(
           (e): UserError => ({
             type: 'invalid-response-format',
             desc: e
