@@ -7,8 +7,8 @@ from enums.plan_status import PlanStatus
 class PlanItemBase(BaseModel):
     type: Literal["countable_ingredient", "uncountable_ingredient"]
     unit: str
-    quantity: float
-    component_id: int
+    quantity: float = Field(gt=0)
+    component_id: int = Field(ge=0)
     component_name: str
 
 class PlanCreate(BaseModel):
@@ -41,7 +41,7 @@ class PlanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ReportUnitBase(BaseModel):
-    storage_id: int = Field(gt=0)
+    storage_id: int = Field(ge=1)
     package_quantity: int = Field(1, gt=0)
     unit_name: str
     component_id: Optional[int] = None
@@ -65,6 +65,6 @@ class ReportUnitBase(BaseModel):
         return model
 
 class PlanReport(BaseModel):
-    plan_id: int
+    plan_id: int = Field(ge=1)
     report_content: List[ReportUnitBase]
     spent_amount: int = Field(0, ge=0)

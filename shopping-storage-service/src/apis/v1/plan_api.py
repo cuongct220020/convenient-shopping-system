@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends, Body, Query
+from fastapi import APIRouter, status, Depends, Body, BackgroundTasks, Query, Path
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import Any, Optional
@@ -27,12 +27,12 @@ plan_router = APIRouter(
     description="Filter shopping plans by group_id and/or plan_status. Supports sorting by last_modified or deadline, and pagination with cursor and limit."
 )
 def filter_plans(
-    group_id: Optional[int] = Query(None, gt=0),
-    plan_status: Optional[PlanStatus] = Query(None),
-    sort_by: str = Query("last_modified", regex="^(last_modified|deadline)$"),
-    order: str = Query("desc", regex="^(asc|desc)$"),
-    cursor: Optional[int] = Query(None, ge=0),
-    limit: int = Query(100, ge=1),
+    group_id: Optional[int] = Query(None, ge=1, description="Filter by group ID"),
+    plan_status: Optional[PlanStatus] = Query(None, description="Filter by plan status", examples=[PlanStatus.CREATED, PlanStatus.IN_PROGRESS]),
+    sort_by: str = Query("last_modified", regex="^(last_modified|deadline)$", description="Field to sort by (last_modified or deadline)"),
+    order: str = Query("desc", regex="^(asc|desc)$", description="Sort order (asc or desc)"),
+    cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
+    limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
     plans = plan_crud.filter(
@@ -50,7 +50,6 @@ def filter_plans(
         data=[PlanResponse.model_validate(plan) for plan in plans],
         next_cursor=next_cursor,
         size=len(plans),
-        has_more=len(plans) == limit
     )
 
 crud_router = create_crud_router(
@@ -74,7 +73,11 @@ plan_router.include_router(crud_router)
         "After assignment, the plan status will be IN_PROGRESS."
     )
 )
-def assign_plan(id: int, assignee_id: int = Query(..., gt=0), db: Session = Depends(get_db)):
+def assign_plan(
+    id: int = Path(..., ge=1),
+    assignee_id: int = Query(..., ge=1, description="The ID of the user to assign the plan to"),
+    db: Session = Depends(get_db)
+):
     return plan_transition.assign(db, id, assignee_id)
 
 
@@ -88,7 +91,11 @@ def assign_plan(id: int, assignee_id: int = Query(..., gt=0), db: Session = Depe
         "After unassignment, the plan status will be CREATED."
     )
 )
-def unassign_plan(id: int, assignee_id: int = Query(..., gt=0), db: Session = Depends(get_db)):
+def unassign_plan(
+    id: int = Path(..., ge=1),
+    assignee_id: int = Query(..., ge=1, description="The ID of the user to unassign from the plan"),
+    db: Session = Depends(get_db)
+):
     return plan_transition.unassign(db, id, assignee_id)
 
 
@@ -102,7 +109,11 @@ def unassign_plan(id: int, assignee_id: int = Query(..., gt=0), db: Session = De
         "After cancellation, the plan status will be CANCELLED."
     )
 )
-def cancel_plan(id: int, assigner_id: int = Query(..., gt=0), db: Session = Depends(get_db)):
+def cancel_plan(
+    id: int = Path(..., ge=1),
+    assigner_id: int = Query(..., ge=1, description="The ID of the user who created the plan"),
+    db: Session = Depends(get_db)
+):
     return plan_transition.cancel(db, id, assigner_id)
 
 
@@ -118,16 +129,17 @@ def cancel_plan(id: int, assigner_id: int = Query(..., gt=0), db: Session = Depe
         "After successful report, items from report_content will be added to their respective storages as StorableUnits."
     )
 )
-async def report_plan(
-    id: int, 
-    report: PlanReport, 
+def report_plan(
+    background_tasks: BackgroundTasks,
+    id: int = Path(..., ge=1),
+    report: PlanReport = Body(..., description="Report data containing the items purchased"),
     db: Session = Depends(get_db),
-    assignee_id: int = Query(..., gt=0),
-    confirm: bool = Query(True)
+    assignee_id: int = Query(..., ge=1, description="The ID of the user reporting the plan completion"),
+    confirm: bool = Query(True, description="If True, immediately complete without validation. If False, validate report content first")
 ):
     is_completed, message, data = plan_transition.report(db, id, assignee_id, report, confirm)
     if is_completed:
-        await report_process(report, db)
+        background_tasks.add_task(report_process, report)
     return GenericResponse(message=message, data=data)
 
 @plan_router.post(
@@ -140,7 +152,11 @@ async def report_plan(
         "After reopening, the plan status will be CREATED."
     )
 )
-def reopen_plan(id: int, assigner_id: int = Query(..., gt=0), db: Session = Depends(get_db)):
+def reopen_plan(
+    id: int = Path(..., ge=1),
+    assigner_id: int = Query(..., ge=1, description="The ID of the user who created the plan"),
+    db: Session = Depends(get_db)
+):
     return plan_transition.reopen(db, id, assigner_id)
 
 
