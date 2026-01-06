@@ -4,19 +4,19 @@ Meal Service là một microservice được xây dựng bằng FastAPI, cung c�
 
 ## 📋 Mục lục
 
--   [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
--   [Cài đặt](#cài-đặt)
--   [Cấu hình môi trường](#cấu-hình-môi-trường)
--   [Chạy service trên localhost](#chạy-service-trên-localhost)
--   [Xem API Documentation](#xem-api-documentation)
--   [Chạy bằng Docker](#chạy-bằng-docker)
+- [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
+- [Cài đặt](#cài-đặt)
+- [Cấu hình môi trường](#cấu-hình-môi-trường)
+- [Chạy service trên localhost](#chạy-service-trên-localhost)
+- [Xem API Documentation](#xem-api-documentation)
+- [Chạy bằng Docker](#chạy-bằng-docker)
 
 ## 🔧 Yêu cầu hệ thống
 
--   Python 3.13+
--   PostgreSQL database
--   Kafka broker (cho messaging, optional)
--   Shared package (`../shared`) đã được cài đặt (nếu cần)
+- Python 3.13+
+- PostgreSQL database
+- Kafka broker (cho messaging, optional)
+- Shared package (`../shared`) đã được cài đặt (nếu cần)
 
 ## 📦 Cài đặt
 
@@ -50,10 +50,9 @@ DB_USER=your_db_user
 DB_PASSWORD=your_db_password
 ```
 
-**Lưu ý:**
-
--   File `.env` phải nằm ở thư mục gốc của project (4 cấp trên `src/core/config.py`)
--   Database name mặc định là `meal_db` (được hardcode trong config)
+**Lưu ý:** 
+- File `.env` phải nằm ở thư mục gốc của project (4 cấp trên `src/core/config.py`)
+- Database name mặc định là `meal_db` (được hardcode trong config)
 
 ## 🚀 Chạy service trên localhost
 
@@ -61,18 +60,15 @@ Có 2 cách để chạy service:
 
 ### Cách 1: Sử dụng uvicorn (Khuyến nghị)
 
-<<<<<<< HEAD
-
 ```bash
 # Từ thư mục meal-service
 uvicorn main:app --host 0.0.0.0 --port 9003 --reload
 ```
 
 **Tham số:**
-
--   `--host 0.0.0.0`: Lắng nghe trên tất cả interfaces
--   `--port 9003`: Port mặc định của service
--   `--reload`: Tự động reload khi code thay đổi (chỉ dùng cho development)
+- `--host 0.0.0.0`: Lắng nghe trên tất cả interfaces
+- `--port 9003`: Port mặc định của service
+- `--reload`: Tự động reload khi code thay đổi (chỉ dùng cho development)
 
 ### Cách 2: Chạy trực tiếp với Python
 
@@ -93,11 +89,10 @@ http://localhost:9003/docs
 ```
 
 Swagger UI cung cấp:
-
--   Danh sách tất cả endpoints
--   Schema của request/response
--   Khả năng test API trực tiếp từ browser
--   Try it out: Gửi request và xem response ngay lập tức
+- Danh sách tất cả endpoints
+- Schema của request/response
+- Khả năng test API trực tiếp từ browser
+- Try it out: Gửi request và xem response ngay lập tức
 
 ## 🐳 Chạy bằng Docker
 
@@ -120,79 +115,9 @@ docker run -d \
 ```
 
 **Lưu ý:**
-
--   Đảm bảo file `.env` có đầy đủ các biến môi trường
--   Container cần kết nối đến PostgreSQL (có thể qua Docker network)
--   Port `9003` sẽ được expose ra host (container listen `8000`)
-
-### Xem logs
-
-```bash
-docker logs -f meal-service
-```
-
-## 📍 API Endpoints
-
-```bash
-# Từ thư mục meal-service
-uvicorn main:app --host 0.0.0.0 --port 8003 --reload
-```
-
-**Tham số:**
-
--   `--host 0.0.0.0`: Lắng nghe trên tất cả interfaces
--   `--port 8003`: Port mặc định của service
--   `--reload`: Tự động reload khi code thay đổi (chỉ dùng cho development)
-
-### Cách 2: Chạy trực tiếp với Python
-
-```bash
-# Từ thư mục meal-service
-python main.py
-```
-
-Service sẽ chạy trên `http://0.0.0.0:8003` (có thể truy cập từ `http://localhost:8003`).
-
-## 📚 Xem API Documentation
-
-FastAPI tự động tạo interactive API documentation. Sau khi service đã chạy, mở trình duyệt và truy cập:
-
-```
-http://localhost:8003/docs
-```
-
-Swagger UI cung cấp:
-
--   Danh sách tất cả endpoints
--   Schema của request/response
--   Khả năng test API trực tiếp từ browser
--   Try it out: Gửi request và xem response ngay lập tức
-
-## 🐳 Chạy bằng Docker
-
-### Build Docker image
-
-```bash
-# Từ thư mục gốc của project
-docker build -t meal-service -f meal-service/Dockerfile .
-```
-
-### Chạy container
-
-```bash
-docker run -d \
-  --name meal-service \
-  -p 8003:8003 \
-  --env-file .env \
-  --network shopping-network \
-  meal-service
-```
-
-**Lưu ý:**
-
--   Đảm bảo file `.env` có đầy đủ các biến môi trường
--   Container cần kết nối đến PostgreSQL (có thể qua Docker network)
--   Port 8003 sẽ được expose ra host
+- Đảm bảo file `.env` có đầy đủ các biến môi trường
+- Container cần kết nối đến PostgreSQL (có thể qua Docker network)
+- Port `9003` sẽ được expose ra host (container listen `8000`)
 
 ### Xem logs
 
@@ -205,43 +130,43 @@ docker logs -f meal-service
 Service cung cấp các endpoints chính:
 
 ### Meals API (`/v1/meals`)
-
--   `GET /v1/meals/` - Lấy danh sách meals theo ngày, group_id và tùy chọn meal_type
--   `POST /v1/meals/command` - Xử lý các lệnh tạo/cập nhật/xóa meals (daily meal commands)
--   `POST /v1/meals/{id}/cancel` - Hủy một meal
--   `POST /v1/meals/{id}/reopen` - Mở lại một meal đã hủy
--   `POST /v1/meals/{id}/finish` - Đánh dấu meal đã hoàn thành
+- `GET /v1/meals/` - Lấy danh sách meals theo ngày, group_id và tùy chọn meal_type
+- `POST /v1/meals/command` - Xử lý các lệnh tạo/cập nhật/xóa meals (daily meal commands)
+- `POST /v1/meals/{id}/cancel` - Hủy một meal
+- `POST /v1/meals/{id}/reopen` - Mở lại một meal đã hủy
+- `POST /v1/meals/{id}/finish` - Đánh dấu meal đã hoàn thành
 
 ## 🛠️ Troubleshooting
 
 ### Lỗi kết nối database
 
--   Kiểm tra PostgreSQL đã chạy chưa
--   Kiểm tra thông tin kết nối trong `.env`
--   Đảm bảo database `meal_db` đã được tạo
--   Chạy migrations: `alembic upgrade head`
+- Kiểm tra PostgreSQL đã chạy chưa
+- Kiểm tra thông tin kết nối trong `.env`
+- Đảm bảo database `meal_db` đã được tạo
+- Chạy migrations: `alembic upgrade head`
 
 ### Lỗi import shared package
 
--   Đảm bảo thư mục `shared` nằm ở cùng cấp với `meal-service`
--   Cài đặt shared package: `pip install -e ../shared[fastapi]`
--   Kiểm tra `PYTHONPATH` nếu cần
+- Đảm bảo thư mục `shared` nằm ở cùng cấp với `meal-service`
+- Cài đặt shared package: `pip install -e ../shared[fastapi]`
+- Kiểm tra `PYTHONPATH` nếu cần
 
-### Port 8003 đã được sử dụng
+### Port 9003 đã được sử dụng
 
--   Thay đổi port trong `main.py` hoặc dùng `--port` với uvicorn:
-    ```bash
-    uvicorn main:app --port 8004 --reload
-    ```
+- Dùng port khác với uvicorn:
+  ```bash
+  uvicorn main:app --port 9006 --reload
+  ```
 
 ## 📝 Notes
 
--   Service sử dụng CORS middleware cho phép tất cả origins (chỉ dùng cho development)
--   Database migrations được quản lý bằng Alembic
--   Service có tích hợp scheduler để chạy các scheduled tasks (ví dụ: expire meals)
+- Service sử dụng CORS middleware cho phép tất cả origins (chỉ dùng cho development)
+- Database migrations được quản lý bằng Alembic
+- Port hệ thống khuyến nghị cho Meal Service: `9003`
+- Service có tích hợp scheduler để chạy các scheduled tasks (ví dụ: expire meals)
 
 ## 🔗 Liên kết hữu ích
 
--   [FastAPI Documentation](https://fastapi.tiangolo.com/)
--   [Alembic Documentation](https://alembic.sqlalchemy.org/)
--   [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Alembic Documentation](https://alembic.sqlalchemy.org/)
+- [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)

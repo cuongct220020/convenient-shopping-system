@@ -1,5 +1,7 @@
+import uuid
 from datetime import date
 from sqlalchemy import Integer, String, Date, JSON, ForeignKey, Enum, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import Base
 from enums.meal_type import MealType
@@ -11,7 +13,7 @@ class Meal(Base):
 
     meal_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    group_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     meal_type: Mapped[MealType] = mapped_column(Enum(MealType), nullable=False)
     meal_status: Mapped[MealStatus] = mapped_column(Enum(MealStatus), nullable=False, default=MealStatus.CREATED)
 
