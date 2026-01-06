@@ -221,7 +221,7 @@ __marimo__/
 
 .env
 
-*.db
+#*.db
 .DS_Store
 
 shopping_shared.egg-info
