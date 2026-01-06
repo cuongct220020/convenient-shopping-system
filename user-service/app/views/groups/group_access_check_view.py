@@ -5,7 +5,9 @@ from sanic import Request
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
+from app.decorators import validate_request
 from app.views.groups.base_group_view import BaseGroupView
+from app.schemas.family_group_schema import GroupAccessCheckSchema
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.openapi_utils import get_openapi_body
 
@@ -15,20 +17,22 @@ class GroupAccessCheckView(BaseGroupView):
     @openapi.definition(
         summary="[INTERNAL] Check group access and Head Chef role",
         description="Internal endpoint to validate group existence, user membership, and optionally verify Head Chef role",
-        tag=["Internal", "Group Authorization"],
+        tag=["Internal Group Authorization"],
+        body=get_openapi_body(GroupAccessCheckSchema),
         response = [
             Response(content=get_openapi_body(GenericResponse), status=200, description="User has valid access (and is Head Chef if required)"),
             Response(content=get_openapi_body(GenericResponse), status=403, description="User is not Head Chef when required"),
             Response(content=get_openapi_body(GenericResponse), status=404, description="Group or membership not found.")
         ]
     )
+    @validate_request(GroupAccessCheckSchema)
     async def post(
         self,
         request: Request,
         group_id: UUID,
-        user_id: UUID,
-        check_head_chef: bool
+        user_id: UUID
     ):
+        check_head_chef = request.ctx.validated_data.check_head_chef
         service = self._get_service(request)
 
         is_member, is_head_chef = await service.check_group_access(

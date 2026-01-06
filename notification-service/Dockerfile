@@ -1,5 +1,5 @@
 # Stage 1: Dependencies Builder
-FROM python:3.13-slim as dependencies-builder
+FROM python:3.13-slim AS dependencies-builder
 
 WORKDIR /app
 # Install build dependencies
@@ -23,7 +23,7 @@ RUN cp /app/notification-service/requirements.txt /app/notification-service/requ
     pip install --no-cache-dir -r /app/notification-service/requirements_filtered.txt
 
 # Stage 2: Runtime
-FROM python:3.13-slim as runtime
+FROM python:3.13-slim AS runtime
 
 WORKDIR /app/notification-service
 
@@ -66,5 +66,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 ENTRYPOINT ["dumb-init", "--"]
 
-# Khuyên dùng: Gọi qua python module để tránh lỗi path tuyệt đối
 CMD ["python3", "run.py"]

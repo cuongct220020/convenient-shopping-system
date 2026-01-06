@@ -4,85 +4,13 @@ networks:
     driver: bridge
 
 volumes:
-  postgres-data:
-    name: postgres-data
   redis-data:
     name: redis-data
   kafka-data:
     name: kafka-data
-  redis-insight-data:
-    name: redis-insight-data
-#  es-data:
-#    name: es-data
+
 
 services:
-  # PostgreSQL Service
-  postgres-db:
-    image: postgres:15-alpine
-    container_name: postgres-db
-    environment:
-      POSTGRES_USER: ${POSTGRES_DB_USER:-cuongct}
-      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:-cuongct090204}
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - shopping-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_DB_USER:-cuongct} -d postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-
-  # Database initialization service
-  db-init:
-    image: postgres:15-alpine
-    container_name: db-init
-    depends_on:
-      - postgres-db
-    environment:
-      POSTGRES_USER: ${POSTGRES_DB_USER:-cuongct}
-      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD:-cuongct090204}
-      POSTGRES_DB: postgres
-      PGHOST: postgres-db
-      PGUSER: ${POSTGRES_DB_USER:-cuongct}
-      PGPASSWORD: ${POSTGRES_DB_PASSWORD:-cuongct090204}
-      PGDATABASE: postgres
-    command: >
-      bash -c "
-        # Hàm wait for postgres
-        until pg_isready; do
-          echo 'Waiting for PostgreSQL to be ready...'
-          sleep 2
-        done &&
-        
-        # Check và tạo shopping_user_service_db (chỉ tạo nếu chưa có)
-        if ! psql -lqt | cut -d \| -f 1 | grep -qw shopping_user_service_db; then
-          psql -c 'CREATE DATABASE shopping_user_service_db;'
-          echo 'Created shopping_user_service_db'
-        else
-          echo 'Database shopping_user_service_db already exists'
-        fi &&
-
-        # Check và tạo shopping_notification_service_db (chỉ tạo nếu chưa có)
-        if ! psql -lqt | cut -d \| -f 1 | grep -qw shopping_notification_service_db; then
-          psql -c 'CREATE DATABASE shopping_notification_service_db;'
-          echo 'Created shopping_notification_service_db'
-        else
-          echo 'Database shopping_notification_service_db already exists'
-        fi &&
-        
-        echo 'Databases check completed successfully' &&
-        touch /tmp/databases_created
-      "
-    networks:
-      - shopping-network
-    restart: "no"
-
-
   # Redis Caching Service
   redis-caching:
     image: redis:8.4.0
@@ -101,24 +29,6 @@ services:
       start_period: 10s
     networks:
       - shopping-network
-
-
-  # Redis Insight for monitoring Redis
-  redis-insight:
-    image: redis/redisinsight:2.70
-    container_name: redis-insight
-    hostname: redis-insight
-    environment:
-      - RI_APP_ACCEPT_EULA=yes
-      - RI_APP_LOGIN_REQUIRED=false
-    ports:
-      - "5540:5540"
-    volumes:
-      - redis-insight-data:/data
-    networks:
-      - shopping-network
-    depends_on:
-      - redis-caching
 
 
   # Kafka Broker Service
@@ -160,35 +70,6 @@ services:
       start_period: 10s
 
 
-  # Kafka UI for managing and monitoring Kafka
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
-    hostname: kafka-ui
-    ports:
-      - "8080:8080"
-    depends_on:
-      kafka-broker:
-        condition: service_healthy
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local-kafka-broker
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker:9092
-      DYNAMIC_CONFIG_ENABLED: 'true'
-    networks:
-      - shopping-network
-    restart: unless-stopped
-
-  # Mailpit - Email testing tool
-  mailpit:
-    image: axllent/mailpit
-    container_name: mailpit
-    ports:
-      - "8025:8025" # Web UI
-      - "1025:1025" # SMTP server
-    networks:
-      - shopping-network
-    restart: unless-stopped
-
   # Kong Gateway (Declarative mode - no database needed)
   kong-gateway:
     image: kong:3.9.1
@@ -222,53 +103,6 @@ services:
       timeout: 5s
       retries: 5
 
-#  elasticsearch:
-#    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
-#    container_name: elasticsearch
-#    hostname: elasticsearch
-#    environment:
-#      - node.name=elasticsearch
-#      - discovery.type=single-node
-#      - bootstrap.memory_lock=true
-#      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
-#      - xpack.security.enabled=false
-#      - xpack.security.enrollment.enabled=false
-#      - xpack.security.http.ssl.enabled=false
-#      - xpack.security.transport.ssl.enabled=false
-#      - xpack.ml.enabled=false
-#      - ingest.geoip.downloader.enabled=false
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#      nofile:
-#        soft: 65536
-#        hard: 65536
-#    volumes:
-#      - es-data:/usr/share/elasticsearch/data
-#    ports:
-#      - "9200:9200"
-#    networks:
-#      - shopping-network
-#    restart: unless-stopped
-#    profiles:
-#      - elasticsearch
-#    deploy:
-#      resources:
-#        limits:
-#          memory: 512M
-#        reservations:
-#          memory: 256M
-#    logging:
-#      driver: "json-file"
-#      options:
-#        max-size: "10m"
-#        max-file: "3"
-#    healthcheck:
-#      test: [ "CMD-SHELL", "curl -s http://localhost:9200 || exit 1" ]
-#      interval: 30s
-#      timeout: 10s
-#      retries: 5
 
   # User Service
   user-service:
@@ -278,8 +112,6 @@ services:
     container_name: user-service
     hostname: user-service
     image: user-service:v1.0.0
-#    profiles:
-#      - user-service
     depends_on:
       redis-caching:
         condition: service_healthy
@@ -288,8 +120,10 @@ services:
       kong-gateway:
         condition: service_healthy
     environment:
-      - POSTGRES_DB_NAME=shopping_user_service_db
-      - POSTGRES_DB_PORT=5432
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
 
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
@@ -318,8 +152,7 @@ services:
       dockerfile: recipe-service/Dockerfile
     container_name: recipe-service
     hostname: recipe-service
-    profiles:
-      - recipe-service
+    image: recipe-service:v1.0.0
     depends_on:
       kafka-broker:
         condition: service_healthy
@@ -328,7 +161,16 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+
+      - USER_SERVICE_URL=http://user-service:8000
     env_file:
       - .env
     ports:
@@ -343,10 +185,9 @@ services:
     build:
       context: .
       dockerfile: meal-service/Dockerfile
+    image: meal-service:v1.0.0
     container_name: meal-service
     hostname: meal-service
-    profiles:
-      - meal-service
     depends_on:
       kafka-broker:
         condition: service_healthy
@@ -355,6 +196,14 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+
+      - USER_SERVICE_URL=http://user-service:8000
     env_file:
       - .env
     ports:
@@ -369,10 +218,9 @@ services:
     build:
       context: .
       dockerfile: shopping-storage-service/Dockerfile
+    image: shopping-storage-service:v1.0.0
     container_name: shopping-storage-service
     hostname: shopping-storage-service
-    profiles:
-      - shopping-storage
     depends_on:
       kafka-broker:
         condition: service_healthy
@@ -381,7 +229,16 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+
+      - USER_SERVICE_URL=http://user-service:8000
     env_file:
       - .env
     ports:
@@ -399,16 +256,16 @@ services:
     container_name: notification-service
     image: notification-service:v1.0.0
     hostname: notification-service
-#    profiles:
-#      - notification-service
     depends_on:
       redis-caching:
         condition: service_healthy
       kafka-broker:
         condition: service_healthy
     environment:
-      - POSTGRES_DB_NAME=shopping_notification_service_db
-      - POSTGRES_DB_PORT=5432
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
 
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}

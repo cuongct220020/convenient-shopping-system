@@ -216,3 +216,13 @@ class PaginatedFamilyGroupsResponseSchema(BaseSchema):
         description="Total number of pages",
         examples=[3]
     )
+
+
+@openapi.component
+class GroupAccessCheckSchema(BaseSchema):
+    """Schema for internal group access check request."""
+    check_head_chef: bool = Field(
+        False,
+        description="Whether to also verify if the user is the Head Chef of the group.",
+        examples=[True, False]
+    )

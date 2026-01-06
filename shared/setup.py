@@ -19,7 +19,8 @@ setup(
             'starlette==0.48.0',
             'greenlet==3.2.4',
             'idna==3.10',
-            'psycopg2-binary==2.9.10'
+            'psycopg2-binary==2.9.10',
+            'redis==5.2.1'
         ],
         'sanic': [
             'sanic==24.12.0',

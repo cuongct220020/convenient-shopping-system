@@ -12,18 +12,20 @@ IGNORE_PATHS = {
     "/api/v1/user-service/auth/otp/verify",
     "/api/v1/user-service/auth/reset-password",
     "/api/v1/user-service/auth/refresh-token",
-    "/api/v1/user-service/groups/internal/<group_id:uuid>/members/<user_id:uuid>/access-check" # Internal API
 }
 
 IGNORE_PREFIXES = [
-    "/api/v1/user-service/docs/"
+    "/api/v1/user-service/docs/",
+    "/api/v1/user-service/groups/internal",
+    "/groups/internal",
+    "/user-service/groups/internal"
 ]
 
 LOGOUT_PATH = "/api/v1/user-service/auth/logout"
 
 # Create the middleware instance using the shared factory
 # This function matches the signature expected by Sanic's register_middleware
-auth_middleware_handler = create_auth_middleware(
+_auth_middleware_handler = create_auth_middleware(
     ignore_paths=IGNORE_PATHS,
     ignore_prefixes=IGNORE_PREFIXES,
     logout_path=LOGOUT_PATH
@@ -33,4 +35,6 @@ async def auth_middleware(request: Request):
     """
     Wrapper to call the generated middleware.
     """
-    await auth_middleware_handler(request)
+    # Debug print to verify path and ignore logic
+    print(f"[DEBUG] Auth Request Path: {request.path}")
+    await _auth_middleware_handler(request)

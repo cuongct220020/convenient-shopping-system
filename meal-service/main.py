@@ -5,15 +5,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.head_chef_middleware import HeadChefMiddleware
 from apis.v1.meal_api import meal_router
 from tasks.scheduler import setup_scheduler
+from shopping_shared.caching.redis_manager import redis_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize Redis connection
+    await redis_manager.setup(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        db=settings.REDIS_DB,
+        password=settings.REDIS_PASSWORD
+    )
+
     scheduler = setup_scheduler()
     scheduler.start()
 
     yield
 
     scheduler.shutdown()
+    await redis_manager.close()
 
 app = FastAPI(
     title="Meal Service",
