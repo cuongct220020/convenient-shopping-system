@@ -226,11 +226,11 @@ services:
                   end
 
 #  - name: recipe-service
-#    url: http://host.docker.internal:9002
+#    url: http://recipe-service:8000
 #  - name: meal-service
-#    url: http://host.docker.internal:9003
+#    url: http://meal-service:8000
 #  - name: shopping-storage-service
-#    url: http://host.docker.internal:9004
+#    url: http://shopping-storage-service:8000
 
 
   - name: notification-service

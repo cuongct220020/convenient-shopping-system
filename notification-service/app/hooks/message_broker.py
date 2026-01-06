@@ -1,5 +1,8 @@
 # notification-service/app/hooks/message_broker.py
 from sanic import Sanic
+
+from app.consumers.notification_consumer import consume_notifications, request_shutdown
+
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
 
@@ -23,3 +26,15 @@ async def close_kafka(_app: Sanic):
     logger.info("Closing Kafka manager...")
     await kafka_manager.close()
     logger.info("Kafka manager closed.")
+
+
+async def start_consumer(app, loop):
+    """Start Kafka consumer after server is fully started."""
+    logger.info("Starting Kafka consumer background task...")
+    app.add_task(consume_notifications(app))
+
+
+async def stop_consumer(app, loop):
+    """Request graceful shutdown of Kafka consumer."""
+    logger.info("Requesting consumer shutdown...")
+    request_shutdown()
