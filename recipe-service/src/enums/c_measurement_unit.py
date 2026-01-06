@@ -14,3 +14,5 @@ class CMeasurementUnit(str, enum.Enum):
     CAY = 'cây'
     LAT = 'lát'
     KHUC = 'khúc'
+    LA = 'lá'
+    HOP = 'hộp'
