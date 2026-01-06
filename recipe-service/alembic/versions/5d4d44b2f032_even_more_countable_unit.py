@@ -22,7 +22,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.execute("ALTER TYPE cmeasurementunit ADD VALUE 'LA'")
     op.execute("ALTER TYPE cmeasurementunit ADD VALUE 'HOP'")
-
+    op.execute("ALTER TYPE cmeasurementunit ADD VALUE 'CAI'")
 
 def downgrade() -> None:
     """Downgrade schema."""
