@@ -1,8 +1,9 @@
+import uuid
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select, or_, cast
 from sqlalchemy.dialects.postgresql import JSONB
 from typing import Sequence, Optional
-from shared.shopping_shared.crud.crud_base import CRUDBase
+from shopping_shared.crud.crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
 from models.component_existence import ComponentExistence
 from schemas.recipe_schemas import RecipeCreate, RecipeUpdate
@@ -72,7 +73,7 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
     async def get_flattened(
         self,
         recipes_with_quantity: list[RecipeQuantityInput],
-        group_id: Optional[int],
+        group_id: Optional[uuid.UUID],
         check_existence: bool,
         db: Session
     ) -> list[tuple[float, IngredientResponse, Optional[bool]]]:

@@ -1,30 +1,20 @@
-import React from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Apple,
-  Soup,
-  BookOpen,
-  ShoppingCart,
-  User
-} from 'lucide-react';
+import React from 'react'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Apple, Soup, User, Archive, ShoppingCart } from 'lucide-react'
 
 // Define the available tab names
-type TabName = 'ingredient-recipe' | 'food-storage' | 'meal' | 'family-group' | 'profile';
+const TabNames = ['ingredient-recipe', 'food', 'meal', 'family-group', 'profile'] as const
+type TabName = (typeof TabNames)[number]
 
 export default function MainLayout() {
   const navigate = useNavigate()
   const location = useLocation()
 
   // Determine active tab from current location
-  const currentActiveTab = (() => {
-    const path = location.pathname;
-    if (path.includes('/ingredient-recipe')) return 'ingredient-recipe';
-    if (path.includes('/food-storage')) return 'food-storage';
-    if (path.includes('/meal')) return 'meal';
-    if (path.includes('/family-group')) return 'family-group';
-    if (path.includes('/profile')) return 'profile';
-    return 'profile'; // default
-  })();
+  const currentActiveTab = ((): TabName => {
+    const path = location.pathname
+    return TabNames.find((e) => path.includes(`/${e}`)) ?? 'profile'
+  })()
 
   const handlePress = (tab: TabName) => {
     navigate(`/main/${tab}`)
@@ -54,13 +44,13 @@ export default function MainLayout() {
 
         {/* Tab 2: Food Storage (Bowl) */}
         <TabItem
-          isActive={currentActiveTab === 'food-storage'}
-          onPress={() => handlePress('food-storage')}
+          isActive={currentActiveTab === 'food'}
+          onPress={() => handlePress('food')}
         >
-          <Soup
+          <Archive
             size={24}
             strokeWidth={2.5}
-            className={currentActiveTab === 'food-storage' ? 'text-[#C3485C]' : 'text-gray-400'}
+            className={currentActiveTab === 'food' ? 'text-[#C3485C]' : 'text-gray-400'}
           />
         </TabItem>
 
@@ -69,7 +59,7 @@ export default function MainLayout() {
           isActive={currentActiveTab === 'meal'}
           onPress={() => handlePress('meal')}
         >
-          <BookOpen
+          <Soup
             size={24}
             strokeWidth={2.5}
             className={currentActiveTab === 'meal' ? 'text-[#C3485C]' : 'text-gray-400'}

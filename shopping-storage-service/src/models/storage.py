@@ -1,4 +1,6 @@
+import uuid
 from sqlalchemy import Integer, String, Float, DateTime, Enum, ForeignKey, CheckConstraint, Date, event, update
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime, date
@@ -13,7 +15,7 @@ class Storage(Base):
     storage_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     storage_name: Mapped[str] = mapped_column(String, nullable=True)
     storage_type: Mapped[StorageType] = mapped_column(Enum(StorageType), nullable=False)
-    group_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
 
     storage_unit_list: Mapped[list["StorableUnit"]] = relationship(
         back_populates="storage",

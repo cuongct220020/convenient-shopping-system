@@ -1,4 +1,3 @@
-import { createBrowserRouter } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import Profile from '../pages/main/profile/Profile'
 import LoginInformation from '../pages/main/profile/LoginInformation'
@@ -8,6 +7,15 @@ import NewPassword from '../pages/main/profile/NewPassword'
 import PersonalProfile from '../pages/main/profile/PersonalProfile'
 import HealthProfile from '../pages/main/profile/HealthProfile'
 import Favorites from '../pages/main/profile/Favorites'
+import { RouteObject } from 'react-router-dom'
+import { Storage } from '../pages/main/food-storage/Storage'
+import { AddStorage } from '../pages/main/food-storage/AddStorage'
+import { StorageDetails } from '../pages/main/food-storage/StorageDetails'
+import { StorageItemDetail } from '../pages/main/food-storage/StorageItemDetail'
+import { AddStorageItem } from '../pages/main/food-storage/AddStorageItem'
+import { Meal } from '../pages/main/meal/Meal'
+import { AddMeal } from '../pages/main/meal/AddMeal'
+import { MealDetail } from '../pages/main/meal/MealDetail'
 import FamilyGroup from '../pages/main/family-group/FamilyGroup'
 import AddGroup from '../pages/main/family-group/AddGroup'
 import GroupDetail from '../pages/main/family-group/GroupDetail'
@@ -18,81 +26,140 @@ import PlanDetail from '../pages/main/family-group/PlanDetail'
 import ImplementPlan from '../pages/main/family-group/ImplementPlan'
 import EditPlan from '../pages/main/family-group/EditPlan'
 
-export const MainRoutes = {
-  path: "/main",
+const ProfileRoutes: RouteObject = {
+  path: 'profile',
+  children: [
+    {
+      index: true,
+      element: <Profile />
+    },
+    {
+      path: 'login-information',
+      element: <LoginInformation />
+    },
+    {
+      path: 'old-password',
+      element: <OldPassword />
+    },
+    {
+      path: 'authentication',
+      element: <Authentication />
+    },
+    {
+      path: 'new-password',
+      element: <NewPassword />
+    },
+    {
+      path: 'personal-profile',
+      element: <PersonalProfile />
+    },
+    {
+      path: 'health-profile',
+      element: <HealthProfile />
+    },
+    {
+      path: 'favorites',
+      element: <Favorites />
+    }
+  ]
+}
+
+const NutritionRoutes: RouteObject = {
+  path: 'nutrition',
+  element: <div>Nutrition Screen</div>
+}
+
+const FoodRoutes: RouteObject = {
+  path: 'food',
+  children: [
+    {
+      index: true,
+      element: <Storage />
+    },
+    {
+      path: 'storage/add',
+      element: <AddStorage />
+    },
+    {
+      path: 'storage/items',
+      element: <StorageDetails />
+    },
+    {
+      path: 'storage/items/detail',
+      element: <StorageItemDetail />
+    },
+    { path: 'storage/items/add', element: <AddStorageItem /> }
+  ]
+}
+
+const MealRoutes: RouteObject = {
+  path: 'meal',
+  children: [
+    { index: true, element: <Meal /> },
+    {
+      path: 'add',
+      element: <AddMeal />
+    },
+    {
+      path: 'detail',
+      element: <MealDetail />
+    }
+  ]
+}
+
+const FavoriteRoutes: RouteObject = {
+  path: 'nutrition',
+  element: <div>Favorite Screen</div>
+}
+
+export const MainRoutes: RouteObject = {
+  path: 'main',
   element: <MainLayout />,
   children: [
     {
       index: true,
-      element: <Profile />,
+      element: <Profile />
+    },
+    ProfileRoutes,
+    NutritionRoutes,
+    FoodRoutes,
+    MealRoutes,
+    FavoriteRoutes,
+    {
+      path: 'family-group',
+      element: <FamilyGroup />
     },
     {
-      path: "profile",
-      element: <Profile />,
+      path: 'family-group/add',
+      element: <AddGroup />
     },
     {
-       path: "profile/login-information",
-       element: <LoginInformation />
+      path: 'family-group/:id',
+      element: <GroupDetail />
     },
     {
-       path: "profile/old-password",
-       element: <OldPassword />
+      path: 'family-group/:id/edit',
+      element: <EditGroup />
     },
     {
-       path: "profile/authentication",
-       element: <Authentication />
-    },
-    {
-       path: "profile/new-password",
-       element: <NewPassword />
-    },
-    {
-       path: "profile/personal-profile",
-       element: <PersonalProfile />
-    },
-    {
-       path: "profile/health-profile",
-       element: <HealthProfile />
-    },
-    {
-       path: "profile/favorites",
-       element: <Favorites />
-    },
-    {
-      path: "family-group",
-      element: <FamilyGroup />,
-    },
-    {
-      path: "family-group/add",
-      element: <AddGroup />,
-    },
-    {
-      path: "family-group/:id",
-      element: <GroupDetail />,
-    },
-    {
-      path: "family-group/:id/edit",
-      element: <EditGroup />,
-    },
-    {
-      path: "family-group/:id/user/:userId",
+      path: 'family-group/:id/user/:userId',
       element: <UserDetail />
     },
     {
-      path: "family-group/:id/add-plan",
+      path: 'family-group/:id/add-plan',
       element: <AddPlan />
     },
     {
-      path: "family-group/:id/plan/:planId",
+      path: 'family-group/:id/plan/:planId',
       element: <PlanDetail />
     },
     {
-      path: "family-group/:id/plan/:planId/edit",
+      path: 'family-group/:id/plan/:planId/edit',
       element: <EditPlan />
     },
     {
-      path: "family-group/:id/plan/:planId/implement",
+      path: 'family-group/:id/plan/:planId/implement',
       element: <ImplementPlan />
     }
-  ],
+  ]
 }

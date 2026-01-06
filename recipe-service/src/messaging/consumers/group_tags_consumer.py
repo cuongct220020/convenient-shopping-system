@@ -1,5 +1,5 @@
-from shared.shopping_shared.messaging.kafka_manager import kafka_manager
-from shared.shopping_shared.messaging.topics import USER_EVENTS_TOPIC
+from shopping_shared.messaging.kafka_manager import kafka_manager
+from shopping_shared.messaging.topics import USER_EVENTS_TOPIC
 from messaging.handlers.group_tags_handler import handle_group_tags_update
 
 

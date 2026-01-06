@@ -1,4 +1,4 @@
-from shared.shopping_shared.crud.crud_base import CRUDBase
+from shopping_shared.crud.crud_base import CRUDBase
 from models.storage import Storage
 from schemas.storage_schemas import StorageCreate, StorageUpdate
 

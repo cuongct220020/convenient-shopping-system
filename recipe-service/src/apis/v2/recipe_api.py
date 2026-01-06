@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, status, Depends, Query, HTTPException, Body, Path
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
@@ -8,7 +9,7 @@ from models.recipe_component import Recipe
 from schemas.recipe_flattened_schemas import RecipeQuantityInput, FlattenedIngredientsResponse, FlattenedIngredientItem
 from schemas.recipe_schemas import RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 from .crud_router_base import create_crud_router
-from shared.shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
+from shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
 from core.database import get_db
 from utils.custom_mapping import recipe_detailed_mapping
 
@@ -26,7 +27,7 @@ recipe_router = APIRouter(
     description="Get recommended recipes for a group based on ingredient availability and tag preferences. Returns top 10 recipes."
 )
 def recommend_recipes(
-    group_id: int = Query(..., ge=1, description="Group ID to get recommendations for"),
+    group_id: uuid.UUID = Query(..., description="Group ID to get recommendations for"),
     db: Session = Depends(get_db)
 ):
     recommender = Recommender(db)
@@ -82,7 +83,7 @@ async def get_recipe_flattened(
         ]
     ),
     check_existence: bool = Query(False, description="Check if ingredients exist in group inventory"),
-    group_id: Optional[int] = Query(None, ge=1, description="Group ID to check ingredient existence (required if check_existence is True)"),
+    group_id: Optional[uuid.UUID] = Query(None, description="Group ID to check ingredient existence (required if check_existence is True)"),
     db: Session = Depends(get_db)
 ):
     if check_existence and group_id is None:
