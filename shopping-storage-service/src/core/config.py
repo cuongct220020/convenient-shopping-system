@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     @property
     def DATABASE_URL(self) -> str:
-        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/recipe_db"
+        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/shopping_storage_db"
 
     # Kafka Configuration
     KAFKA_BOOTSTRAP_SERVERS: str = "kafka-broker:9092"

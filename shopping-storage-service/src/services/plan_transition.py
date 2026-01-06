@@ -62,7 +62,7 @@ class PlanTransition:
 
             self._preconditions_check(plan, [PlanStatus.CREATED, PlanStatus.IN_PROGRESS])
 
-            if plan.assignee_id != assigner_id:
+            if plan.assigner_id != assigner_id:
                 raise HTTPException(status_code=403,
                                     detail=f"Operation not allowed: user {assigner_id} is not the assigner of this plan")
 
@@ -147,7 +147,7 @@ class PlanTransition:
 
             self._preconditions_check(plan, PlanStatus.CANCELLED)
 
-            if plan.assignee_id != assigner_id:
+            if plan.assigner_id != assigner_id:
                 raise HTTPException(status_code=403,
                                     detail=f"Operation not allowed: user {assigner_id} is not the assigner of this plan")
 
