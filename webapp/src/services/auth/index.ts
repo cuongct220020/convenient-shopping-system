@@ -113,7 +113,7 @@ export class AuthService {
     if (!input.trim()) {
       return err('empty_password')
     }
-    if (input.length < 4) {
+    if (input.length < 8) {
       return err('invalid_password')
     }
     return ok()

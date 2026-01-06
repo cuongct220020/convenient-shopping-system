@@ -22,4 +22,12 @@ export class Time {
     const yyyy = time.getFullYear()
     return `${dd}/${mm}/${yyyy}`
   }
+
+  public static isSameDay(a: Date, b: Date) {
+    return (
+      a.getDate() === b.getDate() &&
+      a.getMonth() === b.getMonth() &&
+      a.getFullYear() === b.getFullYear()
+    )
+  }
 }
