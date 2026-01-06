@@ -31,6 +31,6 @@ ENV PYTHONPATH=/app/shopping-storage-service/src:/app
 
 WORKDIR /app/shopping-storage-service
 
-EXPOSE 9004
+EXPOSE 8000
 
 CMD ["python", "main.py"]

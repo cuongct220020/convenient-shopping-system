@@ -26,6 +26,6 @@ ENV PYTHONPATH=/app/meal-service/src
 
 WORKDIR /app/meal-service
 
-EXPOSE 9003
+EXPOSE 8000
 
 CMD ["python", "main.py"]

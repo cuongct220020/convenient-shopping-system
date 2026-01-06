@@ -31,6 +31,6 @@ ENV PYTHONPATH=/app/recipe-service/src:/app
 
 WORKDIR /app/recipe-service
 
-EXPOSE 9002
+EXPOSE 8000
 
 CMD ["python", "main.py"]
