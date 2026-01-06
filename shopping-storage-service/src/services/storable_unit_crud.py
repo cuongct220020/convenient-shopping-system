@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from typing import Optional, Sequence, List
+from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import select, func, RowMapping
@@ -129,7 +130,7 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
     def filter(
         self,
         db: Session,
-        group_id: Optional[int] = None,
+        group_id: Optional[UUID] = None,
         storage_id: Optional[int] = None,
         unit_name: Optional[List[str]] = None,
         cursor: Optional[int] = None,

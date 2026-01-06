@@ -1,6 +1,7 @@
-
+import uuid
 from sqlalchemy import Integer, DateTime, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -12,7 +13,7 @@ class ShoppingPlan(Base):
     __tablename__ = "shopping_plans"
 
     plan_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    group_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     last_modified: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
     deadline: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     assigner_id: Mapped[int] = mapped_column(Integer, nullable=False)

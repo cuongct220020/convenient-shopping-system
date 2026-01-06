@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, Literal, List
+from uuid import UUID
 from enums.plan_status import PlanStatus
 
 
@@ -12,7 +13,7 @@ class PlanItemBase(BaseModel):
     component_name: str
 
 class PlanCreate(BaseModel):
-    group_id: int = Field(gt=0)
+    group_id: UUID
     deadline: datetime
     assigner_id: int = Field(gt=0)
     shopping_list: List[PlanItemBase]
@@ -29,7 +30,7 @@ class PlanUpdate(BaseModel):
 
 class PlanResponse(BaseModel):
     plan_id: int
-    group_id: int
+    group_id: UUID
     deadline: datetime
     last_modified: datetime
     assigner_id: int

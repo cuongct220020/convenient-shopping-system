@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, Depends, Body, HTTPException, Query, Back
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import Optional, List
+from uuid import UUID
 from services.storable_unit_crud import StorableUnitCRUD
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse, StorableUnitStackedResponse
 from models.storage import StorableUnit
@@ -22,7 +23,7 @@ storable_unit_router = APIRouter(
     description="Filter StorableUnits by group_id, storage_id, and/or unit_name. Supports pagination with cursor and limit."
 )
 def filter_units(
-    group_id: Optional[int] = Query(None, ge=1, description="Filter by group ID"),
+    group_id: Optional[UUID] = Query(None, description="Filter by group ID"),
     storage_id: Optional[int] = Query(None, ge=1, description="Filter by storage ID"),
     unit_name: Optional[List[str]] = Query(None, description="Filter by unit name(s)"),
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),

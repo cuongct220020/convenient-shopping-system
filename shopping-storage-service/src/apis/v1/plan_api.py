@@ -3,6 +3,7 @@ from fastapi import APIRouter, status, Depends, Body, BackgroundTasks, Query, Pa
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import Any, Optional
+from uuid import UUID
 from services.plan_crud import PLanCRUD
 from services.plan_transition import PlanTransition
 from services.report_process import report_process
@@ -31,7 +32,7 @@ plan_router = APIRouter(
     )
 )
 def filter_plans(
-    group_id: Optional[int] = Query(None, ge=1, description="Filter by group ID"),
+    group_id: Optional[UUID] = Query(None, description="Filter by group ID"),
     plan_status: Optional[PlanStatus] = Query(None, description="Filter by plan status", examples=[PlanStatus.CREATED, PlanStatus.IN_PROGRESS]),
     deadline: Optional[datetime] = Query(
         None,

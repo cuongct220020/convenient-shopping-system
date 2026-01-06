@@ -1,5 +1,6 @@
 from datetime import datetime, time, timedelta
 from typing import Optional
+from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import select, desc
 from fastapi import HTTPException
@@ -17,7 +18,7 @@ class PLanCRUD(CRUDBase[ShoppingPlan, PlanCreate, PlanUpdate]):
     def filter(
         self,
         db: Session,
-        group_id: Optional[int] = None,
+        group_id: Optional[UUID] = None,
         plan_status: Optional[PlanStatus] = None,
         deadline: Optional[datetime] = None,
         cursor: Optional[int] = None,
