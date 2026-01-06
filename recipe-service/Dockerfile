@@ -1,22 +1,36 @@
-FROM python:3.13-slim
+# ===== BUILD STAGE =====
+FROM python:3.13-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
 
 RUN apt-get update && apt-get install -y --no-install-recommends gcc git && \
     rm -rf /var/lib/apt/lists/*
 
+COPY recipe-service/requirements.txt /build/requirements.txt
+
+RUN head -n -1 requirements.txt > requirements-docker.txt
+
+RUN pip install --upgrade pip wheel
+RUN pip wheel -w /build/wheels -r requirements-docker.txt
+
+
+# ===== RUN STAGE =====
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY --from=builder /build/wheels /wheels
+RUN pip install --no-cache-dir /wheels/*
+
 COPY shared /app/shared
 COPY recipe-service /app/recipe-service
 
-RUN pip install --no-cache-dir -v -e /app/shared[fastapi]
-
-WORKDIR /app/recipe-service
-RUN head -n -1 requirements.txt > requirements-docker.txt
-RUN cat requirements-docker.txt
-RUN pip install --no-cache-dir -v -r requirements-docker.txt
+RUN pip install --no-cache-dir -e /app/shared[fastapi]
 
 ENV PYTHONPATH=/app/recipe-service/src:/app
 
-EXPOSE 8001
+WORKDIR /app/recipe-service
+
+EXPOSE 8000
 
 CMD ["python", "main.py"]

@@ -14,7 +14,7 @@ ingredient_crud = IngredientCRUD(Ingredient)
 
 ingredient_router = APIRouter(
     prefix="/v2/ingredients",
-    tags=["Ingredients"]
+    tags=["ingredients"]
 )
 
 @ingredient_router.get(
@@ -45,7 +45,7 @@ async def search_ingredients(
     description="Filter ingredients by category with cursor-based pagination. Returns a paginated list of ingredients matching the specified category."
 )
 def filter_ingredients_by_category(
-    category: Category = Query(..., description="Category to filter ingredients by", example=Category.vegetables),
+    category: Category = Query(..., description="Category to filter ingredients by", examples=[Category.vegetables, Category.fresh_meat]),
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
     limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
