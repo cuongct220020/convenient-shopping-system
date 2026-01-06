@@ -1,5 +1,5 @@
 # shared/shopping_shared/schemas/response_schema.py
-from typing import Generic, TypeVar, Optional
+from typing import Generic, TypeVar, Optional, List
 from sanic_ext import openapi
 from shopping_shared.schemas.base_schema import BaseSchema
 
@@ -15,11 +15,11 @@ class GenericResponse(BaseSchema, Generic[T]):
     data: Optional[T] = None
 
 @openapi.component
-class PaginationResponse(GenericResponse[list[T]]):
+class PaginationResponse(GenericResponse[List[T]]):
     """
     A generic pagination response model to standardize API outputs for lists.
     """
-    data: list[T]
+    data: List[T]
     page: int
     page_size: int
     total_items: int

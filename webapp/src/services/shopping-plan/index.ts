@@ -1,0 +1,82 @@
+import { ResultAsync } from 'neverthrow'
+import {
+  AppUrl,
+  Clients,
+  httpClients,
+  httpGet
+} from '../client'
+import { parseZodObject } from '../../utils/zod-result'
+import {
+  ShoppingPlansFilterResponseSchema,
+  type ShoppingPlansFilterResponse
+} from '../schema/shoppingPlanSchema'
+
+type ShoppingPlanError = ReturnType<typeof createShoppingPlanError>
+
+function createShoppingPlanError(type: string, desc: string | null = null) {
+  return { type, desc } as const
+}
+
+export type ShoppingPlanErrorType =
+  | 'not-found'
+  | 'validation-error'
+  | 'unauthorized'
+
+export class ShoppingPlanService {
+  constructor(private clients: Clients) {}
+
+  /**
+   * Filter shopping plans by group_id and optionally by plan_status
+   */
+  public filterPlans(
+    groupId: string,
+    options?: {
+      planStatus?: 'created' | 'in_progress' | 'completed' | 'cancelled' | 'expired'
+      sortBy?: 'last_modified' | 'deadline'
+      order?: 'asc' | 'desc'
+      cursor?: number | null
+      limit?: number
+    }
+  ): ResultAsync<ShoppingPlansFilterResponse, ShoppingPlanError> {
+    const params = new URLSearchParams()
+    params.append('group_id', groupId)
+
+    if (options?.planStatus) {
+      params.append('plan_status', options.planStatus)
+    }
+    if (options?.sortBy) {
+      params.append('sort_by', options.sortBy)
+    }
+    if (options?.order) {
+      params.append('order', options.order)
+    }
+    if (options?.cursor !== undefined && options.cursor !== null) {
+      params.append('cursor', options.cursor.toString())
+    }
+    if (options?.limit !== undefined) {
+      params.append('limit', options.limit.toString())
+    }
+
+    const url = `${AppUrl.SHOPPING_PLANS_FILTER}?${params.toString()}`
+
+    return httpGet(this.clients.shopping, url)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(
+          ShoppingPlansFilterResponseSchema,
+          response.body
+        ).mapErr((e) =>
+          createShoppingPlanError('validation-error', e)
+        )
+      )
+  }
+}
+
+export const shoppingPlanService = new ShoppingPlanService(httpClients)

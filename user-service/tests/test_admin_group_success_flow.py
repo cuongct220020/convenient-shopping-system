@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """
-Script to test the full Admin Group Management Flow via Kong Gateway (using dedicated Admin Endpoints).
+Script to test the full Admin Group Management Flow via Kong Gateway.
 
 Scenario:
 1. Login as Admin.
-2. Create 2 normal users (User A, User B).
-3. Create a Group (Admin creates via User API initially, then manages via Admin API).
-4. Update Group Info (Admin API).
-5. List Groups (Admin API).
-6. Add User A & User B to Group (Admin API).
-7. List Group Members (Admin API).
-8. Promote User A to HEAD_CHEF (Admin API).
-9. Remove User B from Group (Admin API).
-10. Delete Group (Admin API).
+2. Create 2 normal users (User A, User B) via Admin API.
+3. Create a Group (Admin creates via User API logic: POST /groups).
+4. Update Group Info (via PUT /admin/groups/{id}).
+5. List Groups (via GET /admin/groups).
+6. Add User A & User B to Group (via POST /admin/groups/{id}/members).
+7. List Group Members (via GET /admin/groups/{id}/members).
+8. Promote User A to HEAD_CHEF (via PATCH /admin/groups/{id}/members/{user_id}).
+9. Remove User B from Group (via DELETE /admin/groups/{id}/members/{user_id}).
+10. Delete Group (via DELETE /admin/groups/{id}).
 11. Verify Deletion.
 
 Usage:
-    python3 user-service/scripts/test_admin_group_sucess_flow.py
+    python3 user-service/tests/test_admin_group_success_flow.py
 """
 
 import json
@@ -119,20 +119,21 @@ def run_test():
     user_a = create_temp_user(headers, "A")
     user_b = create_temp_user(headers, "B")
     
+    # User objects from Admin API return 'user_id' (based on UserCoreInfoSchema)
     id_a = user_a['user_id']
     id_b = user_b['user_id']
     print(f"{Colors.OKGREEN}✓ Created User A ({id_a}) and User B ({id_b}){Colors.ENDC}")
 
     # ---------------------------------------------------------
-    # 2. Create Group
+    # 2. Create Group (Using User API logic as Admin)
     # ---------------------------------------------------------
-    print(f"\n{Colors.BOLD}[2] Creating Family Group...{Colors.ENDC}")
+    print(f"\n{Colors.BOLD}[2] Creating Family Group (via User API)...{Colors.ENDC}")
     group_name_initial = f"Admin_Group_{random.randint(100,999)}"
     group_payload = {
         "group_name": group_name_initial,
         "group_avatar_url": "http://img.com/g.png"
     }
-    # Currently Admin creates group using User API logic (Admin becomes creator)
+    # Using the standard user endpoint because Admin API doesn't have create group
     status, group_res = make_request(f"{BASE_URL}/groups", "POST", group_payload, headers)
     
     if status != 201:
@@ -171,7 +172,7 @@ def run_test():
     if status != 200:
         print(f"{Colors.FAIL}❌ List Groups failed: {list_groups_res}{Colors.ENDC}")
     else:
-        # Check if our new group is in the list
+        # Check if our new group is in the list (inside 'data' array of pagination response)
         all_groups = list_groups_res['data']['data']
         found = any(g['id'] == group_id for g in all_groups)
         if found:
@@ -185,7 +186,7 @@ def run_test():
     print(f"\n{Colors.BOLD}[5] Adding User A & B via Admin API (Direct Add)...{Colors.ENDC}")
     
     # Add User A
-    # POST /admin/groups/{id}/members
+    # POST /admin/groups/{id}/members. Payload: AddMemberRequestSchema (identifier)
     status, add_a = make_request(f"{BASE_URL}/admin/groups/{group_id}/members", "POST", {
         "identifier": user_a['email']
     }, headers)
@@ -216,6 +217,7 @@ def run_test():
     members = list_res['data']
     print(f"{Colors.INFO}    Found {len(members)} members.{Colors.ENDC}")
     
+    # Verify User A and B are in the list. Structure: member['user']['user_id']
     member_ids = [m['user']['user_id'] for m in members]
     if id_a in member_ids and id_b in member_ids:
         print(f"{Colors.OKGREEN}✓ Verified User A and B are in the list.{Colors.ENDC}")
@@ -226,6 +228,7 @@ def run_test():
     # 7. Promote User A to HEAD_CHEF (Admin API)
     # ---------------------------------------------------------
     print(f"\n{Colors.BOLD}[7] Promoting User A to HEAD_CHEF...{Colors.ENDC}")
+    # PATCH /admin/groups/{id}/members/{user_id}. Payload: GroupMembershipUpdateSchema (role)
     role_payload = {"role": "head_chef"}
     status, role_res = make_request(f"{BASE_URL}/admin/groups/{group_id}/members/{id_a}", "PATCH", role_payload, headers)
     
@@ -253,7 +256,7 @@ def run_test():
     if len(members_after) == 2:
          print(f"{Colors.OKGREEN}✓ Member count verified (2).{Colors.ENDC}")
     else:
-         print(f"{Colors.FAIL}⚠️ Warning: Member count is {len(members_after)}.{Colors.ENDC}")
+         print(f"{Colors.FAIL}⚠️ Warning: Member count is {len(members_after)}. Expected 2.{Colors.ENDC}")
 
     # ---------------------------------------------------------
     # 9. Delete Group

@@ -14,6 +14,10 @@ from alembic import context
 
 # Import models for 'autogenerate' support
 from shopping_shared.databases.base_model import Base
+from app.models.user import User
+from app.models.user_tag import Tag, UserTag
+from app.models.family_group import FamilyGroup, GroupMembership
+from app.models.user_profile import Address, UserIdentityProfile, UserHealthProfile
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -36,7 +40,19 @@ DB_DRIVER = os.getenv("POSTGRES_DB_DRIVER")
 DB_USER = os.getenv('POSTGRES_DB_USER')
 DB_PASSWORD = os.getenv('POSTGRES_DB_PASSWORD')
 DB_NAME = os.getenv('POSTGRES_DB_NAME')
-DB_HOST = os.getenv('POSTGRES_DB_HOST')
+
+# Use localhost when running locally (not in container)
+# Check if running in container environment
+import socket
+try:
+    # Try to resolve the configured host
+    socket.getaddrinfo(os.getenv('POSTGRES_DB_HOST', 'localhost'), int(os.getenv('POSTGRES_DB_PORT', 5432)))
+    # If successful, use the configured host
+    DB_HOST = os.getenv('POSTGRES_DB_HOST')
+except socket.gaierror:
+    # If resolution fails, fall back to localhost
+    DB_HOST = 'localhost'
+
 DB_PORT = os.getenv('POSTGRES_DB_PORT')
 
 DATABASE_URI = f'{DB_DRIVER}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'

@@ -5,6 +5,7 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request, require_system_role
+from app.decorators.cache_response import cache_response
 from app.views.base_view import BaseAPIView
 from app.enums import SystemRole
 from app.repositories.user_repository import UserRepository
@@ -15,10 +16,12 @@ from app.schemas.user_admin_schema import (
     PaginatedUserAdminViewResponseSchema
 )
 from app.services.admin_service import AdminUserService
+
 from shopping_shared.exceptions import Conflict, NotFound
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
+from shopping_shared.caching.redis_keys import RedisKeys
 
 logger = get_logger("Admin User View")
 
@@ -65,6 +68,7 @@ class AdminUsersView(BaseAdminUserView):
         ]
     )
     @require_system_role(SystemRole.ADMIN)
+    @cache_response(key_pattern=RedisKeys.ADMIN_USERS_LIST, ttl=60, page="1", page_size="10")
     async def get(self, request: Request):
         """
         List all users with pagination.
@@ -108,7 +112,7 @@ class AdminUsersView(BaseAdminUserView):
             service = self._get_service(request)
             users, total = await service.get_all_users_paginated(page=page, page_size=page_size)
 
-            paginated_reponse = PaginatedUserAdminViewResponseSchema(
+            paginated_response = PaginatedUserAdminViewResponseSchema(
                 data=[UserAdminViewSchema.model_validate(user) for user in users],
                 page=page,
                 page_size=page_size,
@@ -118,7 +122,7 @@ class AdminUsersView(BaseAdminUserView):
 
             # Use helper method from base class
             return self.success_response(
-                data=paginated_reponse,
+                data=paginated_response,
                 message="Users listed successfully",
                 status_code=200
             )
@@ -156,7 +160,7 @@ class AdminUsersView(BaseAdminUserView):
         service = self._get_service(request)
 
         try:
-            user = await service.create_user(validated_data)
+            user = await service.create_user_by_admin(validated_data)
 
             # Use helper method from base class
             return self.success_response(
@@ -194,6 +198,7 @@ class AdminUserDetailView(BaseAdminUserView):
         ]
     )
     @require_system_role(SystemRole.ADMIN)
+    @cache_response(key_pattern=RedisKeys.ADMIN_USER_DETAIL, ttl=300)
     async def get(self, request: Request, user_id: UUID):
         """
         Get a specific user by ID.
@@ -202,7 +207,7 @@ class AdminUserDetailView(BaseAdminUserView):
         service = self._get_service(request)
 
         try:
-            user = await service.get_user(user_id)
+            user = await service.get_user_by_admin(user_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -247,7 +252,7 @@ class AdminUserDetailView(BaseAdminUserView):
         service = self._get_service(request)
 
         try:
-            user = await service.update_user(user_id, validated_data)
+            user = await service.update_user_by_admin(user_id, validated_data)
 
             # Use helper method from base class
             return self.success_response(
@@ -290,7 +295,7 @@ class AdminUserDetailView(BaseAdminUserView):
         service = self._get_service(request)
 
         try:
-            await service.delete_user(user_id)
+            await service.delete_user_by_admin(user_id)
 
             # Use helper method from base class
             return self.success_response(

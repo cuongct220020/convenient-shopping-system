@@ -44,9 +44,9 @@ def register_listeners(sanic_app: Sanic):
     from app.hooks.message_broker import setup_kafka, close_kafka
     from app.hooks.caching import setup_redis, close_redis
     # from app.hooks.database import setup_db, close_db
-    from app.consumers.notification_consumer import consume_notifications, request_shutdown
     from app.services.email_service import EmailService
     # from app.services.noti_service import notification_service
+    from app.hooks.message_broker import start_consumer, stop_consumer
 
     # # Database setup must be registered
     # sanic_app.register_listener(setup_db, "before_server_start")
@@ -69,11 +69,8 @@ def register_listeners(sanic_app: Sanic):
         #     else:
         #         logger.error("DB Engine not found in app.ctx during service init")
 
-    @sanic_app.listener("after_server_start")
-    async def start_consumer(app, loop):
-        """Start Kafka consumer after server is fully started."""
-        logger.info("Starting Kafka consumer background task...")
-        app.add_task(consume_notifications(app))
+
+    sanic_app.register_listener(start_consumer, "after_server_start")
 
 
     # Register Redis hooks
@@ -81,14 +78,12 @@ def register_listeners(sanic_app: Sanic):
     sanic_app.register_listener(close_redis, "before_server_stop")
 
 
+    # Register Kafka hooks
     sanic_app.register_listener(setup_kafka, "before_server_start")
     sanic_app.register_listener(close_kafka, "after_server_stop")
 
-    @sanic_app.listener("before_server_stop")
-    async def stop_consumer(app, loop):
-        """Request graceful shutdown of Kafka consumer."""
-        logger.info("Requesting consumer shutdown...")
-        request_shutdown()
+
+    sanic_app.register_listener(stop_consumer, "before_server_stop")
 
 
 def create_app(*config_cls) -> Sanic:

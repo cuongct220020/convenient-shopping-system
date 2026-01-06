@@ -5,6 +5,7 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request, require_group_role
+from app.decorators.cache_response import cache_response
 from app.views.groups.base_group_view import BaseGroupView
 from app.enums import GroupRole
 from app.schemas.family_group_schema import (
@@ -18,6 +19,7 @@ from shopping_shared.exceptions import NotFound, Forbidden, Conflict
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
+from shopping_shared.caching.redis_keys import RedisKeys
 
 logger = get_logger("Group Members View")
 
@@ -44,6 +46,7 @@ class GroupMembersView(BaseGroupView):
         ]
     )
     @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
+    @cache_response(key_pattern=RedisKeys.GROUP_MEMBERS_LIST, ttl=120)
     async def get(self, request: Request, group_id: UUID):
         """List all members of a specific family group."""
         service = self._get_service(request)
@@ -58,20 +61,20 @@ class GroupMembersView(BaseGroupView):
 
             return self.success_response(
                 data=group_detailed,
-                message="Group members listed successfully",
+                message="Group members listed successfully.",
                 status_code=200
             )
         except NotFound:
             logger.error(f"Group with id {group_id} not found")
             return self.error_response(
-                message="Group not found",
+                message="Group not found.",
                 status_code=404
             )
         except Exception as e:
-            logger.error("Error listing group members", exc_info=e)
+            logger.error("Error listing group members.", exc_info=e)
             # Use helper method from base class
             return self.error_response(
-                message="Failed to list group members",
+                message="Failed to list group members.",
                 status_code=500
             )
 
@@ -102,28 +105,17 @@ class GroupMembersView(BaseGroupView):
         requester_id = request.ctx.auth_payload["sub"]
         requester_username = request.ctx.auth_payload["username"]
         validated_data = request.ctx.validated_data
-        identifier = validated_data.identifier
+        user_to_add_identifier = validated_data.identifier
 
         service = self._get_service(request)
 
         try:
-            # Find the target user by identifier (email or username)
-            # First, try to find by email
-            target_user = await service.user_repo.get_by_email(identifier)
-
-            # If not found by email, try to find by username
-            if not target_user:
-                target_user = await service.user_repo.get_by_username(identifier)
-
-            if not target_user:
-                raise NotFound(f"User with identifier '{identifier}' not found")
-
             # Use the service method to add member by email (which internally handles the permission logic)
             membership = await service.add_member_by_identifier(
                 requester_id=requester_id,
                 requester_username=requester_username,
                 group_id=group_id,
-                user_to_add=target_user
+                user_to_add_identifier=user_to_add_identifier
             )
 
             # Use helper method from base class
@@ -133,19 +125,19 @@ class GroupMembersView(BaseGroupView):
                 status_code=201
             )
         except NotFound as e:
-            logger.error(f"User not found: {identifier}", exc_info=e)
+            logger.error(f"User not found: {user_to_add_identifier}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=404
             )
         except Forbidden as e:
-            logger.error(f"Permission denied adding member: {identifier}", exc_info=e)
+            logger.error(f"Permission denied adding member: {user_to_add_identifier}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=403
             )
         except Conflict as e:
-            logger.warning(f"Conflict when adding member: {identifier}", exc_info=e)
+            logger.warning(f"Conflict when adding member: {user_to_add_identifier}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=409
@@ -244,7 +236,7 @@ class GroupMemberDetailView(BaseGroupView):
         service = self._get_service(request)
 
         try:
-            await service.remove_member(
+            await service.remove_member_by_head_chef(
                 requester_id=requester_id,
                 requester_username=requester_username,
                 group_id=group_id,
@@ -302,7 +294,12 @@ class GroupMemberMeView(BaseGroupView):
         service = self._get_service(request)
 
         try:
-            await service.leave_group(user_id, user_name, user_email, group_id)
+            await service.leave_group(
+                user_id=user_id,
+                user_name=user_name,
+                user_email=user_email,
+                group_id=group_id
+            )
 
             # Use helper method from base class
             return self.success_response(

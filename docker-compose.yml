@@ -53,35 +53,34 @@ services:
       PGDATABASE: postgres
     command: >
       bash -c "
+        # Hàm wait for postgres
         until pg_isready; do
           echo 'Waiting for PostgreSQL to be ready...'
           sleep 2
         done &&
-        until psql -c 'CREATE DATABASE shopping_user_service_db;'; do
-          echo 'Creating shopping_user_service_db...'
-          sleep 2
-        done &&
-        until psql -c 'CREATE DATABASE shopping_notification_service_db;'; do
-          echo 'Creating shopping_notification_service_db...'
-          sleep 2
-        done &&
-        echo 'Databases created successfully' &&
-        # Create a marker file to indicate completion
+        
+        # Check và tạo shopping_user_service_db (chỉ tạo nếu chưa có)
+        if ! psql -lqt | cut -d \| -f 1 | grep -qw shopping_user_service_db; then
+          psql -c 'CREATE DATABASE shopping_user_service_db;'
+          echo 'Created shopping_user_service_db'
+        else
+          echo 'Database shopping_user_service_db already exists'
+        fi &&
+
+        # Check và tạo shopping_notification_service_db (chỉ tạo nếu chưa có)
+        if ! psql -lqt | cut -d \| -f 1 | grep -qw shopping_notification_service_db; then
+          psql -c 'CREATE DATABASE shopping_notification_service_db;'
+          echo 'Created shopping_notification_service_db'
+        else
+          echo 'Database shopping_notification_service_db already exists'
+        fi &&
+        
+        echo 'Databases check completed successfully' &&
         touch /tmp/databases_created
       "
-    healthcheck:
-      test: >
-        bash -c "
-          psql -d shopping_user_service_db -c 'SELECT 1;' > /dev/null 2>&1 &&
-          psql -d shopping_notification_service_db -c 'SELECT 1;' > /dev/null 2>&1 &&
-          [ -f /tmp/databases_created ]
-        "
-      interval: 5s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
     networks:
       - shopping-network
+    restart: "no"
 
 
   # Redis Caching Service
@@ -94,6 +93,12 @@ services:
     volumes:
       - redis-data:/data
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     networks:
       - shopping-network
 
@@ -272,13 +277,16 @@ services:
       dockerfile: user-service/Dockerfile
     container_name: user-service
     hostname: user-service
-    profiles:
-      - user-service
+    image: user-service:v1.0.0
+#    profiles:
+#      - user-service
     depends_on:
-      - db-init
-      - redis-caching
-      - kafka-broker
-      - kong-gateway
+      redis-caching:
+        condition: service_healthy
+      kafka-broker:
+        condition: service_healthy
+      kong-gateway:
+        condition: service_healthy
     environment:
       - POSTGRES_DB_NAME=shopping_user_service_db
       - POSTGRES_DB_PORT=5432
@@ -296,8 +304,8 @@ services:
     ports:
       - "9001:8000" # Access via localhost:9001
     volumes:
-      - ./user-service:/user-service
-      - /user-service/.venv  # Exclude virtual environment
+      - ./user-service:/app/user-service
+      - /app/user-service/.venv  # Exclude virtual environment
     networks:
       - shopping-network
     restart: unless-stopped
@@ -389,13 +397,15 @@ services:
       context: .
       dockerfile: notification-service/Dockerfile
     container_name: notification-service
+    image: notification-service:v1.0.0
     hostname: notification-service
-    profiles:
-      - notification-service
+#    profiles:
+#      - notification-service
     depends_on:
-      - db-init
-      - redis-caching
-      - kafka-broker
+      redis-caching:
+        condition: service_healthy
+      kafka-broker:
+        condition: service_healthy
     environment:
       - POSTGRES_DB_NAME=shopping_notification_service_db
       - POSTGRES_DB_PORT=5432
@@ -413,8 +423,8 @@ services:
     ports:
       - "9005:8000" # Access via localhost:9005
     volumes:
-      - ./notification-service:/notification-service
-      - /notification-service/.venv  # Exclude virtual environment
+      - ./notification-service:/app/notification-service
+      - /app/notification-service/.venv  # Exclude virtual environment
     networks:
       - shopping-network
     restart: unless-stopped

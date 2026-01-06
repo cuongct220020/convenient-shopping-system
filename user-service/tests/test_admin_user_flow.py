@@ -5,14 +5,14 @@ Script to test the full Admin User Management Flow via Kong Gateway.
 Scenario:
 1. Login as Admin to get Admin Token.
 2. Create a new user (via POST /admin/users).
-3. Retrieve user details to verify creation.
+3. Retrieve user details to verify creation (GET /admin/users/{id}).
 4. Update user Core Info & Activate user (via PUT /admin/users/{id}).
 5. Update user Profiles (Identity & Health) (via PUT /admin/users/{id}).
 6. Delete the user (via DELETE /admin/users/{id}).
 7. Verify user is deleted (expecting 404).
 
 Usage:
-    python3 user-service/scripts/test_admin_user_flow.py
+    python3 user-service/tests/test_admin_user_flow.py
 """
 
 import json
@@ -121,8 +121,14 @@ def run_test():
         print(f"{Colors.FAIL}❌ Create User failed: {create_res}{Colors.ENDC}")
         return
 
-    user_data = create_res['data']
-    user_id = user_data['user_id']
+    # Check if 'data' exists, if not inspect response structure (GenericResponse)
+    user_data = create_res.get('data', {})
+    user_id = user_data.get('user_id')
+    
+    if not user_id:
+         print(f"{Colors.FAIL}❌ User ID not found in response: {create_res}{Colors.ENDC}")
+         return
+
     print(f"{Colors.OKGREEN}✓ User created. ID: {user_id}{Colors.ENDC}")
     print(f"{Colors.INFO}    Role: {user_data.get('system_role')}, Active: {user_data.get('is_active')}{Colors.ENDC}")
 
@@ -152,6 +158,7 @@ def run_test():
         "avatar_url": "http://example.com/avatar.png"
     }
 
+    # Using PUT as defined in AdminUserDetailView
     status, update_res = make_request(f"{BASE_URL}/admin/users/{user_id}", "PUT", update_core_payload, headers)
 
     if status != 200:
@@ -159,10 +166,17 @@ def run_test():
         return
 
     updated_data = update_res['data']
-    if updated_data['is_active'] is True and updated_data['first_name'] == "UpdatedName":
+    
+    # Debug: Print keys if is_active is missing
+    if 'is_active' not in updated_data:
+        print(f"{Colors.WARNING}⚠️  'is_active' missing in response keys: {list(updated_data.keys())}{Colors.ENDC}")
+
+    if updated_data.get('is_active') is True and updated_data.get('first_name') == "UpdatedName":
         print(f"{Colors.OKGREEN}✓ User activated and name updated.{Colors.ENDC}")
     else:
         print(f"{Colors.FAIL}❌ Update verification failed.{Colors.ENDC}")
+        print(f"   Expected: is_active=True, first_name='UpdatedName'")
+        print(f"   Actual:   is_active={updated_data.get('is_active')}, first_name={updated_data.get('first_name')}")
 
     # ---------------------------------------------------------
     # 4. Update Nested Profiles (Identity & Health)
@@ -176,7 +190,8 @@ def run_test():
             "occupation": "Engineer",
             "address": {
                 "city": "Ho Chi Minh",
-                "district": "District 1"
+                "district": "District 1",
+                "province": "Ho Chi Minh City"
             }
         },
         "health_profile": {

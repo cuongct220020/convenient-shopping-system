@@ -16,6 +16,15 @@ import { AddStorageItem } from '../pages/main/food-storage/AddStorageItem'
 import { Meal } from '../pages/main/meal/Meal'
 import { AddMeal } from '../pages/main/meal/AddMeal'
 import { MealDetail } from '../pages/main/meal/MealDetail'
+import FamilyGroup from '../pages/main/family-group/FamilyGroup'
+import AddGroup from '../pages/main/family-group/AddGroup'
+import GroupDetail from '../pages/main/family-group/GroupDetail'
+import EditGroup from '../pages/main/family-group/EditGroup'
+import UserDetail from '../pages/main/family-group/UserDetail'
+import AddPlan from '../pages/main/family-group/AddPlan'
+import PlanDetail from '../pages/main/family-group/PlanDetail'
+import ImplementPlan from '../pages/main/family-group/ImplementPlan'
+import EditPlan from '../pages/main/family-group/EditPlan'
 
 const ProfileRoutes: RouteObject = {
   path: 'profile',
@@ -115,6 +124,42 @@ export const MainRoutes: RouteObject = {
     NutritionRoutes,
     FoodRoutes,
     MealRoutes,
-    FavoriteRoutes
+    FavoriteRoutes,
+    {
+      path: 'family-group',
+      element: <FamilyGroup />
+    },
+    {
+      path: 'family-group/add',
+      element: <AddGroup />
+    },
+    {
+      path: 'family-group/:id',
+      element: <GroupDetail />
+    },
+    {
+      path: 'family-group/:id/edit',
+      element: <EditGroup />
+    },
+    {
+      path: 'family-group/:id/user/:userId',
+      element: <UserDetail />
+    },
+    {
+      path: 'family-group/:id/add-plan',
+      element: <AddPlan />
+    },
+    {
+      path: 'family-group/:id/plan/:planId',
+      element: <PlanDetail />
+    },
+    {
+      path: 'family-group/:id/plan/:planId/edit',
+      element: <EditPlan />
+    },
+    {
+      path: 'family-group/:id/plan/:planId/implement',
+      element: <ImplementPlan />
+    }
   ]
 }

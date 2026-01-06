@@ -1,17 +1,31 @@
-FROM python:3.13-slim
+# ===== BUILD STAGE =====
+FROM python:3.13-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
 
 RUN apt-get update && apt-get install -y --no-install-recommends gcc git && \
     rm -rf /var/lib/apt/lists/*
 
+COPY meal-service/requirements.txt /build/requirements.txt
+
+RUN pip install --upgrade pip wheel
+RUN pip wheel -w /build/wheels -r requirements.txt
+
+
+# ===== RUN STAGE =====
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY --from=builder /build/wheels /wheels
+RUN pip install --no-cache-dir /wheels/*
+
 COPY meal-service /app/meal-service
 
+ENV PYTHONPATH=/app/meal-service/src
+
 WORKDIR /app/meal-service
-RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PYTHONPATH=/app/meal-service/src:/app
-
-EXPOSE 8003
+EXPOSE 8000
 
 CMD ["python", "main.py"]
