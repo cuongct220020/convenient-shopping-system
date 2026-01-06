@@ -46,5 +46,10 @@ export const vi: Record<i18nKeys, string> = {
   notification: 'Thông báo',
   notification_none: 'Hiện không có thông báo nào',
   reset_password_no_email_title: 'Email chưa được đăng ký',
-  reset_password_no_email_msg: 'Vui lòng kiểm tra lại email của bạn'
+  reset_password_no_email_msg: 'Vui lòng kiểm tra lại email của bạn',
+  meal_breakfast: 'Bữa sáng',
+  meal_dinner: 'Bữa tối',
+  meal_late_night: 'Ăn đêm',
+  meal_lunch: 'Bữa trưa',
+  meal_snack: 'Ăn vặt'
 }

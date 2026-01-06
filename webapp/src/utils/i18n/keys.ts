@@ -43,3 +43,8 @@ export type i18nKeys =
   | 'invalid_storage_name'
   | 'notification'
   | 'notification_none'
+  | 'meal_breakfast'
+  | 'meal_dinner'
+  | 'meal_lunch'
+  | 'meal_snack'
+  | 'meal_late_night'

@@ -14,6 +14,8 @@ import { StorageDetails } from '../pages/main/food-storage/StorageDetails'
 import { StorageItemDetail } from '../pages/main/food-storage/StorageItemDetail'
 import { AddStorageItem } from '../pages/main/food-storage/AddStorageItem'
 import { Meal } from '../pages/main/meal/Meal'
+import { AddMeal } from '../pages/main/meal/AddMeal'
+import { MealDetail } from '../pages/main/meal/MealDetail'
 
 const ProfileRoutes: RouteObject = {
   path: 'profile',
@@ -83,7 +85,17 @@ const FoodRoutes: RouteObject = {
 
 const MealRoutes: RouteObject = {
   path: 'meal',
-  children: [{ index: true, element: <Meal /> }]
+  children: [
+    { index: true, element: <Meal /> },
+    {
+      path: 'add',
+      element: <AddMeal />
+    },
+    {
+      path: 'detail',
+      element: <MealDetail />
+    }
+  ]
 }
 
 const FavoriteRoutes: RouteObject = {

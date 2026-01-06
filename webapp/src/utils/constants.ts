@@ -1,5 +1,30 @@
 import { i18nKeys } from './i18n/keys'
 
+export const MealTypes = [
+  'breakfast',
+  'lunch',
+  'dinner',
+  'late-night',
+  'snack'
+] as const
+
+export type MealType = (typeof MealTypes)[number]
+
+export function mealTypeStr(e: MealType): i18nKeys {
+  switch (e) {
+    case 'breakfast':
+      return 'meal_breakfast'
+    case 'dinner':
+      return 'meal_dinner'
+    case 'late-night':
+      return 'meal_late_night'
+    case 'lunch':
+      return 'meal_lunch'
+    case 'snack':
+      return 'meal_snack'
+  }
+}
+
 export const FoodStorageCategories = [
   'freezer',
   'non-freezer',
