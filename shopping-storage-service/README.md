@@ -71,12 +71,12 @@ Có 2 cách để chạy service:
 
 ```bash
 # Từ thư mục shopping-storage-service
-uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+uvicorn main:app --host 0.0.0.0 --port 9004 --reload
 ```
 
 **Tham số:**
 - `--host 0.0.0.0`: Lắng nghe trên tất cả interfaces
-- `--port 8002`: Port mặc định của service
+- `--port 9004`: Port khuyến nghị của service (theo cấu hình toàn hệ thống)
 - `--reload`: Tự động reload khi code thay đổi (chỉ dùng cho development)
 
 ### Cách 2: Chạy trực tiếp với Python
@@ -86,14 +86,15 @@ uvicorn main:app --host 0.0.0.0 --port 8002 --reload
 python main.py
 ```
 
-Service sẽ chạy trên `http://0.0.0.0:8002` (có thể truy cập từ `http://localhost:8002`).
+**Lưu ý:** `python main.py` sẽ chạy theo port được cấu hình trong code (hiện tại là `8000`).
+Nếu muốn chạy đúng port hệ thống (`9004`), hãy dùng uvicorn với `--port 9004`.
 
 ## 📚 Xem API Documentation
 
 FastAPI tự động tạo interactive API documentation. Sau khi service đã chạy, mở trình duyệt và truy cập:
 
 ```
-http://localhost:8002/docs
+http://localhost:9004/docs
 ```
 
 Swagger UI cung cấp:
@@ -116,7 +117,7 @@ docker build -t shopping-storage-service -f shopping-storage-service/Dockerfile 
 ```bash
 docker run -d \
   --name shopping-storage-service \
-  -p 8002:8002 \
+  -p 9004:8000 \
   --env-file .env \
   --network shopping-network \
   shopping-storage-service
@@ -125,7 +126,7 @@ docker run -d \
 **Lưu ý:**
 - Đảm bảo file `.env` có đầy đủ các biến môi trường
 - Container cần kết nối đến PostgreSQL và Kafka (có thể qua Docker network)
-- Port 8002 sẽ được expose ra host
+- Port `9004` sẽ được expose ra host (container listen `8000`)
 
 ### Xem logs
 
@@ -258,11 +259,11 @@ GET /v1/shopping_plans/?cursor=456&limit=5
 - Cài đặt shared package: `pip install -e ../shared[fastapi]`
 - Kiểm tra `PYTHONPATH` nếu cần
 
-### Port 8002 đã được sử dụng
+### Port 9004 đã được sử dụng
 
-- Thay đổi port trong `main.py` hoặc dùng `--port` với uvicorn:
+- Dùng port khác với uvicorn:
   ```bash
-  uvicorn main:app --port 8003 --reload
+  uvicorn main:app --port 9006 --reload
   ```
 
 ## 📝 Notes
@@ -270,7 +271,7 @@ GET /v1/shopping_plans/?cursor=456&limit=5
 - Service sử dụng CORS middleware cho phép tất cả origins (chỉ dùng cho development)
 - Service tự động tạo Kafka consumers khi khởi động
 - Database migrations được quản lý bằng Alembic
-- Service chạy trên port 8002 mặc định
+- Port hệ thống khuyến nghị cho Shopping Storage Service: `9004`
 - Service có tích hợp scheduler để chạy các scheduled tasks
 
 ## 🔗 Liên kết hữu ích
