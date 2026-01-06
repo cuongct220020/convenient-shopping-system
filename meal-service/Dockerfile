@@ -8,8 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc git && \
 
 COPY meal-service/requirements.txt /build/requirements.txt
 
+RUN head -n -1 requirements.txt > requirements-docker.txt
+
 RUN pip install --upgrade pip wheel
-RUN pip wheel -w /build/wheels -r requirements.txt
+RUN pip wheel -w /build/wheels -r requirements-docker.txt
 
 
 # ===== RUN STAGE =====
@@ -20,9 +22,12 @@ WORKDIR /app
 COPY --from=builder /build/wheels /wheels
 RUN pip install --no-cache-dir /wheels/*
 
+COPY shared /app/shared
 COPY meal-service /app/meal-service
 
-ENV PYTHONPATH=/app/meal-service/src
+RUN pip install --no-cache-dir -e /app/shared[fastapi]
+
+ENV PYTHONPATH=/app/meal-service/src:/app
 
 WORKDIR /app/meal-service
 
