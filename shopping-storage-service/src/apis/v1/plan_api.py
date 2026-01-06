@@ -8,9 +8,12 @@ from services.report_process import report_process
 from schemas.plan_schemas import PlanCreate, PlanUpdate, PlanResponse, PlanReport
 from models.shopping_plan import ShoppingPlan
 from enums.plan_status import PlanStatus
-from shared.shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
 from .crud_router_base import create_crud_router
 from core.database import get_db
+
+from shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
+from shopping_shared.middleware.fastapi_auth import CurrentUser
+
 
 plan_crud = PLanCRUD(ShoppingPlan)
 plan_transition = PlanTransition()
@@ -27,6 +30,7 @@ plan_router = APIRouter(
     description="Filter shopping plans by group_id and/or plan_status. Supports sorting by last_modified or deadline, and pagination with cursor and limit."
 )
 def filter_plans(
+    current_user: CurrentUser,
     group_id: Optional[int] = Query(None, ge=1, description="Filter by group ID"),
     plan_status: Optional[PlanStatus] = Query(None, description="Filter by plan status", examples=[PlanStatus.CREATED, PlanStatus.IN_PROGRESS]),
     sort_by: str = Query("last_modified", regex="^(last_modified|deadline)$", description="Field to sort by (last_modified or deadline)"),
@@ -74,10 +78,13 @@ plan_router.include_router(crud_router)
     )
 )
 def assign_plan(
+    current_user: CurrentUser,
     id: int = Path(..., ge=1),
     assignee_id: int = Query(..., ge=1, description="The ID of the user to assign the plan to"),
     db: Session = Depends(get_db)
 ):
+    # Verify user has permission to assign the plan
+    # TODO: Add plan ownership/permission validation
     return plan_transition.assign(db, id, assignee_id)
 
 
@@ -92,10 +99,13 @@ def assign_plan(
     )
 )
 def unassign_plan(
+    current_user: CurrentUser,
     id: int = Path(..., ge=1),
     assignee_id: int = Query(..., ge=1, description="The ID of the user to unassign from the plan"),
     db: Session = Depends(get_db)
 ):
+    # Verify user has permission to unassign the plan
+    # TODO: Add plan ownership/permission validation
     return plan_transition.unassign(db, id, assignee_id)
 
 
@@ -110,10 +120,13 @@ def unassign_plan(
     )
 )
 def cancel_plan(
+    current_user: CurrentUser,
     id: int = Path(..., ge=1),
     assigner_id: int = Query(..., ge=1, description="The ID of the user who created the plan"),
     db: Session = Depends(get_db)
 ):
+    # Verify user has permission to cancel the plan
+    # TODO: Add plan ownership/permission validation
     return plan_transition.cancel(db, id, assigner_id)
 
 
@@ -130,6 +143,7 @@ def cancel_plan(
     )
 )
 def report_plan(
+    current_user: CurrentUser,
     background_tasks: BackgroundTasks,
     id: int = Path(..., ge=1),
     report: PlanReport = Body(..., description="Report data containing the items purchased"),
@@ -137,6 +151,8 @@ def report_plan(
     assignee_id: int = Query(..., ge=1, description="The ID of the user reporting the plan completion"),
     confirm: bool = Query(True, description="If True, immediately complete without validation. If False, validate report content first")
 ):
+    # Verify user has permission to report the plan
+    # TODO: Add plan ownership/permission validation
     is_completed, message, data = plan_transition.report(db, id, assignee_id, report, confirm)
     if is_completed:
         background_tasks.add_task(report_process, report)
@@ -153,10 +169,13 @@ def report_plan(
     )
 )
 def reopen_plan(
+    current_user: CurrentUser,
     id: int = Path(..., ge=1),
     assigner_id: int = Query(..., ge=1, description="The ID of the user who created the plan"),
     db: Session = Depends(get_db)
 ):
+    # Verify user has permission to reopen the plan
+    # TODO: Add plan ownership/permission validation
     return plan_transition.reopen(db, id, assigner_id)
 
 

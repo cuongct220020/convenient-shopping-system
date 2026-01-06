@@ -72,6 +72,8 @@ services:
           - /api/v1/user-service/auth/reset-password
           # Documentation paths (served by sanic-ext)
           - /api/v1/user-service/docs
+          # Internal service-to-service paths
+          - /api/v1/user-service/groups/internal
         strip_path: false
         plugins:
           - name: rate-limiting

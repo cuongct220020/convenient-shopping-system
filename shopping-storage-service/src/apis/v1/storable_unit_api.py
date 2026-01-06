@@ -5,8 +5,12 @@ from typing import Optional, List
 from services.storable_unit_crud import StorableUnitCRUD
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse, StorableUnitStackedResponse
 from models.storage import StorableUnit
-from shared.shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
 from core.database import get_db
+
+
+from shopping_shared.schemas.cursor_pagination_schema import GenericResponse, CursorPaginationResponse
+from shopping_shared.middleware.fastapi_auth import CurrentUser
+
 
 storable_unit_crud = StorableUnitCRUD(StorableUnit)
 
@@ -22,6 +26,7 @@ storable_unit_router = APIRouter(
     description="Filter StorableUnits by group_id, storage_id, and/or unit_name. Supports pagination with cursor and limit."
 )
 def filter_units(
+    current_user: CurrentUser,
     group_id: Optional[int] = Query(None, ge=1, description="Filter by group ID"),
     storage_id: Optional[int] = Query(None, ge=1, description="Filter by storage ID"),
     unit_name: Optional[List[str]] = Query(None, description="Filter by unit name(s)"),
@@ -52,6 +57,7 @@ def filter_units(
     description="Retrieve a list of stacked StorableUnits. Units are grouped by common fields (unit_name, storage_id, component_id, content_type, content_quantity, content_unit). Supports pagination with cursor and limit."
 )
 def get_stacked_units(
+    current_user: CurrentUser,
     storage_id: int = Query(..., ge=1, description="The storage ID to get stacked units from"),
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
     limit: int = Query(100, ge=1, description="Maximum number of results to return"),
@@ -73,7 +79,7 @@ def get_stacked_units(
     status_code=status.HTTP_200_OK,
     description="Retrieve a StorableUnit by its unique ID. Returns 404 if the StorableUnit does not exist."
 )
-def get_unit(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+def get_unit(current_user: CurrentUser, id: int = Path(..., ge=1), db: Session = Depends(get_db)):
     storable_unit = storable_unit_crud.get(db, id)
     if storable_unit is None:
         raise HTTPException(status_code=404, detail=f"StorableUnit with id={id} not found")
@@ -87,6 +93,7 @@ def get_unit(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
     description="Retrieve a list of StorableUnits. Supports pagination with cursor and limit."
 )
 def get_many_units(
+    current_user: CurrentUser,
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
     limit: int = Query(100, ge=1, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
@@ -107,6 +114,7 @@ def get_many_units(
     description="Create a new StorableUnit."
 )
 def create_unit(
+        current_user: CurrentUser,
         background_tasks: BackgroundTasks,
         obj_in: StorableUnitCreate = Body(..., description="Data to create a new StorableUnit"),
         db: Session = Depends(get_db)):
@@ -120,6 +128,7 @@ def create_unit(
     description="Update a StorableUnit by its unique ID. Returns 404 if the StorableUnit does not exist."
 )
 def update_unit(
+    current_user: CurrentUser,
     id: int = Path(..., ge=1),
     obj_in: StorableUnitUpdate = Body(..., description="Data to update the StorableUnit"),
     db: Session = Depends(get_db)
@@ -141,6 +150,7 @@ def update_unit(
     )
 )
 def consume_unit(
+    current_user: CurrentUser,
     background_tasks: BackgroundTasks,
     id: int = Path(..., ge=1),
     consume_quantity: int = Query(..., ge=1, description="The quantity to consume"),

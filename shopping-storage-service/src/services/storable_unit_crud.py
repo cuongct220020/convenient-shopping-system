@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import select, func, RowMapping
 from sqlalchemy.inspection import inspect
-from shared.shopping_shared.crud.crud_base import CRUDBase
+from shopping_shared.crud.crud_base import CRUDBase
 from models.storage import StorableUnit, Storage
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse
 from messaging.producers.component_existence_producer import publish_component_existence_update

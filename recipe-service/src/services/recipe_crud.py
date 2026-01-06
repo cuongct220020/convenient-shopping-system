@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select, or_, cast
 from sqlalchemy.dialects.postgresql import JSONB
 from typing import Sequence, Optional
-from shared.shopping_shared.crud.crud_base import CRUDBase
+from shopping_shared.crud.crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
 from models.component_existence import ComponentExistence
 from schemas.recipe_schemas import RecipeCreate, RecipeUpdate

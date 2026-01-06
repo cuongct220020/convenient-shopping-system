@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> str:
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/meal_db"
 
+    # Redis Configuration
+    REDIS_HOST: str = "redis-caching"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: str = "myredis"
+
     class Config:
         env_file = Path(__file__).resolve().parent.parent.parent.parent / ".env"
         env_file_encoding = "utf-8"

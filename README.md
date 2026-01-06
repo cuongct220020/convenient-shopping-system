@@ -46,8 +46,10 @@ List the ready features here:
 How does one go about using it?
 Provide various use cases and code examples here.
 
-`write-your-code-here`
-
+```bash
+docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.prod.yml up -d
+```
 
 ## Project Status
 Project is: _in progress_ / _complete_ / _no longer being worked on_. If you are no longer working on it, provide reasons why.

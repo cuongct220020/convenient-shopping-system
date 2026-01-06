@@ -1,20 +1,27 @@
+from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status, Path, Body
 from typing import Optional
 from sqlalchemy.orm import Session
 from datetime import date
+
 from services.meal_command_handler import MealCommandHandler
 from services.meal_transition import MealTransition
 from schemas.meal_schemas import DailyMealsCommand, MealResponse, MealMissingResponse
 from enums.meal_type import MealType
 from core.database import get_db
 
+from shopping_shared.middleware.fastapi_auth import CurrentUser
+
+
 meal_command_handler = MealCommandHandler()
 meal_transition = MealTransition()
+
 
 meal_router = APIRouter(
     prefix="/v1/meals",
     tags=["meals"]
 )
+
 
 @meal_router.get(
     "/",
@@ -23,12 +30,16 @@ meal_router = APIRouter(
     description="Get meals by date, group_id and optionally by meal_type. If meal_type is not provided, returns all meals (breakfast, lunch, dinner) for that date and group_id."
 )
 def get_meals(
+    current_user: CurrentUser,
     meal_date: date = Query(..., description="The date to get meals for"),
     group_id: int = Query(..., ge=1, description="Group ID to get meals for"),
     meal_type: Optional[MealType] = Query(None, description="Filter by meal type (breakfast, lunch, dinner). If not provided, returns all meals for the date", examples=[MealType.BREAKFAST, MealType.LUNCH]),
     db: Session = Depends(get_db)
 ):
+    # Verify user has access to the group
+    # TODO: Add group membership validation
     return meal_command_handler.get(db, meal_date, group_id, meal_type)
+
 
 @meal_router.post(
     "/command",
@@ -36,7 +47,9 @@ def get_meals(
     status_code=status.HTTP_200_OK,
     description="Process daily meal commands for upserting, deleting, or skipping meals."
 )
-def process_daily_meal_command(daily_command: DailyMealsCommand = Body(..., description="Daily meal commands for upserting, deleting, or skipping meals"), db: Session = Depends(get_db)):
+def process_daily_meal_command(current_user: CurrentUser, daily_command: DailyMealsCommand = Body(..., description="Daily meal commands for upserting, deleting, or skipping meals"), db: Session = Depends(get_db)):
+    # Verify user has access to the group
+    # TODO: Add group membership validation
     responses = meal_command_handler.handle(db, daily_command)
     return responses
 
@@ -50,7 +63,9 @@ def process_daily_meal_command(daily_command: DailyMealsCommand = Body(..., desc
         "After cancellation, the meal status will be CANCELLED."
     )
 )
-def cancel_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+def cancel_meal(current_user: CurrentUser, id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+    # Verify user has access to the meal
+    # TODO: Add meal ownership/permission validation
     return meal_transition.cancel(db, id)
 
 
@@ -64,7 +79,9 @@ def cancel_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         "After reopening, the meal status will be CREATED."
     )
 )
-def reopen_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+def reopen_meal(current_user: CurrentUser, id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+    # Verify user has access to the meal
+    # TODO: Add meal ownership/permission validation
     return meal_transition.reopen(db, id)
 
 
@@ -78,6 +95,8 @@ def reopen_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         "After finishing, the meal status will be DONE."
     )
 )
-def finish_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+def finish_meal(current_user: CurrentUser, id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+    # Verify user has access to the meal
+    # TODO: Add meal ownership/permission validation
     return meal_transition.finish(db, id)
 
