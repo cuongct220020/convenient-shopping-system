@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Query, status, Path, Body
+import uuid
+from fastapi import APIRouter, Depends, Query, status
 from typing import Optional
 from sqlalchemy.orm import Session
 from datetime import date
@@ -22,12 +23,7 @@ meal_router = APIRouter(
     status_code=status.HTTP_200_OK,
     description="Get meals by date, group_id and optionally by meal_type. If meal_type is not provided, returns all meals (breakfast, lunch, dinner) for that date and group_id."
 )
-def get_meals(
-    meal_date: date = Query(..., description="The date to get meals for"),
-    group_id: int = Query(..., ge=1, description="Group ID to get meals for"),
-    meal_type: Optional[MealType] = Query(None, description="Filter by meal type (breakfast, lunch, dinner). If not provided, returns all meals for the date", examples=[MealType.BREAKFAST, MealType.LUNCH]),
-    db: Session = Depends(get_db)
-):
+def get_meals(meal_date: date, group_id: uuid.UUID = Query(...), meal_type: Optional[MealType] = None, db: Session = Depends(get_db)):
     return meal_command_handler.get(db, meal_date, group_id, meal_type)
 
 @meal_router.post(
@@ -36,7 +32,7 @@ def get_meals(
     status_code=status.HTTP_200_OK,
     description="Process daily meal commands for upserting, deleting, or skipping meals."
 )
-def process_daily_meal_command(daily_command: DailyMealsCommand = Body(..., description="Daily meal commands for upserting, deleting, or skipping meals"), db: Session = Depends(get_db)):
+def process_daily_meal_command(daily_command: DailyMealsCommand, db: Session = Depends(get_db)):
     responses = meal_command_handler.handle(db, daily_command)
     return responses
 
@@ -50,7 +46,7 @@ def process_daily_meal_command(daily_command: DailyMealsCommand = Body(..., desc
         "After cancellation, the meal status will be CANCELLED."
     )
 )
-def cancel_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+def cancel_meal(id: int, db: Session = Depends(get_db)):
     return meal_transition.cancel(db, id)
 
 
@@ -64,7 +60,7 @@ def cancel_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         "After reopening, the meal status will be CREATED."
     )
 )
-def reopen_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+def reopen_meal(id: int, db: Session = Depends(get_db)):
     return meal_transition.reopen(db, id)
 
 
@@ -78,6 +74,6 @@ def reopen_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         "After finishing, the meal status will be DONE."
     )
 )
-def finish_meal(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
+def finish_meal(id: int, db: Session = Depends(get_db)):
     return meal_transition.finish(db, id)
 

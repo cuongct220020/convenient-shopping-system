@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List, Dict, Tuple
@@ -15,7 +16,7 @@ class Recommender:
         Recommend recipes based on ingredient availability and tag preferences.
     """
     def __init__(self, db: Session):
-        self.cache: TTLCache[int, List[int]] = TTLCache(maxsize=1000, ttl=86400)
+        self.cache: TTLCache[uuid.UUID, List[int]] = TTLCache(maxsize=1000, ttl=86400)
         self.tag_relation_dict: Dict[Tuple[str, str], int] = {}
         self._load_tag_relation_dict(db)
     
@@ -26,7 +27,7 @@ class Recommender:
         for relation in tag_relations:
             self.tag_relation_dict[(relation.ingredient_tag, relation.user_tag)] = 1 if relation.relation else -1
     
-    def recommend(self, db: Session, group_id: int) -> List[int]:
+    def recommend(self, db: Session, group_id: uuid.UUID) -> List[int]:
         """Return top 10 recipe IDs for the given group_id."""
         if group_id in self.cache:
             return self.cache[group_id]
