@@ -16,7 +16,7 @@ Scenario:
 11. Verify Deletion.
 
 Usage:
-    python3 user-service/tests/test_admin_group_sucess_flow.py
+    python3 user-service/tests/test_admin_group_success_flow.py
 """
 
 import json

@@ -8,6 +8,7 @@ from shopping_shared.utils.logger_utils import get_logger
 
 from app.repositories.user_repository import UserRepository
 from app.services.redis_service import redis_service
+from shopping_shared.caching.redis_keys import RedisKeys
 
 from app.schemas.auth_schema import ChangePasswordRequestSchema
 from app.utils.password_utils import hash_password, verify_password
@@ -35,6 +36,11 @@ class UserService:
         user = await self.repository.update(user_id, update_data)
         if not user:
             raise NotFound(f"User with id {user_id} not found")
+        
+        # Invalidate cache
+        await redis_service.delete_key(RedisKeys.user_core_key(str(user_id)))
+        await redis_service.delete_key(RedisKeys.admin_user_detail_key(str(user_id)))
+        
         return user
 
 
