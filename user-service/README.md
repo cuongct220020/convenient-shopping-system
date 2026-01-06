@@ -83,11 +83,16 @@ cp user-service/.env.example user-service/.env
 ```
 - Copy the content of .env.example into the newly created .env file.
 - Update environment variables as needed
+- Setup venv
+```bash
+cd user-service
+python3 -m venv .venv/
+source .venv/bin/activate
+```
 
 ### Generate RSA Keys
 ```bash
 # Generate and verify RSA key pairs for JWT authentication
-cd user-service/scripts
 python3 generate_rsa_keys.py
 python3 verify_rsa_keys_pair.py
 ```

@@ -10,13 +10,13 @@ consumers:
         algorithm: RS256
         rsa_public_key: |
           -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt3a7GCoOXumYAC19aGI0
-          G6pmkYAdjebKgDr98cYXR9CymvUKzuX14tsL50W0oUb1lG5GUbyDp0ZFi3CV+LQr
-          fTLw6dmpf0bsqnxDdNn++uKkWTtpCTIfj2z3TXpnK+KgD9FWJ9gL1DvjH+n95689
-          bFfUM6CIQop/voPvmSF3HV1J+Oi2/Ij9PBSiEq4DTutvlzrDVandvFNxHucSa1lc
-          nfkRdlDJ/4yAuMJBMGn7t1L2XXUhq3CCScKQybT+37z8MBwp5xkX/N/rG5ME8irO
-          cUR34Z2YS/Fyh+GZWeurNUxO4+VRPvG0CIwD6oSv/QaP5QC7SQifj0CurGf7F6+O
-          mwIDAQAB
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA179R9PKsi456Lp8q9Hub
+          cBqnTuAcyW/3JtuQOYoUsBvwFST2CMpUZm6ZqXQYxdhr0MJTm7MkMFKq4+G0ytPU
+          DeV014VAzOaIjYUwt7vB3z0XFnwrT4YZij9Sbnkikca4uqnINpOrKCCty4bXI/4o
+          xPZO5kQL3Ig3KD4YsjzDjDs5jnS9Oi5L/rWXPRuKvdXuEd2redadClhDoAk3kOwv
+          byCQx7PXlF+/GWbVxIxkyogWpNnW3Y0CtOF91UjRMhofElv8mZba7EMp99UkoUUS
+          cdO8QAoq88UQjBpojRMTg0oq2f4HwEvh//zAMc8TsyiX4AHB29r397ORxVDAdgHL
+          YwIDAQAB
           -----END PUBLIC KEY-----
 
 
@@ -228,7 +228,7 @@ services:
       # Protected routes (JWT required) - All meal-service endpoints
       - name: meal-service-protected
         paths:
-          - /v1/meals
+          - /v1/meals # http:loalhost:8000/v1/meals
         strip_path: true
         plugins:
           # JWT verification (MUST run first)
@@ -316,7 +316,7 @@ services:
       # Protected routes (JWT required) - All recipe-service endpoints
       - name: recipe-service-protected
         paths:
-          - /v2/recipes
+          - /v2/recipes # http://localhost:8000/v2/recipes
           - /v2/ingredients
           - /v2/recipes/search
           - /v2/recipes/recommend
@@ -409,7 +409,7 @@ services:
       # Protected routes (JWT required) - All shopping-storage-service endpoints
       - name: shopping-storage-service-protected
         paths:
-          - /v1/shopping_plans
+          - /v1/shopping_plans # http://localhost:8000/v1/shopping_plans
           - /v1/storable_units
           - /v1/storages
           - /v1/shopping_plans/filter
