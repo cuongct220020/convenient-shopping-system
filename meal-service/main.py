@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from core.database import engine, Base
+from core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.head_chef_middleware import HeadChefMiddleware

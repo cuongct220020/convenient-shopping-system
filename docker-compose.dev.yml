@@ -58,7 +58,7 @@ services:
           echo 'Waiting for PostgreSQL to be ready...'
           sleep 2
         done &&
-        
+
         # Check và tạo shopping_user_service_db (chỉ tạo nếu chưa có)
         if ! psql -lqt | cut -d \| -f 1 | grep -qw shopping_user_service_db; then
           psql -c 'CREATE DATABASE shopping_user_service_db;'
@@ -74,7 +74,7 @@ services:
         else
           echo 'Database shopping_notification_service_db already exists'
         fi &&
-        
+
         echo 'Databases check completed successfully' &&
         touch /tmp/databases_created
       "
