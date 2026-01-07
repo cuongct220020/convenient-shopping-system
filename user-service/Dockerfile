@@ -1,5 +1,5 @@
 # Stage 1: Dependencies Builder
-FROM python:3.13-slim as dependencies-builder
+FROM python:3.13-slim AS dependencies-builder
 
 WORKDIR /app
 # Install build dependencies
@@ -23,7 +23,7 @@ RUN cp /app/user-service/requirements.txt /app/user-service/requirements_filtere
     pip install --no-cache-dir -r /app/user-service/requirements_filtered.txt
 
 # Stage 2: Runtime
-FROM python:3.13-slim as runtime
+FROM python:3.13-slim AS runtime
 
 WORKDIR /app/user-service
 

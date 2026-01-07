@@ -88,6 +88,6 @@ venv/
 # VS Code
 .vscode/
 
-*.md
-
 tests/
+
+*.md

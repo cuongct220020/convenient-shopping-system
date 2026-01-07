@@ -58,7 +58,7 @@ class MemberIdentityProfileView(BaseAPIView):
         """Get identity profile of a specific group member."""
         profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
-        profile_service = UserIdentityProfileService(profile_repo)
+        profile_service = UserIdentityProfileService(profile_repo, membership_repo)
 
         try:
             # Verify that user_id is a member of group_id
@@ -69,7 +69,7 @@ class MemberIdentityProfileView(BaseAPIView):
                     status_code=404
                 )
 
-            profile = await profile_service.get(user_id)
+            profile = await profile_service.get_identity_profile(user_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -114,7 +114,7 @@ class MemberHealthProfileView(BaseAPIView):
         """Get health profile of a specific group member."""
         profile_repo = UserHealthProfileRepository(session=request.ctx.db_session)
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
-        profile_service = UserHealthProfileService(profile_repo)
+        profile_service = UserHealthProfileService(profile_repo, membership_repo)
 
         try:
             # Verify that user_id is a member of group_id
@@ -125,7 +125,7 @@ class MemberHealthProfileView(BaseAPIView):
                     status_code=404
                 )
 
-            profile = await profile_service.get(user_id)
+            profile = await profile_service.get_health_profile(user_id)
 
             # Use helper method from base class
             return self.success_response(

@@ -1,6 +1,5 @@
-from typing import Optional, Annotated
+from typing import Annotated
 from fastapi import Request, Depends
-from shopping_shared.exceptions import Unauthorized
 from shopping_shared.middleware.auth_utils import extract_kong_headers, validate_token_state
 from shopping_shared.caching.redis_manager import redis_manager
 

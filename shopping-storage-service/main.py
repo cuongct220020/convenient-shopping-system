@@ -8,11 +8,20 @@ from apis.v1.plan_api import plan_router
 from apis.v1.storage_api import storage_router
 from apis.v1.storable_unit_api import storable_unit_router
 from tasks.scheduler import setup_scheduler
+from shopping_shared.caching.redis_manager import redis_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize Redis connection
+    await redis_manager.setup(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        db=settings.REDIS_DB,
+        password=settings.REDIS_PASSWORD
+    )
+
     kafka_manager.setup(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
-    
+
     scheduler = setup_scheduler()
     scheduler.start()
 
@@ -20,6 +29,7 @@ async def lifespan(app: FastAPI):
 
     scheduler.shutdown()
     await kafka_manager.close()
+    await redis_manager.close()
 
 app = FastAPI(
     title="Shopping & Storage Service",
