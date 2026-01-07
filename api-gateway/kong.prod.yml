@@ -45,10 +45,39 @@ plugins:
 #    config:
 #      include_status_codes: true
 
+  # 4. Force HTTPS Redirect (Global)
+  # Redirects all HTTP traffic to HTTPS, EXCEPT for Let's Encrypt validation
+  - name: pre-function
+    config:
+      access:
+        - |
+          local scheme = kong.request.get_scheme()
+          local path = kong.request.get_path()
+          if scheme == "http" and not string.find(path, "/.well-known/acme-challenge/") then
+            local host = kong.request.get_host()
+            local query = kong.request.get_query()
+            local url = "https://" .. host .. path
+            if query and query ~= "" then
+              url = url .. "?" .. query
+            end
+            return kong.response.exit(301, { message = "Redirecting to HTTPS" }, { ["Location"] = url })
+          end
+
 # ===========================
 # Services
 # ===========================
 services:
+  # ACME Challenge Service (For SSL Auto-renewal)
+  - name: acme-challenge
+    url: http://acme-challenge:80
+    routes:
+      - name: acme-challenge-route
+        paths:
+          - /.well-known/acme-challenge
+        strip_path: false
+        protocols:
+          - http
+
   # User Service
   - name: user-service
     url: http://user-service:8000
@@ -400,6 +429,7 @@ services:
               access:
                 - |
                   kong.service.request.set_path("/docs")
+
 
   # 4. Shopping storage service
   - name: shopping-storage-service
