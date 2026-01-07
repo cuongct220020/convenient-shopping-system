@@ -34,5 +34,5 @@ const authHandlers = [
 ]
 
 export const handlers = [
-  // ...authHandlers
+  ...authHandlers
 ]
