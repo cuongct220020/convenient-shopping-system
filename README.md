@@ -48,37 +48,72 @@ Provide various use cases and code examples here.
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d
+```
+
+### Simulate Production Environment Locally
+To test the production setup (with SSL, Kong Gateway, and Domain routing) on your local machine (Mac/Linux), follow these steps:
+
+**1. Create Dummy SSL Certificates**
+Create the system directory structure and generate self-signed certificates.
+```bash
+# Create directory (requires sudo)
+sudo mkdir -p /etc/letsencrypt/live/dichotienloi.com/
+
+# Generate self-signed certificate
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/letsencrypt/live/dichotienloi.com/privkey.pem \
+  -out /etc/letsencrypt/live/dichotienloi.com/fullchain.pem \
+  -subj "/CN=dichotienloi.com"
+```
+
+**2. Copy Certificates to Project Folder (Fix Permission Issues)**
+Docker on MacOS has trouble mounting system folders like `/etc`. We copy certs to a local `./certs` folder.
+```bash
+# Create local certs folder
+mkdir -p certs
+
+# Copy certs and change ownership to current user
+sudo cp /etc/letsencrypt/live/dichotienloi.com/fullchain.pem ./certs/
+cc
+sudo chown $USER ./certs/*.pem
+```
+
+**3. Mock Domain Name**
+Trick your computer into thinking `dichotienloi.com` is your localhost.
+```bash
+# Open hosts file
+sudo nano /etc/hosts
+
+# Add this line at the end:
+127.0.0.1 dichotienloi.com
+
+# Check after mock domain name
+# Option 1: Check file hosts content
+cat /etc/hosts | grep dichotienloi.com
+
+# Option 2: Check by ping command
+ping -c 3 dichotienloi.com
+```
+
+**4. Configure Environment Variables**
+Create a `.env` file from the example if you haven't already.
+```bash
+cp .env.example .env
+```
+
+**5. Run Production Compose**
+```bash
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-## Project Status
-Project is: _in progress_ / _complete_ / _no longer being worked on_. If you are no longer working on it, provide reasons why.
+**6. Verify**
+Open your browser and visit: `https://dichotienloi.com`
+*   You will see a "Security Warning" (because it's a self-signed cert). Click "Advanced" -> "Proceed".
+*   If you see the API response or Kong welcome page, SSL Termination is working correctly!
+
+> **Note:** The `certbot` service will fail in logs because it cannot connect to Let's Encrypt from localhost. This is expected and can be ignored during local testing.
 
 
-## Room for Improvement
-Include areas you believe need improvement / could be improved. Also add TODOs for future development.
-
-Room for improvement:
-- Improvement to be done 1
-- Improvement to be done 2
-
-To do:
-- Feature to be added 1
-- Feature to be added 2
-
-
-## Acknowledgements
-Give credit here.
-- This project was inspired by...
-- This project was based on [this tutorial](https://www.example.com).
-- Many thanks to...
-
-
-## Contact
-Created by [@flynerdpl](https://www.flynerd.pl/) - feel free to contact me!
-
-<!-- Optional -->
-<!-- ## License -->
-<!-- This project is open source and available under the [... License](). -->
-
-<!-- You don't have to include all sections - just the one's relevant to your project -->
+# Check after create certificate
+sudo ls -l /etc/letsencrypt/live/dichotienloi.com/
+```

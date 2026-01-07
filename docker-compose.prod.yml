@@ -29,6 +29,10 @@ services:
       start_period: 10s
     networks:
       - shopping-network
+    deploy:
+      resources:
+        limits:
+          memory: 100M
 
 
   # Kafka Broker Service
@@ -54,6 +58,8 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_HEAP_OPTS: "-Xmx400M -Xms256M"
+
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
     ports:
       - "9092:9092" # Internal communication
@@ -68,6 +74,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 600M
 
 
   # Kong Gateway (Declarative mode - no database needed)
@@ -75,6 +85,8 @@ services:
     image: kong:3.9.1
     container_name: kong-gateway
     hostname: kong-gateway
+    depends_on:
+      - acme-challenge
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
@@ -84,8 +96,15 @@ services:
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
-      REDIS_PASSWORD: myredis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-myredis}
       KONG_UNTRUSTED_LUA: "on"
+
+      # SSL Configuration
+      KONG_SSL_CERT: /etc/secrets/cert/fullchain.pem
+      KONG_SSL_CERT_KEY: /etc/secrets/cert/privkey.pem
+
+      KONG_MEM_CACHE_SIZE: "64m"
+      KONG_NGINX_WORKER_PROCESSES: "1"
     ports:
       - "80:8000"         # HTTP Public
       - "443:8443"        # HTTPS Public
@@ -94,6 +113,11 @@ services:
     volumes:
       - ${KONG_CONFIG_FILE}:/usr/local/kong/declarative/kong.yml
       - ./user-service/secrets:/user-service/secrets
+      # Mount SSL Certs from Host
+      # For Local Testing: Use local './certs' folder to avoid permission issues
+      # For Production: You can either copy certs here or change this back to /etc/letsencrypt/...
+      - ./certs/fullchain.pem:/etc/secrets/cert/fullchain.pem:ro
+      - ./certs/privkey.pem:/etc/secrets/cert/privkey.pem:ro
     networks:
       - shopping-network
     restart: unless-stopped
@@ -102,6 +126,44 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+
+  # Certbot (SSL Auto-renewal)
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:rw
+      - /var/lib/letsencrypt:/var/lib/letsencrypt:rw
+      - ./certbot/www:/var/www/certbot:rw
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done;'"
+    networks:
+      - shopping-network
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+
+
+  # ACME Challenge Handler (Nginx)
+  # Serves the verification files for Let's Encrypt
+  acme-challenge:
+    image: nginx:alpine
+    container_name: acme-challenge
+    hostname: acme-challenge
+    volumes:
+      - ./certbot/www:/usr/share/nginx/html:ro
+    networks:
+      - shopping-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 100M
 
 
   # User Service
@@ -120,18 +182,18 @@ services:
       kong-gateway:
         condition: service_healthy
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
 
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+      - REDIS_HOST=${REDIS_HOST:-redis_caching}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-myredis}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES:-true}
 
-      - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:9092
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka-broker:9092}
     env_file:
       - .env
       - user-service/.env
@@ -143,6 +205,10 @@ services:
     networks:
       - shopping-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 400M
 
 
   # Recipe Service
@@ -157,18 +223,18 @@ services:
       kafka-broker:
         condition: service_healthy
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
 
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+      - REDIS_HOST=${REDIS_HOST:-redis_caching}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-myredis}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES:-true}
 
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka-broker:9092}
 
       - USER_SERVICE_URL=http://user-service:8000
     env_file:
@@ -178,6 +244,10 @@ services:
     networks:
       - shopping-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 300M
 
 
   # Meal Service
@@ -192,16 +262,16 @@ services:
       kafka-broker:
         condition: service_healthy
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
 
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+      - REDIS_HOST=${REDIS_HOST:-redis_caching}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-myredis}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES:-true}
 
       - USER_SERVICE_URL=http://user-service:8000
     env_file:
@@ -211,6 +281,10 @@ services:
     networks:
       - shopping-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 300M
 
 
   # Shopping Storage Service
@@ -225,18 +299,18 @@ services:
       kafka-broker:
         condition: service_healthy
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
 
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+      - REDIS_HOST=${REDIS_HOST:-redis_caching}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-myredis}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES:-true}
 
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka-broker:9092}
 
       - USER_SERVICE_URL=http://user-service:8000
     env_file:
@@ -246,6 +320,10 @@ services:
     networks:
       - shopping-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 300M
 
 
   # Notification service
@@ -262,18 +340,18 @@ services:
       kafka-broker:
         condition: service_healthy
     environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
 
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+      - REDIS_HOST=${REDIS_HOST:-redis_caching}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-myredis}
+      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES:-true}
 
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka-broker:9092}
     env_file:
       - .env
       - notification-service/.env
@@ -285,3 +363,7 @@ services:
     networks:
       - shopping-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 200M
