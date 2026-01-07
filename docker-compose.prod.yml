@@ -134,7 +134,7 @@ services:
 
   # Certbot (SSL Auto-renewal)
   certbot:
-    image: certbot/certbot
+    image: certbot/certbot:v3.1.0
     container_name: certbot
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:rw
@@ -152,7 +152,7 @@ services:
   # ACME Challenge Handler (Nginx)
   # Serves the verification files for Let's Encrypt
   acme-challenge:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     container_name: acme-challenge
     hostname: acme-challenge
     volumes:
@@ -171,6 +171,7 @@ services:
     build:
       context: .
       dockerfile: user-service/Dockerfile
+    pull_policy: build
     container_name: user-service
     hostname: user-service
     image: user-service:v1.0.0
@@ -216,6 +217,7 @@ services:
     build:
       context: .
       dockerfile: recipe-service/Dockerfile
+    pull_policy: build
     container_name: recipe-service
     hostname: recipe-service
     image: recipe-service:v1.0.0
@@ -255,6 +257,7 @@ services:
     build:
       context: .
       dockerfile: meal-service/Dockerfile
+    pull_policy: build
     image: meal-service:v1.0.0
     container_name: meal-service
     hostname: meal-service
@@ -292,6 +295,7 @@ services:
     build:
       context: .
       dockerfile: shopping-storage-service/Dockerfile
+    pull_policy: build
     image: shopping-storage-service:v1.0.0
     container_name: shopping-storage-service
     hostname: shopping-storage-service
@@ -331,6 +335,7 @@ services:
     build:
       context: .
       dockerfile: notification-service/Dockerfile
+    pull_policy: build
     container_name: notification-service
     image: notification-service:v1.0.0
     hostname: notification-service
