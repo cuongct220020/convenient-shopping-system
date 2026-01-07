@@ -74,7 +74,7 @@ mkdir -p certs
 
 # Copy certs and change ownership to current user
 sudo cp /etc/letsencrypt/live/dichotienloi.com/fullchain.pem ./certs/
-cc
+sudo cp /etc/letsencrypt/live/dichotienloi.com/privkey.pem ./certs/
 sudo chown $USER ./certs/*.pem
 ```
 
