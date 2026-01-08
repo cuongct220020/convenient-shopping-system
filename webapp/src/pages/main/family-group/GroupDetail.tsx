@@ -143,8 +143,8 @@ const GroupDetail = () => {
       const userResult = await userService.getCurrentUser()
       const currentUserId = userResult.isOk() ? userResult.value.data.id : null
 
-      // Fetch group members using the dedicated endpoint
-      const membersResult = await groupService.getGroupMembers(id)
+      // Fetch group info using the dedicated endpoint
+      const membersResult = await groupService.getGroupById(id)
 
       membersResult.match(
         (response) => {
@@ -577,8 +577,8 @@ const GroupDetail = () => {
     const userResult = await userService.getCurrentUser()
     const currentUserId = userResult.isOk() ? userResult.value.data.id : null
 
-    // Fetch group members using the dedicated endpoint
-    const membersResult = await groupService.getGroupMembers(id)
+    // Fetch group info using the dedicated endpoint
+    const membersResult = await groupService.getGroupById(id)
 
     membersResult.match(
       (response) => {
