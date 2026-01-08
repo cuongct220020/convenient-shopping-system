@@ -8,16 +8,7 @@ consumers:
     jwt_secrets:
       - key: shopping-user-service  # Must match 'iss' claim in JWT
         algorithm: RS256
-        rsa_public_key: |
-          -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA179R9PKsi456Lp8q9Hub
-          cBqnTuAcyW/3JtuQOYoUsBvwFST2CMpUZm6ZqXQYxdhr0MJTm7MkMFKq4+G0ytPU
-          DeV014VAzOaIjYUwt7vB3z0XFnwrT4YZij9Sbnkikca4uqnINpOrKCCty4bXI/4o
-          xPZO5kQL3Ig3KD4YsjzDjDs5jnS9Oi5L/rWXPRuKvdXuEd2redadClhDoAk3kOwv
-          byCQx7PXlF+/GWbVxIxkyogWpNnW3Y0CtOF91UjRMhofElv8mZba7EMp99UkoUUS
-          cdO8QAoq88UQjBpojRMTg0oq2f4HwEvh//zAMc8TsyiX4AHB29r397ORxVDAdgHL
-          YwIDAQAB
-          -----END PUBLIC KEY-----
+        rsa_public_key: "${JWT_RSA_PUBLIC_KEY_ESCAPED}"
 
 
 # ===========================
@@ -106,7 +97,7 @@ services:
               redis:
                 host: redis-caching
                 port: 6379
-                password: myredis
+                password: ${REDIS_PASSWORD}
                 database: 0
 
       # Protected routes (JWT required)
