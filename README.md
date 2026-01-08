@@ -1,60 +1,61 @@
-# IT4990 - Convenient Shopping System
-> Outline a brief description of your project.
-> Live demo [_here_](https://www.example.com). <!-- If you have the project hosted somewhere, include the link here. -->
+# Convenient Shopping System
 
-## Table of Contents
-* [General Info](#general-information)
-* [Technologies Used](#technologies-used)
-* [Features](#features)
-* [Screenshots](#screenshots)
-* [Setup](#setup)
-* [Usage](#usage)
-* [Project Status](#project-status)
-* [Room for Improvement](#room-for-improvement)
-* [Acknowledgements](#acknowledgements)
-* [Contact](#contact)
-<!-- * [License](#license) -->
-
+> IT4990 - Software Design & Development – Hanoi University of Science and Technology
 
 ## General Information
-- Provide general information about your project here.
-- What problem does it (intend to) solve?
-- What is the purpose of your project?
-- Why did you undertake it?
-<!-- You don't have to answer all the questions - just the ones relevant to your project. -->
+
+The **Convenient Shopping System** is designed to address common household challenges in meal planning, grocery shopping, and food management. Many families struggle with inefficient shopping habits, food waste due to expired items, and difficulty coordinating household tasks among family members.
+
+This system provides a comprehensive solution by helping users:
+- Plan shopping trips more efficiently
+- Track food inventory and expiration dates
+- Reduce food waste through timely reminders
+- Coordinate shopping responsibilities among family members
+- Generate meal plans based on available ingredients
+
+The project aims to promote sustainable consumption habits while ensuring proper nutrition and minimizing unnecessary expenses.
 
 
-## Technologies Used
-- Tech 1 - version 1.0
-- Tech 2 - version 2.0
-- Tech 3 - version 3.0
+## System Architecture Overview
 
+![System Architecture](./img/screenshot.png)
 
-## Features
-List the ready features here:
-- Awesome feature 1
-- Awesome feature 2
-- Awesome feature 3
+The system follows a **microservices architecture** with **event-driven communication** patterns:
 
+- **Kong Gateway**: Serves as the API Gateway and entry point for all backend services, handling routing, authentication, and rate limiting
+- **Redis**: Implements caching layer using the cache-aside pattern to improve response times and reduce database load
+- **Kafka Broker**: Acts as the message broker enabling asynchronous communication between microservices
+- **Certbot**: Manages automatic SSL certificate renewal from Let's Encrypt, ensuring secure HTTPS connections
+- **Microservices**: Independent services (User, Recipe, Meal, Shopping Storage, Notification) that handle specific business domains
 
-## Screenshots
-![Example screenshot](./img/screenshot.png)
-<!-- If you have screenshots you'd like to share, include them here. -->
+## Video Demo
+
 
 
 ## Usage
-How does one go about using it?
-Provide various use cases and code examples here.
 
-```bash
-docker compose -f docker-compose.dev.yml up -d
-```
+### Prerequisites
+
+- Pull latest update on remote repository and navigate to the root directory
+- Docker Desktop (Docker Engine) installed and running on your machine
+- Configure Environment Variables:
+  ```bash
+  cp .env.example .env
+  cp user-service/.env.example user-service/.env
+  cp meal-service/.env.example meal-service/.env
+  cp recipe-service/.env.example recipe-service/.env
+  cp shopping-storage-service/.env.example shopping-storage-service/.env
+  cp notification-service/.env.example notification-service/.env
+  ```
 
 ### Simulate Production Environment Locally
+
 To test the production setup (with SSL, Kong Gateway, and Domain routing) on your local machine (Mac/Linux), follow these steps:
 
 **1. Create Dummy SSL Certificates**
+
 Create the system directory structure and generate self-signed certificates.
+
 ```bash
 # Create directory (requires sudo)
 sudo mkdir -p /etc/letsencrypt/live/dichotienloi.com/
@@ -64,10 +65,15 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /etc/letsencrypt/live/dichotienloi.com/privkey.pem \
   -out /etc/letsencrypt/live/dichotienloi.com/fullchain.pem \
   -subj "/CN=dichotienloi.com"
+
+# Check after create certificate
+sudo ls -l /etc/letsencrypt/live/dichotienloi.com/
 ```
 
 **2. Copy Certificates to Project Folder (Fix Permission Issues)**
+
 Docker on MacOS has trouble mounting system folders like `/etc`. We copy certs to a local `./certs` folder.
+
 ```bash
 # Create local certs folder
 mkdir -p certs
@@ -79,7 +85,9 @@ sudo chown $USER ./certs/*.pem
 ```
 
 **3. Mock Domain Name**
+
 Trick your computer into thinking `dichotienloi.com` is your localhost.
+
 ```bash
 # Open hosts file
 sudo nano /etc/hosts
@@ -95,25 +103,17 @@ cat /etc/hosts | grep dichotienloi.com
 ping -c 3 dichotienloi.com
 ```
 
-**4. Configure Environment Variables**
-Create a `.env` file from the example if you haven't already.
-```bash
-cp .env.example .env
-```
+**4. Run Production Compose**
 
-**5. Run Production Compose**
 ```bash
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-**6. Verify**
+**5. Verify**
+
 Open your browser and visit: `https://dichotienloi.com`
-*   You will see a "Security Warning" (because it's a self-signed cert). Click "Advanced" -> "Proceed".
-*   If you see the API response or Kong welcome page, SSL Termination is working correctly!
+
+- You will see a "Security Warning" (because it's a self-signed cert). Click "Advanced" -> "Proceed".
+- If you see the API response or Kong welcome page, SSL Termination is working correctly!
 
 > **Note:** The `certbot` service will fail in logs because it cannot connect to Let's Encrypt from localhost. This is expected and can be ignored during local testing.
-
-
-# Check after create certificate
-sudo ls -l /etc/letsencrypt/live/dichotienloi.com/
-```
