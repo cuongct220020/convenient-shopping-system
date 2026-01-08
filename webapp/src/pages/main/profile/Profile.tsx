@@ -4,6 +4,7 @@ import { User, Info, HeartPulse, Heart, LogOut } from 'lucide-react'
 import { userService } from '../../../services/user'
 import { LocalStorage } from '../../../services/storage/local'
 import { NotificationCard } from '../../../components/NotificationCard'
+import userAvatar from '../../../assets/user.png'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -46,9 +47,7 @@ const Profile = () => {
 
       {/* User Profile Info */}
       <div className="mb-8 flex items-center">
-        <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-purple-300">
-          <span className="text-2xl font-bold text-white">UN</span>
-        </div>
+        <img src={userAvatar} alt="User Avatar" className="size-16 shrink-0 rounded-full object-cover" />
         <div className="ml-4">
           <h3 className="text-lg font-bold text-gray-900">
             {user?.first_name || user?.last_name
@@ -76,11 +75,11 @@ const Profile = () => {
         />
 
         {/* Item 3: Health Profile */}
-        {/* <MenuItem
+        <MenuItem
           icon={<HeartPulse size={20} className="text-black" />}
           text="Hồ sơ sức khỏe"
           onClick={() => navigate('/main/profile/health-profile')}
-        /> */}
+        />
 
         {/* Item 4: Favorites */}
         {/* <MenuItem

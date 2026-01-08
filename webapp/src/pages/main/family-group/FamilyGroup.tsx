@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/Button';
 import GroupCard from '../../../components/GroupCard';
 import { groupService } from '../../../services/group';
@@ -26,11 +26,13 @@ function getAvatarUrl(url: string | null): string {
 
 const FamilyGroup: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch groups on mount
+  // Fetch groups on mount and when refreshKey changes
   useEffect(() => {
     const fetchGroups = async () => {
       setIsLoading(true);
@@ -65,7 +67,16 @@ const FamilyGroup: React.FC = () => {
     };
 
     fetchGroups();
-  }, []);
+  }, [refreshKey, location.key]);
+
+  // Check if navigation state indicates a refresh is needed
+  useEffect(() => {
+    if (location.state?.refresh) {
+      setRefreshKey(prev => prev + 1);
+      // Clear the state to prevent infinite refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   const handleCreateGroup = () => {
     console.log('Create/Add group clicked');

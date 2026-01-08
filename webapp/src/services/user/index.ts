@@ -62,7 +62,14 @@ export class UserService {
    * Update current user's profile information
    */
   public updateCurrentUser(
-    data: { email?: string; username?: string }
+    data: {
+      email?: string;
+      username?: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      phone_num?: string | null;
+      avatar_url?: string | null;
+    }
   ): ResultAsync<CurrentUserResponse, UserError> {
     return httpPatch(this.clients.auth, AppUrl.USERS_ME, data)
       .mapErr((e): UserError => {
@@ -317,6 +324,37 @@ export class UserService {
    */
   public getMyHealthProfile(): ResultAsync<UserHealthProfileResponse, UserError> {
     return httpGet(this.clients.auth, AppUrl.USERS_ME_HEALTH_PROFILE)
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(UserHealthProfileResponseSchema, response.body).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+  }
+
+  /**
+   * Update current user's health profile
+   */
+  public updateMyHealthProfile(
+    data: {
+      height_cm?: number | null;
+      weight_kg?: number | null;
+      activity_level?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | null;
+      curr_condition?: 'normal' | 'pregnant' | 'injured' | null;
+      health_goal?: 'lose_weight' | 'maintain' | 'gain_weight' | null;
+    }
+  ): ResultAsync<UserHealthProfileResponse, UserError> {
+    return httpPatch(this.clients.auth, AppUrl.USERS_ME_HEALTH_PROFILE, data)
       .mapErr((e): UserError => {
         switch (e.type) {
           case 'unauthorized':

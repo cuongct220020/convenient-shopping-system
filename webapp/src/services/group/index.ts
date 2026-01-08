@@ -109,7 +109,7 @@ export class GroupService {
   ): ResultAsync<GroupUpdateResponse, GroupError> {
     const requestData = {
       group_name: groupName,
-      group_avatar_url: avatarUrl ?? null
+      group_avatar_url: avatarUrl ?? ''
     }
 
     return httpPut(this.clients.auth, AppUrl.GROUP_BY_ID(groupId), requestData)

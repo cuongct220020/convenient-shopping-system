@@ -270,9 +270,25 @@ const PersonalProfile = () => {
               setIsSaving(true);
               setSaveError(null);
 
+              // Prepare user profile update data
+              const userUpdateData: {
+                first_name?: string | null;
+                last_name?: string | null;
+                phone_num?: string | null;
+              } = {};
+
+              if (formData.fullName !== originalValues.fullName) {
+                // Parse full name into first and last name
+                // First word is first_name, rest is last_name
+                const parts = formData.fullName.trim().split(' ');
+                userUpdateData.first_name = parts[0] || null;
+                userUpdateData.last_name = parts.slice(1).join(' ') || null;
+              }
+              if (formData.phoneNumber !== originalValues.phoneNumber) {
+                userUpdateData.phone_num = formData.phoneNumber || null;
+              }
+
               // Prepare identity profile update data
-              // Note: fullName and phoneNumber are currently read-only as the API
-              // doesn't support updating first_name, last_name, or phone_num
               const identityUpdateData: {
                 gender?: 'male' | 'female' | 'other';
                 date_of_birth?: string | null;
@@ -301,31 +317,48 @@ const PersonalProfile = () => {
                 };
               }
 
-              // Call API if there are changes to identity profile
-              if (Object.keys(identityUpdateData).length === 0) {
-                // If nothing changed, just exit edit mode
+              // Call APIs for both user and identity profile updates in parallel
+              const updatePromises: Promise<unknown>[] = [];
+
+              if (Object.keys(userUpdateData).length > 0) {
+                updatePromises.push(
+                  userService.updateCurrentUser(userUpdateData).match(
+                    (value) => value,
+                    (error) => Promise.reject(error)
+                  )
+                );
+              }
+              if (Object.keys(identityUpdateData).length > 0) {
+                updatePromises.push(
+                  userService.updateMyIdentityProfile(identityUpdateData).match(
+                    (value) => value,
+                    (error) => Promise.reject(error)
+                  )
+                );
+              }
+
+              // If nothing changed, just exit edit mode
+              if (updatePromises.length === 0) {
                 setIsEditMode(false);
                 setShowConfirmModal(false);
                 setIsSaving(false);
                 return;
               }
 
-              const result = await userService.updateMyIdentityProfile(identityUpdateData);
+              const results = await Promise.allSettled(updatePromises);
+              const hasError = results.some(r => r.status === 'rejected');
 
-              result.match(
-                () => {
-                  // Update successful
-                  setOriginalValues({
-                    ...formData,
-                    gender
-                  });
-                  setShowConfirmModal(false);
-                  setIsEditMode(false);
-                },
-                () => {
-                  setSaveError('Không thể lưu thay đổi. Vui lòng thử lại.');
-                }
-              );
+              if (hasError) {
+                setSaveError('Không thể lưu thay đổi. Vui lòng thử lại.');
+              } else {
+                // Update successful
+                setOriginalValues({
+                  ...formData,
+                  gender
+                });
+                setShowConfirmModal(false);
+                setIsEditMode(false);
+              }
 
               setIsSaving(false);
             }}

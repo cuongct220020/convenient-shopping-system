@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
 import { InputField } from '../../../components/InputField';
+import { NotificationCard } from '../../../components/NotificationCard';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import { userService } from '../../../services/user';
+import { LocalStorage } from '../../../services/storage/local';
 
 const LoginInformation = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +33,7 @@ const LoginInformation = () => {
     general?: string;
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     userService.getCurrentUser().match(
@@ -82,6 +87,11 @@ const LoginInformation = () => {
         () => {
           setIsSubmitting(false);
           setIsModalOpen(false);
+          // Clear local auth token
+          // Password change invalidates the existing JWT token
+          LocalStorage.inst.auth = null;
+          setShowSuccessModal(true);
+          // Clear form
           setCurrentPassword('');
           setNewPassword('');
           setRepeatPassword('');
@@ -224,22 +234,36 @@ const LoginInformation = () => {
               {/* Buttons */}
               <div className="flex gap-3 mt-2">
                 <Button
-                  variant={isSubmitting ? 'disabled' : 'secondary'}
-                  size="full"
-                  onClick={handleCancel}
-                >
-                  Hủy
-                </Button>
-                <Button
                   variant={isSubmitting ? 'disabled' : 'primary'}
                   size="full"
                   onClick={handleSubmit}
                 >
                   {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
                 </Button>
+                <Button
+                  variant={isSubmitting ? 'disabled' : 'secondary'}
+                  size="full"
+                  onClick={handleCancel}
+                >
+                  Hủy
+                </Button>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
+          <NotificationCard
+            title="Đổi mật khẩu thành công"
+            message="Để bảo mật, bạn cần đăng nhập lại với mật khẩu mới."
+            iconBgColor="bg-green-500"
+            buttonText="Đăng nhập"
+            buttonIcon={Lock}
+            onButtonClick={() => navigate('/auth/login')}
+          />
         </div>
       )}
     </div>

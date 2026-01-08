@@ -21,7 +21,6 @@ import {
   Clock,
   Circle
 } from 'lucide-react'
-import { BackButton } from '../../../components/BackButton'
 import { Button } from '../../../components/Button'
 import { UserCard } from '../../../components/UserCard'
 import AddMember from './AddMember'
@@ -59,6 +58,11 @@ const GroupDetail = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams<{ id: string }>()
+
+  // Check if navigation state has refresh flag
+  const needsRefresh = location.state?.refresh || false
+  const returningFromEdit = location.state?.returningFromEdit || false
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // State for group data
   const [groupData, setGroupData] = useState<{
@@ -114,7 +118,16 @@ const GroupDetail = () => {
   const [isPlansLoading, setIsPlansLoading] = useState(false)
   const [plansError, setPlansError] = useState<string | null>(null)
 
-  // Fetch current user and group data on mount
+  // Trigger refresh when navigation state has refresh flag
+  useEffect(() => {
+    if (needsRefresh) {
+      setRefreshKey(prev => prev + 1)
+      // Clear the refresh flag but preserve returningFromEdit
+      navigate(location.pathname, { replace: true, state: { returningFromEdit } })
+    }
+  }, [needsRefresh, location.pathname, navigate, returningFromEdit])
+
+  // Fetch current user and group data on mount and when refreshKey changes
   useEffect(() => {
     const fetchData = async () => {
       if (!id) {
@@ -191,7 +204,7 @@ const GroupDetail = () => {
     }
 
     fetchData()
-  }, [id])
+  }, [id, refreshKey])
 
   // Scroll to selected date when filter or selected date changes
   useEffect(() => {
@@ -390,7 +403,7 @@ const GroupDetail = () => {
 
   const handleEdit = () => {
     navigate(`/main/family-group/${id}/edit`, {
-      state: { group: groupData }
+      state: { group: groupData, returningFromEdit: true }
     })
     setIsSettingsOpen(false)
   }
@@ -702,7 +715,17 @@ const GroupDetail = () => {
       {/* Header */}
       <div>
         <div className="flex items-center justify-between px-4 py-2">
-          <BackButton to="/main/family-group" text="Quay lại" />
+          <button
+            onClick={() =>
+              navigate('/main/family-group', {
+                state: returningFromEdit ? { refresh: true } : undefined
+              })
+            }
+            className="flex items-center text-sm font-bold text-[#C3485C] hover:opacity-80"
+          >
+            <ChevronLeft size={20} strokeWidth={3} />
+            <span className="ml-1">Quay lại</span>
+          </button>
           <div className="relative">
             <button
               onClick={(e) => {
