@@ -143,8 +143,8 @@ const GroupDetail = () => {
       const userResult = await userService.getCurrentUser()
       const currentUserId = userResult.isOk() ? userResult.value.data.id : null
 
-      // Fetch group info using the dedicated endpoint
-      const membersResult = await groupService.getGroupById(id)
+      // Fetch group info using the members endpoint (accessible to all members)
+      const membersResult = await groupService.getGroupMembers(id)
 
       membersResult.match(
         (response) => {
@@ -449,31 +449,56 @@ const GroupDetail = () => {
     setIsSettingLeader(true)
     setSetLeaderError(null)
 
-    // Transfer leadership by making both requests in parallel
-    // (to avoid losing permission after first request completes)
+    // Transfer leadership by making requests sequentially
+    // (not in parallel to avoid race conditions)
     const currentLeaderId = groupData!.currentUserId
     const targetMemberId = selectedMemberForLeader.id
 
-    const result = await ResultAsync.combine([
-      groupService.updateMemberRole(id, targetMemberId, 'head_chef'),
-      groupService.updateMemberRole(id, currentLeaderId, 'member')
-    ])
+    // First, set the target member as head_chef
+    const firstResult = await groupService.updateMemberRole(
+      id,
+      targetMemberId,
+      'head_chef'
+    )
 
-    result.match(
-      () => {
-        setIsSetLeaderModalOpen(false)
-        setSelectedMemberForLeader(null)
-        setOpenMemberMenuId(null)
-        // Refresh group data
-        window.location.reload()
+    firstResult.match(
+      async () => {
+        // Then, set the current leader as member
+        const secondResult = await groupService.updateMemberRole(
+          id,
+          currentLeaderId,
+          'member'
+        )
+
+        secondResult.match(
+          () => {
+            setIsSetLeaderModalOpen(false)
+            setSelectedMemberForLeader(null)
+            setOpenMemberMenuId(null)
+            // Refresh group data
+            setRefreshKey(prev => prev + 1)
+          },
+          (error) => {
+            console.error('Failed to demote current leader:', error)
+            if (error.type === 'unauthorized') {
+              setSetLeaderError('Bạn cần đăng nhập để thực hiện thao tác này')
+            } else if (error.type === 'not-found') {
+              setSetLeaderError('Không tìm thấy nhóm')
+            } else if (error.type === 'forbidden') {
+              setSetLeaderError('Bạn không có quyền thực hiện thao tác này')
+            } else {
+              setSetLeaderError('Không thể đặt làm trưởng nhóm')
+            }
+          }
+        )
       },
       (error) => {
         console.error('Failed to set leader:', error)
-        if (error[0]?.type === 'unauthorized' || error[1]?.type === 'unauthorized') {
+        if (error.type === 'unauthorized') {
           setSetLeaderError('Bạn cần đăng nhập để thực hiện thao tác này')
-        } else if (error[0]?.type === 'not-found' || error[1]?.type === 'not-found') {
+        } else if (error.type === 'not-found') {
           setSetLeaderError('Không tìm thấy nhóm')
-        } else if (error[0]?.type === 'forbidden' || error[1]?.type === 'forbidden') {
+        } else if (error.type === 'forbidden') {
           setSetLeaderError('Bạn không có quyền thực hiện thao tác này')
         } else {
           setSetLeaderError('Không thể đặt làm trưởng nhóm')
@@ -577,8 +602,8 @@ const GroupDetail = () => {
     const userResult = await userService.getCurrentUser()
     const currentUserId = userResult.isOk() ? userResult.value.data.id : null
 
-    // Fetch group info using the dedicated endpoint
-    const membersResult = await groupService.getGroupById(id)
+    // Fetch group info using the members endpoint (accessible to all members)
+    const membersResult = await groupService.getGroupMembers(id)
 
     membersResult.match(
       (response) => {
