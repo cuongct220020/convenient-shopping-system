@@ -10,6 +10,7 @@ Recipe Service là một microservice được xây dựng bằng FastAPI, cung 
 - [Chạy service trên localhost](#chạy-service-trên-localhost)
 - [Xem API Documentation](#xem-api-documentation)
 - [Chạy bằng Docker](#chạy-bằng-docker)
+- [Pagination](#pagination)
 
 ## 🔧 Yêu cầu hệ thống
 
@@ -70,12 +71,12 @@ Có 2 cách để chạy service:
 
 ```bash
 # Từ thư mục recipe-service
-uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+uvicorn main:app --host 0.0.0.0 --port 9002 --reload
 ```
 
 **Tham số:**
 - `--host 0.0.0.0`: Lắng nghe trên tất cả interfaces
-- `--port 8001`: Port mặc định của service
+- `--port 9002`: Port khuyến nghị của service (theo cấu hình toàn hệ thống)
 - `--reload`: Tự động reload khi code thay đổi (chỉ dùng cho development)
 
 ### Cách 2: Chạy trực tiếp với Python
@@ -85,14 +86,15 @@ uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 python main.py
 ```
 
-Service sẽ chạy trên `http://0.0.0.0:8001` (có thể truy cập từ `http://localhost:8001`).
+**Lưu ý:** `python main.py` sẽ chạy theo port được cấu hình trong code (hiện tại là `8000`).
+Nếu muốn chạy đúng port hệ thống (`9002`), hãy dùng uvicorn với `--port 9002`.
 
 ## 📚 Xem API Documentation
 
 FastAPI tự động tạo interactive API documentation. Sau khi service đã chạy, mở trình duyệt và truy cập:
 
 ```
-http://localhost:8001/docs
+http://localhost:9002/docs
 ```
 
 Swagger UI cung cấp:
@@ -115,7 +117,7 @@ docker build -t recipe-service -f recipe-service/Dockerfile .
 ```bash
 docker run -d \
   --name recipe-service \
-  -p 8001:8001 \
+  -p 9002:8000 \
   --env-file .env \
   --network shopping-network \
   recipe-service
@@ -124,7 +126,7 @@ docker run -d \
 **Lưu ý:**
 - Đảm bảo file `.env` có đầy đủ các biến môi trường
 - Container cần kết nối đến PostgreSQL và Kafka (có thể qua Docker network)
-- Port 8001 sẽ được expose ra host
+- Port `9002` sẽ được expose ra host (container listen `8000`)
 
 ### Xem logs
 
@@ -160,26 +162,66 @@ Service cung cấp các endpoints chính:
 
 Service sử dụng **cursor-based pagination** cho các endpoints list và search:
 
+### Format Response
+
+Response có dạng:
+
 ```json
 {
   "data": [...],
   "next_cursor": 123,
-  "size": 100
+  "size": 10
 }
 ```
 
-**Cách sử dụng:**
-1. Request đầu tiên: Không cần `cursor` parameter
-2. Request tiếp theo: Sử dụng `next_cursor` từ response trước làm `cursor` parameter
-3. Nếu `next_cursor` là `null`, nghĩa là đã hết dữ liệu
+**Các trường:**
+- `data`: Mảng chứa các items trong trang hiện tại
+- `next_cursor`: Giá trị cursor để lấy trang tiếp theo (số nguyên, ID của item cuối cùng). Nếu `null` nghĩa là đã hết dữ liệu
+- `size`: Số lượng items trong trang hiện tại
 
-**Ví dụ:**
+### Cách sử dụng
+
+1. **Request đầu tiên:** Không cần `cursor` parameter
+2. **Request tiếp theo:** Sử dụng `next_cursor` từ response trước làm `cursor` parameter
+3. **Kết thúc:** Nếu `next_cursor` là `null`, nghĩa là đã hết dữ liệu
+
+### Parameters
+
+- `cursor` (optional): Giá trị cursor từ response trước (mặc định: null để lấy trang đầu)
+- `limit` (optional): Số lượng items mỗi trang (mặc định: 100, tối thiểu: 1)
+
+### Ví dụ
+
 ```bash
 # Trang đầu tiên
 GET /v2/ingredients/?limit=5
 
+# Response:
+# {
+#   "data": [...],
+#   "next_cursor": 123,
+#   "size": 5
+# }
+
 # Trang tiếp theo (sử dụng next_cursor từ response trước)
 GET /v2/ingredients/?cursor=123&limit=5
+
+# Response:
+# {
+#   "data": [...],
+#   "next_cursor": 456,
+#   "size": 5
+# }
+
+# Trang cuối
+GET /v2/ingredients/?cursor=456&limit=5
+
+# Response:
+# {
+#   "data": [...],
+#   "next_cursor": null,
+#   "size": 3
+# }
 ```
 
 ## 🛠️ Troubleshooting
@@ -203,11 +245,11 @@ GET /v2/ingredients/?cursor=123&limit=5
 - Cài đặt shared package: `pip install -e ../shared[fastapi]`
 - Kiểm tra `PYTHONPATH` nếu cần
 
-### Port 8001 đã được sử dụng
+### Port 9002 đã được sử dụng
 
-- Thay đổi port trong `main.py` hoặc dùng `--port` với uvicorn:
+- Dùng port khác với uvicorn:
   ```bash
-  uvicorn main:app --port 8002 --reload
+  uvicorn main:app --port 9006 --reload
   ```
 
 ## 📝 Notes
@@ -215,7 +257,7 @@ GET /v2/ingredients/?cursor=123&limit=5
 - Service sử dụng CORS middleware cho phép tất cả origins (chỉ dùng cho development)
 - Service tự động tạo Kafka consumers khi khởi động
 - Database migrations được quản lý bằng Alembic
-- Service chạy trên port 8001 mặc định
+- Port hệ thống khuyến nghị cho Recipe Service: `9002`
 
 ## 🔗 Liên kết hữu ích
 

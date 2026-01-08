@@ -4,6 +4,7 @@ from uuid import UUID
 
 from app.models.user_tag import Tag
 from app.repositories.user_tag_repository import UserTagRepository
+from app.services.redis_service import redis_service
 from app.schemas.user_tag_schema import (
     UserTagBulkAddSchema,
     UserTagDeleteSchema,
@@ -11,6 +12,8 @@ from app.schemas.user_tag_schema import (
     UserTagSchema,
     UserTagsResponseSchema
 )
+
+from shopping_shared.caching.redis_keys import RedisKeys
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("User Tag Service")
@@ -55,18 +58,27 @@ class UserTagService:
         """Add multiple tags to user."""
         count = await self.user_tag_repo.add_tags_to_user(user_id, data.tag_values)
         logger.info(f"Added {count} tags to user {user_id}")
+
+        await redis_service.delete_key(RedisKeys.user_tags_key(str(user_id)))
+
         return {"added_count": count}
 
     async def remove_tags(self, user_id: UUID, data: UserTagDeleteSchema) -> Dict[str, int]:
         """Remove multiple tags from user."""
         count = await self.user_tag_repo.remove_tags_from_user(user_id, data.tag_values)
         logger.info(f"Removed {count} tags from user {user_id}")
+
+        await redis_service.delete_key(RedisKeys.user_tags_key(str(user_id)))
+
         return {"removed_count": count}
 
     async def update_category_tags(self, user_id: UUID, category: str, tag_values: List[str]) -> Dict[str, int]:
         """Update all tags in a specific category."""
         count = await self.user_tag_repo.replace_category_tags(user_id, category, tag_values)
         logger.info(f"Updated {count} tags in category {category} for user {user_id}")
+
+        await redis_service.delete_key(RedisKeys.user_tags_key(str(user_id)))
+
         return {"updated_count": count}
 
     @staticmethod

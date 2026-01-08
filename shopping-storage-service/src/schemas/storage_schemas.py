@@ -1,12 +1,13 @@
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
+from uuid import UUID
 from enums.storage_type import StorageType
 from schemas.storable_unit_schemas import StorableUnitResponse
 
 class StorageCreate(BaseModel):
     storage_name: Optional[str] = None
     storage_type: StorageType
-    group_id: int = Field(gt=0)
+    group_id: UUID
 
     model_config = ConfigDict(extra="forbid")
 
@@ -20,7 +21,7 @@ class StorageResponse(BaseModel):
     storage_id: int
     storage_name: str
     storage_type: StorageType
-    group_id: int
+    group_id: UUID
     storable_units: list[StorableUnitResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

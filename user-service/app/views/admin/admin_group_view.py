@@ -5,6 +5,7 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request, require_system_role
+from app.decorators.cache_response import cache_response
 from app.views.base_view import BaseAPIView
 from app.enums import SystemRole
 from app.repositories.family_group_repository import FamilyGroupRepository
@@ -19,6 +20,7 @@ from shopping_shared.exceptions import NotFound, Conflict
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
+from shopping_shared.caching.redis_keys import RedisKeys
 
 logger = get_logger("Admin Group View")
 
@@ -67,6 +69,7 @@ class AdminGroupsView(BaseAdminGroupsView):
         ]
     )
     @require_system_role(SystemRole.ADMIN)
+    @cache_response(RedisKeys.ADMIN_GROUPS_LIST, ttl=60, page=1, page_size=10)
     async def get(self, request: Request):
         """
         List all family groups with pagination.
@@ -151,6 +154,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         ]
     )
     @require_system_role(SystemRole.ADMIN)
+    @cache_response(RedisKeys.ADMIN_GROUP_DETAIL, ttl=300)
     async def get(self, request: Request, group_id: UUID):
         """
         Get a specific family group by ID.
@@ -159,7 +163,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         service = self._get_service(request)
 
         try:
-            group = await service.get_group_by_id(group_id)
+            group = await service.get_group_with_details(group_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -203,7 +207,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         service = self._get_service(request)
 
         try:
-            updated_group = await service.update_group(group_id, validated_data)
+            updated_group = await service.update_group_by_admin(group_id, validated_data)
 
             # Use helper method from base class
             return self.success_response(
@@ -244,7 +248,7 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         service = self._get_service(request)
 
         try:
-            await service.delete_group(group_id)
+            await service.delete_group_by_admin(group_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -279,6 +283,7 @@ class AdminGroupMembersView(BaseAdminGroupsView):
         ]
     )
     @require_system_role(SystemRole.ADMIN)
+    @cache_response(key_pattern=RedisKeys.ADMIN_GROUP_MEMBERS_LIST, ttl=60)
     async def get(self, request: Request, group_id: UUID):
         """
         List all members of a specific family group.
@@ -328,11 +333,11 @@ class AdminGroupMembersView(BaseAdminGroupsView):
         Add a member to a group (Admin).
         POST /api/v1/user-service/admin/groups/<group_id>/members/
         """
+        admin_user_id = request.ctx.auth_payload["sub"]
         validated_data = request.ctx.validated_data
         service = self._get_service(request)
 
         try:
-            admin_user_id = UUID(request.ctx.auth_payload["sub"])
             membership = await service.add_member_by_admin(group_id, validated_data.identifier, admin_user_id)
             return self.success_response(
                 data=GroupMembershipSchema.model_validate(membership),
@@ -379,12 +384,9 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
                 new_role=validated_data.role
             )
 
-            # Convert to GroupMembershipSchema for proper response format
-            membership_schema = GroupMembershipSchema.model_validate(updated_membership)
-
             # Use helper method from base class
             return self.success_response(
-                data=membership_schema,
+                data=GroupMembershipSchema.model_validate(updated_membership),
                 message="Member role updated successfully",
                 status_code=200
             )
@@ -397,6 +399,7 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
                 message="Failed to update member role",
                 status_code=500
             )
+
 
     @openapi.definition(
         summary="Remove a member from family group (Admin)",

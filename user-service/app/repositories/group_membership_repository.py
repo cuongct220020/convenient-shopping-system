@@ -1,7 +1,7 @@
 # user-service/app/repositories/group_membership_repository.py
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Tuple
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -76,11 +76,24 @@ class GroupMembershipRepository(
         )
 
 
-    async def get_member_detailed(self, group_id: UUID, user_id: UUID) -> Optional[GroupMembership]:
+    async def get_group_with_member_and_info(self, group_id: UUID, user_id: UUID) -> Optional[Tuple[FamilyGroup, GroupMembership, int, list]]:
         """
-        Fetch a specific member with User info AND Profiles eagerly loaded.
-        Optimized for Detail View (Single query for everything).
+        Fetch group, specific member, member count, and all member IDs in a single optimized query.
+        Returns: (group, member, member_count, list_of_member_user_ids)
         """
+        from app.models import FamilyGroup
+
+        # Get member count in a query
+        member_count_stmt = select(func.count(GroupMembership.user_id)).where(GroupMembership.group_id == group_id)
+        member_count_result = await self.session.execute(member_count_stmt)
+        member_count = member_count_result.scalar()
+
+        # Get member IDs in a separate query
+        member_ids_stmt = select(GroupMembership.user_id).where(GroupMembership.group_id == group_id)
+        member_ids_result = await self.session.execute(member_ids_stmt)
+        member_ids = [row[0] for row in member_ids_result.all()]
+
+        # Get the specific member with user details
         stmt = (
             select(GroupMembership)
             .where(
@@ -95,39 +108,61 @@ class GroupMembershipRepository(
             )
         )
         result = await self.session.execute(stmt)
-        return result.scalars().first()
+        member = result.scalars().first()
+        if not member:
+            return None
 
+        # Get group with creator
+        group_stmt = (
+            select(FamilyGroup)
+            .where(FamilyGroup.id == group_id)
+            .options(selectinload(FamilyGroup.creator))
+        )
+        group_result = await self.session.execute(group_stmt)
+        group = group_result.scalars().first()
+        if not group:
+            return None
+
+        return group, member, member_count, member_ids
 
     async def add_membership(
         self,
         user_id: UUID,
         group_id: UUID,
         role: GroupRole,
-        added_by_user_id: Optional[UUID] = None
+        added_by_user_id: Optional[UUID] = None,
+        user: Optional[User] = None
     ) -> GroupMembership:
-        """Adds a user to a group with a specific role."""
+        """Adds a user to a group. Optimized to avoid redundant SELECT if user object is provided."""
         membership = GroupMembership(
             user_id=user_id,
             group_id=group_id,
             role=role,
             added_by_user_id=added_by_user_id
         )
+
+        if user:
+            # Optimization: Assign the already fetched user object to the relationship
+            # This prevents SQLAlchemy from needing to fetch it again later.
+            membership.user = user
+
         self.session.add(membership)
         await self.session.flush()
 
-        # Return the membership with user relationship loaded by fetching it again
-        from sqlalchemy.orm import selectinload
-        from sqlalchemy import select
-        stmt = (
-            select(GroupMembership)
-            .where(
-                GroupMembership.user_id == user_id,
-                GroupMembership.group_id == group_id
+        # If user wasn't provided, we fetch with relation to avoid lazy-load issues later
+        if not user:
+            stmt = (
+                select(GroupMembership)
+                .where(
+                    GroupMembership.user_id == user_id,
+                    GroupMembership.group_id == group_id
+                )
+                .options(selectinload(GroupMembership.user))
             )
-            .options(selectinload(GroupMembership.user))
-        )
-        result = await self.session.execute(stmt)
-        return result.scalars().first()
+            result = await self.session.execute(stmt)
+            return result.scalars().first()
+
+        return membership
 
 
     async def remove_membership(

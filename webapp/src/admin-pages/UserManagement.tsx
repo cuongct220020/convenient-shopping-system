@@ -1,87 +1,81 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Search, LayoutGrid, Check, Edit, Trash2 } from 'lucide-react'
 import { UserItem } from '../components/Item'
 import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
+import { userService } from '../services/user'
 import userAvatar from '../assets/user.png'
 
-// Dữ liệu giả lập cho người dùng
-const possibleNames = [
-  'Nguyễn Văn A',
-  'Trần Thị B',
-  'Lê Văn C',
-  'Phạm Thị D',
-  'Hoàng Văn E',
-  'Vũ Thị F',
-  'Đỗ Văn G',
-  'Bùi Thị H',
-  'Đinh Văn I',
-  'Mai Thị K',
-  'Tô Văn L',
-  'Ngô Thị M',
-  'Dương Văn N',
-  'Trịnh Thị O',
-  'Lý Văn P'
-]
-const possibleGenders = ['Nam', 'Nữ', 'Khác']
-const possibleAddresses = [
-  'Hà Nội',
-  'TP. Hồ Chí Minh',
-  'Đà Nẵng',
-  'Hải Phòng',
-  'Cần Thơ',
-  'An Giang',
-  'Bà Rịa - Vũng Tàu',
-  'Bắc Giang',
-  'Bắc Kạn',
-  'Bạc Liêu'
-]
-const possibleJobs = [
-  'Lập trình viên',
-  'Kế toán',
-  'Nhân viên văn phòng',
-  'Giáo viên',
-  'Bác sĩ',
-  'Kỹ sư',
-  'Thiết kế đồ họa',
-  'Marketing',
-  'Kinh doanh',
-  'Quản lý nhân sự'
-]
-
-const allUsersData = Array(50)
-  .fill(null)
-  .map((_, index) => {
-    const randomNameIndex = Math.floor(Math.random() * possibleNames.length)
-    const randomGenderIndex = Math.floor(Math.random() * possibleGenders.length)
-    const randomAddressIndex = Math.floor(Math.random() * possibleAddresses.length)
-    const randomJobIndex = Math.floor(Math.random() * possibleJobs.length)
-    const name = possibleNames[randomNameIndex]
-    const nameWithoutSpaces = name.toLowerCase().replace(/\s/g, '')
-    const phoneNumber = `0${Math.floor(Math.random() * 900000000) + 100000000}`
-
-    return {
-      id: index + 1,
-      name: name,
-      username: `${nameWithoutSpaces}${index}`,
-      email: `${nameWithoutSpaces}${index}@gmail.com`,
-      gender: possibleGenders[randomGenderIndex],
-      address: possibleAddresses[randomAddressIndex],
-      job: possibleJobs[randomJobIndex],
-      phoneNumber: phoneNumber,
-      avatar: userAvatar,
-      birthday: new Date(1970 + Math.floor(Math.random() * 40), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toLocaleDateString('vi-VN'),
-      image: userAvatar
-    }
-  })
-
 const ITEMS_PER_PAGE = 20
+
+type User = {
+  user_id: string
+  username: string
+  email: string
+  phone_num: string | null
+  first_name: string | null
+  last_name: string | null
+  avatar_url: string | null
+  identity_profile: unknown | null
+  health_profile: unknown | null
+  system_role: 'user' | 'admin'
+  is_active: boolean
+  created_at: string
+  last_login: string | null
+}
 
 const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
+  const [users, setUsers] = useState<User[]>([])
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true)
+      setError(null)
+      const result = await userService.getUsersList(currentPage, ITEMS_PER_PAGE)
+
+      result.match(
+        (response) => {
+          setUsers(response.data.data)
+          setTotalPages(response.data.total_pages)
+          setTotalItems(response.data.total_items)
+          setLoading(false)
+        },
+        (err) => {
+          console.error('Failed to fetch users:', err)
+          setError('Failed to load users. Please try again.')
+          setLoading(false)
+        }
+      )
+    }
+
+    fetchUsers()
+  }, [currentPage])
+
+  // Filter users based on search query
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery) return users
+
+    const query = searchQuery.toLowerCase()
+    return users.filter((user) =>
+      user.username.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query) ||
+      (user.first_name && user.first_name.toLowerCase().includes(query)) ||
+      (user.last_name && user.last_name.toLowerCase().includes(query)) ||
+      (user.phone_num && user.phone_num.includes(query))
+    )
+  }, [users, searchQuery])
+
+  const startIndex = users.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0
+  const endIndex = Math.min(currentPage * ITEMS_PER_PAGE, totalItems)
 
   const handleUserClick = (user: any) => {
     setSelectedUser(user)
@@ -107,42 +101,28 @@ const UserManagement = () => {
     setViewMode(null)
   }
 
-  
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
     setCurrentPage(1)
   }
 
-  const { totalPages, currentItems, startIndex, endIndex, totalItems } =
-    useMemo(() => {
-      let filteredData = allUsersData
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        filteredData = filteredData.filter((user) =>
-          user.name.toLowerCase().includes(query) ||
-          user.username.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query) ||
-          user.address.toLowerCase().includes(query) ||
-          user.job.toLowerCase().includes(query) ||
-          user.phoneNumber.includes(query)
-        )
-      }
-
-      const totalItems = filteredData.length
-      const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-      const endIndex = startIndex + ITEMS_PER_PAGE
-      const currentItems = filteredData.slice(startIndex, endIndex)
-
-      return {
-        totalPages,
-        currentItems,
-        startIndex: totalItems === 0 ? 0 : startIndex + 1,
-        endIndex: Math.min(endIndex, totalItems),
-        totalItems
-      }
-    }, [currentPage, searchQuery])
+  // Transform user data for display
+  const displayUsers = useMemo(() => {
+    return filteredUsers.map((user) => ({
+      id: user.user_id,
+      name: user.first_name && user.last_name
+        ? `${user.first_name} ${user.last_name}`
+        : user.username,
+      username: user.username,
+      email: user.email,
+      phoneNumber: user.phone_num || 'N/A',
+      avatar: user.avatar_url || userAvatar,
+      systemRole: user.system_role,
+      isActive: user.is_active,
+      createdAt: new Date(user.created_at).toLocaleDateString('vi-VN'),
+      lastLogin: user.last_login ? new Date(user.last_login).toLocaleDateString('vi-VN') : 'Never'
+    }))
+  }, [filteredUsers])
 
   return (
     <div className="flex min-h-screen flex-1 flex-col pt-6">
@@ -184,9 +164,17 @@ const UserManagement = () => {
 
       {/* Grid Container - Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        {currentItems.length > 0 ? (
+        {loading ? (
+          <div className="px-6 flex h-64 items-center justify-center text-gray-500">
+            Đang tải...
+          </div>
+        ) : error ? (
+          <div className="px-6 flex h-64 items-center justify-center text-red-500">
+            {error}
+          </div>
+        ) : displayUsers.length > 0 ? (
           <div className="px-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {currentItems.map((user) => (
+            {displayUsers.map((user) => (
               <UserItem
                 key={user.id}
                 name={user.name}
@@ -248,10 +236,6 @@ const UserManagement = () => {
                       <span className="ml-2 text-sm text-gray-900">#{selectedUser.id}</span>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-500">Giới tính:</span>
-                      <span className="ml-2 text-sm text-gray-900">{selectedUser.gender}</span>
-                    </div>
-                    <div>
                       <span className="text-sm font-medium text-gray-500">Email:</span>
                       <span className="ml-2 text-sm text-gray-900">{selectedUser.email}</span>
                     </div>
@@ -260,16 +244,22 @@ const UserManagement = () => {
                       <span className="ml-2 text-sm text-gray-900">{selectedUser.phoneNumber}</span>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-500">Ngày sinh:</span>
-                      <span className="ml-2 text-sm text-gray-900">{selectedUser.birthday}</span>
+                      <span className="text-sm font-medium text-gray-500">Vai trò hệ thống:</span>
+                      <span className="ml-2 text-sm text-gray-900">{selectedUser.systemRole === 'admin' ? 'Quản trị viên' : 'Người dùng'}</span>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-500">Địa chỉ:</span>
-                      <span className="ml-2 text-sm text-gray-900">{selectedUser.address}</span>
+                      <span className="text-sm font-medium text-gray-500">Trạng thái:</span>
+                      <span className={`ml-2 text-sm ${selectedUser.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                        {selectedUser.isActive ? 'Hoạt động' : 'Vô hiệu'}
+                      </span>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-500">Nghề nghiệp:</span>
-                      <span className="ml-2 text-sm text-gray-900">{selectedUser.job}</span>
+                      <span className="text-sm font-medium text-gray-500">Ngày tạo:</span>
+                      <span className="ml-2 text-sm text-gray-900">{selectedUser.createdAt}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Đăng nhập lần cuối:</span>
+                      <span className="ml-2 text-sm text-gray-900">{selectedUser.lastLogin}</span>
                     </div>
                     <div className="flex justify-end space-x-3 mt-6">
                       <Button
@@ -343,44 +333,11 @@ const UserManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính</label>
-                    <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" defaultValue={selectedUser.gender}>
-                      <option value="">Chọn giới tính</option>
-                      {possibleGenders.map((gender) => (
-                        <option key={gender} value={gender}>{gender}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      defaultValue={selectedUser.address}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nghề nghiệp</label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      defaultValue={selectedUser.job}
-                    />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
                     <input
                       type="tel"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       defaultValue={selectedUser.phoneNumber}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh</label>
-                    <input
-                      type="date"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      defaultValue={selectedUser.birthday}
                     />
                   </div>
                 </div>

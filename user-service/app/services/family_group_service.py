@@ -1,7 +1,7 @@
 # user-service/app/services/family_group_service.py
 from datetime import datetime, UTC
 from uuid import UUID
-from typing import Sequence
+from typing import Sequence, Tuple
 
 from app.models import FamilyGroup, GroupMembership
 from app.enums import GroupRole
@@ -10,6 +10,8 @@ from app.schemas.family_group_schema import FamilyGroupCreateSchema, FamilyGroup
 from app.repositories.family_group_repository import FamilyGroupRepository
 from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.services.kafka_service import kafka_service
+from app.services.redis_service import redis_service
+from shopping_shared.caching.redis_keys import RedisKeys
 
 from shopping_shared.exceptions import Forbidden, NotFound, Conflict
 from shopping_shared.utils.logger_utils import get_logger
@@ -38,21 +40,6 @@ class FamilyGroupService:
         if not group:
             raise NotFound(f"Family group with id {group_id} not found")
         return group
-
-
-    async def get_group_member_detailed(self, group_id: UUID, user_id: UUID) -> GroupMembership:
-        """
-        Get a specific member with FULL details (User + Identity + Health).
-        Used for the 'Detail View'.
-        """
-        # Ensure group exists
-        await self.repository.get_by_id(group_id)
-        
-        member = await self.member_repo.get_member_detailed(group_id, user_id)
-        if not member:
-            raise NotFound("Member not found in this group.")
-        
-        return member
 
 
     async def get_user_groups(self, user_id: UUID) -> Sequence[tuple[GroupMembership, int]]:
@@ -90,6 +77,10 @@ class FamilyGroupService:
         full_group = await self.repository.get_with_details(group.id)
         
         logger.info(f"Created family group {group.id} with HEAD_CHEF {user_id}")
+
+        # 4. Invalidate user's group list cache
+        await redis_service.delete_pattern(RedisKeys.user_groups_list_key(user_id=str(user_id)))
+
         return full_group
 
 
@@ -111,6 +102,9 @@ class FamilyGroupService:
         if not updated_group:
             raise NotFound(f"Group with id {group_id} not found")
 
+        # Invalidate cache
+        await redis_service.delete_pattern(RedisKeys.group_detail_key(str(group_id)))
+
         # 3. Return full details
         return await self.repository.get_with_details(group_id)
 
@@ -121,6 +115,11 @@ class FamilyGroupService:
             raise Forbidden("Only the head_chef can delete this group.")
 
         await self.repository.delete(group_id)
+        
+        # Invalidate cache
+        await redis_service.delete_pattern(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_pattern(RedisKeys.user_groups_list_key(user_id=str(user_id)))
+        
         logger.info(f"Deleted family group {group_id} by user {user_id}")
 
 
@@ -134,12 +133,7 @@ class FamilyGroupService:
         """Adds a user to the group by email or username"""
 
         # Find the target user by identifier (email or username)
-        # First, try to find by email
-        target_user = await self.user_repo.get_by_email(user_to_add_identifier)
-
-        # If not found by email, try to find by username
-        if not target_user:
-            target_user = await self.user_repo.get_by_username(user_to_add_identifier)
+        target_user = await self.user_repo.get_by_identifier(user_to_add_identifier)
 
         if not target_user:
             raise NotFound(f"User with identifier '{user_to_add_identifier}' not found")
@@ -153,11 +147,14 @@ class FamilyGroupService:
         if existing:
             raise Conflict("User is already a member of this group.")
 
-        # 3. Get group name and group membership ids *before* adding the member
-        group = await self.repository.get_by_id(group_id) # Fetch group to get its name
-        group_members = await self.member_repo.get_all_members(group_id) # Fetch members before adding
+        # 3. Get group name and group membership ids before adding the member
+        # OPTIMIZED: Use single query to get group info and member IDs
+        group_result = await self.repository.get_group_with_members_and_info(group_id)
+        if not group_result:
+            raise NotFound(f"Group with id {group_id} not found")
+
+        group, member_count, group_members_ids = group_result
         group_name = group.group_name
-        group_members_ids = [member.user_id for member in group_members]
         user_to_add_identifier = self._get_user_identifier(target_user)
 
         # 4. Publish message to kafka topics
@@ -174,6 +171,11 @@ class FamilyGroupService:
         # 5. Add Member (requester adds target user)
         logger.info(f"Added user {target_user.id} to group {group_id}")
         membership = await self.member_repo.add_membership(target_user.id, group_id, GroupRole.MEMBER, requester_id)
+
+        # Invalidate cache
+        await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(target_user.id)))
+        await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
 
         return membership
 
@@ -194,20 +196,23 @@ class FamilyGroupService:
         if not is_self and not await self._is_head_chef(requester_id, group_id):
             raise Forbidden("You do not have permission to remove this member.")
 
-        # Fetch the existing member details to get their identifier
-        existing_member = await self.get_group_member_detailed(group_id, target_user_id)
+        # OPTIMIZED: Use single query to get both group and member details
+        result = await self.member_repo.get_group_with_member_and_info(group_id, target_user_id)
+        if not result:
+            raise NotFound("Membership not found.")
+
+        group, existing_member, member_count, member_ids = result
         # Access the user's email/username from the fetched member object
         target_user_identifier = self._get_user_identifier(existing_member.user)
-
-        if not existing_member:
-             raise NotFound("Membership not found.")
-
-        # Fetch group name BEFORE removing the member to ensure group still exists
-        group = await self.repository.get_by_id(group_id)
         group_name = group.group_name
 
         await self.member_repo.remove_membership(target_user_id, group_id)
         logger.info(f"Removed user {target_user_id} from group {group_id}")
+
+        # Invalidate cache
+        await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(target_user_id)))
+        await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
 
         await kafka_service.publish_remove_user_group_message(
             requester_id=str(requester_id),
@@ -232,19 +237,24 @@ class FamilyGroupService:
         if not await self._is_head_chef(requester_id, group_id):
             raise Forbidden("Only Head Chef can update roles.")
 
-        group = await self.repository.get_by_id(group_id)
-        group_name = group.group_name
-
-        # Check if the target user is actually a member of the group
-        existing_membership = await self.get_group_member_detailed(group_id, target_user_id)
-        if not existing_membership:
+        # OPTIMIZED: Use single query to get both group and member details
+        result = await self.member_repo.get_group_with_member_and_info(group_id, target_user_id)
+        if not result:
             raise NotFound("Membership not found.")
+
+        group, existing_membership, member_count, member_ids = result
+        group_name = group.group_name
 
         membership = await self.member_repo.update_role(target_user_id, group_id, new_role)
         if not membership:
             raise NotFound("Failed to update membership role.")
 
         logger.info(f"Updated role for user {target_user_id} in group {group_id} to {new_role}")
+
+        # Invalidate cache
+        await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(target_user_id)))
+        await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
 
 
         if new_role == GroupRole.HEAD_CHEF:
@@ -278,14 +288,18 @@ class FamilyGroupService:
         if not membership:
             raise NotFound("You are not a member of this group")
 
-        # Get all members in the group to check if this is the last member
+        # OPTIMIZED: Use single query to get group info and all members
+        group_result = await self.repository.get_group_with_members_and_info(group_id)
+        if not group_result:
+            raise NotFound(f"Group with id {group_id} not found")
+
+        group, member_count, member_ids = group_result
+        group_name = group.group_name
+
+        # Get all members with user info in a single query
         all_members = await self.member_repo.get_all_members(group_id)
 
         # Regular member (or HEAD_CHEF as the last member) can leave
-        # Fetch group name BEFORE removing the member to ensure group still exists
-        group = await self.repository.get_by_id(group_id)
-        group_name = group.group_name
-
         # If user is HEAD_CHEF and there are other members, they cannot leave
         if membership.role == GroupRole.HEAD_CHEF and len(all_members) > 1:
             new_head_chef = min(
@@ -313,10 +327,6 @@ class FamilyGroupService:
             )
 
         if len(all_members) <= 1:
-            # Fetch group name BEFORE removing the member to ensure group still exists
-            group = await self.repository.get_by_id(group_id)
-            group_name = group.group_name
-
             await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
             logger.info(f"User {user_id} left group {group_id} (last member, group effectively deleted)")
 
@@ -332,6 +342,11 @@ class FamilyGroupService:
         await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
         logger.info(f"User {user_id} left group {group_id}")
 
+        # Invalidate cache
+        await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(user_id)))
+        await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
+        await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
+
         # Publish user leave group events
         await kafka_service.publish_user_leave_group_message(
             user_id=user_id,
@@ -339,6 +354,21 @@ class FamilyGroupService:
             group_id=group_id,
             group_name=group_name
         )
+
+    async def check_group_access(
+        self,
+        user_id: UUID,
+        group_id: UUID,
+        check_head_chef: bool
+    ) -> Tuple[bool, bool]:
+
+        is_group_membership = await self._is_group_membership(user_id=user_id, group_id=group_id)
+        if check_head_chef:
+            is_head_chef = await self._is_head_chef(user_id=user_id, group_id=group_id)
+
+            return is_group_membership, is_head_chef
+
+        return is_group_membership, False
 
 
     @staticmethod
@@ -350,3 +380,8 @@ class FamilyGroupService:
         """Helper to check if user is HEAD_CHEF of the group."""
         membership = await self.member_repo.get_membership(user_id, group_id)
         return membership and membership.role == GroupRole.HEAD_CHEF
+
+    async def _is_group_membership(self, user_id: UUID, group_id: UUID) -> bool:
+        """Helper to check if user is member of the group."""
+        membership = await self.member_repo.get_membership(user_id, group_id)
+        return True if membership is not None else False

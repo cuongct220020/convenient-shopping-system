@@ -1,20 +1,15 @@
-from fastapi import APIRouter, status, Depends, Query, HTTPException, Path, Body
+import uuid
+from fastapi import APIRouter, status, Depends, Query, HTTPException, Body, Path
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import List, Optional
 from services.recipe_crud import RecipeCRUD
 from services.recommender import Recommender
 from models.recipe_component import Recipe
-from schemas.recipe_flattened_schemas import (
-    RecipeQuantityInput,
-    FlattenedIngredientsResponse,
-    FlattenedIngredientItem
-)
-from schemas.recipe_schemas import (
-    RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
-)
+from schemas.recipe_flattened_schemas import RecipeQuantityInput, FlattenedIngredientsResponse, FlattenedIngredientItem
+from schemas.recipe_schemas import RecipeCreate, RecipeUpdate, RecipeResponse, RecipeDetailedResponse
 from .crud_router_base import create_crud_router
-from shared.shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
+from shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
 from core.database import get_db
 from utils.custom_mapping import recipe_detailed_mapping
 
@@ -22,7 +17,7 @@ recipe_crud = RecipeCRUD(Recipe)
 
 recipe_router = APIRouter(
     prefix="/v2/recipes",
-    tags=["Recipes"]
+    tags=["recipes"]
 )
 
 @recipe_router.get(
@@ -32,7 +27,7 @@ recipe_router = APIRouter(
     description="Get recommended recipes for a group based on ingredient availability and tag preferences. Returns top 10 recipes."
 )
 def recommend_recipes(
-    group_id: int = Query(..., ge=1, description="Group ID to get recommendations for"),
+    group_id: uuid.UUID = Query(..., description="Group ID to get recommendations for"),
     db: Session = Depends(get_db)
 ):
     recommender = Recommender(db)
@@ -42,7 +37,6 @@ def recommend_recipes(
         return []
     
     recipes = recipe_crud.get_detail(db, recipe_ids)
-    # Sort theo thứ tự trong recipe_ids để giữ thứ tự recommend
     recipe_map = {r.component_id: r for r in recipes}
     sorted_recipes = [recipe_map[rid] for rid in recipe_ids if rid in recipe_map]
     
@@ -83,10 +77,13 @@ async def get_recipe_flattened(
     recipes_with_quantity: list[RecipeQuantityInput] = Body(
         ...,
         description="List of recipes with their quantities to aggregate",
-        example=[{"recipe_id": 1, "quantity": 2}, {"recipe_id": 2, "quantity": 1}]
+        examples=[
+            [{"recipe_id": 1, "quantity": 2}, {"recipe_id": 2, "quantity": 1}],
+            [{"recipe_id": 3, "quantity": 1}, {"recipe_id": 4, "quantity": 3}, {"recipe_id": 5, "quantity": 2}]
+        ]
     ),
     check_existence: bool = Query(False, description="Check if ingredients exist in group inventory"),
-    group_id: Optional[int] = Query(None, ge=1, description="Group ID to check ingredient existence (required if check_existence is True)"),
+    group_id: Optional[uuid.UUID] = Query(None, description="Group ID to check ingredient existence (required if check_existence is True)"),
     db: Session = Depends(get_db)
 ):
     if check_existence and group_id is None:
@@ -107,6 +104,7 @@ async def get_recipe_flattened(
     ]
     
     return FlattenedIngredientsResponse(ingredients=ingredients)
+
 @recipe_router.put(
     "/{id}",
     response_model=RecipeResponse,
@@ -117,7 +115,7 @@ async def get_recipe_flattened(
             "Returns 400 if component list of the Recipe contains the Recipe itself to prevent infinite loop."
     )
 )
-def update_recipe(id: int, obj_in: RecipeUpdate, db: Session = Depends(get_db)):
+def update_recipe(id: int = Path(..., ge=1, description="The unique identifier of the Recipe to update"), obj_in: RecipeUpdate = Body(..., description="Data to update the Recipe"), db: Session = Depends(get_db)):
     db_obj = recipe_crud.get(db, id)
     if db_obj is None:
         raise HTTPException(status_code=404, detail=f"Recipe with id={id} not found")
@@ -143,7 +141,7 @@ recipe_router.include_router(crud_router)
     status_code=status.HTTP_200_OK,
     description=f"Retrieve a Recipe with detailed information about the components by its unique ID. Returns 404 if the Recipe does not exist."
 )
-def get_recipe_detailed(id: int, db: Session = Depends(get_db)):
+def get_recipe_detailed(id: int = Path(..., ge=1, description="The unique identifier of the Recipe"), db: Session = Depends(get_db)):
     recipes = recipe_crud.get_detail(db, [id])
     if not recipes:
         raise HTTPException(status_code=404, detail=f"Recipe with id={id} not found")

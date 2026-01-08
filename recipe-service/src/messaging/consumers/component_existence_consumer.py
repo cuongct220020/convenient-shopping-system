@@ -1,5 +1,5 @@
-from shared.shopping_shared.messaging.kafka_manager import kafka_manager
-from shared.shopping_shared.messaging.topics import COMPONENT_EXISTENCE_TOPIC
+from shopping_shared.messaging.kafka_manager import kafka_manager
+from shopping_shared.messaging.topics import COMPONENT_EXISTENCE_TOPIC
 from messaging.handlers.component_existence_handler import handle_component_existence_update
 
 

@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Body, status, HTTPException
+from fastapi import APIRouter, Depends, Query, Body, status, HTTPException, Path
 from typing import TypeVar, Type, cast, Optional
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
 from core.database import get_db
-from shared.shopping_shared.crud.crud_base import CRUDBase
-from shared.shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
+from shopping_shared.crud.crud_base import CRUDBase
+from shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
 
 """
     Generic CRUD router factory for reuse across CRUD operations of different models
@@ -34,7 +34,7 @@ def create_crud_router(
         status_code=status.HTTP_200_OK,
         description=f"Retrieve a {crud_base.model.__name__} by its unique ID. Returns 404 if the {crud_base.model.__name__} does not exist."
     )
-    def get_item(id: int, db: Session = Depends(get_db)):
+    def get_item(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         obj = crud_base.get(db, id)
         if obj is None:
             raise HTTPException(status_code=404, detail=f"{crud_base.model.__name__} with id={id} not found")
@@ -49,15 +49,14 @@ def create_crud_router(
                 "Supports pagination with cursor and limit."
         )
     )
-    def get_many_items(cursor: Optional[int] = Query(None, ge=0), limit: int = Query(100, ge=1), db: Session = Depends(get_db)):
+    def get_many_items(cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"), limit: int = Query(100, ge=1, description="Maximum number of results to return"), db: Session = Depends(get_db)):
         items = crud_base.get_many(db, cursor=cursor, limit=limit)
         pk = inspect(crud_base.model).primary_key[0]
         next_cursor = getattr(items[-1], pk.name) if items and len(items) == limit else None
         return CursorPaginationResponse(
             data=list(items),
             next_cursor=next_cursor,
-            size=len(items),
-            has_more=len(items) == limit
+            size=len(items)
         )
 
     @router.post(
@@ -78,7 +77,7 @@ def create_crud_router(
                 "Returns 404 if the {crud_base.model.__name__} does not exist."
         )
     )
-    def update_item(id: int, obj_in: update_schema, db: Session = Depends(get_db)):         # type: ignore
+    def update_item(id: int = Path(..., ge=1), obj_in: update_schema = Body(...), db: Session = Depends(get_db)):         # type: ignore
         db_obj = crud_base.get(db, id)
         if db_obj is None:
             raise HTTPException(status_code=404, detail=f"{crud_base.model.__name__} with id={id} not found")
@@ -92,7 +91,7 @@ def create_crud_router(
                 "Returns 204 No Content on success. Returns 404 if the {crud_base.model.__name__} does not exist."
         )
     )
-    def delete_item(id: int, db: Session = Depends(get_db)):
+    def delete_item(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         db_obj = crud_base.get(db, id)
         if db_obj is None:
             raise HTTPException(status_code=404, detail=f"{crud_base.model.__name__} with id={id} not found")

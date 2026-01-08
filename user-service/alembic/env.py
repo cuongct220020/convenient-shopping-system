@@ -14,6 +14,10 @@ from alembic import context
 
 # Import models for 'autogenerate' support
 from shopping_shared.databases.base_model import Base
+from app.models.user import User
+from app.models.user_tag import Tag, UserTag
+from app.models.family_group import FamilyGroup, GroupMembership
+from app.models.user_profile import Address, UserIdentityProfile, UserHealthProfile
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

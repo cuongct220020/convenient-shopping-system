@@ -1,3 +1,4 @@
+import uuid
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -27,7 +28,7 @@ class MealCommandHandler:
                 raise HTTPException(status_code=400, detail=f"Invalid action {meal_command.action} for meal {meal_type}")
         return responses
 
-    def upsert(self, db: Session, date: date, group_id: int, meal_type: MealType, meal_command: MealCommand):
+    def upsert(self, db: Session, date: date, group_id: uuid.UUID, meal_type: MealType, meal_command: MealCommand):
         meal: Meal | None = db.execute(
             select(Meal).where(Meal.date == date, Meal.group_id == group_id, Meal.meal_type == meal_type)
         ).scalars().first()
@@ -49,7 +50,7 @@ class MealCommandHandler:
 
         return meal
 
-    def delete(self, db: Session, date: date, group_id: int, meal_type: MealType) -> MealMissingResponse:
+    def delete(self, db: Session, date: date, group_id: uuid.UUID, meal_type: MealType) -> MealMissingResponse:
         meal: Meal | None = db.execute(
             select(Meal).where(Meal.date == date, Meal.group_id == group_id, Meal.meal_type == meal_type)
         ).scalars().first()
@@ -63,7 +64,7 @@ class MealCommandHandler:
             detail="Meal deleted"
         )
 
-    def get(self, db: Session, date: date, group_id: int, meal_type: Optional[MealType] = None) -> Sequence[MealResponse | MealMissingResponse]:
+    def get(self, db: Session, date: date, group_id: uuid.UUID, meal_type: Optional[MealType] = None) -> Sequence[MealResponse | MealMissingResponse]:
         stmt = select(Meal).where(Meal.date == date, Meal.group_id == group_id)
 
         if meal_type is not None:

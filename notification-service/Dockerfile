@@ -1,9 +1,8 @@
-# Stage 1: Build stage - To build Python dependencies
-FROM python:3.13-slim as builder
+# Stage 1: Dependencies Builder
+FROM python:3.13-slim AS dependencies-builder
 
-WORKDIR /app/notification-service
-
-# Install build-time dependencies
+WORKDIR /app
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
@@ -12,60 +11,59 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy shared module and production requirements
+
+# Copy requirements
+COPY notification-service/requirements.prod.txt /app/notification-service/requirements.txt
 COPY shared /app/shared
-COPY notification-service/requirements.prod.txt requirements.txt
 
-# Remove editable local requirement to build it as a standard wheel
-# This prevents pip from trying to locate ../shared in the editable way during wheel build
-RUN sed -i '/-e ..\/shared/d' requirements.txt
-
-# Install pip-tools to help with dependency resolution
-RUN pip install --no-cache-dir pip-tools
-
-# Resolve dependencies to a constraints file to ensure consistency
-RUN pip-compile --resolver=backtracking -o requirements-compiled.txt requirements.txt
-
-# First, install the compiled requirements to establish the environment
-RUN pip install --no-cache-dir -r requirements-compiled.txt
-
-# Then build the shared library wheel in the established environment to ensure consistent dependencies
-RUN pip wheel --no-cache-dir --wheel-dir /app/wheels /app/shared
+# Install dependencies
+RUN cp /app/notification-service/requirements.txt /app/notification-service/requirements_filtered.txt && \
+    sed -i '/-e \.\.\/shared/d' /app/notification-service/requirements_filtered.txt && \
+    pip install --no-cache-dir /app/shared && \
+    pip install --no-cache-dir -r /app/notification-service/requirements_filtered.txt
 
 # Stage 2: Runtime
-FROM python:3.13-slim
+FROM python:3.13-slim AS runtime
 
 WORKDIR /app/notification-service
 
-# Install runtime utilities (dumb-init for signal handling)
+# Install minimal runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     dumb-init \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Create non-root user
-RUN useradd --create-home --shell /bin/bash appuser
+RUN groupadd --system --gid 1001 appuser && \
+    useradd --system --uid 1001 --gid 1001 --shell /bin/bash --create-home appuser
 
-# Copy wheels from builder
-COPY --from=builder /app/wheels /wheels
 
-# Install all wheels with their dependencies
-RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/*
+# Copy site-packages (Thư viện code)
+COPY --from=dependencies-builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+# Copy binaries (File chạy lệnh: alembic, sanic, gunicorn...)
+COPY --from=dependencies-builder /usr/local/bin /usr/local/bin
+# ------------------------
 
 # Copy application code
-COPY --chown=appuser:appuser notification-service .
+COPY --chown=appuser:appuser notification-service/ /app/notification-service/
+
+# Set env
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    # Đảm bảo python tìm thấy path nếu cần thiết
+    PYTHONPATH=/app/notification-service
 
 USER appuser
 
-# Expose port (Internal Sanic port)
 EXPOSE 9005
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:9005/api/v1/notification-service/health || exit 1
+    CMD curl -f http://localhost:9005/api/v1/notification-service/health || exit 1
 
-# Use dumb-init for proper signal handling (PID 1)
 ENTRYPOINT ["dumb-init", "--"]
 
-# Command to run the application
 CMD ["python3", "run.py"]

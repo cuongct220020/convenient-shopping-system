@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Body, status, HTTPException
+from fastapi import APIRouter, Depends, Query, Body, status, HTTPException, Path
 from typing import TypeVar, Type, Optional
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session, DeclarativeBase
 from pydantic import BaseModel
 from core.database import get_db
-from shared.shopping_shared.crud.crud_base import CRUDBase
-from shared.shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
+from shopping_shared.crud.crud_base import CRUDBase
+from shopping_shared.schemas.cursor_pagination_schema import CursorPaginationResponse
 
 """
     Generic CRUD router factory for reuse across CRUD operations of different models
@@ -34,7 +34,7 @@ def create_crud_router(
         status_code=status.HTTP_200_OK,
         description=f"Retrieve a {crud_base.model.__name__} by its unique ID. Returns 404 if the {crud_base.model.__name__} does not exist."
     )
-    def get_item(id: int, db: Session = Depends(get_db)):
+    def get_item(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         obj = crud_base.get(db, id)
         if obj is None:
             raise HTTPException(status_code=404, detail=f"{crud_base.model.__name__} with id={id} not found")
@@ -81,7 +81,7 @@ def create_crud_router(
                 f"Returns 404 if the {crud_base.model.__name__} does not exist."
         )
     )
-    def update_item(id: int, obj_in: update_schema, db: Session = Depends(get_db)):         # type: ignore
+    def update_item(id: int = Path(..., ge=1), obj_in: update_schema = Body(...), db: Session = Depends(get_db)):         # type: ignore
         db_obj = crud_base.get(db, id)
         if db_obj is None:
             raise HTTPException(status_code=404, detail=f"{crud_base.model.__name__} with id={id} not found")
@@ -95,7 +95,7 @@ def create_crud_router(
                 f"Returns 204 No Content on success. Returns 404 if the {crud_base.model.__name__} does not exist."
         )
     )
-    def delete_item(id: int, db: Session = Depends(get_db)):
+    def delete_item(id: int = Path(..., ge=1), db: Session = Depends(get_db)):
         db_obj = crud_base.get(db, id)
         if db_obj is None:
             raise HTTPException(status_code=404, detail=f"{crud_base.model.__name__} with id={id} not found")

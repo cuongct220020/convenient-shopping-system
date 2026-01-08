@@ -76,49 +76,78 @@ http://localhost:8000/api/v1/user-service
 - Pull latest update on remote repository and at the root directory.
 - Docker Desktop (Docker Engine) is installed and running on your machine (for local development).
 - Python3.11+ is installed on your machine (for local development).
-- Create new .env file in the user-service, notification-service directory.
-- Copy the content of .env.example into the newly created .env file.
-- Update environment variables as needed
+
+### Setup Environment Variables
+
+Create new .env file in the root, user-service, notification-service directory and copy the content of .env.example into the newly created .env file.
+```bash
+cp .env.example .env
+cp user-service/.env.example user-service/.env
+cp notification-service/.env.example notification-service/.env
+```
+
+### Run user-service venv 
+```bash
+cd user-service
+python3 -m venv .venv/
+source .venv/bin/activate
+```
 
 ### Generate RSA Keys
 ```bash
 # Generate and verify RSA key pairs for JWT authentication
-cd user-service/scripts
 python3 generate_rsa_keys.py
 python3 verify_rsa_keys_pair.py
 ```
 
-### Configure Kong Gateway
-1. Copy the generated public key from `user-service/secrets/jwt-public.pem`
-2. Paste it into the `api-gateway/kong.prod.yml` file in the JWT consumer configuration
-3. Verify the public key matches Kong configuration:
-```bash
-cd user-service/scripts
-python3 verify_kong_public_key.py kong.prod.yml
-```
+After the command is complete, check the .env file to ensure that JWT_RSA_PUBLIC_KEY exists.
 
 ### Running with Docker
 ```bash
 # From the project root directory
 # If you have made code changes, use --build to rebuild images
+docker compose up -d --build user-service
 # Otherwise, use without --build for faster startup
-docker compose up -d --build
+docker compose --profile user-service up -d
 ```
 
 ### Initialize Admin User (after containers are running)
 ```bash
 # Create admin user with default credentials
-docker exec -it user-service python3 /user-service/scripts/create_admin_user.py
+docker exec -it user-service python /app/user-service/scripts/create_admin_user.py
 
 # Or create admin user with custom parameters
-docker exec -it user-service python3 /user-service/scripts/create_admin_user.py --username "myadmin" --email "admin@example.com" --password "MySecurePassword123"
+docker exec -it user-service python /app/user-service/scripts/create_admin_user.py --username "myadmin" --email "admin@example.com" --password "MySecurePassword123"
 ```
 
-### Database Migrations (if needed after running)
+### Database Setup & Migration Strategy
+
+This project uses Alembic to manage database schema changes and migrations. Alembic tracks all database structure modifications through versioned migration files, ensuring consistent schema across different environments.
+
+#### Important Notice
+If you experience any database-related errors or synchronization issues, follow the reset procedure below. 
+This will clear all existing migration history and regenerate the schema from the current models.
+
+#### Complete Database Reset Procedure
+Execute the following commands in sequence to perform a clean database reset:
 ```bash
-# Access container and run database migrations
-docker exec -it user-service bash
-alembic upgrade head
+# Step 1: Remove all existing migration files
+rm -rf user-service/alembic/versions/*
+
+# Step 2: Recreate the versions directory
+mkdir -p user-service/alembic/versions
+
+# Step 3: Stop and remove all containers with volumes
+docker compose --profile user-service down -v
+
+# Step 4: Rebuild and start the user-service container
+docker compose up -d --build user-service
+
+# Step 5: Generate new migration file from current models
+docker exec -it user-service alembic revision --autogenerate -m "latest database schema"
+
+# Step 6: Apply migrations to database
+docker exec -it user-service alembic upgrade head
 ```
 
 ## Testing
