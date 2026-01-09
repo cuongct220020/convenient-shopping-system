@@ -28,7 +28,7 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
             payload = {
                 "event_type": "update_component_existence",
                 "data": {
-                    "group_id": storage.group_id,  # type: ignore
+                    "group_id": str(storage.group_id),
                     "unit_names": unit_names,
                 },
             }
@@ -73,7 +73,7 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                         payload = {
                             "event_type": "update_component_existence",
                             "data": {
-                                "group_id": storage.group_id,  # type: ignore
+                                "group_id": str(storage.group_id),
                                 "unit_names": unit_names,
                             },
                         }
