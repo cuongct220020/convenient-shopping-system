@@ -37,6 +37,7 @@ export class AppUrl {
     `api/v1/user-service/users/${id}/profile/health`
   static readonly ADMIN_USERS = 'api/v1/user-service/admin/users'
   static readonly SHOPPING_PLANS_FILTER = 'v1/shopping_plans/filter'
+  static readonly SHOPPING_PLANS = 'v1/shopping_plans/'
 }
 
 export type Clients = {

@@ -118,6 +118,20 @@ const GroupDetail = () => {
   const [isPlansLoading, setIsPlansLoading] = useState(false)
   const [plansError, setPlansError] = useState<string | null>(null)
 
+  // Helper function to get user name by ID from group members
+  const getUserNameById = (userId: string): string => {
+    const member = groupData?.members.find(m => m.id === userId)
+    if (member) return member.name
+
+    // Also check creator
+    if (groupData?.currentUserId === userId) {
+      // Could be the current user who is the creator
+      return groupData.adminName
+    }
+
+    return userId // Fallback to ID if not found
+  }
+
   // Trigger refresh when navigation state has refresh flag
   useEffect(() => {
     if (needsRefresh) {
@@ -245,7 +259,7 @@ const GroupDetail = () => {
 
       result.match(
         (response) => {
-          setShoppingPlans(response.data.items)
+          setShoppingPlans(response.data)
         },
         (error) => {
           console.error('Failed to fetch shopping plans:', error)
@@ -672,6 +686,15 @@ const GroupDetail = () => {
   // Helper to render plan status badge
   const renderStatusBadge = (status: string) => {
     switch (status) {
+      case 'created':
+        return (
+          <div className="flex items-center gap-1 rounded-full border border-blue-300 bg-white px-2 py-0.5">
+            <Circle size={8} fill="#3B82F6" className="text-blue-500" />
+            <span className="text-[10px] font-medium text-blue-500">
+              Mới tạo
+            </span>
+          </div>
+        )
       case 'completed':
         return (
           <div className="flex items-center gap-1 rounded-full border border-green-300 bg-white px-2 py-0.5">
@@ -681,21 +704,30 @@ const GroupDetail = () => {
             </span>
           </div>
         )
-      case 'pending':
-        return (
-          <div className="flex items-center gap-1 rounded-full border border-orange-300 bg-white px-2 py-0.5">
-            <Clock size={12} className="text-orange-400" />
-            <span className="text-[10px] font-medium text-orange-400">
-              Đang chờ
-            </span>
-          </div>
-        )
       case 'in_progress':
         return (
           <div className="flex items-center gap-1 rounded-full border border-[#C3485C] bg-white px-2 py-0.5">
             <Circle size={8} fill="#C3485C" className="text-[#C3485C]" />
             <span className="text-[10px] font-medium text-[#C3485C]">
               Đang thực hiện
+            </span>
+          </div>
+        )
+      case 'cancelled':
+        return (
+          <div className="flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-0.5">
+            <X size={8} className="text-gray-500" />
+            <span className="text-[10px] font-medium text-gray-500">
+              Đã hủy
+            </span>
+          </div>
+        )
+      case 'expired':
+        return (
+          <div className="flex items-center gap-1 rounded-full border border-red-300 bg-white px-2 py-0.5">
+            <Clock size={8} className="text-red-500" />
+            <span className="text-[10px] font-medium text-red-500">
+              Hết hạn
             </span>
           </div>
         )
@@ -1084,11 +1116,14 @@ const GroupDetail = () => {
                       >
                         <div className="mb-2 flex items-start justify-between">
                           <div className="flex-1">
-                            <p className="text-sm font-semibold text-gray-900">
-                              {plan.shopping_list.length} món cần mua
+                            <p className="text-base font-bold text-gray-900">
+                              {(plan.others?.name as string) || 'Kế hoạch mua sắm'}
                             </p>
                             <p className="mt-1 text-xs text-gray-500">
-                              Deadline:{' '}
+                              {getUserNameById(plan.assigner_id)}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {plan.shopping_list.length} nguyên liệu • {' '}
                               {new Date(plan.deadline).toLocaleDateString(
                                 'vi-VN',
                                 {
@@ -1102,21 +1137,6 @@ const GroupDetail = () => {
                             </p>
                           </div>
                           {renderStatusBadge(plan.plan_status)}
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {plan.shopping_list.slice(0, 3).map((item, idx) => (
-                            <span
-                              key={idx}
-                              className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
-                            >
-                              {item.component_name}
-                            </span>
-                          ))}
-                          {plan.shopping_list.length > 3 && (
-                            <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">
-                              +{plan.shopping_list.length - 3}
-                            </span>
-                          )}
                         </div>
                       </div>
                     ))}

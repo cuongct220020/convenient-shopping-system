@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, Check, Clock, User, DollarSign, Calendar, AlertTriangle, X, Settings, Edit2, Trash2, ArrowRight } from 'lucide-react';
+import { FileText, Check, Clock, User, Calendar, AlertTriangle, X, Settings, Edit2, Trash2, ArrowRight } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
 import { IngredientCard } from '../../../components/IngredientCard';
@@ -20,7 +20,6 @@ const planData = {
   title: "Mua đồ ăn tối",
   status: "Đã xong",
   creator: "Bùi Mạnh Hưng",
-  budget: "500.000 VND",
   deadline: "21:00 - Thứ 4, 24/12/2025",
   note: "Nhớ mua ở đồ ở siêu thị, đừng mua đồ ở chợ để đảm bảo vệ sinh an toàn thực phẩm. Mua xong nhớ nhắn tin cho Hưng để thông báo. Về nhà nhớ cất đồ dễ hỏng vào tủ lạnh để bảo quản. Sau đó nhớ cập nhật trạng thái tủ lạnh trong app.",
 };
@@ -79,7 +78,6 @@ export const PlanDetail = () => {
       title: planData.title,
       status: planData.status,
       creator: planData.creator,
-      budget: planData.budget,
       deadline: planData.deadline,
       note: planData.note,
       ingredients: ingredientsList.map(ing => ({
@@ -162,24 +160,12 @@ export const PlanDetail = () => {
           </div>
         </div>
 
-        {/* Row 2: Creator | Budget */}
-        <div className="bg-gray-100 rounded-2xl p-4 flex justify-between items-center mb-3">
-          {/* Left: Creator */}
-          <div className="flex flex-col items-center w-1/2 border-r border-gray-300">
-            <div className="flex items-center gap-1 mb-1">
-              <User size={16} className="text-black" strokeWidth={2.5} />
-              <span className="font-bold text-sm text-gray-700">Người tạo</span>
-            </div>
+        {/* Creator Card (Full Width) */}
+        <div className="bg-gray-100 rounded-2xl p-4 flex items-center mb-3">
+          <User size={16} className="text-black mr-3" strokeWidth={2.5} />
+          <div>
+            <span className="font-bold text-sm text-gray-700">Người tạo</span>
             <p className="text-sm font-medium">{planData.creator}</p>
-          </div>
-
-          {/* Right: Budget */}
-          <div className="flex flex-col items-center w-1/2">
-            <div className="flex items-center gap-1 mb-1">
-              <DollarSign size={16} className="text-black" strokeWidth={2.5} />
-              <span className="font-bold text-sm text-gray-700">Ngân sách</span>
-            </div>
-            <p className="text-sm font-medium">{planData.budget}</p>
           </div>
         </div>
 

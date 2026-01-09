@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
-import { Plus, DollarSign, FileText, Check, Search, X } from 'lucide-react';
+import { Plus, FileText, Check, Search, X } from 'lucide-react';
 import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
 
 // Dummy image for ingredients
@@ -23,7 +23,6 @@ type PlanData = {
   title: string;
   status: string;
   creator: string;
-  budget: string;
   deadline: string;
   note: string;
   ingredients: Ingredient[];
@@ -49,11 +48,6 @@ const EditPlan: React.FC = () => {
     return '';
   };
 
-  // Format currency for budget input (remove " VND" suffix)
-  const formatBudget = (budgetStr: string): string => {
-    return budgetStr.replace(' VND', '').replace('.', '').trim();
-  };
-
   const [planName, setPlanName] = useState(planToEdit.title);
   const [ingredientSearch, setIngredientSearch] = useState('');
   const [ingredientQuantity, setIngredientQuantity] = useState('');
@@ -65,7 +59,6 @@ const EditPlan: React.FC = () => {
   const [showQuantityInput, setShowQuantityInput] = useState(false);
 
   const [deadline, setDeadline] = useState(parseDeadlineToLocal(planToEdit.deadline));
-  const [budget, setBudget] = useState(formatBudget(planToEdit.budget));
   const [notes, setNotes] = useState(planToEdit.note);
 
   // --- Search Logic (Debounced) ---
@@ -137,7 +130,6 @@ const EditPlan: React.FC = () => {
       planName,
       ingredients,
       deadline,
-      budget,
       notes,
     });
     navigate(`/main/family-group/${id}/plan/${planId}`);
@@ -238,13 +230,6 @@ const EditPlan: React.FC = () => {
             placeholder="Chọn thời gian"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
-          />
-          <InputField
-            label="Ngân sách"
-            placeholder="0 VND"
-            icon={<DollarSign size={18} />}
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
           />
           <InputField
             label="Ghi chú"

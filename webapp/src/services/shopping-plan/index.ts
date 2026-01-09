@@ -3,12 +3,14 @@ import {
   AppUrl,
   Clients,
   httpClients,
-  httpGet
+  httpGet,
+  httpPost
 } from '../client'
 import { parseZodObject } from '../../utils/zod-result'
 import {
   ShoppingPlansFilterResponseSchema,
-  type ShoppingPlansFilterResponse
+  type ShoppingPlansFilterResponse,
+  type PlanItemBase
 } from '../schema/shoppingPlanSchema'
 
 type ShoppingPlanError = ReturnType<typeof createShoppingPlanError>
@@ -76,6 +78,36 @@ export class ShoppingPlanService {
           createShoppingPlanError('validation-error', e)
         )
       )
+  }
+
+  /**
+   * Create a new shopping plan
+   */
+  public createPlan(params: {
+    groupId: string
+    deadline: string
+    assignerId: string
+    shoppingList: PlanItemBase[]
+    others?: Record<string, unknown>
+  }): ResultAsync<{ message: string }, ShoppingPlanError> {
+    const body = {
+      group_id: params.groupId,
+      deadline: params.deadline,
+      assigner_id: params.assignerId,
+      shopping_list: params.shoppingList,
+      others: params.others || {}
+    }
+
+    return httpPost(this.clients.shopping, AppUrl.SHOPPING_PLANS, body)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .map((response) => response.body as { message: string })
   }
 }
 

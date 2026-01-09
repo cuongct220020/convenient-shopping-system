@@ -3,8 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
-import { Plus, DollarSign, FileText, Check, Search } from 'lucide-react';
+import { Plus, FileText, Check, Search } from 'lucide-react';
 import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
+import { shoppingPlanService } from '../../../services/shopping-plan';
+import { userService } from '../../../services/user';
+import type { PlanItemBase } from '../../../services/schema/shoppingPlanSchema';
 
 // Dummy image for broccoli
 const BROCCOLI_IMAGE_URL = 'https://i.imgur.com/0Zl3xYm.png';
@@ -33,8 +36,11 @@ const AddPlan = () => {
   const [showQuantityInput, setShowQuantityInput] = useState(false);
 
   const [deadline, setDeadline] = useState('');
-  const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Loading and error states
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // --- Search Logic (Debounced) ---
   useEffect(() => {
@@ -99,15 +105,68 @@ const AddPlan = () => {
     setIngredients(ingredients.filter((ing) => ing.id !== id));
   };
 
-  const handleCreatePlan = () => {
-    console.log({
-      planName,
-      ingredients,
-      deadline,
-      budget,
-      notes,
-    });
-    navigate(`/main/family-group/${id}`, { state: { activeTab: 'shopping-plan' } });
+  const handleCreatePlan = async () => {
+    if (!id) return;
+
+    setIsCreating(true);
+    setCreateError(null);
+
+    // Fetch current user to get assigner_id
+    const userResult = await userService.getCurrentUser();
+
+    userResult.match(
+      async (userResponse) => {
+        const assignerId = userResponse.data.id;
+
+        // Convert deadline to ISO format if provided
+        let deadlineISO = '';
+        if (deadline) {
+          deadlineISO = new Date(deadline).toISOString();
+        }
+
+        // Map ingredients to shopping list format
+        const shoppingList: PlanItemBase[] = ingredients.map((ing) => ({
+          type: 'countable_ingredient' as const,
+          unit: ing.quantity,
+          quantity: 1, // Default quantity to 1 since unit contains the amount
+          component_id: 0, // Mock data doesn't have component_id
+          component_name: ing.name
+        }));
+
+        // Build others object from plan name and notes
+        const others: Record<string, unknown> = {};
+        if (planName) others.name = planName;
+        if (notes) others.notes = notes;
+
+        const result = await shoppingPlanService.createPlan({
+          groupId: id,
+          deadline: deadlineISO,
+          assignerId: assignerId,
+          shoppingList,
+          others: Object.keys(others).length > 0 ? others : undefined
+        });
+
+        result.match(
+          () => {
+            navigate(`/main/family-group/${id}`, { state: { activeTab: 'shopping-plan' } });
+          },
+          (error) => {
+            console.error('Failed to create plan:', error);
+            if (error.type === 'unauthorized') {
+              setCreateError('Bạn cần đăng nhập để tạo kế hoạch');
+            } else {
+              setCreateError('Không thể tạo kế hoạch mua sắm');
+            }
+            setIsCreating(false);
+          }
+        );
+      },
+      (error) => {
+        console.error('Failed to get current user:', error);
+        setCreateError('Không thể lấy thông tin người dùng');
+        setIsCreating(false);
+      }
+    );
   };
 
   const handleBack = () => {
@@ -207,13 +266,6 @@ const AddPlan = () => {
             onChange={(e) => setDeadline(e.target.value)}
           />
           <InputField
-            label="Ngân sách"
-            placeholder="0 VND"
-            icon={<DollarSign size={18} />}
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
-          />
-          <InputField
             label="Ghi chú"
             placeholder="Nhập ghi chú cho kế hoạch..."
             icon={<FileText size={18} />}
@@ -225,13 +277,19 @@ const AddPlan = () => {
         </div>
       </div>
 
+      {createError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-600">{createError}</p>
+        </div>
+      )}
+
       <Button
-        variant="primary"
+        variant={isCreating ? 'disabled' : 'primary'}
         size="fit"
         onClick={handleCreatePlan}
         icon={Check}
       >
-        Tạo kế hoạch
+        {isCreating ? 'Đang tạo...' : 'Tạo kế hoạch'}
       </Button>
     </div>
   );
