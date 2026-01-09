@@ -228,3 +228,5 @@ user-service/secrets/jwt-private.pem
 
 certs/
 certbot/
+
+#test_*
