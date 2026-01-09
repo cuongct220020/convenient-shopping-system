@@ -162,6 +162,20 @@ services:
   - name: recipe-service
     url: http://recipe-service:8000
     routes:
+      # 1. OpenAPI JSON - must be first
+      - name: recipe-service-openapi
+        paths:
+          - /docs/recipe-service/openapi.json
+        strip_path: false
+        methods:
+          - GET
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /openapi.json
+
+      # 2. Protected routes
       - name: recipe-service-protected
         paths:
           - /v2/recipes
@@ -169,42 +183,92 @@ services:
         strip_path: false
         plugins: *jwt_auth_plugins
 
+      # 3. Docs page
       - name: recipe-service-docs
         paths:
           - /docs/recipe-service
-        strip_path: true
+        strip_path: false
+        methods:
+          - GET
+          - HEAD
+          - OPTIONS
         plugins:
-          - name: post-function
+          - name: pre-function
             config:
               access:
                 - |
-                  kong.service.request.set_path("/docs")
+                  local path = kong.request.get_path()
+                  kong.service.request.set_header("X-Forwarded-Host", kong.request.get_host())
+                  kong.service.request.set_header("X-Forwarded-Proto", kong.request.get_scheme())
+                  
+                  if path == "/docs/recipe-service" or path == "/docs/recipe-service/" then
+                    kong.service.request.set_path("/docs")
+                  end
 
   # Meal Service
   - name: meal-service
     url: http://meal-service:8000
     routes:
+      # 1. OpenAPI JSON - must be first
+      - name: meal-service-openapi
+        paths:
+          - /docs/meal-service/openapi.json
+        strip_path: false
+        methods:
+          - GET
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /openapi.json
+
+      # 2. Protected API routes
       - name: meal-service-protected
         paths:
           - /v1/meals
         strip_path: false
         plugins: *jwt_auth_plugins
 
+      # 3. Docs page
       - name: meal-service-docs
         paths:
           - /docs/meal-service
-        strip_path: true
+        strip_path: false
+        methods:
+          - GET
+          - HEAD
+          - OPTIONS
         plugins:
-          - name: post-function
+          - name: pre-function
             config:
               access:
                 - |
-                  kong.service.request.set_path("/docs")
+                  local path = kong.request.get_path()
+                  kong.service.request.set_header("X-Forwarded-Host", kong.request.get_host())
+                  kong.service.request.set_header("X-Forwarded-Proto", kong.request.get_scheme())
+                  
+                  if path == "/docs/meal-service" or path == "/docs/meal-service/" then
+                    kong.service.request.set_path("/docs")
+                  end
 
   # Shopping Storage Service
   - name: shopping-storage-service
     url: http://shopping-storage-service:8000
     routes:
+      # 1. OpenAPI JSON - must be first
+      - name: shopping-storage-service-openapi
+        paths:
+          - /docs/shopping-storage-service/openapi.json
+        strip_path: false
+        methods:
+          - GET
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /openapi.json
+
+      # 2. Protected routes
       - name: shopping-storage-service-protected
         paths:
           - /v1/shopping_plans
@@ -213,16 +277,27 @@ services:
         strip_path: false
         plugins: *jwt_auth_plugins
 
+      # 3. Docs page
       - name: shopping-storage-service-docs
         paths:
           - /docs/shopping-storage-service
-        strip_path: true
+        strip_path: false
+        methods:
+          - GET
+          - HEAD
+          - OPTIONS
         plugins:
-          - name: post-function
+          - name: pre-function
             config:
               access:
                 - |
-                  kong.service.request.set_path("/docs")
+                  local path = kong.request.get_path()
+                  kong.service.request.set_header("X-Forwarded-Host", kong.request.get_host())
+                  kong.service.request.set_header("X-Forwarded-Proto", kong.request.get_scheme())
+                  
+                  if path == "/docs/shopping-storage-service" or path == "/docs/shopping-storage-service/" then
+                    kong.service.request.set_path("/docs")
+                  end
 
   # Notification service
   - name: notification-service
