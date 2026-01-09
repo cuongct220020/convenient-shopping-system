@@ -122,7 +122,6 @@ services:
       - "127.0.0.1:8001:8001"       # Admin API cho decK (Debug) - Localhost only
     volumes:
       - ${KONG_CONFIG_FILE}:/usr/local/kong/declarative/kong.yml.template
-      - ./user-service/secrets:/user-service/secrets
       # Mount SSL Certs from Host
       # For Local Testing: Use local './certs' folder to avoid permission issues
       # For Production: You can either copy certs here or change this back to /etc/letsencrypt/...
@@ -210,9 +209,6 @@ services:
       - user-service/.env
     # ports:
     #   - "127.0.0.1:9001:8000" # Access via localhost:9001 (Debug only)
-    volumes:
-      - ./user-service:/app/user-service
-      - /app/user-service/.venv  # Exclude virtual environment
     networks:
       - shopping-network
     restart: unless-stopped
@@ -372,9 +368,6 @@ services:
       - notification-service/.env
     ports:
       - "127.0.0.1:9005:8000" # Access via localhost:9005 (Debug only)
-    volumes:
-      - ./notification-service:/app/notification-service
-      - /app/notification-service/.venv  # Exclude virtual environment
     networks:
       - shopping-network
     restart: unless-stopped

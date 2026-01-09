@@ -87,7 +87,9 @@ class HeadChefMiddleware(BaseHTTPMiddleware):
             )
     
     async def _check_head_chef(self, user_id: uuid.UUID, group_id: uuid.UUID) -> bool:
-        url = f"{settings.USER_SERVICE_URL}/groups/internal/{group_id}/members/{user_id}/access-check"
+        # Construct URL with the correct prefix for user-service
+        # Assuming USER_SERVICE_URL is http://user-service:8000
+        url = f"{settings.USER_SERVICE_URL}/api/v1/user-service/groups/internal/{group_id}/members/{user_id}/access-check"
         
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
