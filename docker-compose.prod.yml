@@ -116,8 +116,8 @@ services:
       /docker-entrypoint.sh kong docker-start
       "
     ports:
-      - "80:8000"         # HTTP Public
-      - "443:8443"        # HTTPS Public
+      - "80:8000"                   # HTTP Public
+      - "443:8443"                  # HTTPS Public
       - "127.0.0.1:8000:8000"       # Kong Proxy (HTTP Debug) - Localhost only
       - "127.0.0.1:8001:8001"       # Admin API cho decK (Debug) - Localhost only
     volumes:
