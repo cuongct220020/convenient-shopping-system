@@ -16,6 +16,8 @@ services:
     image: redis:8.4.0
     container_name: redis-caching
     hostname: redis-caching
+    environment:
+      TZ: Asia/Ho_Chi_Minh
     # ports:
     #   - "127.0.0.1:6379:6379" # Uncomment for local debugging only. Keep closed on prod.
     volumes:
@@ -61,6 +63,8 @@ services:
       KAFKA_HEAP_OPTS: "-Xmx400M -Xms256M"
 
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+
+      TZ: Asia/Ho_Chi_Minh
     # ports:
     #   - "127.0.0.1:9092:9092" # Internal communication (Debug only)
     #   - "127.0.0.1:9094:9094" # External communication (Debug only)
@@ -109,6 +113,8 @@ services:
 
       KONG_MEM_CACHE_SIZE: "64m"
       KONG_NGINX_WORKER_PROCESSES: "1"
+
+      TZ: Asia/Ho_Chi_Minh
     command: >
       /bin/bash -c "
       export JWT_RSA_PUBLIC_KEY_ESCAPED=\$(echo \"\$JWT_RSA_PUBLIC_KEY\" | awk '{printf \"%s\\\\n\", \$0}' | head -c -2) &&
@@ -145,6 +151,7 @@ services:
   certbot:
     image: certbot/certbot:v3.1.0
     container_name: certbot
+    hostname: certbot
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:rw
       - /var/lib/letsencrypt:/var/lib/letsencrypt:rw
@@ -164,6 +171,8 @@ services:
     image: nginx:1.27-alpine
     container_name: acme-challenge
     hostname: acme-challenge
+    environment:
+      TZ: Asia/Ho_Chi_Minh
     volumes:
       - ./certbot/www:/usr/share/nginx/html:ro
     networks:
@@ -196,6 +205,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -235,6 +245,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -275,6 +286,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -313,6 +325,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -355,6 +368,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
