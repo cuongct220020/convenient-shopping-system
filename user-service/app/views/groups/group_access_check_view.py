@@ -36,8 +36,8 @@ class GroupAccessCheckView(BaseGroupView):
         service = self._get_service(request)
 
         is_member, is_head_chef = await service.check_group_access(
-            group_id=group_id,
             user_id=user_id,
+            group_id=group_id,
             check_head_chef=check_head_chef
         )
 
