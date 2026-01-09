@@ -207,8 +207,8 @@ services:
     env_file:
       - .env
       - user-service/.env
-    # ports:
-    #   - "127.0.0.1:9001:8000" # Access via localhost:9001 (Debug only)
+    ports:
+      - "127.0.0.1:9001:8000" # Access via localhost:9001 (Debug only)
     networks:
       - shopping-network
     restart: unless-stopped

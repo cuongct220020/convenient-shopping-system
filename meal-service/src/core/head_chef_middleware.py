@@ -92,7 +92,7 @@ class HeadChefMiddleware(BaseHTTPMiddleware):
         url = f"{settings.USER_SERVICE_URL}/api/v1/user-service/groups/internal/{group_id}/members/{user_id}/access-check"
         
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
+            async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.post(
                     url,
                     json={"check_head_chef": True},
