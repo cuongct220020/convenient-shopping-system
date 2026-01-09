@@ -21,8 +21,8 @@ import {
   SetLeaderResponseSchema,
   UpdateMemberRoleResponseSchema,
   LeaveGroupResponseSchema,
-  UserIdentityProfileSchema,
-  UserHealthProfileSchema,
+  UserIdentityProfileResponseSchema,
+  UserHealthProfileResponseSchema,
   type GroupListResponse,
   type GroupCreateResponse,
   type GroupUpdateResponse,
@@ -32,8 +32,8 @@ import {
   type SetLeaderResponse,
   type UpdateMemberRoleResponse,
   type LeaveGroupResponse,
-  type UserIdentityProfile,
-  type UserHealthProfile
+  type UserIdentityProfileResponse,
+  type UserHealthProfileResponse
 } from '../schema/groupSchema'
 
 type GroupError = ResponseError<
@@ -218,7 +218,7 @@ export class GroupService {
   public getMemberIdentityProfile(
     groupId: string,
     userId: string
-  ): ResultAsync<UserIdentityProfile, GroupError> {
+  ): ResultAsync<UserIdentityProfileResponse, GroupError> {
     return httpGet(
       this.clients.auth,
       AppUrl.GROUP_MEMBER_IDENTITY_PROFILE(groupId, userId)
@@ -234,7 +234,7 @@ export class GroupService {
         }
       })
       .andThen((response) =>
-        parseZodObject(UserIdentityProfileSchema, response.body).mapErr(
+        parseZodObject(UserIdentityProfileResponseSchema, response.body).mapErr(
           (e): GroupError => ({
             type: 'invalid-response-format',
             desc: e
@@ -251,7 +251,7 @@ export class GroupService {
   public getMemberHealthProfile(
     groupId: string,
     userId: string
-  ): ResultAsync<UserHealthProfile, GroupError> {
+  ): ResultAsync<UserHealthProfileResponse, GroupError> {
     return httpGet(
       this.clients.auth,
       AppUrl.GROUP_MEMBER_HEALTH_PROFILE(groupId, userId)
@@ -267,7 +267,7 @@ export class GroupService {
         }
       })
       .andThen((response) =>
-        parseZodObject(UserHealthProfileSchema, response.body).mapErr(
+        parseZodObject(UserHealthProfileResponseSchema, response.body).mapErr(
           (e): GroupError => ({
             type: 'invalid-response-format',
             desc: e

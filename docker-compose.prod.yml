@@ -239,8 +239,8 @@ services:
       - USER_SERVICE_URL=http://user-service:8000
     env_file:
       - .env
-    # ports:
-    #   - "127.0.0.1:9002:8000" # Access via localhost:9002 (Debug only)
+    ports:
+      - "127.0.0.1:9002:8000" # Access via localhost:9002 (Debug only)
     networks:
       - shopping-network
     restart: unless-stopped
@@ -276,8 +276,8 @@ services:
       - USER_SERVICE_URL=http://user-service:8000
     env_file:
       - .env
-    # ports:
-    #   - "127.0.0.1:9003:8000" # Access via localhost:9003 (Debug only)
+    ports:
+      - "127.0.0.1:9003:8000" # Access via localhost:9003 (Debug only)
     networks:
       - shopping-network
     restart: unless-stopped
@@ -315,8 +315,8 @@ services:
       - USER_SERVICE_URL=http://user-service:8000
     env_file:
       - .env
-    # ports:
-    #   - "127.0.0.1:9004:8000" # Access via localhost:9004 (Debug only)
+    ports:
+      - "127.0.0.1:9004:8000" # Access via localhost:9004 (Debug only)
     networks:
       - shopping-network
     restart: unless-stopped

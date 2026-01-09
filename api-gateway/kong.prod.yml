@@ -258,7 +258,7 @@ services:
       - name: meal-service-protected
         paths:
           - /v1/meals # http:loalhost:8000/v1/meals
-        strip_path: true
+        strip_path: false
         plugins:
           # JWT verification (MUST run first)
           - name: jwt
@@ -327,13 +327,24 @@ services:
       - name: meal-service-docs
         paths:
           - /docs/meal-service
-        strip_path: true
+        strip_path: false
         plugins:
           - name: post-function
             config:
               access:
                 - |
                   kong.service.request.set_path("/docs")
+
+      - name: meal-service-openapi-root
+        paths:
+          - /openapi.json
+        strip_path: false
+        plugins:
+          - name: post-function
+            config:
+              access:
+                - |
+                  kong.service.request.set_path("/openapi.json")
 
 
 
@@ -422,13 +433,24 @@ services:
       - name: recipe-service-docs
         paths:
           - /docs/recipe-service
-        strip_path: true
+        strip_path: false
         plugins:
           - name: post-function
             config:
               access:
                 - |
                   kong.service.request.set_path("/docs")
+
+      - name: recipe-service-openapi-root
+        paths:
+          - /openapi.json
+        strip_path: false
+        plugins:
+          - name: post-function
+            config:
+              access:
+                - |
+                  kong.service.request.set_path("/openapi.json")
 
 
   # 4. Shopping storage service
@@ -514,13 +536,24 @@ services:
       - name: shopping-storage-service-docs
         paths:
           - /docs/shopping-storage-service
-        strip_path: true
+        strip_path: false
         plugins:
           - name: post-function
             config:
               access:
                 - |
                   kong.service.request.set_path("/docs")
+
+      - name: shopping-storage-service-openapi-root
+        paths:
+          - /openapi.json
+        strip_path: false
+        plugins:
+          - name: post-function
+            config:
+              access:
+                - |
+                  kong.service.request.set_path("/openapi.json")
 
   # 5. Notification service
   - name: notification-service
