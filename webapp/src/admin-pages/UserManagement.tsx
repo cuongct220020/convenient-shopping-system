@@ -24,11 +24,24 @@ type User = {
   last_login: string | null
 }
 
+type UserIdentityProfile = {
+  gender: 'male' | 'female' | 'other' | null
+  date_of_birth: string | null
+  occupation: string | null
+  address: {
+    ward: string | null
+    district: string | null
+    city: string | null
+    province: string | null
+  } | null
+}
+
 const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
+  const [identityProfile, setIdentityProfile] = useState<UserIdentityProfile | null>(null)
   const [users, setUsers] = useState<User[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
@@ -80,6 +93,7 @@ const UserManagement = () => {
   const handleUserClick = (user: any) => {
     setSelectedUser(user)
     setViewMode('view')
+    setIdentityProfile(null)
   }
 
   const handleEditClick = () => {
@@ -99,6 +113,7 @@ const UserManagement = () => {
   const closeModal = () => {
     setSelectedUser(null)
     setViewMode(null)
+    setIdentityProfile(null)
   }
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,7 +130,7 @@ const UserManagement = () => {
         : user.username,
       username: user.username,
       email: user.email,
-      phoneNumber: user.phone_num || 'N/A',
+      phoneNumber: user.phone_num || 'Chưa có thông tin',
       avatar: user.avatar_url || userAvatar,
       systemRole: user.system_role,
       isActive: user.is_active,
@@ -123,6 +138,12 @@ const UserManagement = () => {
       lastLogin: user.last_login ? new Date(user.last_login).toLocaleDateString('vi-VN') : 'Never'
     }))
   }, [filteredUsers])
+
+  const formatAddress = (address: NonNullable<UserIdentityProfile['address']>): string => {
+    if (!address) return ''
+    const parts = [address.ward, address.district, address.city, address.province].filter(Boolean)
+    return parts.join(', ')
+  }
 
   return (
     <div className="flex min-h-screen flex-1 flex-col pt-6">
@@ -241,7 +262,53 @@ const UserManagement = () => {
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-500">Số điện thoại:</span>
-                      <span className="ml-2 text-sm text-gray-900">{selectedUser.phoneNumber}</span>
+                      <span className="ml-2 text-sm text-gray-900">
+                        {selectedUser.phoneNumber !== 'Chưa có thông tin' ? (
+                          selectedUser.phoneNumber
+                        ) : (
+                          <span className="text-gray-400">Chưa có thông tin</span>
+                        )}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Giới tính:</span>
+                      <span className="ml-2 text-sm text-gray-900">
+                        {identityProfile?.gender ? (
+                          identityProfile.gender === 'male' ? 'Nam' : identityProfile.gender === 'female' ? 'Nữ' : 'Khác'
+                        ) : (
+                          <span className="text-gray-400">Chưa có thông tin</span>
+                        )}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Ngày sinh:</span>
+                      <span className="ml-2 text-sm text-gray-900">
+                        {identityProfile?.date_of_birth ? (
+                          identityProfile.date_of_birth
+                        ) : (
+                          <span className="text-gray-400">Chưa có thông tin</span>
+                        )}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Nghề nghiệp:</span>
+                      <span className="ml-2 text-sm text-gray-900">
+                        {identityProfile?.occupation ? (
+                          identityProfile.occupation
+                        ) : (
+                          <span className="text-gray-400">Chưa có thông tin</span>
+                        )}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Địa chỉ:</span>
+                      <span className="ml-2 text-sm text-gray-900">
+                        {identityProfile?.address ? (
+                          formatAddress(identityProfile.address) || <span className="text-gray-400">Chưa có thông tin</span>
+                        ) : (
+                          <span className="text-gray-400">Chưa có thông tin</span>
+                        )}
+                      </span>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-500">Vai trò hệ thống:</span>
@@ -279,7 +346,7 @@ const UserManagement = () => {
                         Chỉnh sửa
                       </Button>
                       <Button
-                        variant="secondary"
+                        variant="primary"
                         size="fit"
                         icon={Trash2}
                         onClick={handleDeleteClick}

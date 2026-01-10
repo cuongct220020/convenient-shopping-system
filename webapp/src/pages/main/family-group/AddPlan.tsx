@@ -3,20 +3,23 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
-import { Plus, DollarSign, FileText, Check, Search } from 'lucide-react';
+import { Plus, FileText, Check, Search, Loader2 } from 'lucide-react';
 import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
+import { shoppingPlanService } from '../../../services/shopping-plan';
+import { userService } from '../../../services/user';
+import { ingredientService } from '../../../services/ingredient';
+import type { PlanItemBase } from '../../../services/schema/shoppingPlanSchema';
+import type { Ingredient as IngredientSearchResult } from '../../../services/schema/ingredientSchema';
 
 // Dummy image for broccoli
 const BROCCOLI_IMAGE_URL = 'https://i.imgur.com/0Zl3xYm.png';
 
-// Mock database of available ingredients
-const MOCK_INGREDIENTS = [
-  { id: 'ing-1', name: 'Bông cải', category: 'Rau', image: BROCCOLI_IMAGE_URL },
-  { id: 'ing-2', name: 'Cà rốt', category: 'Rau', image: BROCCOLI_IMAGE_URL },
-  { id: 'ing-3', name: 'Thịt gà', category: 'Thịt', image: BROCCOLI_IMAGE_URL },
-  { id: 'ing-4', name: 'Cà chua', category: 'Rau', image: BROCCOLI_IMAGE_URL },
-  { id: 'ing-5', name: 'Trứng', category: 'Đồ tươi', image: BROCCOLI_IMAGE_URL },
-];
+// Extended ingredient type to include original search result data
+type ExtendedIngredient = Ingredient & {
+  originalItem?: IngredientSearchResult;
+  numericQuantity?: number;  // Store the numeric value entered by user
+  measurementUnit?: string;  // Store the unit from API (e.g., "g", "ml")
+};
 
 const AddPlan = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,25 +28,30 @@ const AddPlan = () => {
   const [planName, setPlanName] = useState('');
   const [ingredientSearch, setIngredientSearch] = useState('');
   const [ingredientQuantity, setIngredientQuantity] = useState('');
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredients, setIngredients] = useState<ExtendedIngredient[]>([]);
 
   // Search states
-  const [searchResult, setSearchResult] = useState<typeof MOCK_INGREDIENTS[0] | null>(null);
+  const [searchResult, setSearchResult] = useState<IngredientSearchResult | null>(null);
   const [showNotFound, setShowNotFound] = useState(false);
   const [showQuantityInput, setShowQuantityInput] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const [deadline, setDeadline] = useState('');
-  const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Loading and error states
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // --- Search Logic (Debounced) ---
   useEffect(() => {
-    // 300ms delay to simulate network request and avoid flickering
-    const delayDebounceFn = setTimeout(() => {
+    // 300ms delay to avoid flickering
+    const delayDebounceFn = setTimeout(async () => {
       if (!ingredientSearch.trim()) {
         setSearchResult(null);
         setShowNotFound(false);
         setShowQuantityInput(false);
+        setIsSearching(false);
         return;
       }
 
@@ -56,23 +64,42 @@ const AddPlan = () => {
         setSearchResult(null);
         setShowNotFound(true); // Treat already added as "not found" for adding purposes
         setShowQuantityInput(false);
+        setIsSearching(false);
+        console.log('Ingredient already added:', ingredientSearch);
         return;
       }
 
-      // Simulate finding the ingredient from mock database
-      const found = MOCK_INGREDIENTS.find(
-        (ing) => ing.name.toLowerCase() === ingredientSearch.toLowerCase()
-      );
+      setIsSearching(true);
+      setShowNotFound(false); // Reset not found when starting a new search
 
-      if (found) {
-        setSearchResult(found);
-        setShowNotFound(false);
-        setShowQuantityInput(true);
-      } else {
-        setSearchResult(null);
-        setShowNotFound(true);
-        setShowQuantityInput(false);
-      }
+      // Search ingredients from API
+      const result = await ingredientService.searchIngredients(ingredientSearch);
+
+      result.match(
+        (response) => {
+          console.log('Search response for:', ingredientSearch, response);
+          if (response.data && response.data.length > 0) {
+            // Use the first result
+            console.log('Found ingredient:', response.data[0]);
+            setSearchResult(response.data[0]);
+            setShowNotFound(false);
+            setShowQuantityInput(true);
+          } else {
+            console.log('No ingredients found for:', ingredientSearch);
+            setSearchResult(null);
+            setShowNotFound(true);
+            setShowQuantityInput(false);
+          }
+          setIsSearching(false);
+        },
+        (error) => {
+          console.error('Failed to search ingredients:', error);
+          setSearchResult(null);
+          setShowNotFound(true);
+          setShowQuantityInput(false);
+          setIsSearching(false);
+        }
+      );
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
@@ -80,12 +107,22 @@ const AddPlan = () => {
 
   const handleAddIngredient = () => {
     if (searchResult && ingredientQuantity) {
-      const newIngredient: Ingredient = {
+      // Parse numeric value from user input
+      const numericValue = parseFloat(ingredientQuantity.trim()) || 0;
+      // Get the measurement unit from API (e.g., "g", "ml", "củ")
+      const unit = searchResult.measurementUnit || '';
+      // For display, combine them (e.g., "100g")
+      const displayQuantity = numericValue > 0 ? `${numericValue}${unit}` : unit;
+
+      const newIngredient: ExtendedIngredient = {
         id: Date.now(),
-        name: searchResult.name,
-        category: searchResult.category,
-        quantity: ingredientQuantity,
-        image: searchResult.image,
+        name: searchResult.component_name,
+        category: searchResult.category || 'Khác',
+        quantity: displayQuantity,
+        numericQuantity: numericValue,
+        measurementUnit: unit,
+        image: BROCCOLI_IMAGE_URL,
+        originalItem: searchResult,
       };
       setIngredients([...ingredients, newIngredient]);
       setIngredientSearch('');
@@ -99,15 +136,86 @@ const AddPlan = () => {
     setIngredients(ingredients.filter((ing) => ing.id !== id));
   };
 
-  const handleCreatePlan = () => {
-    console.log({
-      planName,
-      ingredients,
-      deadline,
-      budget,
-      notes,
-    });
-    navigate(`/main/family-group/${id}`, { state: { activeTab: 'shopping-plan' } });
+  const handleCreatePlan = async () => {
+    if (!id) return;
+
+    setIsCreating(true);
+    setCreateError(null);
+
+    // Fetch current user to get assigner_id
+    const userResult = await userService.getCurrentUser();
+
+    userResult.match(
+      async (userResponse) => {
+        const assignerId = userResponse.data.id;
+
+        // Convert deadline to ISO format if provided
+        let deadlineISO = '';
+        if (deadline) {
+          deadlineISO = new Date(deadline).toISOString();
+        }
+
+        // Map ingredients to shopping list format
+        const shoppingList: PlanItemBase[] = ingredients.map((ing) => {
+          // For new ingredients with numeric quantity and measurement unit
+          if (ing.numericQuantity !== undefined && ing.measurementUnit) {
+            return {
+              type: ing.originalItem?.type || 'countable_ingredient',
+              unit: ing.measurementUnit,
+              quantity: ing.numericQuantity,
+              component_id: ing.originalItem?.component_id || 0,
+              component_name: ing.name
+            };
+          }
+
+          // Fallback for ingredients without separate numeric/unit
+          return {
+            type: ing.originalItem?.type || 'countable_ingredient',
+            unit: ing.quantity,
+            quantity: 1,
+            component_id: ing.originalItem?.component_id || 0,
+            component_name: ing.name
+          };
+        });
+
+        // Build others object from plan name and notes
+        const others: Record<string, unknown> = {};
+        if (planName) others.name = planName;
+        if (notes) others.notes = notes;
+
+        // Debug logging
+        console.log('Creating plan with shopping list:', JSON.stringify(shoppingList, null, 2));
+        console.log('Others:', others);
+
+        const result = await shoppingPlanService.createPlan({
+          groupId: id,
+          deadline: deadlineISO,
+          assignerId: assignerId,
+          shoppingList,
+          others: Object.keys(others).length > 0 ? others : undefined
+        });
+
+        result.match(
+          () => {
+            navigate(`/main/family-group/${id}`, { state: { activeTab: 'shopping-plan' } });
+          },
+          (error) => {
+            console.error('Failed to create plan:', error);
+            if (error.type === 'unauthorized') {
+              setCreateError('Bạn cần đăng nhập để tạo kế hoạch');
+            } else {
+              setCreateError('Không thể tạo kế hoạch mua sắm');
+            }
+            setIsCreating(false);
+          }
+        );
+      },
+      (error) => {
+        console.error('Failed to get current user:', error);
+        setCreateError('Không thể lấy thông tin người dùng');
+        setIsCreating(false);
+      }
+    );
   };
 
   const handleBack = () => {
@@ -116,7 +224,7 @@ const AddPlan = () => {
 
   return (
     <div className="p-4 max-w-sm mx-auto pb-20">
-      <BackButton text="Quay lại" to={`/main/family-group/${id}`} onClick={handleBack} className="mb-2" />
+      <BackButton text="Quay lại" to={`/main/family-group/${id}`} state={{ activeTab: 'shopping-plan' }} className="mb-2" />
       <h1 className="text-xl font-bold text-[#C3485C] text-center mb-6">
         Tạo Kế Hoạch Mới
       </h1>
@@ -144,8 +252,16 @@ const AddPlan = () => {
             onChange={(e) => setIngredientSearch(e.target.value)}
           />
 
+          {/* --- UI State: Loading --- */}
+          {isSearching && (
+            <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+              <Loader2 className="animate-spin mb-2" size={24} />
+              <p className="text-sm font-medium">Đang tìm kiếm...</p>
+            </div>
+          )}
+
           {/* --- UI State: Not Found --- */}
-          {showNotFound && (
+          {showNotFound && !isSearching && (
             <div className="flex flex-col items-center justify-center py-6 text-gray-400">
               <Search size={24} className="mb-2 opacity-50" />
               <p className="text-sm font-medium">
@@ -159,10 +275,11 @@ const AddPlan = () => {
             <div className="mt-4 flex items-end space-x-2 animate-in fade-in slide-in-from-top-2">
               <InputField
                 label="Số lượng"
-                placeholder="Ví dụ: 100g"
+                placeholder="Ví dụ: 100"
                 containerClassName="flex-1"
                 value={ingredientQuantity}
                 onChange={(e) => setIngredientQuantity(e.target.value)}
+                rightLabel={searchResult.measurementUnit || undefined}
               />
               <Button
                 variant="secondary"
@@ -207,13 +324,6 @@ const AddPlan = () => {
             onChange={(e) => setDeadline(e.target.value)}
           />
           <InputField
-            label="Ngân sách"
-            placeholder="0 VND"
-            icon={<DollarSign size={18} />}
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
-          />
-          <InputField
             label="Ghi chú"
             placeholder="Nhập ghi chú cho kế hoạch..."
             icon={<FileText size={18} />}
@@ -225,13 +335,19 @@ const AddPlan = () => {
         </div>
       </div>
 
+      {createError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-600">{createError}</p>
+        </div>
+      )}
+
       <Button
-        variant="primary"
+        variant={isCreating ? 'disabled' : 'primary'}
         size="fit"
         onClick={handleCreatePlan}
         icon={Check}
       >
-        Tạo kế hoạch
+        {isCreating ? 'Đang tạo...' : 'Tạo kế hoạch'}
       </Button>
     </div>
   );

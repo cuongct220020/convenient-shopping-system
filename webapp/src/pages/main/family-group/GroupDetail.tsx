@@ -21,7 +21,6 @@ import {
   Clock,
   Circle
 } from 'lucide-react'
-import { BackButton } from '../../../components/BackButton'
 import { Button } from '../../../components/Button'
 import { UserCard } from '../../../components/UserCard'
 import AddMember from './AddMember'
@@ -59,6 +58,11 @@ const GroupDetail = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams<{ id: string }>()
+
+  // Check if navigation state has refresh flag
+  const needsRefresh = location.state?.refresh || false
+  const returningFromEdit = location.state?.returningFromEdit || false
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // State for group data
   const [groupData, setGroupData] = useState<{
@@ -114,7 +118,30 @@ const GroupDetail = () => {
   const [isPlansLoading, setIsPlansLoading] = useState(false)
   const [plansError, setPlansError] = useState<string | null>(null)
 
-  // Fetch current user and group data on mount
+  // Helper function to get user name by ID from group members
+  const getUserNameById = (userId: string): string => {
+    const member = groupData?.members.find(m => m.id === userId)
+    if (member) return member.name
+
+    // Also check creator
+    if (groupData?.currentUserId === userId) {
+      // Could be the current user who is the creator
+      return groupData.adminName
+    }
+
+    return userId // Fallback to ID if not found
+  }
+
+  // Trigger refresh when navigation state has refresh flag
+  useEffect(() => {
+    if (needsRefresh) {
+      setRefreshKey(prev => prev + 1)
+      // Clear the refresh flag but preserve returningFromEdit
+      navigate(location.pathname, { replace: true, state: { returningFromEdit } })
+    }
+  }, [needsRefresh, location.pathname, navigate, returningFromEdit])
+
+  // Fetch current user and group data on mount and when refreshKey changes
   useEffect(() => {
     const fetchData = async () => {
       if (!id) {
@@ -130,7 +157,7 @@ const GroupDetail = () => {
       const userResult = await userService.getCurrentUser()
       const currentUserId = userResult.isOk() ? userResult.value.data.id : null
 
-      // Fetch group members using the dedicated endpoint
+      // Fetch group info using the members endpoint (accessible to all members)
       const membersResult = await groupService.getGroupMembers(id)
 
       membersResult.match(
@@ -191,7 +218,7 @@ const GroupDetail = () => {
     }
 
     fetchData()
-  }, [id])
+  }, [id, refreshKey])
 
   // Scroll to selected date when filter or selected date changes
   useEffect(() => {
@@ -232,7 +259,7 @@ const GroupDetail = () => {
 
       result.match(
         (response) => {
-          setShoppingPlans(response.data.items)
+          setShoppingPlans(response.data)
         },
         (error) => {
           console.error('Failed to fetch shopping plans:', error)
@@ -390,7 +417,7 @@ const GroupDetail = () => {
 
   const handleEdit = () => {
     navigate(`/main/family-group/${id}/edit`, {
-      state: { group: groupData }
+      state: { group: groupData, returningFromEdit: true }
     })
     setIsSettingsOpen(false)
   }
@@ -436,31 +463,56 @@ const GroupDetail = () => {
     setIsSettingLeader(true)
     setSetLeaderError(null)
 
-    // Transfer leadership by making both requests in parallel
-    // (to avoid losing permission after first request completes)
+    // Transfer leadership by making requests sequentially
+    // (not in parallel to avoid race conditions)
     const currentLeaderId = groupData!.currentUserId
     const targetMemberId = selectedMemberForLeader.id
 
-    const result = await ResultAsync.combine([
-      groupService.updateMemberRole(id, targetMemberId, 'head_chef'),
-      groupService.updateMemberRole(id, currentLeaderId, 'member')
-    ])
+    // First, set the target member as head_chef
+    const firstResult = await groupService.updateMemberRole(
+      id,
+      targetMemberId,
+      'head_chef'
+    )
 
-    result.match(
-      () => {
-        setIsSetLeaderModalOpen(false)
-        setSelectedMemberForLeader(null)
-        setOpenMemberMenuId(null)
-        // Refresh group data
-        window.location.reload()
+    firstResult.match(
+      async () => {
+        // Then, set the current leader as member
+        const secondResult = await groupService.updateMemberRole(
+          id,
+          currentLeaderId,
+          'member'
+        )
+
+        secondResult.match(
+          () => {
+            setIsSetLeaderModalOpen(false)
+            setSelectedMemberForLeader(null)
+            setOpenMemberMenuId(null)
+            // Refresh group data
+            setRefreshKey(prev => prev + 1)
+          },
+          (error) => {
+            console.error('Failed to demote current leader:', error)
+            if (error.type === 'unauthorized') {
+              setSetLeaderError('Bạn cần đăng nhập để thực hiện thao tác này')
+            } else if (error.type === 'not-found') {
+              setSetLeaderError('Không tìm thấy nhóm')
+            } else if (error.type === 'forbidden') {
+              setSetLeaderError('Bạn không có quyền thực hiện thao tác này')
+            } else {
+              setSetLeaderError('Không thể đặt làm trưởng nhóm')
+            }
+          }
+        )
       },
       (error) => {
         console.error('Failed to set leader:', error)
-        if (error[0]?.type === 'unauthorized' || error[1]?.type === 'unauthorized') {
+        if (error.type === 'unauthorized') {
           setSetLeaderError('Bạn cần đăng nhập để thực hiện thao tác này')
-        } else if (error[0]?.type === 'not-found' || error[1]?.type === 'not-found') {
+        } else if (error.type === 'not-found') {
           setSetLeaderError('Không tìm thấy nhóm')
-        } else if (error[0]?.type === 'forbidden' || error[1]?.type === 'forbidden') {
+        } else if (error.type === 'forbidden') {
           setSetLeaderError('Bạn không có quyền thực hiện thao tác này')
         } else {
           setSetLeaderError('Không thể đặt làm trưởng nhóm')
@@ -564,7 +616,7 @@ const GroupDetail = () => {
     const userResult = await userService.getCurrentUser()
     const currentUserId = userResult.isOk() ? userResult.value.data.id : null
 
-    // Fetch group members using the dedicated endpoint
+    // Fetch group info using the members endpoint (accessible to all members)
     const membersResult = await groupService.getGroupMembers(id)
 
     membersResult.match(
@@ -634,6 +686,15 @@ const GroupDetail = () => {
   // Helper to render plan status badge
   const renderStatusBadge = (status: string) => {
     switch (status) {
+      case 'created':
+        return (
+          <div className="flex items-center gap-1 rounded-full border border-blue-300 bg-white px-2 py-0.5">
+            <Circle size={8} fill="#3B82F6" className="text-blue-500" />
+            <span className="text-[10px] font-medium text-blue-500">
+              Mới tạo
+            </span>
+          </div>
+        )
       case 'completed':
         return (
           <div className="flex items-center gap-1 rounded-full border border-green-300 bg-white px-2 py-0.5">
@@ -643,21 +704,30 @@ const GroupDetail = () => {
             </span>
           </div>
         )
-      case 'pending':
-        return (
-          <div className="flex items-center gap-1 rounded-full border border-orange-300 bg-white px-2 py-0.5">
-            <Clock size={12} className="text-orange-400" />
-            <span className="text-[10px] font-medium text-orange-400">
-              Đang chờ
-            </span>
-          </div>
-        )
       case 'in_progress':
         return (
           <div className="flex items-center gap-1 rounded-full border border-[#C3485C] bg-white px-2 py-0.5">
             <Circle size={8} fill="#C3485C" className="text-[#C3485C]" />
             <span className="text-[10px] font-medium text-[#C3485C]">
               Đang thực hiện
+            </span>
+          </div>
+        )
+      case 'cancelled':
+        return (
+          <div className="flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-0.5">
+            <X size={8} className="text-gray-500" />
+            <span className="text-[10px] font-medium text-gray-500">
+              Đã hủy
+            </span>
+          </div>
+        )
+      case 'expired':
+        return (
+          <div className="flex items-center gap-1 rounded-full border border-red-300 bg-white px-2 py-0.5">
+            <Clock size={8} className="text-red-500" />
+            <span className="text-[10px] font-medium text-red-500">
+              Hết hạn
             </span>
           </div>
         )
@@ -702,7 +772,17 @@ const GroupDetail = () => {
       {/* Header */}
       <div>
         <div className="flex items-center justify-between px-4 py-2">
-          <BackButton to="/main/family-group" text="Quay lại" />
+          <button
+            onClick={() =>
+              navigate('/main/family-group', {
+                state: returningFromEdit ? { refresh: true } : undefined
+              })
+            }
+            className="flex items-center text-sm font-bold text-[#C3485C] hover:opacity-80"
+          >
+            <ChevronLeft size={20} strokeWidth={3} />
+            <span className="ml-1">Quay lại</span>
+          </button>
           <div className="relative">
             <button
               onClick={(e) => {
@@ -1036,11 +1116,14 @@ const GroupDetail = () => {
                       >
                         <div className="mb-2 flex items-start justify-between">
                           <div className="flex-1">
-                            <p className="text-sm font-semibold text-gray-900">
-                              {plan.shopping_list.length} món cần mua
+                            <p className="text-base font-bold text-gray-900">
+                              {(plan.others?.name as string) || 'Kế hoạch mua sắm'}
                             </p>
                             <p className="mt-1 text-xs text-gray-500">
-                              Deadline:{' '}
+                              {getUserNameById(plan.assigner_id)}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {plan.shopping_list.length} nguyên liệu • {' '}
                               {new Date(plan.deadline).toLocaleDateString(
                                 'vi-VN',
                                 {
@@ -1054,21 +1137,6 @@ const GroupDetail = () => {
                             </p>
                           </div>
                           {renderStatusBadge(plan.plan_status)}
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {plan.shopping_list.slice(0, 3).map((item, idx) => (
-                            <span
-                              key={idx}
-                              className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
-                            >
-                              {item.component_name}
-                            </span>
-                          ))}
-                          {plan.shopping_list.length > 3 && (
-                            <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">
-                              +{plan.shopping_list.length - 3}
-                            </span>
-                          )}
                         </div>
                       </div>
                     ))}

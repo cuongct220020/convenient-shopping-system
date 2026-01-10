@@ -3,12 +3,18 @@ import {
   AppUrl,
   Clients,
   httpClients,
-  httpGet
+  httpGet,
+  httpPost,
+  httpPut,
+  httpDelete
 } from '../client'
 import { parseZodObject } from '../../utils/zod-result'
 import {
   ShoppingPlansFilterResponseSchema,
-  type ShoppingPlansFilterResponse
+  type ShoppingPlansFilterResponse,
+  type PlanItemBase,
+  PlanResponseSchema,
+  type PlanResponse
 } from '../schema/shoppingPlanSchema'
 
 type ShoppingPlanError = ReturnType<typeof createShoppingPlanError>
@@ -24,6 +30,35 @@ export type ShoppingPlanErrorType =
 
 export class ShoppingPlanService {
   constructor(private clients: Clients) {}
+
+  /**
+   * Get a shopping plan by ID
+   */
+  public getPlanById(
+    planId: number
+  ): ResultAsync<PlanResponse, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}`
+
+    return httpGet(this.clients.shopping, url)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(
+          PlanResponseSchema,
+          response.body
+        ).mapErr((e) =>
+          createShoppingPlanError('validation-error', e)
+        )
+      )
+  }
 
   /**
    * Filter shopping plans by group_id and optionally by plan_status
@@ -76,6 +111,183 @@ export class ShoppingPlanService {
           createShoppingPlanError('validation-error', e)
         )
       )
+  }
+
+  /**
+   * Create a new shopping plan
+   */
+  public createPlan(params: {
+    groupId: string
+    deadline: string
+    assignerId: string
+    shoppingList: PlanItemBase[]
+    others?: Record<string, unknown>
+  }): ResultAsync<{ message: string }, ShoppingPlanError> {
+    const body: Record<string, unknown> = {
+      group_id: params.groupId,
+      deadline: params.deadline,
+      assigner_id: params.assignerId,
+      shopping_list: params.shoppingList
+    }
+
+    // Only add others if it has values
+    if (params.others && Object.keys(params.others).length > 0) {
+      body.others = params.others
+    }
+
+    // Debug logging
+    console.log('Create plan request body:', JSON.stringify(body, null, 2))
+
+    return httpPost(this.clients.shopping, AppUrl.SHOPPING_PLANS, body)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .map((response) => response.body as { message: string })
+  }
+
+  /**
+   * Update an existing shopping plan
+   */
+  public updatePlan(
+    planId: number,
+    params: {
+      deadline: string
+      shoppingList: PlanItemBase[]
+      others?: Record<string, unknown> | null
+    }
+  ): ResultAsync<{ message: string }, ShoppingPlanError> {
+    const body: Record<string, unknown> = {
+      deadline: params.deadline,
+      shopping_list: params.shoppingList
+    }
+
+    // Only add others if it has values
+    if (params.others && Object.keys(params.others).length > 0) {
+      body.others = params.others
+    }
+
+    // Debug logging
+    console.log('Update plan request body:', JSON.stringify(body, null, 2))
+
+    return httpPut(this.clients.shopping, `${AppUrl.SHOPPING_PLANS}${planId}`, body)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .map((response) => response.body as { message: string })
+  }
+
+  /**
+   * Delete a shopping plan by ID
+   */
+  public deletePlan(
+    planId: number
+  ): ResultAsync<{ message: string }, ShoppingPlanError> {
+    return httpDelete(this.clients.shopping, `${AppUrl.SHOPPING_PLANS}${planId}`)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .map((response) => response.body as { message: string })
+  }
+
+  /**
+   * Assign a shopping plan to an assignee (start implementation)
+   */
+  public assignPlan(
+    planId: number,
+    assigneeId: string
+  ): ResultAsync<PlanResponse, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/assign?assignee_id=${assigneeId}`
+
+    return httpPost(this.clients.shopping, url, {})
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(
+          PlanResponseSchema,
+          response.body
+        ).mapErr((e) =>
+          createShoppingPlanError('validation-error', e)
+        )
+      )
+  }
+
+  /**
+   * Report a shopping plan as completed (confirm implementation)
+   */
+  public reportPlan(
+    planId: number,
+    assigneeId: string,
+    confirm: boolean = true
+  ): ResultAsync<{ message: string }, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/report?assignee_id=${assigneeId}&confirm=${confirm}`
+
+    const body = {
+      plan_id: planId,
+      report_content: []
+    }
+
+    return httpPost(this.clients.shopping, url, body)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .map((response) => response.body as { message: string })
+  }
+
+  /**
+   * Unassign a shopping plan from the assignee (cancel implementation)
+   */
+  public unassignPlan(
+    planId: number,
+    assigneeId: string
+  ): ResultAsync<{ message: string }, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/unassign?assignee_id=${assigneeId}`
+
+    return httpPost(this.clients.shopping, url, {})
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .map((response) => response.body as { message: string })
   }
 }
 
