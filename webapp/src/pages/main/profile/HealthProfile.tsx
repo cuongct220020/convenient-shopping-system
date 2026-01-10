@@ -1,80 +1,160 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
 import { NotificationCard } from '../../../components/NotificationCard';
-import { Pencil, HelpCircle, X, Check, Save } from 'lucide-react';
+import { HelpCircle, X, Save, Loader2 } from 'lucide-react';
+import { userService } from '../../../services/user';
 
-// Define types for the selection data
-type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'heavy' | 'very_heavy';
+// Define types based on API schema
+type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+type CurrCondition = 'normal' | 'pregnant' | 'injured';
+type HealthGoal = 'lose_weight' | 'maintain' | 'gain_weight';
+
+interface HealthProfileData {
+  height_cm: number | null;
+  weight_kg: number | null;
+  activity_level: ActivityLevel | null;
+  curr_condition: CurrCondition | null;
+  health_goal: HealthGoal | null;
+}
 
 const HealthProfile = () => {
   // --- State Management ---
-  const [height, setHeight] = useState<string>('165');
-  const [weight, setWeight] = useState<string>('65');
-  const [age, setAge] = useState<string>('--'); // Assuming age is derived or fetched
-
-  const [bmi, setBmi] = useState<number>(0);
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel>('sedentary');
-
-  // Tag Selections
-  const [selectedConditions, setSelectedConditions] = useState<string[]>(['Tim mạch']);
-  const [selectedAllergies, setSelectedAllergies] = useState<string[]>(['Hải sản']);
-  const [selectedDiets, setSelectedDiets] = useState<string[]>(['Gym']);
-  const [selectedTastes, setSelectedTastes] = useState<string[]>(['Tim mạch']); // Using dummy data from image
+  const [height, setHeight] = useState<string>('');
+  const [weight, setWeight] = useState<string>('');
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(null);
+  const [currCondition, setCurrCondition] = useState<CurrCondition | null>(null);
+  const [healthGoal, setHealthGoal] = useState<HealthGoal | null>(null);
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
   // State for modal visibility and original values
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [originalValues, setOriginalValues] = useState({
-    height: '165',
-    weight: '65',
-    activityLevel: 'sedentary' as ActivityLevel,
-    selectedConditions: ['Tim mạch'],
-    selectedAllergies: ['Hải sản'],
-    selectedDiets: ['Gym'],
-    selectedTastes: ['Tim mạch']
+  const [originalValues, setOriginalValues] = useState<HealthProfileData>({
+    height_cm: null,
+    weight_kg: null,
+    activity_level: null,
+    curr_condition: null,
+    health_goal: null
   });
 
-  // --- Calculations ---
+  // Error state
+  const [error, setError] = useState<string | null>(null);
+
+  // --- Fetch Data on Mount ---
   useEffect(() => {
-    // Simple BMI Calculation: weight (kg) / height (m)^2
-    const h = parseFloat(height);
-    const w = parseFloat(weight);
-    if (h > 0 && w > 0) {
-      const calculatedBmi = w / ((h / 100) * (h / 100));
-      setBmi(parseFloat(calculatedBmi.toFixed(2)));
-    }
-  }, [height, weight]);
+    fetchHealthProfile();
+  }, []);
+
+  const fetchHealthProfile = () => {
+    setIsLoading(true);
+    setError(null);
+
+    userService.getMyHealthProfile()
+      .match(
+        (response) => {
+          const data = response.data;
+          setHeight(data.height_cm?.toString() ?? '');
+          setWeight(data.weight_kg?.toString() ?? '');
+          setActivityLevel(data.activity_level ?? null);
+          setCurrCondition(data.curr_condition ?? null);
+          setHealthGoal(data.health_goal ?? null);
+
+          setOriginalValues({
+            height_cm: data.height_cm ?? null,
+            weight_kg: data.weight_kg ?? null,
+            activity_level: data.activity_level ?? null,
+            curr_condition: data.curr_condition ?? null,
+            health_goal: data.health_goal ?? null
+          });
+
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('Failed to fetch health profile:', error);
+          setError('Không thể tải thông tin sức khỏe. Vui lòng thử lại.');
+          setIsLoading(false);
+        }
+      );
+  };
 
   // --- Handlers ---
-  const toggleTag = (item: string, currentList: string[], setList: (l: string[]) => void) => {
-    if (currentList.includes(item)) {
-      setList(currentList.filter(i => i !== item));
-    } else {
-      setList([...currentList, item]);
-    }
+  const handleSave = () => {
+    setIsSaving(true);
+    setError(null);
+
+    const updateData = {
+      height_cm: height ? parseFloat(height) : null,
+      weight_kg: weight ? parseFloat(weight) : null,
+      activity_level: activityLevel,
+      curr_condition: currCondition,
+      health_goal: healthGoal
+    };
+
+    userService.updateMyHealthProfile(updateData)
+      .match(
+        (response) => {
+          const data = response.data;
+          setOriginalValues({
+            height_cm: data.height_cm ?? null,
+            weight_kg: data.weight_kg ?? null,
+            activity_level: data.activity_level ?? null,
+            curr_condition: data.curr_condition ?? null,
+            health_goal: data.health_goal ?? null
+          });
+          setShowConfirmModal(false);
+          setIsEditMode(false);
+          setIsSaving(false);
+        },
+        (error) => {
+          console.error('Failed to update health profile:', error);
+          setError('Không thể cập nhật thông tin sức khỏe. Vui lòng thử lại.');
+          setIsSaving(false);
+          setShowConfirmModal(false);
+        }
+      );
   };
 
-  const handleSave = () => {
-    console.log('Saving Health Profile:', {
-      height, weight, activityLevel, selectedConditions, selectedAllergies, selectedDiets, selectedTastes
-    });
-    // Add navigation or API call here
+  const handleCancelEdit = () => {
+    // Revert to original values
+    setHeight(originalValues.height_cm?.toString() ?? '');
+    setWeight(originalValues.weight_kg?.toString() ?? '');
+    setActivityLevel(originalValues.activity_level);
+    setCurrCondition(originalValues.curr_condition);
+    setHealthGoal(originalValues.health_goal);
+    setShowConfirmModal(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 p-5 bg-white overflow-y-auto max-w-sm mx-auto w-full pb-24 flex items-center justify-center">
+        <Loader2 className="animate-spin text-[#C3485C]" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 p-5 bg-white overflow-y-auto max-w-sm mx-auto w-full pb-24">
-      
+
       <BackButton to="/main/profile" text="Quay lại" className="mb-4" />
 
       <h1 className="text-2xl font-bold text-black mb-6">
         Hồ sơ sức khỏe
       </h1>
 
-      {/* --- Vital Stats (Height/Weight/Age) --- */}
-      <div className="flex justify-between mb-8">
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* --- Vital Stats (Height/Weight) --- */}
+      <div className="mb-8 space-y-6">
         <StatInput
           label="Chiều cao"
           value={height}
@@ -89,135 +169,125 @@ const HealthProfile = () => {
           onChange={setWeight}
           isEditMode={isEditMode}
         />
-        <div className="flex flex-col">
-          <span className="font-bold text-black mb-1">Tuổi</span>
-          <span className="text-gray-500 font-medium py-1">{age}</span>
-        </div>
-      </div>
-
-      {/* --- Indices (BMI, BMR, TDEE) --- */}
-      <div className="space-y-6 mb-8">
-        {/* BMI */}
-        <div>
-          <SectionTitle title="Chỉ số BMI" hasInfo />
-          <div className="flex justify-between items-end mt-1 text-sm">
-            <div className="text-center text-gray-400">
-              <p>Thiếu cân</p>
-              <p>&lt; 18.5</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[#C3485C] font-medium">Bình thường</p>
-              <p className="text-[#C3485C] font-bold text-xl">{bmi}</p>
-            </div>
-            <div className="text-center text-gray-400">
-              <p>Tiền béo phì</p>
-              <p>&gt;22.5</p>
-            </div>
-          </div>
-        </div>
-
-        {/* BMR */}
-        <div>
-          <SectionTitle title="Chỉ số BMR" hasInfo />
-          <p className="text-gray-800 font-medium mt-1">1300 kcal / ngày</p>
-        </div>
       </div>
 
       {/* --- Activity Level --- */}
       <div className="mb-8">
-        <SectionTitle title="Cường độ vận động hàng ngày" hasInfo />
-        <div className="mt-4 space-y-4">
-          <RadioItem
-            label="Ít vận động"
-            checked={activityLevel === 'sedentary'}
-            onClick={() => isEditMode && setActivityLevel('sedentary')}
-            isEditable={isEditMode}
-          />
-          <RadioItem
-            label="Vận động nhẹ"
-            checked={activityLevel === 'light'}
-            onClick={() => isEditMode && setActivityLevel('light')}
-            isEditable={isEditMode}
-          />
-          <RadioItem
-            label="Vận động vừa"
-            checked={activityLevel === 'moderate'}
-            onClick={() => isEditMode && setActivityLevel('moderate')}
-            isEditable={isEditMode}
-          />
-          <RadioItem
-            label="Tập nặng"
-            checked={activityLevel === 'heavy'}
-            onClick={() => isEditMode && setActivityLevel('heavy')}
-            isEditable={isEditMode}
-          />
-          <RadioItem
-            label="Tập rất nặng"
-            checked={activityLevel === 'very_heavy'}
-            onClick={() => isEditMode && setActivityLevel('very_heavy')}
-            isEditable={isEditMode}
-          />
-        </div>
-        
-        {/* Calculated TDEE */}
-        <div className="mt-6">
-          <SectionTitle title="Chỉ số TDEE" hasInfo />
-          <p className="text-[#C3485C] font-medium mt-1">1900 kcal / ngày</p>
-        </div>
+        <SectionTitle title="Cường độ vận động hàng ngày"/>
+        {isEditMode ? (
+          <div className="mt-4 space-y-4">
+            <RadioItem
+              label="Ít vận động"
+              checked={activityLevel === 'sedentary'}
+              onClick={() => setActivityLevel('sedentary')}
+              isEditable={true}
+            />
+            <RadioItem
+              label="Vận động nhẹ"
+              checked={activityLevel === 'light'}
+              onClick={() => setActivityLevel('light')}
+              isEditable={true}
+            />
+            <RadioItem
+              label="Vận động vừa"
+              checked={activityLevel === 'moderate'}
+              onClick={() => setActivityLevel('moderate')}
+              isEditable={true}
+            />
+            <RadioItem
+              label="Vận động tích cực"
+              checked={activityLevel === 'active'}
+              onClick={() => setActivityLevel('active')}
+              isEditable={true}
+            />
+            <RadioItem
+              label="Vận động rất tích cực"
+              checked={activityLevel === 'very_active'}
+              onClick={() => setActivityLevel('very_active')}
+              isEditable={true}
+            />
+          </div>
+        ) : (
+          <div className="mt-4">
+            <DisplayValue value={activityLevel} />
+          </div>
+        )}
       </div>
 
-      {/* --- Tags Sections --- */}
-      <div className="space-y-8">
-        
-        {/* Pathology / Medical Conditions */}
-        <TagSection
-          title="Bệnh lý"
-          options={['Tim mạch', 'Sỏi thận', 'Xơ gan', 'Máu nhiễm mỡ', 'Hen suyễn', 'Máu khó đông', 'Gout']}
-          selected={selectedConditions}
-          onToggle={(item) => isEditMode && toggleTag(item, selectedConditions, setSelectedConditions)}
-          isEditMode={isEditMode}
-        />
+      {/* --- Current Condition --- */}
+      <div className="mb-8">
+        <SectionTitle title="Tình trạng hiện tại" />
+        {isEditMode ? (
+          <div className="mt-4 space-y-4">
+            <RadioItem
+              label="Bình thường"
+              checked={currCondition === 'normal'}
+              onClick={() => setCurrCondition('normal')}
+              isEditable={true}
+            />
+            <RadioItem
+              label="Mang thai"
+              checked={currCondition === 'pregnant'}
+              onClick={() => setCurrCondition('pregnant')}
+              isEditable={true}
+            />
+            <RadioItem
+              label="Chấn thương"
+              checked={currCondition === 'injured'}
+              onClick={() => setCurrCondition('injured')}
+              isEditable={true}
+            />
+          </div>
+        ) : (
+          <div className="mt-4">
+            <DisplayValue value={currCondition} />
+          </div>
+        )}
+      </div>
 
-        {/* Allergies */}
-        <TagSection
-          title="Dị ứng"
-          options={['Hải sản', 'Thịt mỡ', 'Da động vật', 'Sự tử tế', 'Thịt sống', 'Rau muống']}
-          selected={selectedAllergies}
-          onToggle={(item) => isEditMode && toggleTag(item, selectedAllergies, setSelectedAllergies)}
-          isEditMode={isEditMode}
-        />
+      {/* --- Health Goal --- */}
+      <div className="mb-8">
+        <SectionTitle title="Mục tiêu sức khỏe" />
+        {isEditMode ? (
+          <div className="mt-4 space-y-4">
+            <RadioItem
+              label="Giảm cân"
+              checked={healthGoal === 'lose_weight'}
+              onClick={() => setHealthGoal('lose_weight')}
+              isEditable={true}
+            />
+            <RadioItem
+              label="Duy trì"
+              checked={healthGoal === 'maintain'}
+              onClick={() => setHealthGoal('maintain')}
+              isEditable={true}
+            />
+            <RadioItem
+              label="Tăng cân"
+              checked={healthGoal === 'gain_weight'}
+              onClick={() => setHealthGoal('gain_weight')}
+              isEditable={true}
+            />
+          </div>
+        ) : (
+          <div className="mt-4">
+            <DisplayValue value={healthGoal} />
+          </div>
+        )}
+      </div>
 
-        {/* Nutrition Mode */}
-        <TagSection
-          title="Chế độ dinh dưỡng"
-          options={['Gym', 'Ăn chay trường', 'Giảm béo', 'Tăng cân', 'Eat Clean', 'Keto']}
-          selected={selectedDiets}
-          onToggle={(item) => isEditMode && toggleTag(item, selectedDiets, setSelectedDiets)}
-          isEditMode={isEditMode}
-        />
-
-        {/* Taste */}
-        <TagSection
-          title="Khẩu vị"
-          options={['Chua', 'Cay', 'Mặn', 'Ngọt', 'Nhạt', 'Đắng']}
-          selected={selectedTastes}
-          onToggle={(item) => isEditMode && toggleTag(item, selectedTastes, setSelectedTastes)}
-          isEditMode={isEditMode}
-        />
-
-        {/* Edit/Save Button */}
+      {/* --- Edit/Save/Cancel Buttons --- */}
+      <div className="flex gap-3">
         <Button
           onClick={() => {
             if (isEditMode) {
               // Check if values have changed
               const hasChanges =
-                height !== originalValues.height ||
-                weight !== originalValues.weight ||
-                activityLevel !== originalValues.activityLevel ||
-                JSON.stringify(selectedConditions) !== JSON.stringify(originalValues.selectedConditions) ||
-                JSON.stringify(selectedAllergies) !== JSON.stringify(originalValues.selectedAllergies) ||
-                JSON.stringify(selectedDiets) !== JSON.stringify(originalValues.selectedDiets) ||
-                JSON.stringify(selectedTastes) !== JSON.stringify(originalValues.selectedTastes);
+                height !== (originalValues.height_cm?.toString() ?? '') ||
+                weight !== (originalValues.weight_kg?.toString() ?? '') ||
+                activityLevel !== originalValues.activity_level ||
+                currCondition !== originalValues.curr_condition ||
+                healthGoal !== originalValues.health_goal;
 
               if (hasChanges) {
                 setShowConfirmModal(true);
@@ -226,25 +296,28 @@ const HealthProfile = () => {
                 setIsEditMode(false);
               }
             } else {
-              // Entering edit mode, store current values
-              setOriginalValues({
-                height,
-                weight,
-                activityLevel,
-                selectedConditions: [...selectedConditions],
-                selectedAllergies: [...selectedAllergies],
-                selectedDiets: [...selectedDiets],
-                selectedTastes: [...selectedTastes]
-              });
+              // Entering edit mode
               setIsEditMode(true);
             }
           }}
-          variant="secondary"
+          variant="primary"
           size="fit"
         >
           {isEditMode ? 'Lưu' : 'Chỉnh sửa'}
         </Button>
 
+        {isEditMode && (
+          <Button
+            onClick={() => {
+              // Revert to original values and exit edit mode
+              handleCancelEdit();
+            }}
+            variant="secondary"
+            size="fit"
+          >
+            Hủy
+          </Button>
+        )}
       </div>
 
       {/* Confirmation Modal */}
@@ -254,44 +327,12 @@ const HealthProfile = () => {
             title="Xác nhận thay đổi"
             message="Bạn có chắc chắn muốn lưu thay đổi thông tin sức khỏe không?"
             iconBgColor="bg-yellow-500"
-            buttonText="Xác nhận"
-            buttonIcon={Save}
-            onButtonClick={() => {
-              // Save the changes
-              console.log('Saving Health Profile:', {
-                height,
-                weight,
-                activityLevel,
-                selectedConditions,
-                selectedAllergies,
-                selectedDiets,
-                selectedTastes
-              });
-              setOriginalValues({
-                height,
-                weight,
-                activityLevel,
-                selectedConditions: [...selectedConditions],
-                selectedAllergies: [...selectedAllergies],
-                selectedDiets: [...selectedDiets],
-                selectedTastes: [...selectedTastes]
-              });
-              setShowConfirmModal(false);
-              setIsEditMode(false);
-            }}
+            buttonText={isSaving ? 'Đang lưu...' : 'Xác nhận'}
+            buttonIcon={isSaving ? Loader2 : Save}
+            onButtonClick={handleSave}
             button2Text="Hủy"
             button2Icon={X}
-            onButton2Click={() => {
-              // Revert changes
-              setHeight(originalValues.height);
-              setWeight(originalValues.weight);
-              setActivityLevel(originalValues.activityLevel);
-              setSelectedConditions([...originalValues.selectedConditions]);
-              setSelectedAllergies([...originalValues.selectedAllergies]);
-              setSelectedDiets([...originalValues.selectedDiets]);
-              setSelectedTastes([...originalValues.selectedTastes]);
-              setShowConfirmModal(false);
-            }}
+            onButton2Click={handleCancelEdit}
           />
         </div>
       )}
@@ -309,21 +350,23 @@ const StatInput = ({ label, value, unit, onChange, isEditMode }: {
   onChange: (val: string) => void,
   isEditMode: boolean
 }) => (
-  <div className="flex flex-col">
-    <span className="font-bold text-black mb-1">{label}</span>
+  <div className="flex items-center gap-4">
+    <span className="font-bold text-black">{label}</span>
     <div className="flex items-center">
-      <Pencil size={16} className={`${isEditMode ? 'text-black fill-black' : 'text-gray-500 fill-gray-500'} mr-2`} />
       {isEditMode ? (
         <input
           type="number"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-12 font-medium text-gray-800 bg-transparent focus:outline-none border-b border-dashed border-gray-300 focus:border-[#C3485C]"
+          className="w-16 font-medium text-gray-800 bg-transparent focus:outline-none border-b border-dashed border-gray-300 focus:border-[#C3485C] text-right"
+          placeholder="0"
         />
       ) : (
-        <span className="w-12 font-medium text-gray-800">{value}</span>
+        <span className="font-medium text-gray-800">
+          {value || 'Chưa có thông tin'}
+        </span>
       )}
-      <span className="text-gray-800 font-medium ml-1">{unit}</span>
+      {value && <span className="text-gray-800 font-medium ml-1">{unit}</span>}
     </div>
   </div>
 );
@@ -364,47 +407,26 @@ const RadioItem = ({ label, checked, onClick, isEditable }: {
   </button>
 );
 
-// 4. Tag/Chip Section
-const TagSection = ({ title, options, selected, onToggle, isEditMode }: {
-  title: string,
-  options: string[],
-  selected: string[],
-  onToggle: (item: string) => void,
-  isEditMode: boolean
-}) => {
+// 4. Display Value Component
+const DisplayValue = ({ value }: { value: string | null }) => {
+  const displayMap: Record<string, string> = {
+    'sedentary': 'Ít vận động',
+    'light': 'Vận động nhẹ',
+    'moderate': 'Vận động vừa',
+    'active': 'Vận động tích cực',
+    'very_active': 'Vận động rất tích cực',
+    'normal': 'Bình thường',
+    'pregnant': 'Mang thai',
+    'injured': 'Chấn thương',
+    'lose_weight': 'Giảm cân',
+    'maintain': 'Duy trì',
+    'gain_weight': 'Tăng cân'
+  };
+
   return (
-    <div>
-      <SectionTitle title={title} />
-      <div className="flex flex-wrap gap-2 mt-3">
-        {options.map((option) => {
-          const isSelected = selected.includes(option);
-          return (
-            <button
-              key={option}
-              onClick={() => onToggle(option)}
-              disabled={!isEditMode}
-              className={`
-                px-3 py-1.5 rounded-full text-xs font-medium border transition-all
-                ${isSelected
-                  ? 'bg-[#FFEFEF] text-[#C3485C] border-[#C3485C]'
-                  : isEditMode
-                    ? 'bg-transparent text-gray-500 border-[#C3485C] hover:bg-red-50'
-                    : 'bg-transparent text-gray-400 border-gray-300'
-                }
-                ${!isEditMode ? 'cursor-default' : ''}
-              `}
-            >
-              #{option}
-            </button>
-          );
-        })}
-      </div>
-      <button className={`font-bold text-sm mt-2 ${
-        isEditMode ? 'text-gray-400 hover:text-gray-600' : 'text-gray-300 cursor-default'
-      }`}>
-        Xem thêm
-      </button>
-    </div>
+    <p className="text-gray-800 font-medium">
+      {value ? displayMap[value] : 'Chưa có thông tin'}
+    </p>
   );
 };
 

@@ -224,6 +224,35 @@ export type UserIdentityProfileResponse = z.infer<
   typeof UserIdentityProfileResponseSchema
 >
 
+// User identity profile update request schema (partial fields allowed)
+export const UserIdentityProfileUpdateSchema = z.object({
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  date_of_birth: z.string().nullable().optional(),
+  occupation: z.string().nullable().optional(),
+  address: z
+    .object({
+      ward: z.string().nullable().optional(),
+      district: z.string().nullable().optional(),
+      city: z.string().nullable().optional(),
+      province: z.string().nullable().optional()
+    })
+    .nullable()
+    .optional()
+})
+export type UserIdentityProfileUpdate = z.infer<
+  typeof UserIdentityProfileUpdateSchema
+>
+
+// User identity profile update response schema
+export const UserIdentityProfileUpdateResponseSchema = z.object({
+  status: z.literal('success'),
+  message: z.string().nullable(),
+  data: UserIdentityProfileSchema
+})
+export type UserIdentityProfileUpdateResponse = z.infer<
+  typeof UserIdentityProfileUpdateResponseSchema
+>
+
 // User health profile schema
 export const UserHealthProfileSchema = z.object({
   user_id: z.string().uuid().nullable().optional(),

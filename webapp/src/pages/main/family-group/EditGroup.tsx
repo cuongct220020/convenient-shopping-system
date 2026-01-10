@@ -62,12 +62,12 @@ const EditGroup: React.FC = () => {
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const result = await groupService.updateGroup(id, groupName.trim());
+    const result = await groupService.updateGroup(id, groupName.trim(), avatarUrl ?? undefined);
 
     result.match(
       () => {
-        // Success - navigate back to detail view
-        navigate(`/main/family-group/${id}`);
+        // Success - navigate back to detail view with refresh state
+        navigate(`/main/family-group/${id}`, { state: { refresh: true, returningFromEdit: true } });
       },
       (error) => {
         console.error('Failed to update group:', error);
