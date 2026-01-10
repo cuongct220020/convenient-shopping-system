@@ -187,7 +187,7 @@ export const PlanDetail = () => {
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'created':
-        return 'Chờ duyệt';
+        return 'Mới tạo';
       case 'in_progress':
         return 'Đang thực hiện';
       case 'completed':
@@ -475,7 +475,7 @@ export const PlanDetail = () => {
                   className="!px-10 !py-3 text-base rounded-2xl shadow-lg shadow-red-200/50"
                   onClick={() => setIsApproveModalOpen(true)}
                 >
-                  Duyệt kế hoạch
+                  Đăng ký làm
                 </Button>
               </div>
             ) : null}
@@ -487,9 +487,9 @@ export const PlanDetail = () => {
       {isApproveModalOpen && planData && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Duyệt Kế Hoạch?</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Đăng Ký Làm?</h3>
             <div className="flex justify-center mb-5"><div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center"><Check size={36} className="text-white" strokeWidth={3} /></div></div>
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn duyệt kế hoạch <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
+            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn Đăng ký làm <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
             <div className="flex gap-3 justify-center">
               <div className="w-1/2">
                 <Button
@@ -498,7 +498,7 @@ export const PlanDetail = () => {
                   icon={isAssigning ? Loader2 : Check}
                   className={isAssigning ? '' : 'bg-[#C3485C] hover:bg-[#a83648]'}
                 >
-                  {isAssigning ? 'Đang duyệt...' : 'Xác nhận'}
+                  {isAssigning ? 'Đang làm...' : 'Xác nhận'}
                 </Button>
               </div>
               <div className="w-1/2">
