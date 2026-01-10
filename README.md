@@ -22,23 +22,23 @@ The project aims to promote sustainable consumption habits while ensuring proper
 
 The system follows a **microservices architecture** with **event-driven communication** patterns:
 
-- **Kong Gateway**: Serves as the API Gateway and entry point for all backend services, handling routing, authentication, and rate limiting
-- **Redis**: Implements caching layer using the cache-aside pattern to improve response times and reduce database load
-- **Kafka Broker**: Acts as the message broker enabling asynchronous communication between microservices
-- **Certbot**: Manages automatic SSL certificate renewal from Let's Encrypt, ensuring secure HTTPS connections
-- **Microservices**: Independent services (User, Recipe, Meal, Shopping Storage, Notification) that handle specific business domains
+- **Kong Gateway**: Serves as the API Gateway and entry point for all backend services, handling routing, authentication, and rate limiting.
+- **Redis**: Implements caching layer using the cache-aside pattern to improve response times and reduce database load.
+- **Kafka Broker**: Acts as the message broker enabling asynchronous communication between microservices.
+- **Certbot**: Manages automatic SSL certificate renewal from Let's Encrypt, ensuring secure HTTPS connections.
+- **Microservices**: Independent services (User, Recipe, Meal, Shopping Storage, Notification) that handle specific business domains.
 
 ## Video Demo
 
 
-
-## Usage
+## Usage Guide
 
 ### Prerequisites
 
-- Pull latest update on remote repository and navigate to the root directory
-- Docker Desktop (Docker Engine) installed and running on your machine
-- Configure Environment Variables:
+- Pull latest update on remote repository and navigate to the root directory. 
+- Docker Desktop (Docker Engine) installed and running on your machine. 
+- Set up local .venv directories for each service and load the packages specified in the `requirements.txt` file.
+- Configure Environment Variables if the `.env.example` exists.
   ```bash
   cp .env.example .env
   cp user-service/.env.example user-service/.env
@@ -47,6 +47,17 @@ The system follows a **microservices architecture** with **event-driven communic
   cp shopping-storage-service/.env.example shopping-storage-service/.env
   cp notification-service/.env.example notification-service/.env
   ```
+- Generate asymmetric RSA Key pair, private key for signing jwt token, public key for verifying token signature at Kong Gateway:
+```bash
+cd user-service
+source .venv/bin/activate
+
+# Generate RSA keys pair
+python3 scripts/generate_rsa_keys.py
+
+# Verify RSA keys pair
+python3 scripts/verify_rsa_keys_pair.py
+```
 
 ### Simulate Production Environment Locally
 
