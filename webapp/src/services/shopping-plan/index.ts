@@ -207,6 +207,88 @@ export class ShoppingPlanService {
       })
       .map((response) => response.body as { message: string })
   }
+
+  /**
+   * Assign a shopping plan to an assignee (start implementation)
+   */
+  public assignPlan(
+    planId: number,
+    assigneeId: string
+  ): ResultAsync<PlanResponse, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/assign?assignee_id=${assigneeId}`
+
+    return httpPost(this.clients.shopping, url, {})
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(
+          PlanResponseSchema,
+          response.body
+        ).mapErr((e) =>
+          createShoppingPlanError('validation-error', e)
+        )
+      )
+  }
+
+  /**
+   * Report a shopping plan as completed (confirm implementation)
+   */
+  public reportPlan(
+    planId: number,
+    assigneeId: string,
+    confirm: boolean = true
+  ): ResultAsync<{ message: string }, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/report?assignee_id=${assigneeId}&confirm=${confirm}`
+
+    const body = {
+      plan_id: planId,
+      report_content: []
+    }
+
+    return httpPost(this.clients.shopping, url, body)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .map((response) => response.body as { message: string })
+  }
+
+  /**
+   * Unassign a shopping plan from the assignee (cancel implementation)
+   */
+  public unassignPlan(
+    planId: number,
+    assigneeId: string
+  ): ResultAsync<{ message: string }, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/unassign?assignee_id=${assigneeId}`
+
+    return httpPost(this.clients.shopping, url, {})
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .map((response) => response.body as { message: string })
+  }
 }
 
 export const shoppingPlanService = new ShoppingPlanService(httpClients)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, Check, Clock, User, Calendar, AlertTriangle, X, Settings, Edit2, Trash2, ArrowRight, Loader2 } from 'lucide-react';
+import { FileText, Check, Clock, User, Calendar, AlertTriangle, X, Settings, Edit2, Trash2, ArrowRight, Loader2, DollarSign } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
 import { shoppingPlanService } from '../../../services/shopping-plan';
@@ -16,8 +16,10 @@ export const PlanDetail = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
   const [planData, setPlanData] = useState<PlanResponse | null>(null);
   const [creatorInfo, setCreatorInfo] = useState<UserCoreInfo | null>(null);
+  const [assigneeInfo, setAssigneeInfo] = useState<UserCoreInfo | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +53,27 @@ export const PlanDetail = () => {
         (err) => {
           // Silently fail - we'll show the assigner_id instead of the name
           console.log('Could not fetch creator info:', err);
+        }
+      );
+  }, [planData, id]);
+
+  // Fetch assignee info when plan data is loaded
+  useEffect(() => {
+    if (!planData?.assignee_id || !id) return;
+
+    groupService
+      .getGroupMembers(id)
+      .match(
+        (response) => {
+          const memberships = response.data.members || response.data.group_memberships || [];
+          const assignee = memberships.find((m) => m.user.id === planData.assignee_id);
+          if (assignee) {
+            setAssigneeInfo(assignee.user);
+          }
+        },
+        (err) => {
+          // Silently fail - we'll show the assignee_id instead of the name
+          console.log('Could not fetch assignee info:', err);
         }
       );
   }, [planData, id]);
@@ -96,9 +119,25 @@ export const PlanDetail = () => {
   };
 
   const handleApprovePlan = () => {
-    console.log('Approving plan...');
-    setIsApproveModalOpen(false);
-    navigate(`/main/family-group/${id}/plan/${planId}/implement`);
+    if (!planId || !currentUserId) return;
+
+    setIsAssigning(true);
+    setError(null);
+
+    shoppingPlanService
+      .assignPlan(parseInt(planId), currentUserId)
+      .match(
+        () => {
+          setIsAssigning(false);
+          setIsApproveModalOpen(false);
+          navigate(`/main/family-group/${id}/plan/${planId}/implement`);
+        },
+        (err) => {
+          console.error('Failed to assign plan:', err);
+          setError(err.desc || 'Failed to assign plan');
+          setIsAssigning(false);
+        }
+      );
   };
 
   const handleEdit = () => {
@@ -180,6 +219,37 @@ export const PlanDetail = () => {
     return plan.others?.notes as string || 'Không có ghi chú';
   };
 
+  const getTotalMoneySpent = (plan: PlanResponse): number | null => {
+    return plan.others?.total_money_spent as number || null;
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN').format(amount);
+  };
+
+  const getAssigneeDisplayName = (assignee: UserCoreInfo | null) => {
+    if (!assignee) {
+      // If we've finished loading but don't have assignee info, show a fallback
+      if (!isLoading) {
+        return planData ? planData.assignee_id?.substring(0, 8) + '...' : 'Người dùng';
+      }
+      return 'Đang tải...';
+    }
+
+    const firstName = assignee.first_name?.trim();
+    const lastName = assignee.last_name?.trim();
+
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (lastName) {
+      return lastName;
+    } else {
+      return assignee.username || 'Người dùng';
+    }
+  };
+
   const getCreatorDisplayName = (creator: UserCoreInfo | null) => {
     if (!creator) {
       // If we've finished loading but don't have creator info, show a fallback
@@ -234,7 +304,7 @@ export const PlanDetail = () => {
           <>
             {/* Header Nav */}
             <div className="flex items-center justify-between mb-2">
-              <BackButton text="Quay lại" to={`/main/family-group/${id}`} onClick={handleBack} />
+              <BackButton text="Quay lại" to={`/main/family-group/${id}`} state={{ activeTab: 'shopping-plan' }} />
               {/* Only show settings icon to the creator */}
               {currentUserId === planData.assigner_id && (
                 <div className="relative">
@@ -293,12 +363,43 @@ export const PlanDetail = () => {
               </div>
             </div>
 
+            {/* Assignee & Total Money Spent Row (Only show if completed) */}
+            {planData.plan_status === 'completed' && (
+              <div className="bg-gray-100 rounded-2xl p-4 flex justify-between items-center mb-3">
+                {/* Left: Assignee Name */}
+                <div className="flex flex-col items-center w-1/2 border-r border-gray-300">
+                  <div className="flex items-center gap-1 mb-1">
+                    <User size={16} className="text-black" strokeWidth={2.5} />
+                    <span className="font-bold text-sm text-gray-700">Người thực hiện</span>
+                  </div>
+                  <p className="text-sm font-medium">{getAssigneeDisplayName(assigneeInfo)}</p>
+                </div>
+
+                {/* Right: Total Money Spent */}
+                <div className="flex flex-col items-center w-1/2">
+                  <div className="flex items-center gap-1 mb-1">
+                    <DollarSign size={16} className="text-black" strokeWidth={2.5} />
+                    <span className="font-bold text-sm text-gray-700">Tổng chi tiêu</span>
+                  </div>
+                  <p className="text-sm font-bold">
+                    {getTotalMoneySpent(planData) !== null
+                      ? `${formatCurrency(getTotalMoneySpent(planData)!)} VND`
+                      : 'Chưa cập nhật'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Date Card (Full Width) */}
-            <div className="bg-[#F3F4F6] p-4 rounded-[20px] mb-6 flex items-start">
+            <div className="bg-[#F3F4F6] p-4 rounded-[20px] mb-3 flex items-start">
               <Calendar size={20} className="mr-3 mt-0.5 text-gray-800" strokeWidth={2.5} />
               <div>
-                <h3 className="font-bold text-sm mb-1">Hạn chót</h3>
-                <p className="text-sm font-medium">{formatDeadline(planData.deadline)}</p>
+                <h3 className="font-bold text-sm mb-1">
+                  {planData.plan_status === 'completed' ? 'Thời gian hoàn thành' : 'Hạn chót'}
+                </h3>
+                <p className="text-sm font-medium">
+                  {formatDeadline(planData.plan_status === 'completed' ? planData.last_modified : planData.deadline)}
+                </p>
               </div>
             </div>
 
@@ -358,8 +459,26 @@ export const PlanDetail = () => {
             <div className="flex justify-center mb-5"><div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center"><Check size={36} className="text-white" strokeWidth={3} /></div></div>
             <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn duyệt kế hoạch <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
             <div className="flex gap-3 justify-center">
-              <div className="w-1/2"><Button variant="primary" onClick={handleApprovePlan} icon={Check} className="bg-[#C3485C] hover:bg-[#a83648]">Xác nhận</Button></div>
-              <div className="w-1/2"><Button variant="secondary" onClick={() => setIsApproveModalOpen(false)} icon={X} className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]">Hủy</Button></div>
+              <div className="w-1/2">
+                <Button
+                  variant={isAssigning ? 'disabled' : 'primary'}
+                  onClick={isAssigning ? undefined : handleApprovePlan}
+                  icon={isAssigning ? Loader2 : Check}
+                  className={isAssigning ? '' : 'bg-[#C3485C] hover:bg-[#a83648]'}
+                >
+                  {isAssigning ? 'Đang duyệt...' : 'Xác nhận'}
+                </Button>
+              </div>
+              <div className="w-1/2">
+                <Button
+                  variant={isAssigning ? 'disabled' : 'secondary'}
+                  onClick={isAssigning ? undefined : () => setIsApproveModalOpen(false)}
+                  icon={X}
+                  className={isAssigning ? '' : 'bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]'}
+                >
+                  Hủy
+                </Button>
+              </div>
             </div>
           </div>
         </div>

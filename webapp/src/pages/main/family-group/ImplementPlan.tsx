@@ -5,11 +5,15 @@ import {
   DollarSign,
   Check,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Loader2,
+  ChevronLeft
 } from 'lucide-react';
 import { Button } from '../../../components/Button';
-import { BackButton } from '../../../components/BackButton';
 import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
+import { shoppingPlanService } from '../../../services/shopping-plan';
+import { userService } from '../../../services/user';
+import type { PlanResponse } from '../../../services/schema/shoppingPlanSchema';
 
 // Define interface for an ingredient item data structure
 interface IngredientItemData extends Ingredient {
@@ -17,24 +21,60 @@ interface IngredientItemData extends Ingredient {
   price: number;
 }
 
-const planTitle = "Mua Đồ Ăn Tối";
-
-// Mock data based on the image content
-const initialData: IngredientItemData[] = [
-  { id: 1, name: 'Bông cải', category: 'Rau', quantity: '100g', image: 'https://placehold.co/80x60/green/white?text=Broccoli', isChecked: false, price: 0 },
-  { id: 2, name: 'Bông cải', category: 'Rau', quantity: '100g', image: 'https://placehold.co/80x60/green/white?text=Broccoli', isChecked: false, price: 0 },
-  { id: 3, name: 'Bông cải', category: 'Rau', quantity: '100g', image: 'https://placehold.co/80x60/green/white?text=Broccoli', isChecked: true, price: 30000 },
-  { id: 4, name: 'Bông cải', category: 'Rau', quantity: '100g', image: 'https://placehold.co/80x60/green/white?text=Broccoli', isChecked: true, price: 30000 },
-  { id: 5, name: 'Bông cải', category: 'Rau', quantity: '100g', image: 'https://placehold.co/80x60/green/white?text=Broccoli', isChecked: true, price: 30000 },
-  { id: 6, name: 'Bông cải', category: 'Rau', quantity: '100g', image: 'https://placehold.co/80x60/green/white?text=Broccoli', isChecked: false, price: 0 },
-];
-
 export default function ImplementPlan() {
   const navigate = useNavigate();
-  const { id, plan_id } = useParams<{ id: string; plan_id: string }>();
-  const [items, setItems] = useState<IngredientItemData[]>(initialData);
+  const { id, planId } = useParams<{ id: string; planId: string }>();
+  const [items, setItems] = useState<IngredientItemData[]>([]);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [planData, setPlanData] = useState<PlanResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isUnassigning, setIsUnassigning] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Fetch current user on mount
+  useEffect(() => {
+    userService.getCurrentUser().match(
+      (response) => {
+        setCurrentUserId(response.data.id);
+      },
+      (err) => {
+        console.error('Failed to fetch current user:', err);
+      }
+    );
+  }, []);
+
+  // Fetch plan data on mount
+  useEffect(() => {
+    if (!planId) return;
+
+    shoppingPlanService
+      .getPlanById(parseInt(planId))
+      .match(
+        (data) => {
+          setPlanData(data);
+          // Initialize items from shopping list
+          const initialItems: IngredientItemData[] = data.shopping_list.map((item, index) => ({
+            id: index,
+            name: item.component_name,
+            category: item.type === 'countable_ingredient' ? 'Đếm được' : 'Không đếm được',
+            quantity: `${item.quantity} ${item.unit}`,
+            image: `https://placehold.co/80x60/F3F4F6/6B7280?text=${encodeURIComponent(item.component_name.substring(0, 3))}`,
+            isChecked: false,
+            price: 0
+          }));
+          setItems(initialItems);
+          setIsLoading(false);
+        },
+        (err) => {
+          console.error('Failed to fetch plan:', err);
+          setError(err.desc || 'Failed to load plan');
+          setIsLoading(false);
+        }
+      );
+  }, [planId]);
 
   useEffect(() => {
     const bottomNav = document.querySelector('nav.fixed.bottom-0');
@@ -83,121 +123,255 @@ export default function ImplementPlan() {
     );
   };
 
+  const getPlanTitle = (plan: PlanResponse | null) => {
+    if (!plan) return 'Kế hoạch';
+    return plan.others?.name as string || 'Kế hoạch mua sắm';
+  };
+
   const handleCompletePlan = () => {
-    console.log('Completing plan...');
-    setIsCompleteModalOpen(false);
-    navigate(`/main/family-group/${id}/plan/${plan_id}`);
+    if (!planId || !planData || !currentUserId) return;
+
+    setIsCompleting(true);
+    setError(null);
+
+    // Prepare bought ingredients data for update
+    const boughtIngredients = items
+      .filter(item => item.isChecked)
+      .map((item) => {
+        const originalIndex = items.findIndex(i => i.id === item.id);
+        return planData.shopping_list[originalIndex];
+      });
+
+    // First, update the plan with only bought ingredients
+    shoppingPlanService
+      .updatePlan(parseInt(planId), {
+        deadline: planData.deadline,
+        shoppingList: boughtIngredients,
+        others: {
+          ...(planData.others ?? {}),
+          total_money_spent: totalSpent
+        }
+      })
+      .andThen(() => {
+        // Then, report the plan as completed
+        return shoppingPlanService.reportPlan(parseInt(planId), currentUserId, true);
+      })
+      .match(
+        () => {
+          setIsCompleting(false);
+          setIsCompleteModalOpen(false);
+          navigate(`/main/family-group/${id}/plan/${planId}`);
+        },
+        (err) => {
+          console.error('Failed to complete plan:', err);
+          setError(err.desc || 'Failed to complete plan');
+          setIsCompleting(false);
+        }
+      );
   };
 
   const handleCancelPlan = () => {
-    console.log('Canceling plan...');
     setIsCancelModalOpen(false);
-    navigate(`/main/family-group/${id}/plan/${plan_id}`);
+    navigate(`/main/family-group/${id}/plan/${planId}`);
+  };
+
+  const handleBack = () => {
+    if (!planId || !currentUserId) return;
+
+    setIsUnassigning(true);
+    setError(null);
+
+    shoppingPlanService
+      .unassignPlan(parseInt(planId), currentUserId)
+      .match(
+        () => {
+          setIsUnassigning(false);
+          navigate(`/main/family-group/${id}/plan/${planId}`);
+        },
+        (err) => {
+          console.error('Failed to unassign plan:', err);
+          setError(err.desc || 'Failed to unassign plan');
+          setIsUnassigning(false);
+        }
+      );
   };
 
   return (
     <div className="min-h-screen bg-white pb-6">
       {/* Header */}
       <div className="pt-4 px-4 mb-4">
-        <BackButton onClick={() => navigate(-1)} text="Quay lại" />
+        <button
+          onClick={handleBack}
+          disabled={isUnassigning || !currentUserId}
+          className="flex items-center text-sm font-bold text-[#C3485C] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isUnassigning ? (
+            <Loader2 size={20} className="animate-spin" />
+          ) : (
+            <ChevronLeft size={20} strokeWidth={3} />
+          )}
+          <span className="ml-1">Quay lại</span>
+        </button>
       </div>
 
       <h1 className="text-xl font-bold text-[#D3314D] text-center mb-4">
-        Mua Đồ Ăn Tối
+        {getPlanTitle(planData)}
       </h1>
 
       <div className="px-4">
-        {/* Summary Card */}
-        <div className="bg-gray-100 rounded-2xl p-4 flex justify-between items-center mb-6">
-          {/* Left: Results */}
-          <div className="flex flex-col items-center w-1/2 border-r border-gray-300">
-            <div className="flex items-center gap-2 mb-1">
-              <ClipboardList size={20} className="text-black" />
-              <span className="font-bold text-lg">Kết quả</span>
-            </div>
-            <div className="text-2xl font-black mb-1">
-              {boughtItems}/{totalItems}
-            </div>
-            <div className="text-gray-600 text-sm">Đã mua</div>
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C3485C]"></div>
           </div>
+        )}
 
-          {/* Right: Total Spending */}
-          <div className="flex flex-col items-center w-1/2">
-            <div className="flex items-center gap-1 mb-1">
-              <DollarSign size={20} className="text-black" />
-              <span className="font-bold text-lg">Tổng chi tiêu</span>
-            </div>
-            <div className="text-xl font-bold mb-1">
-              {formatCurrency(totalSpent)}
-            </div>
-            <div className="text-gray-600 text-sm">VND</div>
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <AlertTriangle size={48} className="text-red-500 mb-4" />
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button
+              variant="primary"
+              onClick={handleBack}
+            >
+              Quay lại
+            </Button>
           </div>
-        </div>
+        )}
 
-        {/* List Title */}
-        <h2 className="text-lg font-bold mb-4">Danh sách nguyên liệu cần mua</h2>
+        {/* Content */}
+        {!isLoading && !error && planData && (
+          <>
+            {/* Summary Card */}
+            <div className="bg-gray-100 rounded-2xl p-4 flex justify-between items-center mb-6">
+              {/* Left: Results */}
+              <div className="flex flex-col items-center w-1/2 border-r border-gray-300">
+                <div className="flex items-center gap-2 mb-1">
+                  <ClipboardList size={20} className="text-black" />
+                  <span className="font-bold text-lg">Kết quả</span>
+                </div>
+                <div className="text-2xl font-black mb-1">
+                  {boughtItems}/{totalItems}
+                </div>
+                <div className="text-gray-600 text-sm">Đã mua</div>
+              </div>
 
-        {/* Ingredient List */}
-        <div className="space-y-3">
-          {items.map((item) => (
-            <IngredientCard
-              key={item.id}
-              ingredient={item}
-              onToggle={() => handleToggle(item.id)}
-              onPriceChange={(val) => handlePriceChange(item.id, val)}
-              formatCurrency={formatCurrency}
-            />
-          ))}
-        </div>
+              {/* Right: Total Spending */}
+              <div className="flex flex-col items-center w-1/2">
+                <div className="flex items-center gap-1 mb-1">
+                  <DollarSign size={20} className="text-black" />
+                  <span className="font-bold text-lg">Tổng chi tiêu</span>
+                </div>
+                <div className="text-xl font-bold mb-1">
+                  {formatCurrency(totalSpent)}
+                </div>
+                <div className="text-gray-600 text-sm">VND</div>
+              </div>
+            </div>
 
-        {/* Bottom Action Buttons */}
-        <div className="flex gap-4 mt-6">
-          <Button
-            variant="primary"
-            icon={Check}
-            size="fit"
-            className="rounded-2xl"
-            onClick={() => setIsCompleteModalOpen(true)}
-          >
-            Hoàn thành
-          </Button>
-          <Button
-            variant="secondary"
-            icon={X}
-            size="fit"
-            className="rounded-2xl"
-            onClick={() => setIsCancelModalOpen(true)}
-          >
-            Hủy
-          </Button>
-        </div>
+            {/* List Title */}
+            <h2 className="text-lg font-bold mb-4">Danh sách nguyên liệu cần mua</h2>
+
+            {/* Ingredient List */}
+            <div className="space-y-3">
+              {items.map((item) => (
+                <IngredientCard
+                  key={item.id}
+                  ingredient={item}
+                  onToggle={() => handleToggle(item.id)}
+                  onPriceChange={(val) => handlePriceChange(item.id, val)}
+                  formatCurrency={formatCurrency}
+                />
+              ))}
+            </div>
+
+            {/* Bottom Action Buttons */}
+            <div className="flex gap-4 mt-6">
+              <Button
+                variant="primary"
+                icon={Check}
+                size="fit"
+                className="rounded-2xl"
+                onClick={() => setIsCompleteModalOpen(true)}
+              >
+                Hoàn thành
+              </Button>
+              <Button
+                variant="secondary"
+                icon={X}
+                size="fit"
+                className="rounded-2xl"
+                onClick={() => setIsCancelModalOpen(true)}
+              >
+                Hủy
+              </Button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* COMPLETE PLAN CONFIRMATION MODAL */}
-      {isCompleteModalOpen && (
+      {isCompleteModalOpen && planData && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Hoàn Thành Kế Hoạch?</h3>
             <div className="flex justify-center mb-5"><div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center"><Check size={36} className="text-white" strokeWidth={3} /></div></div>
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn hoàn thành kế hoạch <span className="text-[#C3485C] font-semibold">{planTitle}</span>?</p>
+            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn hoàn thành kế hoạch <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
             <div className="flex gap-3 justify-center">
-              <div className="w-1/2"><Button variant="primary" onClick={handleCompletePlan} icon={Check} className="bg-[#C3485C] hover:bg-[#a83648]">Xác nhận</Button></div>
-              <div className="w-1/2"><Button variant="secondary" onClick={() => setIsCompleteModalOpen(false)} icon={X} className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]">Hủy</Button></div>
+              <div className="w-1/2">
+                <Button
+                  variant={isCompleting ? 'disabled' : 'primary'}
+                  onClick={isCompleting ? undefined : handleCompletePlan}
+                  icon={isCompleting ? Loader2 : Check}
+                  className={isCompleting ? '' : 'bg-[#C3485C] hover:bg-[#a83648]'}
+                >
+                  {isCompleting ? 'Đang hoàn thành...' : 'Xác nhận'}
+                </Button>
+              </div>
+              <div className="w-1/2">
+                <Button
+                  variant={isCompleting ? 'disabled' : 'secondary'}
+                  onClick={isCompleting ? undefined : () => setIsCompleteModalOpen(false)}
+                  icon={X}
+                  className={isCompleting ? '' : 'bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]'}
+                >
+                  Hủy
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* CANCEL PLAN CONFIRMATION MODAL */}
-      {isCancelModalOpen && (
+      {isCancelModalOpen && planData && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Hủy Kế Hoạch?</h3>
             <div className="flex justify-center mb-5"><AlertTriangle size={64} className="text-white fill-[#C3485C]" strokeWidth={1.5} /></div>
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn hủy kế hoạch <span className="text-[#C3485C] font-semibold">{planTitle}</span>?</p>
+            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn hủy kế hoạch <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
             <div className="flex gap-3 justify-center">
-              <div className="w-1/2"><Button variant="primary" onClick={handleCancelPlan} icon={Check} className="bg-[#C3485C] hover:bg-[#a83648]">Xác nhận</Button></div>
-              <div className="w-1/2"><Button variant="secondary" onClick={() => setIsCancelModalOpen(false)} icon={X} className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]">Hủy</Button></div>
+              <div className="w-1/2">
+                <Button
+                  variant="primary"
+                  onClick={handleCancelPlan}
+                  icon={Check}
+                  className="bg-[#C3485C] hover:bg-[#a83648]"
+                >
+                  Xác nhận
+                </Button>
+              </div>
+              <div className="w-1/2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsCancelModalOpen(false)}
+                  icon={X}
+                  className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]"
+                >
+                  Hủy
+                </Button>
+              </div>
             </div>
           </div>
         </div>

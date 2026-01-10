@@ -224,7 +224,7 @@ const AddPlan = () => {
 
   return (
     <div className="p-4 max-w-sm mx-auto pb-20">
-      <BackButton text="Quay lại" to={`/main/family-group/${id}`} onClick={handleBack} className="mb-2" />
+      <BackButton text="Quay lại" to={`/main/family-group/${id}`} state={{ activeTab: 'shopping-plan' }} className="mb-2" />
       <h1 className="text-xl font-bold text-[#C3485C] text-center mb-6">
         Tạo Kế Hoạch Mới
       </h1>
