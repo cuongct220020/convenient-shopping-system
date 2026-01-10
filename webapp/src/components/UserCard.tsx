@@ -1,6 +1,9 @@
 import React from 'react';
 import { User, X, Plus } from 'lucide-react';
 
+// Default user avatar
+const DEFAULT_USER_AVATAR = new URL('../assets/user.png', import.meta.url).href;
+
 export type UserCardVariant = 'selected' | 'candidate';
 
 export interface UserCardProps {
@@ -43,11 +46,7 @@ export const UserCard: React.FC<UserCardProps> = ({
       <div className="flex items-center space-x-4">
         {/* Avatar */}
         <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
-          {avatarSrc ? (
-            <img src={avatarSrc} alt={name} className="w-full h-full object-cover" />
-          ) : (
-            <User size={24} className="text-gray-600" />
-          )}
+          <img src={avatarSrc || DEFAULT_USER_AVATAR} alt={name} className="w-full h-full object-cover" />
         </div>
 
         {/* User Info */}

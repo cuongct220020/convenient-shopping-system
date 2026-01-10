@@ -322,7 +322,7 @@ const HealthProfile = () => {
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <NotificationCard
             title="Xác nhận thay đổi"
             message="Bạn có chắc chắn muốn lưu thay đổi thông tin sức khỏe không?"
