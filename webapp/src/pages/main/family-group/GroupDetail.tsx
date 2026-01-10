@@ -987,7 +987,7 @@ const GroupDetail = () => {
           {activeTab === 'shopping-plan' && (
             <div className="relative flex min-h-[400px] flex-col items-center pb-24 pt-2">
               {/* Filter Buttons */}
-              <div className="mb-6 flex w-full justify-between gap-2 px-1">
+              {/* <div className="mb-6 flex w-full justify-between gap-2 px-1">
                 {[
                   { id: 'today', label: 'Hôm nay' },
                   { id: 'week', label: 'Tuần này' },
@@ -1014,10 +1014,10 @@ const GroupDetail = () => {
                     </button>
                   )
                 })}
-              </div>
+              </div> */}
 
               {/* Calendar Strip */}
-              <div className="mb-6 w-full">
+              {/* <div className="mb-6 w-full">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
@@ -1083,7 +1083,7 @@ const GroupDetail = () => {
                     <ChevronRight size={24} className="text-gray-600" />
                   </button>
                 </div>
-              </div>
+              </div> */}
 
               {/* Plans List */}
               <div className="w-full">

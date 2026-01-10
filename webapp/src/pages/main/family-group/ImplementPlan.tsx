@@ -19,6 +19,9 @@ import type { PlanResponse } from '../../../services/schema/shoppingPlanSchema';
 interface IngredientItemData extends Ingredient {
   isChecked: boolean;
   price: number;
+  numericQuantity: number;
+  unit: string;
+  originalIndex: number;
 }
 
 export default function ImplementPlan() {
@@ -63,7 +66,10 @@ export default function ImplementPlan() {
             quantity: `${item.quantity} ${item.unit}`,
             image: `https://placehold.co/80x60/F3F4F6/6B7280?text=${encodeURIComponent(item.component_name.substring(0, 3))}`,
             isChecked: false,
-            price: 0
+            price: 0,
+            numericQuantity: item.quantity,
+            unit: item.unit,
+            originalIndex: index
           }));
           setItems(initialItems);
           setIsLoading(false);
@@ -123,6 +129,23 @@ export default function ImplementPlan() {
     );
   };
 
+  // Handle quantity input change
+  const handleQuantityChange = (id: number, newQuantityStr: string) => {
+    const numericValue = parseFloat(newQuantityStr) || 0;
+    setItems(prevItems =>
+      prevItems.map(item => {
+        if (item.id === id) {
+          return {
+            ...item,
+            numericQuantity: numericValue,
+            quantity: `${numericValue} ${item.unit}`
+          };
+        }
+        return item;
+      })
+    );
+  };
+
   const getPlanTitle = (plan: PlanResponse | null) => {
     if (!plan) return 'Kế hoạch';
     return plan.others?.name as string || 'Kế hoạch mua sắm';
@@ -138,8 +161,10 @@ export default function ImplementPlan() {
     const boughtIngredients = items
       .filter(item => item.isChecked)
       .map((item) => {
-        const originalIndex = items.findIndex(i => i.id === item.id);
-        return planData.shopping_list[originalIndex];
+        return {
+          ...planData.shopping_list[item.originalIndex],
+          quantity: item.numericQuantity
+        };
       });
 
     // First, update the plan with only bought ingredients
@@ -171,14 +196,10 @@ export default function ImplementPlan() {
   };
 
   const handleCancelPlan = () => {
-    setIsCancelModalOpen(false);
-    navigate(`/main/family-group/${id}/plan/${planId}`);
-  };
-
-  const handleBack = () => {
     if (!planId || !currentUserId) return;
 
     setIsUnassigning(true);
+    setIsCancelModalOpen(false);
     setError(null);
 
     shoppingPlanService
@@ -196,20 +217,19 @@ export default function ImplementPlan() {
       );
   };
 
+  const handleBack = () => {
+    navigate(`/main/family-group/${id}/plan/${planId}`);
+  };
+
   return (
     <div className="min-h-screen bg-white pb-6">
       {/* Header */}
       <div className="pt-4 px-4 mb-4">
         <button
           onClick={handleBack}
-          disabled={isUnassigning || !currentUserId}
-          className="flex items-center text-sm font-bold text-[#C3485C] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center text-sm font-bold text-[#C3485C] hover:opacity-80"
         >
-          {isUnassigning ? (
-            <Loader2 size={20} className="animate-spin" />
-          ) : (
-            <ChevronLeft size={20} strokeWidth={3} />
-          )}
+          <ChevronLeft size={20} strokeWidth={3} />
           <span className="ml-1">Quay lại</span>
         </button>
       </div>
@@ -281,6 +301,7 @@ export default function ImplementPlan() {
                   ingredient={item}
                   onToggle={() => handleToggle(item.id)}
                   onPriceChange={(val) => handlePriceChange(item.id, val)}
+                  onQuantityChange={(val) => handleQuantityChange(item.id, val)}
                   formatCurrency={formatCurrency}
                 />
               ))}
@@ -354,20 +375,20 @@ export default function ImplementPlan() {
             <div className="flex gap-3 justify-center">
               <div className="w-1/2">
                 <Button
-                  variant="primary"
-                  onClick={handleCancelPlan}
-                  icon={Check}
-                  className="bg-[#C3485C] hover:bg-[#a83648]"
+                  variant={isUnassigning ? 'disabled' : 'primary'}
+                  onClick={isUnassigning ? undefined : handleCancelPlan}
+                  icon={isUnassigning ? Loader2 : Check}
+                  className={isUnassigning ? '' : 'bg-[#C3485C] hover:bg-[#a83648]'}
                 >
-                  Xác nhận
+                  {isUnassigning ? 'Đang hủy...' : 'Xác nhận'}
                 </Button>
               </div>
               <div className="w-1/2">
                 <Button
-                  variant="secondary"
-                  onClick={() => setIsCancelModalOpen(false)}
+                  variant={isUnassigning ? 'disabled' : 'secondary'}
+                  onClick={isUnassigning ? undefined : () => setIsCancelModalOpen(false)}
                   icon={X}
-                  className="bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]"
+                  className={isUnassigning ? '' : 'bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]'}
                 >
                   Hủy
                 </Button>

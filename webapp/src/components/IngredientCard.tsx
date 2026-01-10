@@ -16,6 +16,7 @@ interface IngredientCardProps {
   readonly?: boolean;
   onToggle?: () => void;
   onPriceChange?: (value: string) => void;
+  onQuantityChange?: (value: string) => void;
   formatCurrency?: (val: number) => string;
   showCheck?: boolean;
   showPrice?: boolean;
@@ -27,10 +28,12 @@ export const IngredientCard = ({
   readonly = false,
   onToggle,
   onPriceChange,
+  onQuantityChange,
   formatCurrency,
   showPrice = false
 }: IngredientCardProps) => {
   const hasShoppingFeatures = onToggle !== undefined || onPriceChange !== undefined;
+  const hasQuantityEditable = onQuantityChange !== undefined;
 
   if (showPrice && formatCurrency) {
     // Price display mode (for "Nguyên liệu đã mua" in completed plans)
@@ -42,10 +45,7 @@ export const IngredientCard = ({
             alt={ingredient.name}
             className="w-12 h-12 object-cover rounded-lg"
           />
-          <div>
-            <h4 className="font-bold text-sm text-gray-800">{ingredient.name}</h4>
-            <p className="text-xs text-gray-500">{ingredient.category}</p>
-          </div>
+          <h4 className="font-bold text-sm text-gray-800">{ingredient.name}</h4>
         </div>
         <div className="flex items-center space-x-4">
           <span className="text-sm text-gray-600">{ingredient.quantity}</span>
@@ -70,10 +70,25 @@ export const IngredientCard = ({
           />
           <div className="flex flex-col justify-center">
             <h3 className="font-bold text-base">{ingredient.name}</h3>
-            <p className="text-gray-500 text-xs">{ingredient.category}</p>
           </div>
-          <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-gray-600 shadow-sm">
-            {ingredient.quantity}
+          <div className="absolute top-3 right-3">
+            {hasQuantityEditable ? (
+              <div className="flex items-center bg-white rounded-lg px-2 py-1 shadow-sm">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  value={ingredient.quantity.split(' ')[0]}
+                  onChange={(e) => onQuantityChange!(e.target.value)}
+                  className="w-12 text-xs font-medium text-right outline-none bg-transparent"
+                />
+                <span className="text-xs text-gray-600 ml-1">{ingredient.quantity.split(' ')[1]}</span>
+              </div>
+            ) : (
+              <div className="bg-white px-2 py-1 rounded-full text-xs font-medium text-gray-600 shadow-sm">
+                {ingredient.quantity}
+              </div>
+            )}
           </div>
         </div>
 
@@ -127,10 +142,7 @@ export const IngredientCard = ({
           alt={ingredient.name}
           className="w-12 h-12 object-cover rounded-lg"
         />
-        <div>
-          <h4 className="font-bold text-sm text-gray-800">{ingredient.name}</h4>
-          <p className="text-xs text-gray-500">{ingredient.category}</p>
-        </div>
+        <h4 className="font-bold text-sm text-gray-800">{ingredient.name}</h4>
       </div>
       <div className="flex items-center space-x-4">
         <span className="text-sm text-gray-600">{ingredient.quantity}</span>
