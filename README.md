@@ -48,16 +48,16 @@ The system follows a **microservices architecture** with **event-driven communic
   cp notification-service/.env.example notification-service/.env
   ```
 - Generate asymmetric RSA Key pair, private key for signing jwt token, public key for verifying token signature at Kong Gateway:
-```bash
-cd user-service
-source .venv/bin/activate
-
-# Generate RSA keys pair
-python3 scripts/generate_rsa_keys.py
-
-# Verify RSA keys pair
-python3 scripts/verify_rsa_keys_pair.py
-```
+  ```bash
+  cd user-service
+  source .venv/bin/activate
+  
+  # Generate RSA keys pair
+  python3 scripts/generate_rsa_keys.py
+  
+  # Verify RSA keys pair
+  python3 scripts/verify_rsa_keys_pair.py
+  ```
 
 ### Simulate Production Environment Locally
 
