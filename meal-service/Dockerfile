@@ -24,11 +24,14 @@ FROM python:3.13-slim AS runtime
 
 WORKDIR /app/meal-service
 
-# Install minimal runtime dependencies
+# Set timezone to Vietnam
 RUN apt-get update && apt-get install -y --no-install-recommends \
     dumb-init \
     curl \
     ca-certificates \
+    tzdata \
+    && ln -sf /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime \
+    && dpkg-reconfigure -f noninteractive tzdata \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

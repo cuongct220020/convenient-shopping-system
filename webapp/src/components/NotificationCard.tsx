@@ -19,6 +19,10 @@ interface NotificationCardProps {
   button2Icon?: LucideIcon
   titleColor?: string
   messageColor?: string
+  // Optional custom content to be rendered above buttons
+  customContent?: React.ReactNode
+  // Optional button disabled state
+  isButtonDisabled?: boolean
 }
 
 export function NotificationCard({
@@ -37,7 +41,9 @@ export function NotificationCard({
   button2Variant = 'secondary',
   button2Icon,
   titleColor = 'text-[#C3485C]',
-  messageColor = 'text-gray-600'
+  messageColor = 'text-gray-600',
+  customContent,
+  isButtonDisabled = false
 }: NotificationCardProps) {
   const Icon = icon
 
@@ -67,12 +73,19 @@ export function NotificationCard({
         dangerouslySetInnerHTML={{ __html: message }}
       />
 
+      {/* Custom Content */}
+      {customContent && (
+        <div className="mb-6">
+          {customContent}
+        </div>
+      )}
+
       {/* Button(s) */}
       {(onButtonClick || onButton2Click) && (
         <div className="flex justify-center gap-3">
           {onButtonClick && (
             <Button
-              variant={buttonVariant}
+              variant={isButtonDisabled ? 'disabled' : buttonVariant}
               size="fit"
               icon={buttonIcon}
               onClick={onButtonClick}

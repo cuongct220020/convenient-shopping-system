@@ -76,14 +76,17 @@ http://localhost:8000/api/v1/user-service
 - Pull latest update on remote repository and at the root directory.
 - Docker Desktop (Docker Engine) is installed and running on your machine (for local development).
 - Python3.11+ is installed on your machine (for local development).
-- Create new .env file in the root, user-service, notification-service directory.
+
+### Setup Environment Variables
+
+Create new .env file in the root, user-service, notification-service directory and copy the content of .env.example into the newly created .env file.
 ```bash
 cp .env.example .env
 cp user-service/.env.example user-service/.env
+cp notification-service/.env.example notification-service/.env
 ```
-- Copy the content of .env.example into the newly created .env file.
-- Update environment variables as needed
-- Setup venv
+
+### Run user-service venv 
 ```bash
 cd user-service
 python3 -m venv .venv/
@@ -97,14 +100,7 @@ python3 generate_rsa_keys.py
 python3 verify_rsa_keys_pair.py
 ```
 
-### Configure Kong Gateway
-1. Copy the generated public key from `user-service/secrets/jwt-public.pem`
-2. Paste it into the `api-gateway/kong.prod.yml` file in the JWT consumer configuration
-3. Verify the public key matches Kong configuration:
-```bash
-cd user-service/scripts
-python3 verify_kong_public_key.py kong.prod.yml
-```
+After the command is complete, check the .env file to ensure that JWT_RSA_PUBLIC_KEY exists.
 
 ### Running with Docker
 ```bash
