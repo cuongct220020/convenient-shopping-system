@@ -6,24 +6,20 @@ import { Button } from '../../../components/Button';
 import { Plus, FileText, Check, Search, X, Loader2 } from 'lucide-react';
 import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
 import { shoppingPlanService } from '../../../services/shopping-plan';
+import { ingredientService } from '../../../services/ingredient';
 import type { PlanResponse, PlanItemBase } from '../../../services/schema/shoppingPlanSchema';
+import type { Ingredient as IngredientSearchResult } from '../../../services/schema/ingredientSchema';
 
-// Extended ingredient type to include original shopping list data
+// Extended ingredient type to include original shopping list data and search result
 type ExtendedIngredient = Ingredient & {
   originalItem?: PlanItemBase;
+  searchResult?: IngredientSearchResult;
+  numericQuantity?: number;  // Store the numeric value entered by user
+  measurementUnit?: string;  // Store the unit from API (e.g., "g", "ml")
 };
 
 // Dummy image for ingredients
 const BROCCOLI_IMAGE_URL = 'https://i.imgur.com/0Zl3xYm.png';
-
-// Mock database of available ingredients
-const MOCK_INGREDIENTS = [
-  { id: 'ing-1', name: 'Bông cải', category: 'Rau', image: BROCCOLI_IMAGE_URL },
-  { id: 'ing-2', name: 'Cà rốt', category: 'Rau', image: BROCCOLI_IMAGE_URL },
-  { id: 'ing-3', name: 'Thịt gà', category: 'Thịt', image: BROCCOLI_IMAGE_URL },
-  { id: 'ing-4', name: 'Cà chua', category: 'Rau', image: BROCCOLI_IMAGE_URL },
-  { id: 'ing-5', name: 'Trứng', category: 'Đồ tươi', image: BROCCOLI_IMAGE_URL },
-];
 
 // Helper function to parse ISO date to datetime-local format
 const parseISOToDateTimeLocal = (isoString: string): string => {
@@ -67,9 +63,10 @@ const EditPlan: React.FC = () => {
   const [ingredients, setIngredients] = useState<ExtendedIngredient[]>([]);
 
   // Search states
-  const [searchResult, setSearchResult] = useState<typeof MOCK_INGREDIENTS[0] | null>(null);
+  const [searchResult, setSearchResult] = useState<IngredientSearchResult | null>(null);
   const [showNotFound, setShowNotFound] = useState(false);
   const [showQuantityInput, setShowQuantityInput] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const [deadline, setDeadline] = useState('');
   const [notes, setNotes] = useState('');
@@ -122,12 +119,13 @@ const EditPlan: React.FC = () => {
 
   // --- Search Logic (Debounced) ---
   useEffect(() => {
-    // 300ms delay to simulate network request and avoid flickering
-    const delayDebounceFn = setTimeout(() => {
+    // 300ms delay to avoid flickering
+    const delayDebounceFn = setTimeout(async () => {
       if (!ingredientSearch.trim()) {
         setSearchResult(null);
         setShowNotFound(false);
         setShowQuantityInput(false);
+        setIsSearching(false);
         return;
       }
 
@@ -140,23 +138,42 @@ const EditPlan: React.FC = () => {
         setSearchResult(null);
         setShowNotFound(true);
         setShowQuantityInput(false);
+        setIsSearching(false);
+        console.log('Ingredient already added:', ingredientSearch);
         return;
       }
 
-      // Simulate finding the ingredient from mock database
-      const found = MOCK_INGREDIENTS.find(
-        (ing) => ing.name.toLowerCase() === ingredientSearch.toLowerCase()
-      );
+      setIsSearching(true);
+      setShowNotFound(false); // Reset not found when starting a new search
 
-      if (found) {
-        setSearchResult(found);
-        setShowNotFound(false);
-        setShowQuantityInput(true);
-      } else {
-        setSearchResult(null);
-        setShowNotFound(true);
-        setShowQuantityInput(false);
-      }
+      // Search ingredients from API
+      const result = await ingredientService.searchIngredients(ingredientSearch);
+
+      result.match(
+        (response) => {
+          console.log('Search response for:', ingredientSearch, response);
+          if (response.data && response.data.length > 0) {
+            // Use the first result
+            console.log('Found ingredient:', response.data[0]);
+            setSearchResult(response.data[0]);
+            setShowNotFound(false);
+            setShowQuantityInput(true);
+          } else {
+            console.log('No ingredients found for:', ingredientSearch);
+            setSearchResult(null);
+            setShowNotFound(true);
+            setShowQuantityInput(false);
+          }
+          setIsSearching(false);
+        },
+        (error) => {
+          console.error('Failed to search ingredients:', error);
+          setSearchResult(null);
+          setShowNotFound(true);
+          setShowQuantityInput(false);
+          setIsSearching(false);
+        }
+      );
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
@@ -165,12 +182,22 @@ const EditPlan: React.FC = () => {
   // --- Handlers ---
   const handleAddIngredient = () => {
     if (searchResult && ingredientQuantity) {
-      const newIngredient: Ingredient = {
+      // Parse numeric value from user input
+      const numericValue = parseFloat(ingredientQuantity.trim()) || 0;
+      // Get the measurement unit from API (e.g., "g", "ml", "củ")
+      const unit = searchResult.measurementUnit || '';
+      // For display, combine them (e.g., "100g")
+      const displayQuantity = numericValue > 0 ? `${numericValue}${unit}` : unit;
+
+      const newIngredient: ExtendedIngredient = {
         id: Date.now(),
-        name: searchResult.name,
-        category: searchResult.category,
-        quantity: ingredientQuantity,
-        image: searchResult.image,
+        name: searchResult.component_name,
+        category: searchResult.category || 'Khác',
+        quantity: displayQuantity,
+        numericQuantity: numericValue,
+        measurementUnit: unit,
+        image: BROCCOLI_IMAGE_URL,
+        searchResult: searchResult,
       };
       setIngredients([...ingredients, newIngredient]);
       setIngredientSearch('');
@@ -193,29 +220,36 @@ const EditPlan: React.FC = () => {
     setIsSaving(true);
     setError(null);
 
-    // Build shopping list from ingredients, preserving original data for existing items
+    // Build shopping list from ingredients
     const shoppingList = ingredients.map((ing) => {
-      const parts = ing.quantity.trim().split(' ');
-      const quantityNum = parseFloat(parts[0]) || 0;
-      const unit = parts.slice(1).join(' ') || 'piece';
+      // For new ingredients with numeric quantity and measurement unit
+      if (ing.numericQuantity !== undefined && ing.measurementUnit) {
+        return {
+          type: ing.searchResult?.type || 'countable_ingredient',
+          unit: ing.measurementUnit,
+          quantity: ing.numericQuantity,
+          component_id: ing.searchResult?.component_id || 0,
+          component_name: ing.name,
+        };
+      }
 
-      // If this ingredient has original data, preserve component_id and type
+      // For existing ingredients from the plan, use original data
       if (ing.originalItem) {
         return {
           type: ing.originalItem.type,
-          unit: unit,
-          quantity: quantityNum,
+          unit: ing.originalItem.unit,
+          quantity: ing.originalItem.quantity,
           component_id: ing.originalItem.component_id,
           component_name: ing.name,
         };
       }
 
-      // For new ingredients, use default values
+      // Fallback for ingredients without proper data
       return {
         type: 'countable_ingredient' as const,
-        unit: unit,
-        quantity: quantityNum,
-        component_id: 0, // 0 for new ingredients
+        unit: ing.quantity,
+        quantity: 1,
+        component_id: 0,
         component_name: ing.name,
       };
     });
@@ -224,13 +258,8 @@ const EditPlan: React.FC = () => {
     if (planName) others.name = planName;
     if (notes) others.notes = notes;
 
-    const requestBody = {
-      deadline: formatDateTimeLocalToISO(deadline),
-      shopping_list: shoppingList,
-      others: Object.keys(others).length > 0 ? others : null,
-    };
-
-    console.log('Update Plan Request Body:', JSON.stringify(requestBody, null, 2));
+    // Debug logging
+    console.log('Update plan shopping list:', JSON.stringify(shoppingList, null, 2));
 
     shoppingPlanService
       .updatePlan(parseInt(planId), {
@@ -245,7 +274,6 @@ const EditPlan: React.FC = () => {
         },
         (err) => {
           console.error('Failed to update plan:', err);
-          console.error('Request Body:', requestBody);
           setError(err.desc || 'Failed to update plan');
           setIsSaving(false);
         }
@@ -312,8 +340,16 @@ const EditPlan: React.FC = () => {
             onChange={(e) => setIngredientSearch(e.target.value)}
           />
 
+          {/* --- UI State: Loading --- */}
+          {isSearching && (
+            <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+              <Loader2 className="animate-spin mb-2" size={24} />
+              <p className="text-sm font-medium">Đang tìm kiếm...</p>
+            </div>
+          )}
+
           {/* --- UI State: Not Found --- */}
-          {showNotFound && (
+          {showNotFound && !isSearching && (
             <div className="flex flex-col items-center justify-center py-6 text-gray-400">
               <Search size={24} className="mb-2 opacity-50" />
               <p className="text-sm font-medium">
@@ -327,10 +363,11 @@ const EditPlan: React.FC = () => {
             <div className="mt-4 flex items-end space-x-2 animate-in fade-in slide-in-from-top-2">
               <InputField
                 label="Số lượng"
-                placeholder="Ví dụ: 100g"
+                placeholder="Ví dụ: 100"
                 containerClassName="flex-1"
                 value={ingredientQuantity}
                 onChange={(e) => setIngredientQuantity(e.target.value)}
+                rightLabel={searchResult.measurementUnit || undefined}
               />
               <Button
                 variant="secondary"
@@ -389,21 +426,18 @@ const EditPlan: React.FC = () => {
       {/* Submit Buttons */}
       <div className="flex gap-0">
         <Button
-          variant="primary"
+          variant={isSaving ? 'disabled' : 'primary'}
           onClick={handleSubmit}
           size="fit"
           icon={isSaving ? Loader2 : Check}
-          spin={isSaving}
-          disabled={isSaving}
         >
           {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
         </Button>
         <Button
-          variant="secondary"
+          variant={isSaving ? 'disabled' : 'secondary'}
           onClick={handleBack}
           size="fit"
           icon={X}
-          disabled={isSaving}
         >
           Hủy
         </Button>

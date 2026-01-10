@@ -16,6 +16,8 @@ services:
     image: redis:8.4.0
     container_name: redis-caching
     hostname: redis-caching
+    environment:
+      TZ: Asia/Ho_Chi_Minh
     # ports:
     #   - "127.0.0.1:6379:6379" # Uncomment for local debugging only. Keep closed on prod.
     volumes:
@@ -61,6 +63,8 @@ services:
       KAFKA_HEAP_OPTS: "-Xmx400M -Xms256M"
 
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+
+      TZ: Asia/Ho_Chi_Minh
     # ports:
     #   - "127.0.0.1:9092:9092" # Internal communication (Debug only)
     #   - "127.0.0.1:9094:9094" # External communication (Debug only)
@@ -82,14 +86,17 @@ services:
 
   # Kong Gateway (Declarative mode - no database needed)
   kong-gateway:
-    image: kong:3.9.1
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    image: kong-custom:3.9.1
     container_name: kong-gateway
     hostname: kong-gateway
     depends_on:
       - acme-challenge
     environment:
       KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_DECLARATIVE_CONFIG: /tmp/kong.yml
       KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_PROXY_ACCESS_LOG: /dev/stdout
@@ -102,17 +109,25 @@ services:
       # SSL Configuration
       KONG_SSL_CERT: /etc/secrets/cert/fullchain.pem
       KONG_SSL_CERT_KEY: /etc/secrets/cert/privkey.pem
+      JWT_RSA_PUBLIC_KEY: ${JWT_RSA_PUBLIC_KEY}
 
       KONG_MEM_CACHE_SIZE: "64m"
       KONG_NGINX_WORKER_PROCESSES: "1"
+
+      TZ: Asia/Ho_Chi_Minh
+    command: >
+      /bin/bash -c "
+      export JWT_RSA_PUBLIC_KEY_ESCAPED=\$(echo \"\$JWT_RSA_PUBLIC_KEY\" | awk '{printf \"%s\\\\n\", \$0}' | head -c -2) &&
+      envsubst < /usr/local/kong/declarative/kong.yml.template > /tmp/kong.yml &&
+      /docker-entrypoint.sh kong docker-start
+      "
     ports:
-      - "80:8000"         # HTTP Public
-      - "443:8443"        # HTTPS Public
+      - "80:8000"                   # HTTP Public
+      - "443:8443"                  # HTTPS Public
       - "127.0.0.1:8000:8000"       # Kong Proxy (HTTP Debug) - Localhost only
       - "127.0.0.1:8001:8001"       # Admin API cho decK (Debug) - Localhost only
     volumes:
-      - ${KONG_CONFIG_FILE}:/usr/local/kong/declarative/kong.yml
-      - ./user-service/secrets:/user-service/secrets
+      - ${KONG_CONFIG_FILE}:/usr/local/kong/declarative/kong.yml.template
       # Mount SSL Certs from Host
       # For Local Testing: Use local './certs' folder to avoid permission issues
       # For Production: You can either copy certs here or change this back to /etc/letsencrypt/...
@@ -134,8 +149,9 @@ services:
 
   # Certbot (SSL Auto-renewal)
   certbot:
-    image: certbot/certbot
+    image: certbot/certbot:v3.1.0
     container_name: certbot
+    hostname: certbot
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:rw
       - /var/lib/letsencrypt:/var/lib/letsencrypt:rw
@@ -152,9 +168,11 @@ services:
   # ACME Challenge Handler (Nginx)
   # Serves the verification files for Let's Encrypt
   acme-challenge:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     container_name: acme-challenge
     hostname: acme-challenge
+    environment:
+      TZ: Asia/Ho_Chi_Minh
     volumes:
       - ./certbot/www:/usr/share/nginx/html:ro
     networks:
@@ -171,6 +189,7 @@ services:
     build:
       context: .
       dockerfile: user-service/Dockerfile
+    pull_policy: build
     container_name: user-service
     hostname: user-service
     image: user-service:v1.0.0
@@ -186,6 +205,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -197,11 +217,8 @@ services:
     env_file:
       - .env
       - user-service/.env
-    # ports:
-    #   - "127.0.0.1:9001:8000" # Access via localhost:9001 (Debug only)
-    volumes:
-      - ./user-service:/app/user-service
-      - /app/user-service/.venv  # Exclude virtual environment
+    ports:
+      - "127.0.0.1:9001:8000" # Access via localhost:9001 (Debug only)
     networks:
       - shopping-network
     restart: unless-stopped
@@ -216,6 +233,7 @@ services:
     build:
       context: .
       dockerfile: recipe-service/Dockerfile
+    pull_policy: build
     container_name: recipe-service
     hostname: recipe-service
     image: recipe-service:v1.0.0
@@ -227,6 +245,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -255,6 +274,7 @@ services:
     build:
       context: .
       dockerfile: meal-service/Dockerfile
+    pull_policy: build
     image: meal-service:v1.0.0
     container_name: meal-service
     hostname: meal-service
@@ -266,6 +286,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -292,6 +313,7 @@ services:
     build:
       context: .
       dockerfile: shopping-storage-service/Dockerfile
+    pull_policy: build
     image: shopping-storage-service:v1.0.0
     container_name: shopping-storage-service
     hostname: shopping-storage-service
@@ -303,6 +325,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -331,6 +354,7 @@ services:
     build:
       context: .
       dockerfile: notification-service/Dockerfile
+    pull_policy: build
     container_name: notification-service
     image: notification-service:v1.0.0
     hostname: notification-service
@@ -344,6 +368,7 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST:-redis_caching}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -355,11 +380,8 @@ services:
     env_file:
       - .env
       - notification-service/.env
-    # ports:
-    #   - "127.0.0.1:9005:8000" # Access via localhost:9005 (Debug only)
-    volumes:
-      - ./notification-service:/app/notification-service
-      - /app/notification-service/.venv  # Exclude virtual environment
+    ports:
+      - "127.0.0.1:9005:8000" # Access via localhost:9005 (Debug only)
     networks:
       - shopping-network
     restart: unless-stopped

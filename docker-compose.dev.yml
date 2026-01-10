@@ -290,6 +290,7 @@ services:
     environment:
       - POSTGRES_DB_NAME=shopping_user_service_db
       - POSTGRES_DB_PORT=5432
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
@@ -329,6 +330,7 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
@@ -366,6 +368,7 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
@@ -401,6 +404,7 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
@@ -438,6 +442,7 @@ services:
     environment:
       - POSTGRES_DB_NAME=shopping_notification_service_db
       - POSTGRES_DB_PORT=5432
+      - TZ=Asia/Ho_Chi_Minh
 
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}

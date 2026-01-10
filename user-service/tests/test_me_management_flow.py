@@ -25,7 +25,8 @@ import os
 import time
 
 # Configuration
-GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:8000")
+# GATEWAY_URL = os.getenv("GATEWAY_URL", "https://localhost:8000")
+GATEWAY_URL = os.getenv("GATEWAY_URL", "https://dichotienloi.com")
 BASE_URL = f"{GATEWAY_URL}/api/v1/user-service"
 
 # Colors for output

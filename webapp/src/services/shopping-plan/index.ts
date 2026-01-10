@@ -42,7 +42,7 @@ export class ShoppingPlanService {
     return httpGet(this.clients.shopping, url)
       .mapErr((e) => {
         switch (e.type) {
-          case 'not-found':
+          case 'path-not-found':
             return createShoppingPlanError('not-found', e.desc)
           case 'unauthorized':
             return createShoppingPlanError('unauthorized', e.desc)
@@ -123,13 +123,20 @@ export class ShoppingPlanService {
     shoppingList: PlanItemBase[]
     others?: Record<string, unknown>
   }): ResultAsync<{ message: string }, ShoppingPlanError> {
-    const body = {
+    const body: Record<string, unknown> = {
       group_id: params.groupId,
       deadline: params.deadline,
       assigner_id: params.assignerId,
-      shopping_list: params.shoppingList,
-      others: params.others || {}
+      shopping_list: params.shoppingList
     }
+
+    // Only add others if it has values
+    if (params.others && Object.keys(params.others).length > 0) {
+      body.others = params.others
+    }
+
+    // Debug logging
+    console.log('Create plan request body:', JSON.stringify(body, null, 2))
 
     return httpPost(this.clients.shopping, AppUrl.SHOPPING_PLANS, body)
       .mapErr((e) => {
@@ -154,16 +161,23 @@ export class ShoppingPlanService {
       others?: Record<string, unknown> | null
     }
   ): ResultAsync<{ message: string }, ShoppingPlanError> {
-    const body = {
+    const body: Record<string, unknown> = {
       deadline: params.deadline,
-      shopping_list: params.shoppingList,
-      others: params.others ?? null
+      shopping_list: params.shoppingList
     }
+
+    // Only add others if it has values
+    if (params.others && Object.keys(params.others).length > 0) {
+      body.others = params.others
+    }
+
+    // Debug logging
+    console.log('Update plan request body:', JSON.stringify(body, null, 2))
 
     return httpPut(this.clients.shopping, `${AppUrl.SHOPPING_PLANS}${planId}`, body)
       .mapErr((e) => {
         switch (e.type) {
-          case 'not-found':
+          case 'path-not-found':
             return createShoppingPlanError('not-found', e.desc)
           case 'unauthorized':
             return createShoppingPlanError('unauthorized', e.desc)
@@ -183,7 +197,7 @@ export class ShoppingPlanService {
     return httpDelete(this.clients.shopping, `${AppUrl.SHOPPING_PLANS}${planId}`)
       .mapErr((e) => {
         switch (e.type) {
-          case 'not-found':
+          case 'path-not-found':
             return createShoppingPlanError('not-found', e.desc)
           case 'unauthorized':
             return createShoppingPlanError('unauthorized', e.desc)
