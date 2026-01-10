@@ -15,7 +15,6 @@ from shopping_shared.utils.openapi_utils import get_openapi_body
 class LoginView(BaseAPIView):
     """Handles user login and token generation."""
 
-
     @openapi.definition(
         summary="Authenticate user and generate tokens",
         description="Authenticate a user with email and password. On successful authentication, returns an access token in the response body and sets a refresh token in an HttpOnly cookie for secure session management.",
@@ -27,7 +26,7 @@ class LoginView(BaseAPIView):
                 status=200,
                 description="Successfully authenticated and tokens generated.",
             )
-        ]
+        ],
     )
     @validate_request(LoginRequestSchema)
     async def post(self, request: Request):
@@ -41,15 +40,12 @@ class LoginView(BaseAPIView):
         user_repo = UserRepository(session=request.ctx.db_session)
 
         token_response, refresh_token = await AuthService.login_account(
-            login_data=validated_data,
-            user_repo=user_repo
+            login_data=validated_data, user_repo=user_repo
         )
 
         # Use helper method from base class
         response = self.success_response(
-            data=token_response,
-            message="Login successful",
-            status_code=200
+            data=token_response, message="Login successful", status_code=200
         )
 
         # Attach Refresh Token to cookie
@@ -62,9 +58,9 @@ class LoginView(BaseAPIView):
             value=refresh_token,
             httponly=True,
             secure=True,
-            samesite=None,
-            path='/api/v1/user-service/auth/refresh-token',
-            max_age=refresh_ttl_seconds
+            samesite="None",
+            path="/api/v1/user-service/auth/refresh-token",
+            max_age=refresh_ttl_seconds,
         )
 
         return response
