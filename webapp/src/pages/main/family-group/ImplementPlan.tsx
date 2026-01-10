@@ -372,9 +372,9 @@ export default function ImplementPlan() {
       {isCancelModalOpen && planData && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Hủy Kế Hoạch?</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Hủy Làm Kế Hoạch?</h3>
             <div className="flex justify-center mb-5"><AlertTriangle size={64} className="text-white fill-[#C3485C]" strokeWidth={1.5} /></div>
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn hủy kế hoạch <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
+            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn hủy làm kế hoạch <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
             <div className="flex gap-3 justify-center">
               <div className="w-1/2">
                 <Button
