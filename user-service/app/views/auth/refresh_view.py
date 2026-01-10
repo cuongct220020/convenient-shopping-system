@@ -94,8 +94,8 @@ class RefreshView(BaseAPIView):
             value=new_token_data.refresh_token,
             max_age=max_age,
             httponly=True,
-            secure=not config.get("DEBUG", False),
-            samesite="Strict",
+            secure=True,
+            samesite=None,
             path='/api/v1/user-service/auth/refresh-token'
         )
 

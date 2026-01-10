@@ -61,8 +61,8 @@ class LoginView(BaseAPIView):
             "refresh_token",
             value=refresh_token,
             httponly=True,
-            secure=not config.get("DEBUG", False),
-            samesite="Strict",
+            secure=True,
+            samesite=None,
             path='/api/v1/user-service/auth/refresh-token',
             max_age=refresh_ttl_seconds
         )
