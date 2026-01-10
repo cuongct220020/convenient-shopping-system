@@ -424,9 +424,6 @@ export const PlanDetail = () => {
                       <p className="text-sm text-gray-600">
                         Số lượng: {item.quantity} {item.unit}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Loại: {item.type === 'countable_ingredient' ? 'Đếm được' : 'Không đếm được'}
-                      </p>
                     </div>
                   </div>
                 </div>
