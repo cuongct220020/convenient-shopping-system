@@ -21,7 +21,7 @@ function mapRoleToUI(role: 'head_chef' | 'member'): 'Trưởng nhóm' | 'Thành 
 
 // Helper function to get default avatar URL
 function getAvatarUrl(url: string | null): string {
-  return url || 'https://cdn-icons-png.flaticon.com/512/3253/3253272.png';
+  return url || new URL('../../../assets/family.png', import.meta.url).href;
 }
 
 const FamilyGroup: React.FC = () => {

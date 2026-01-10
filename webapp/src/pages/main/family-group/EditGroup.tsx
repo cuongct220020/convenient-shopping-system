@@ -132,7 +132,7 @@ const EditGroup: React.FC = () => {
       <div className="flex flex-col items-center mb-8">
         <div className="relative">
           <img
-            src={avatarUrl || 'https://cdn-icons-png.flaticon.com/512/3253/3253272.png'}
+            src={avatarUrl || new URL('../../../assets/family.png', import.meta.url).href}
             alt="Group avatar"
             className="w-32 h-32 rounded-full object-cover"
           />

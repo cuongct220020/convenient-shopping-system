@@ -15,6 +15,9 @@ import { shoppingPlanService } from '../../../services/shopping-plan';
 import { userService } from '../../../services/user';
 import type { PlanResponse } from '../../../services/schema/shoppingPlanSchema';
 
+// Default ingredient image
+const DEFAULT_INGREDIENT_IMAGE = new URL('../../../assets/ingredient.png', import.meta.url).href;
+
 // Define interface for an ingredient item data structure
 interface IngredientItemData extends Ingredient {
   isChecked: boolean;
@@ -64,7 +67,7 @@ export default function ImplementPlan() {
             name: item.component_name,
             category: item.type === 'countable_ingredient' ? 'Đếm được' : 'Không đếm được',
             quantity: `${item.quantity} ${item.unit}`,
-            image: `https://placehold.co/80x60/F3F4F6/6B7280?text=${encodeURIComponent(item.component_name.substring(0, 3))}`,
+            image: DEFAULT_INGREDIENT_IMAGE,
             isChecked: false,
             price: 0,
             numericQuantity: item.quantity,

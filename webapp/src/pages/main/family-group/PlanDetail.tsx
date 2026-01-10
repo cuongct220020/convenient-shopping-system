@@ -9,6 +9,9 @@ import { userService } from '../../../services/user';
 import type { PlanResponse } from '../../../services/schema/shoppingPlanSchema';
 import type { UserCoreInfo } from '../../../services/schema/groupSchema';
 
+// Default ingredient image
+const DEFAULT_INGREDIENT_IMAGE = new URL('../../../assets/ingredient.png', import.meta.url).href;
+
 export const PlanDetail = () => {
   const { id, planId } = useParams<{ id: string; planId: string }>();
   const navigate = useNavigate();
@@ -428,11 +431,18 @@ export const PlanDetail = () => {
               {planData.shopping_list.map((item, index) => (
                 <div key={index} className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-200">
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1">{item.component_name}</h3>
-                      <p className="text-sm text-gray-600">
-                        Số lượng: {item.quantity} {item.unit}
-                      </p>
+                    <div className="flex items-center gap-3 flex-1">
+                      <img
+                        src={DEFAULT_INGREDIENT_IMAGE}
+                        alt={item.component_name}
+                        className="w-16 h-12 rounded-lg object-cover"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">{item.component_name}</h3>
+                        <p className="text-sm text-gray-600">
+                          Số lượng: {item.quantity} {item.unit}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

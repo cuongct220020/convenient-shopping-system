@@ -76,6 +76,7 @@ const GroupDetail = () => {
       name: string
       role: string
       email?: string
+      avatar?: string | null
       isCurrentUser: boolean
     }>
     currentUserRole: 'head_chef' | 'member'
@@ -174,6 +175,7 @@ const GroupDetail = () => {
               name: getDisplayName(membership.user),
               role: mapRoleToUI(role),
               email: membership.user.email,
+              avatar: membership.user.avatar_url,
               isCurrentUser: membership.user.id === currentUserId
             }
           })
@@ -632,6 +634,7 @@ const GroupDetail = () => {
             name: getDisplayName(membership.user),
             role: mapRoleToUI(role),
             email: membership.user.email,
+            avatar: membership.user.avatar_url,
             isCurrentUser: membership.user.id === currentUserId
           }
         })
@@ -848,7 +851,7 @@ const GroupDetail = () => {
         {/* Group Info */}
         <div className="mt-4 flex flex-col items-center">
           <img
-            src={groupData.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/3253/3253272.png'}
+            src={groupData.avatarUrl || new URL('../../../assets/family.png', import.meta.url).href}
             alt={groupData.name}
             className="mb-4 size-24 rounded-full object-cover"
           />
@@ -919,6 +922,7 @@ const GroupDetail = () => {
                     name={member.name}
                     role={member.role}
                     email={member.email}
+                    avatarSrc={member.avatar}
                     variant="selected"
                     onClick={() =>
                       navigate(
