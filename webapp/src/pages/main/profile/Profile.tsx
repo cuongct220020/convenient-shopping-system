@@ -104,7 +104,7 @@ const Profile = () => {
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <NotificationCard
             title="Xác nhận đăng xuất"
             message="Bạn có chắc chắn muốn đăng xuất không?"
