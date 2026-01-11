@@ -8,12 +8,14 @@ from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC,
+    LOGOUT_EVENTS_TOPIC,
     NOTIFICATION_TOPIC
 )
 
 # Import Handlers
 from app.consumers.handlers.base_handler import BaseMessageHandler
 from app.consumers.handlers.otp_handler import OTPMessageHandler
+from app.consumers.handlers.user_logout_handler import UserLogoutHandler
 from app.consumers.handlers.add_user_group_handler import AddUserGroupHandler
 from app.consumers.handlers.remove_user_group_handler import RemoveUserGroupHandler
 from app.consumers.handlers.user_leave_group_handler import UserLeaveGroupHandler
@@ -58,11 +60,12 @@ async def consume_notifications(app=None):
     }
     """
     
-    # 1. Define Topic -> Handler Mapping for OTP topics (kept separate)
-    otp_handlers: Dict[str, BaseMessageHandler] = {
+    # 1. Define Topic -> Handler Mapping (OTP + system topics)
+    topic_handlers: Dict[str, BaseMessageHandler] = {
         REGISTRATION_EVENTS_TOPIC: OTPMessageHandler(expected_action="register"),
         RESET_PASSWORD_EVENTS_TOPIC: OTPMessageHandler(expected_action="reset_password"),
         EMAIL_CHANGE_EVENTS_TOPIC: OTPMessageHandler(expected_action="change_email"),
+        LOGOUT_EVENTS_TOPIC: UserLogoutHandler(),
     }
     
     # 2. Define Event Type -> Handler Mapping for NOTIFICATION_TOPIC
@@ -80,8 +83,8 @@ async def consume_notifications(app=None):
         "daily_meal": DailyMealHandler(),
     }
     
-    # Combine all topics (OTP topics + NOTIFICATION_TOPIC)
-    topics = list(otp_handlers.keys()) + [NOTIFICATION_TOPIC]
+    # Combine all topics (topic handlers + NOTIFICATION_TOPIC)
+    topics = list(topic_handlers.keys()) + [NOTIFICATION_TOPIC]
 
     max_retries = 10
     retry_count = 0
@@ -136,13 +139,12 @@ async def consume_notifications(app=None):
                 logger.debug(f"Received message on {message_topic}: {message_value}")
 
                 # Dispatch to Handler
-                if message_topic in otp_handlers:
-                    # OTP topics: route by topic
-                    handler = otp_handlers.get(message_topic)
+                if message_topic in topic_handlers:
+                    handler = topic_handlers.get(message_topic)
                     if handler:
                         await handler.handle(message_value, app)
                     else:
-                        logger.warning(f"No handler found for OTP topic: {message_topic}")
+                        logger.warning(f"No handler found for topic: {message_topic}")
                 elif message_topic == NOTIFICATION_TOPIC:
                     # NOTIFICATION_TOPIC: route by event_type
                     event_type = message_value.get("event_type")
