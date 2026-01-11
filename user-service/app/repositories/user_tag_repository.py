@@ -104,16 +104,19 @@ class UserTagRepository:
         tag_ids = [row[0] for row in result.all()]
 
         # Create UserTag associations
-        user_tag_instances = []
-        for tag_id in tag_ids:
-            user_tag = UserTag(user_id=user_id, tag_id=tag_id)
-            user_tag_instances.append(user_tag)
+        # Use Core insert to avoid SQLAlchemy insert many values issue with composite PK + UUID
+        from sqlalchemy import insert
+        insert_data = [
+            {"user_id": user_id, "tag_id": tag_id}
+            for tag_id in tag_ids
+        ]
 
-        if user_tag_instances:
-            self.session.add_all(user_tag_instances)
+        if insert_data:
+            stmt = insert(UserTag).values(insert_data)
+            await self.session.execute(stmt)
             await self.session.flush()
 
-        return len(user_tag_instances)
+        return len(insert_data)
 
     async def remove_tags_from_user(self, user_id: UUID, tag_values: List[str]) -> int:
         """Remove multiple tags from user."""
@@ -175,13 +178,16 @@ class UserTagRepository:
             new_tag_ids = [row[0] for row in result.all()]
 
             # Create new associations
-            user_tag_instances = []
-            for tag_id in new_tag_ids:
-                user_tag = UserTag(user_id=user_id, tag_id=tag_id)
-                user_tag_instances.append(user_tag)
+            # Use Core insert
+            from sqlalchemy import insert
+            insert_data = [
+                {"user_id": user_id, "tag_id": tag_id}
+                for tag_id in new_tag_ids
+            ]
 
-            if user_tag_instances:
-                self.session.add_all(user_tag_instances)
+            if insert_data:
+                stmt = insert(UserTag).values(insert_data)
+                await self.session.execute(stmt)
 
         await self.session.flush()
         return len(tag_values) if tag_values else 0
