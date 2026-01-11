@@ -2,6 +2,9 @@ import uuid
 from typing import Dict, Any
 from core.database import get_db
 from models.group_preference import GroupPreference
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger("GroupTagsHandler")
 
 
 def handle_group_tags_update(data: Dict[str, Any]):
@@ -36,5 +39,10 @@ def handle_group_tags_update(data: Dict[str, Any]):
                         user_tag_list=user_tag_list,
                     )
                 )
+        
+        logger.info(f"Successfully processed group tags update: user_id={user_id}")
+    except Exception as e:
+        logger.error(f"Error processing group tags update: user_id={data.get('user_id')}, error={str(e)}", exc_info=True)
+        raise
     finally:
         db.close()

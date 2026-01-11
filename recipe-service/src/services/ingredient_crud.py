@@ -44,11 +44,6 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
             raise HTTPException(status_code=400, detail=f"Integrity error: {str(e)}")
         return db_obj
 
-    def delete(self, db: Session, id: int) -> Ingredient:
-        obj = db.get(Ingredient, id)
-        if obj is None:
-            raise HTTPException(status_code=404, detail=f"Ingredient with id={id} not found")
-        return super().delete(db, id)
 
     def search(self, db: Session, keyword: str, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
         IngredientPoly = with_polymorphic(Ingredient, "*")
