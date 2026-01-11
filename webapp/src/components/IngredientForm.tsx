@@ -533,8 +533,8 @@ export const IngredientForm = ({
                     type: isCountable
                       ? 'countable_ingredient'
                       : 'uncountable_ingredient',
-                    c_measurement_unit: isCountable ? unit : null,
-                    uc_measurement_unit: !isCountable ? unit : null,
+                    ...(isCountable && { c_measurement_unit: unit }),
+                    ...(!isCountable && { uc_measurement_unit: unit }),
                     estimated_shelf_life: shelfLife,
                     estimated_price: price,
                     ingredient_tag_list:

@@ -2,9 +2,11 @@ import { okAsync, ResultAsync } from 'neverthrow'
 import { parseZodObject } from '../../utils/zod-result'
 import {
   GetIngredientsResponseSchema,
+  IngredientSchema,
   IngredientSearchResponse,
   IngredientSearchResponseSchema,
-  type GetIngredientsResponse
+  type GetIngredientsResponse,
+  type Ingredient
 } from '../schema/ingredientSchema'
 import {
   AppUrl,
@@ -12,6 +14,8 @@ import {
   httpClients,
   httpDelete,
   httpGet,
+  httpPost,
+  httpPut,
   ResponseError
 } from '../client'
 
@@ -103,6 +107,45 @@ export class IngredientService {
           }
         })
       })
+  }
+
+  /**
+   * Create a new ingredient
+   * @param data - Ingredient creation data
+   */
+  public createIngredient(
+    data: Partial<Ingredient>
+  ): ResultAsync<Ingredient, IngredientError> {
+    return httpPost(this.clients.auth, AppUrl.INGREDIENTS, data).andThen(
+      (response) =>
+        parseZodObject(IngredientSchema, response.body).mapErr(
+          (e): IngredientError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+    )
+  }
+
+  /**
+   * Update an ingredient by ID
+   * @param id - The component_id of the ingredient
+   * @param data - Ingredient update data
+   */
+  public updateIngredient(
+    id: string,
+    data: Partial<Ingredient>
+  ): ResultAsync<Ingredient, IngredientError> {
+    const url = AppUrl.INGREDIENTS_BY_ID(id)
+
+    return httpPut(this.clients.auth, url, data).andThen((response) =>
+      parseZodObject(IngredientSchema, response.body).mapErr(
+        (e): IngredientError => ({
+          type: 'invalid-response-format',
+          desc: e
+        })
+      )
+    )
   }
 }
 

@@ -118,10 +118,40 @@ const IngredientMenu = () => {
     setShowAddIngredientForm(true)
   }
 
-  const handleIngredientFormSubmit = () => {
-    // In a real app, you would collect form data and save it
-    console.log('Saving ingredient')
-    setShowAddIngredientForm(false)
+  const handleIngredientFormSubmit = async (formData: Partial<Ingredient>) => {
+    setLoading(true)
+    try {
+      const result = await ingredientService.createIngredient(formData)
+
+      if (result.isOk()) {
+        setShowAddIngredientForm(false)
+        setReportModal({
+          type: 'success',
+          title: 'Tạo nguyên liệu thành công',
+          message: `Nguyên liệu "${formData.component_name}" đã được tạo.`
+        })
+        // Reset pagination and refetch page 1
+        setPagesCursors([null])
+        setCurrentPage(1)
+        await fetchIngredients(1)
+      } else {
+        setReportModal({
+          type: 'error',
+          title: 'Tạo thất bại',
+          message:
+            result.error.desc ||
+            'Không thể tạo nguyên liệu. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      setReportModal({
+        type: 'error',
+        title: 'Lỗi',
+        message: String(err)
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleIngredientFormCancel = () => {
