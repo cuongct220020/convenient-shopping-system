@@ -130,10 +130,38 @@ const IngredientMenu = () => {
           title: 'Tạo nguyên liệu thành công',
           message: `Nguyên liệu "${formData.component_name}" đã được tạo.`
         })
-        // Reset pagination and refetch page 1
+        // Reset pagination state and refetch page 1
         setPagesCursors([null])
         setCurrentPage(1)
-        await fetchIngredients(1)
+        // Fetch with fresh state - pass cursor explicitly as undefined for page 1
+        try {
+          const freshResult = await ingredientService.getIngredients({
+            cursor: undefined,
+            limit: ITEMS_PER_PAGE,
+            search: searchQuery || undefined,
+            categories:
+              selectedCategories.length > 0 ? selectedCategories : undefined
+          })
+
+          if (isMounted.current && freshResult.isOk()) {
+            const response = freshResult.value
+            setIngredients(response.data.map(mapIngredientToItem))
+            // Set pagination cursors - second page cursor is available if next_cursor exists
+            if (
+              response.next_cursor !== null &&
+              response.next_cursor !== undefined
+            ) {
+              setPagesCursors([null, response.next_cursor])
+            } else {
+              // No next page available, keep pagination at length 1 (single page)
+              setPagesCursors([null])
+            }
+          }
+        } catch (err) {
+          if (isMounted.current) {
+            setError(String(err))
+          }
+        }
       } else {
         setReportModal({
           type: 'error',
@@ -210,7 +238,11 @@ const IngredientMenu = () => {
   }
 
   const uniqueCategories = useMemo(() => {
-    const categories = new Set(ingredients.map((item) => item.category))
+    const categories = new Set(
+      ingredients
+        .map((item) => item.category)
+        .filter((cat): cat is string => cat !== null && cat !== undefined)
+    )
     return Array.from(categories)
   }, [ingredients])
 
