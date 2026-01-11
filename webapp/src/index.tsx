@@ -19,7 +19,7 @@ async function main(): Promise<void> {
     initAssert('off')
   } else {
     initAssert('throw')
-    await enableMocking()
+    // await enableMocking()
   }
 }
 

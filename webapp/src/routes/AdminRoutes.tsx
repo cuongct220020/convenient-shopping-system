@@ -1,4 +1,3 @@
-import { createBrowserRouter } from 'react-router-dom'
 import ProtectedAdminLayout from '../layouts/AdminLayout'
 import Login from '../admin-pages/Login'
 import IngredientMenu from '../admin-pages/IngredientMenu'
