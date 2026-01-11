@@ -176,21 +176,6 @@ const IngredientMenu = () => {
     setCurrentPage(1)
   }
 
-  // UI calculations for display
-  const { totalItems, currentItems, startIndex, endIndex } = useMemo(() => {
-    const totalItems = ingredients.length
-    const currentItems = ingredients
-    const startIndex = totalItems === 0 ? 0 : 1
-    const endIndex = Math.min(ingredients.length, totalItems)
-
-    return {
-      totalItems,
-      currentItems,
-      startIndex,
-      endIndex
-    }
-  }, [ingredients])
-
   return (
     <div className="flex min-h-screen flex-1 flex-col pt-6">
       {/* Header */}
@@ -264,11 +249,13 @@ const IngredientMenu = () => {
 
         <div className="flex items-center justify-end text-sm text-gray-600">
           <span>
-            Đang hiển thị {''}
-            <span className="font-bold">
-              {startIndex} - {endIndex}
-            </span>
-            {''} / {totalItems} nguyên liệu
+            Đang hiển thị{' '}
+            <span className="font-bold">{ingredients.length} nguyên liệu</span>
+            {' (trang '}
+            <span className="font-bold">{currentPage}</span>
+            {' trên '}
+            <span className="font-bold">{pagesCursors.length}</span>
+            {')'}
           </span>
         </div>
       </div>
@@ -285,9 +272,9 @@ const IngredientMenu = () => {
             <p>Lỗi: {error}</p>
           </div>
         )}
-        {!loading && !error && currentItems.length > 0 && (
+        {!loading && !error && ingredients.length > 0 && (
           <div className="grid grid-cols-2 gap-4 px-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {currentItems.map((item) => (
+            {ingredients.map((item) => (
               <Item
                 key={item.id}
                 name={item.name}
@@ -298,7 +285,7 @@ const IngredientMenu = () => {
             ))}
           </div>
         )}
-        {!loading && !error && currentItems.length === 0 && (
+        {!loading && !error && ingredients.length === 0 && (
           <div className="flex h-64 items-center justify-center px-6 text-gray-500">
             Không tìm thấy nguyên liệu nào.
           </div>
@@ -307,15 +294,7 @@ const IngredientMenu = () => {
 
       {/* Pagination - Always at Bottom */}
       <div className="sticky bottom-0 bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            Đang hiển thị{' '}
-            <span className="font-bold">
-              {startIndex} - {endIndex}
-            </span>
-            {' / '}
-            {totalItems} nguyên liệu
-          </div>
+        <div className="flex items-center justify-center">
           <Pagination
             currentPage={currentPage}
             totalPages={pagesCursors.length}
