@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional, Literal, List
 from uuid import UUID
@@ -49,7 +49,7 @@ class ReportUnitBase(BaseModel):
     content_type: Optional[Literal["countable_ingredient", "uncountable_ingredient"]] = None
     content_quantity: Optional[float] = None
     content_unit: Optional[str] = None
-    expiration_date: Optional[date] = None
+    expiration_date: Optional[datetime] = None
 
     @model_validator(mode='after')
     def check_component_content(cls, model):

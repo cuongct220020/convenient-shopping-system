@@ -1,9 +1,9 @@
 import uuid
-from sqlalchemy import Integer, String, Float, Enum, ForeignKey, CheckConstraint, Date, event, update
+from sqlalchemy import Integer, String, Float, DateTime, Enum, ForeignKey, CheckConstraint, Date, event, update
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
-from datetime import date
+from datetime import datetime, date
 from typing import Optional
 from enums.uc_measurement_unit import UCMeasurementUnit
 from enums.storage_type import StorageType
@@ -44,8 +44,8 @@ class StorableUnit(Base):
     content_type: Mapped[Optional[str]] = mapped_column(String)
     content_quantity: Mapped[Optional[float]] = mapped_column(Float)
     content_unit: Mapped[Optional[UCMeasurementUnit]] = mapped_column(Enum(UCMeasurementUnit))
-    added_date: Mapped[date] = mapped_column(Date, server_default=func.current_date(), nullable=False)
-    expiration_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    added_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
+    expiration_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
     storage: Mapped["Storage"] = relationship(
         back_populates="storage_unit_list",
