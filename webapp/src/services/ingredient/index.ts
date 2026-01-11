@@ -2,12 +2,22 @@ import { okAsync, ResultAsync } from 'neverthrow'
 import { parseZodObject } from '../../utils/zod-result'
 import {
   GetIngredientsResponseSchema,
+  IngredientSchema,
   IngredientSearchResponse,
   IngredientSearchResponseSchema,
-  type GetIngredientsResponse
+  type GetIngredientsResponse,
+  type Ingredient
 } from '../schema/ingredientSchema'
-
-import { AppUrl, Clients, httpClients, httpGet, ResponseError } from '../client'
+import {
+  AppUrl,
+  Clients,
+  httpClients,
+  httpDelete,
+  httpGet,
+  httpPost,
+  httpPut,
+  ResponseError
+} from '../client'
 
 type IngredientError = ResponseError<'not-found' | 'unauthorized'>
 
@@ -39,27 +49,26 @@ export class IngredientService {
       queryParams.append('categories', params.categories.join(','))
     }
 
-    const url = `/v2/ingredients/?${queryParams.toString()}`
+    const url = `${AppUrl.INGREDIENTS}?${queryParams.toString()}`
 
-    return httpGet(this.clients.auth, url)
-      .mapErr((e): IngredientError => {
-        switch (e.type) {
-          case 'unauthorized':
-            return { ...e, type: 'unauthorized' }
-          case 'path-not-found':
-            return { ...e, type: 'not-found' }
-          default:
-            return e
-        }
-      })
-      .andThen((response) =>
-        parseZodObject(GetIngredientsResponseSchema, response.body).mapErr(
-          (e): IngredientError => ({
-            type: 'invalid-response-format',
-            desc: e
-          })
-        )
+    return httpGet(this.clients.auth, url).andThen((response) =>
+      parseZodObject(GetIngredientsResponseSchema, response.body).mapErr(
+        (e): IngredientError => ({
+          type: 'invalid-response-format',
+          desc: e
+        })
       )
+    )
+  }
+
+  /**
+   * Delete an ingredient by ID
+   * @param id - The component_id of the ingredient to delete
+   */
+  public deleteIngredient(id: string): ResultAsync<void, IngredientError> {
+    const url = AppUrl.INGREDIENTS_BY_ID(id)
+
+    return httpDelete(this.clients.auth, url).map(() => {})
   }
 
   /**
@@ -98,6 +107,45 @@ export class IngredientService {
           }
         })
       })
+  }
+
+  /**
+   * Create a new ingredient
+   * @param data - Ingredient creation data
+   */
+  public createIngredient(
+    data: Partial<Ingredient>
+  ): ResultAsync<Ingredient, IngredientError> {
+    return httpPost(this.clients.auth, AppUrl.INGREDIENTS, data).andThen(
+      (response) =>
+        parseZodObject(IngredientSchema, response.body).mapErr(
+          (e): IngredientError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+    )
+  }
+
+  /**
+   * Update an ingredient by ID
+   * @param id - The component_id of the ingredient
+   * @param data - Ingredient update data
+   */
+  public updateIngredient(
+    id: string,
+    data: Partial<Ingredient>
+  ): ResultAsync<Ingredient, IngredientError> {
+    const url = AppUrl.INGREDIENTS_BY_ID(id)
+
+    return httpPut(this.clients.auth, url, data).andThen((response) =>
+      parseZodObject(IngredientSchema, response.body).mapErr(
+        (e): IngredientError => ({
+          type: 'invalid-response-format',
+          desc: e
+        })
+      )
+    )
   }
 }
 

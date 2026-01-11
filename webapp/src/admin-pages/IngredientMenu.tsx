@@ -9,6 +9,7 @@ import garlicImg from '../assets/garlic.png'
 import { ingredientService } from '../services/ingredient'
 import { useIsMounted } from '../hooks/useIsMounted'
 import type { Ingredient } from '../services/schema/ingredientSchema'
+import { NotificationCard } from '../components/NotificationCard'
 
 // Dữ liệu giả lập để hiển thị giống hình ảnh (no longer used, data now fetches from server)
 
@@ -47,6 +48,11 @@ const IngredientMenu = () => {
   const [showAddIngredientForm, setShowAddIngredientForm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ItemData | null>(null)
   const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
+  const [reportModal, setReportModal] = useState<{
+    type: 'success' | 'error'
+    title: string
+    message: string
+  } | null>(null)
 
   const fetchIngredients = useCallback(
     async (pageNumber: number = 1) => {
@@ -112,10 +118,68 @@ const IngredientMenu = () => {
     setShowAddIngredientForm(true)
   }
 
-  const handleIngredientFormSubmit = () => {
-    // In a real app, you would collect form data and save it
-    console.log('Saving ingredient')
-    setShowAddIngredientForm(false)
+  const handleIngredientFormSubmit = async (formData: Partial<Ingredient>) => {
+    setLoading(true)
+    try {
+      const result = await ingredientService.createIngredient(formData)
+
+      if (result.isOk()) {
+        setShowAddIngredientForm(false)
+        setReportModal({
+          type: 'success',
+          title: 'Tạo nguyên liệu thành công',
+          message: `Nguyên liệu "${formData.component_name}" đã được tạo.`
+        })
+        // Reset pagination state and refetch page 1
+        setPagesCursors([null])
+        setCurrentPage(1)
+        // Fetch with fresh state - pass cursor explicitly as undefined for page 1
+        try {
+          const freshResult = await ingredientService.getIngredients({
+            cursor: undefined,
+            limit: ITEMS_PER_PAGE,
+            search: searchQuery || undefined,
+            categories:
+              selectedCategories.length > 0 ? selectedCategories : undefined
+          })
+
+          if (isMounted.current && freshResult.isOk()) {
+            const response = freshResult.value
+            setIngredients(response.data.map(mapIngredientToItem))
+            // Set pagination cursors - second page cursor is available if next_cursor exists
+            if (
+              response.next_cursor !== null &&
+              response.next_cursor !== undefined
+            ) {
+              setPagesCursors([null, response.next_cursor])
+            } else {
+              // No next page available, keep pagination at length 1 (single page)
+              setPagesCursors([null])
+            }
+          }
+        } catch (err) {
+          if (isMounted.current) {
+            setError(String(err))
+          }
+        }
+      } else {
+        setReportModal({
+          type: 'error',
+          title: 'Tạo thất bại',
+          message:
+            result.error.desc ||
+            'Không thể tạo nguyên liệu. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      setReportModal({
+        type: 'error',
+        title: 'Lỗi',
+        message: String(err)
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleIngredientFormCancel = () => {
@@ -140,14 +204,68 @@ const IngredientMenu = () => {
     setViewMode('edit')
   }
 
-  const handleSaveClick = () => {
-    // Here you would typically save the changes
-    closeModal()
+  const handleSaveClick = async (formData: Partial<Ingredient>) => {
+    if (!selectedItem) return
+    setLoading(true)
+    try {
+      const result = await ingredientService.updateIngredient(
+        `${selectedItem.id}`,
+        formData
+      )
+
+      if (result.isOk()) {
+        setReportModal({
+          type: 'success',
+          title: 'Cập nhật nguyên liệu thành công',
+          message: `Nguyên liệu "${
+            formData.component_name || selectedItem.name
+          }" đã được cập nhật.`
+        })
+        setViewMode(null)
+        setSelectedItem(null)
+        // Refresh current page
+        await fetchIngredients(currentPage)
+      } else {
+        setReportModal({
+          type: 'error',
+          title: 'Cập nhật thất bại',
+          message:
+            result.error.desc ||
+            'Không thể cập nhật nguyên liệu. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      setReportModal({
+        type: 'error',
+        title: 'Lỗi',
+        message: String(err)
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDeleteClick = () => {
-    // Here you would typically delete the item
-    closeModal()
+  const handleDeleteClick = async () => {
+    if (!selectedItem) return
+    const result = await ingredientService.deleteIngredient(
+      `${selectedItem.id}`
+    )
+    if (result.isOk()) {
+      setIngredients((prev) => prev.filter((i) => i.id !== selectedItem.id))
+      setReportModal({
+        type: 'success',
+        title: 'Xóa nguyên liệu thành công',
+        message: `Nguyên liệu ${selectedItem.name} đã được xóa.`
+      })
+      setSelectedItem(null)
+      setViewMode(null)
+    } else {
+      setReportModal({
+        type: 'error',
+        title: 'Xóa thất bại',
+        message: 'Không thể xóa nguyên liệu này. Vui lòng thử lại sau.'
+      })
+    }
   }
 
   const closeModal = () => {
@@ -156,7 +274,11 @@ const IngredientMenu = () => {
   }
 
   const uniqueCategories = useMemo(() => {
-    const categories = new Set(ingredients.map((item) => item.category))
+    const categories = new Set(
+      ingredients
+        .map((item) => item.category)
+        .filter((cat): cat is string => cat !== null && cat !== undefined)
+    )
     return Array.from(categories)
   }, [ingredients])
 
@@ -398,6 +520,24 @@ const IngredientMenu = () => {
               />
             )}
           </div>
+        </div>
+      )}
+
+      {/* Action Report Modal */}
+      {reportModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <NotificationCard
+            title={reportModal.title}
+            message={reportModal.message}
+            iconBgColor={
+              reportModal.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }
+            buttonText="Đóng"
+            onButtonClick={() => {
+              setReportModal(null)
+              closeModal()
+            }}
+          />
         </div>
       )}
     </div>
