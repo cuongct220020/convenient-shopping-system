@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react'
 import { Button } from './Button'
 import { InputField } from './InputField'
+import { DropdownInputField } from './DropDownInputField'
 import {
   Ingredient,
   IngredientCreate
@@ -9,22 +10,9 @@ import {
 import {
   COUNTABLE_UNITS,
   UNCOUNTABLE_UNITS,
-  INGREDIENT_CATEGORIES
+  INGREDIENT_CATEGORIES,
+  INGREDIENT_TAGS_MAP
 } from '../utils/constants'
-
-// Mock tags for tag selector
-const MOCK_TAGS = [
-  { id: 1, name: 'Tag 1' },
-  { id: 2, name: 'Tag 2' },
-  { id: 3, name: 'Tag 3' },
-  { id: 4, name: 'Tag 4' },
-  { id: 5, name: 'Tag 5' },
-  { id: 6, name: 'Tag 6' },
-  { id: 7, name: 'Tag 7' },
-  { id: 8, name: 'Tag 8' },
-  { id: 9, name: 'Tag 9' },
-  { id: 10, name: 'Tag 10' }
-]
 
 interface IngredientFormProps {
   initialData?: Partial<IngredientCreate>
@@ -67,34 +55,34 @@ export const IngredientForm = ({
     initialData?.ingredient_tag_list || []
   )
   const [image, setImage] = useState<string | null>(null)
-  const [tagInputValue, setTagInputValue] = useState('')
 
   const dropdownRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // TagSelector Component
   const TagSelector = () => {
-    const handleAddTag = (tagId: number) => {
+    const [selectedTagForAdd, setSelectedTagForAdd] = useState('')
+
+    const availableTags = Object.entries(INGREDIENT_TAGS_MAP)
+      .filter(([id]) => !selectedTags.includes(Number(id)))
+      .sort((a, b) => Number(a[0]) - Number(b[0]))
+
+    const tagOptions = availableTags.map(([id, name]) => ({
+      value: id,
+      label: name
+    }))
+
+    const handleAddTag = (tagIdStr: string) => {
+      const tagId = Number(tagIdStr)
       if (!readOnly && !selectedTags.includes(tagId)) {
         setSelectedTags([...selectedTags, tagId])
+        setSelectedTagForAdd('')
       }
     }
 
     const handleDeleteTag = (tagId: number) => {
       if (!readOnly) {
         setSelectedTags(selectedTags.filter((id) => id !== tagId))
-      }
-    }
-
-    const handleTagInputKeyPress = (
-      e: React.KeyboardEvent<HTMLInputElement>
-    ) => {
-      if (e.key === 'Enter' && tagInputValue.trim()) {
-        const tagId = parseInt(tagInputValue.trim())
-        if (!isNaN(tagId) && !selectedTags.includes(tagId)) {
-          handleAddTag(tagId)
-          setTagInputValue('')
-        }
       }
     }
 
@@ -106,13 +94,14 @@ export const IngredientForm = ({
         {selectedTags.length > 0 ? (
           <div className="mb-3 flex flex-wrap gap-2">
             {selectedTags.map((tagId) => {
-              const tag = MOCK_TAGS.find((t) => t.id === tagId)
+              const tagName =
+                INGREDIENT_TAGS_MAP[tagId as keyof typeof INGREDIENT_TAGS_MAP]
               return (
                 <div
                   key={tagId}
                   className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
                 >
-                  {tag?.name}
+                  {tagName || `Tag ${tagId}`}
                   {!readOnly && (
                     <button
                       type="button"
@@ -131,29 +120,20 @@ export const IngredientForm = ({
         )}
 
         {!readOnly && (
-          <div className="flex gap-2">
-            <input
-              type="number"
-              placeholder="Nhập ID thẻ (1-10)"
-              value={tagInputValue}
-              onChange={(e) => setTagInputValue(e.target.value)}
-              onKeyPress={handleTagInputKeyPress}
-              className="flex-1 rounded-lg border border-gray-300 p-2 text-sm focus:border-gray-400 focus:outline-none"
-            />
-            <Button
-              variant="secondary"
-              size="fit"
-              onClick={() => {
-                const tagId = parseInt(tagInputValue.trim())
-                if (!isNaN(tagId) && !selectedTags.includes(tagId)) {
-                  handleAddTag(tagId)
-                  setTagInputValue('')
-                }
-              }}
-              className="!mx-0"
-            >
-              Thêm
-            </Button>
+          <div>
+            {tagOptions.length > 0 ? (
+              <DropdownInputField
+                options={tagOptions}
+                value={selectedTagForAdd}
+                onChange={handleAddTag}
+                placeholder="Chọn thẻ để thêm"
+                disabled={readOnly}
+              />
+            ) : (
+              <div className="rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-500">
+                Tất cả thẻ đã được chọn
+              </div>
+            )}
           </div>
         )}
       </div>
