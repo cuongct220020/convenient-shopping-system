@@ -47,7 +47,7 @@ class PlanTransition:
                     "assignee_username": assignee_username,
                 }
             },
-            key=f"{plan.plan_id}-plan",
+            key=f"{plan.group_id}-plan",
             wait=True,
         )
 
@@ -172,7 +172,7 @@ class PlanTransition:
                     "assignee_username": assignee_username,
                 }
             },
-            key=f"{plan.plan_id}-plan",
+            key=f"{plan.group_id}-plan",
             wait=True,
         )
 

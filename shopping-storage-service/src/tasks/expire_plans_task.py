@@ -44,10 +44,10 @@ async def expire_plans():
                         "deadline": deadline.isoformat(),
                     }
                 },
-                key=f"{plan_id}-plan",
+                key=f"{group_id}-plan",
                 wait=True,
             )
         except Exception as e:
-            logger.error(f"Failed to publish plan_expired for plan_id={plan_id}: {e}", exc_info=True)
+            logger.error(f"Failed to publish plan_expired for group_id={group_id}, plan_id={plan_id}: {e}", exc_info=True)
 
     db.close()
