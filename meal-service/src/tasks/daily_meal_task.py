@@ -1,4 +1,3 @@
-import asyncio
 from collections import defaultdict
 from datetime import date
 from typing import Dict, List
