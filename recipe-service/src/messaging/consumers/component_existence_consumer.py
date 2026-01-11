@@ -13,7 +13,7 @@ async def consume_component_existence_events():
         async for msg in consumer:
             event = msg.value
             if event.get("event_type") == "update_component_existence":
-                await handle_component_existence_update(event.get("data"))
+                handle_component_existence_update(event.get("data"))
     finally:
         await consumer.stop()
 

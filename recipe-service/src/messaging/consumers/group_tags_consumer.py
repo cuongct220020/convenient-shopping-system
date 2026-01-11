@@ -13,7 +13,7 @@ async def consume_group_tags_events():
         async for msg in consumer:
             event = msg.value
             if event.get("event_type") == "update_group_tags":
-                await handle_group_tags_update(event.get("data"))
+                handle_group_tags_update(event.get("data"))
     finally:
         await consumer.stop()
 

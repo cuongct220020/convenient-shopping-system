@@ -24,7 +24,7 @@ ingredient_router = APIRouter(
     status_code=status.HTTP_200_OK,
     description="Search for ingredients by keyword in their names with cursor-based pagination. Returns a paginated list of matching ingredients."
 )
-async def search_ingredients(
+def search_ingredients(
     keyword: str = Query(..., description="Keyword to search for in ingredient names"),
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
     limit: int = Query(100, ge=1, description="Maximum number of results to return"),

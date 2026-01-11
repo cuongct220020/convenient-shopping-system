@@ -70,7 +70,7 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
         stmt = stmt.order_by(Recipe.component_id.desc()).limit(limit)
         return db.execute(stmt).scalars().all()
 
-    async def get_flattened(
+    def get_flattened(
         self,
         recipes_with_quantity: list[RecipeQuantityInput],
         group_id: Optional[uuid.UUID],
