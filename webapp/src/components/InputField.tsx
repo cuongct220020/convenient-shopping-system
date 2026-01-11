@@ -3,6 +3,7 @@ import { InputHTMLAttributes, TextareaHTMLAttributes, forwardRef } from 'react'
 interface InputFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string
   subLabel?: string
+  rightLabel?: string
   error?: string | null
   icon?: React.ReactNode
   containerClassName?: string
@@ -16,6 +17,7 @@ interface InputFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 's
 interface TextareaFieldProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'> {
   label?: string
   subLabel?: string
+  rightLabel?: string
   error?: string | null
   icon?: React.ReactNode
   containerClassName?: string
@@ -36,6 +38,7 @@ export const InputField = forwardRef<HTMLInputElement | HTMLTextAreaElement, Inp
     {
       label,
       subLabel,
+      rightLabel,
       error,
       icon,
       containerClassName = '',
@@ -54,6 +57,7 @@ export const InputField = forwardRef<HTMLInputElement | HTMLTextAreaElement, Inp
       focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-300
       disabled:cursor-not-allowed disabled:bg-gray-100
       ${icon ? 'pl-10' : ''}
+      ${rightLabel && !textarea ? 'pr-16' : ''}
       ${error ? 'border-red-500' : ''}
       ${inputClassName}
       ${className}
@@ -98,6 +102,12 @@ export const InputField = forwardRef<HTMLInputElement | HTMLTextAreaElement, Inp
               className={inputElementClass}
               {...(props as InputHTMLAttributes<HTMLInputElement>)}
             />
+          )}
+
+          {rightLabel && !textarea && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
+              {rightLabel}
+            </div>
           )}
         </div>
 

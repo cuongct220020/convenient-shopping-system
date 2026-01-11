@@ -66,9 +66,9 @@ export default function ProtectedAdminLayout() {
               <ChevronRight size={18} />
             </NavLink>
 
-            <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#C3485C]">
+            {/* <div className="cursor-pointer font-medium text-gray-600 transition-colors hover:text-[#C3485C]">
               Quản lý nhóm
-            </div>
+            </div> */}
           </nav>
         </div>
 

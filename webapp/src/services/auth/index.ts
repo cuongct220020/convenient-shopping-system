@@ -35,6 +35,12 @@ type OtpType = 'register' | 'reset_password' | 'change_email'
 type ResetPasswordResponse = null
 type ResetPasswordError = ResponseError<'incorrect-or-expired-otp'>
 
+const RefreshTokenResponseSchema = z.object({
+  data: UserAuthSchemaZ
+})
+type RefreshTokenResponse = z.infer<typeof RefreshTokenResponseSchema>
+type RefreshTokenError = ResponseError<never>
+
 export class AuthService {
   constructor(private clients: Clients) {}
 
@@ -113,7 +119,7 @@ export class AuthService {
     if (!input.trim()) {
       return err('empty_password')
     }
-    if (input.length < 8) {
+    if (input.length < 4) {
       return err('invalid_password')
     }
     return ok()
@@ -243,6 +249,18 @@ export class AuthService {
             return e
         }
       })
+  }
+
+  public refreshToken(): ResultAsync<RefreshTokenResponse, RefreshTokenError> {
+    return httpPost(this.clients.pub, AppUrl.REFRESH_TOKEN, undefined).andThen(
+      (data) =>
+        parseZodObject(RefreshTokenResponseSchema, data.body).mapErr(
+          (e): RefreshTokenError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+    )
   }
 }
 

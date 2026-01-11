@@ -6,16 +6,14 @@ _format_version: "3.0"
 consumers:
   - username: shopping-user-service
     jwt_secrets:
-      - key: shopping-user-service  # Must match 'iss' claim in JWT
+      - key: shopping-user-service
         algorithm: RS256
         rsa_public_key: "${JWT_RSA_PUBLIC_KEY_ESCAPED}"
-
 
 # ===========================
 # Global Plugins
 # ===========================
 plugins:
-  # 1. CORS
   - name: cors
     config:
       origins:
@@ -25,19 +23,11 @@ plugins:
       exposed_headers:
         - Authorization
 
-  # 2. Request Size Limiting
   - name: request-size-limiting
     config:
       allowed_payload_size: 10
       size_unit: megabytes
 
-  # 3. Prometheus Monitoring (Advanced);
-#  - name: prometheus
-#    config:
-#      include_status_codes: true
-
-  # 4. Force HTTPS Redirect (Global)
-  # Redirects all HTTP traffic to HTTPS, EXCEPT for Let's Encrypt validation
   - name: pre-function
     config:
       access:
@@ -58,7 +48,7 @@ plugins:
 # Services
 # ===========================
 services:
-  # ACME Challenge Service (For SSL Auto-renewal)
+  # ACME Challenge Service
   - name: acme-challenge
     url: http://acme-challenge:80
     routes:
@@ -72,20 +62,16 @@ services:
   # User Service
   - name: user-service
     url: http://user-service:8000
-
     routes:
-      # Public routes (no JWT required)
       - name: user-service-public
         paths:
           - /api/v1/user-service/health
-          # API Paths
           - /api/v1/user-service/auth/register
           - /api/v1/user-service/auth/login
           - /api/v1/user-service/auth/refresh-token
           - /api/v1/user-service/auth/otp/send
           - /api/v1/user-service/auth/otp/verify
           - /api/v1/user-service/auth/reset-password
-          # Documentation paths (served by sanic-ext)
           - /api/v1/user-service/docs
         strip_path: false
         plugins:
@@ -100,15 +86,13 @@ services:
                 password: ${REDIS_PASSWORD}
                 database: 0
 
-      # Protected routes (JWT required)
       - name: user-service-protected
         paths:
           - /api/v1/user-service/auth/logout
           - /api/v1/user-service/users
           - /api/v1/user-service/groups
         strip_path: false
-        plugins:
-          # JWT verification (MUST run first)
+        plugins: &jwt_auth_plugins
           - name: jwt
             config:
               uri_param_names:
@@ -122,7 +106,6 @@ services:
               key_claim_name: iss
               secret_is_base64: false
               run_on_preflight: true
-          # JWT claims extraction
           - name: post-function
             config:
               access:
@@ -130,12 +113,12 @@ services:
                   local cjson = require "cjson"
                   local jwt_token = kong.request.get_header("Authorization")
                   local token_str = nil
-
+                  
                   if jwt_token then
                     local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
                     token_str = token
                   end
-
+                  
                   if not token_str then
                     token_str = kong.request.get_query_arg("jwt")
                   end
@@ -157,8 +140,6 @@ services:
                       if payload_str then
                         local status, claims = pcall(cjson.decode, payload_str)
                         if status and claims then
-                          -- Debug Log
-                          print("Kong Claims: ", cjson.encode(claims))
                           if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
                           if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
                           if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
@@ -171,355 +152,159 @@ services:
                     end
                   end
 
-      # Admin routes
       - name: user-service-admin
         paths:
           - /api/v1/user-service/admin
         strip_path: false
-        plugins:
-          - name: jwt
-            config:
-              uri_param_names:
-                - jwt
-              header_names:
-                - Authorization
-              cookie_names:
-                - jwt_token
-              claims_to_verify:
-                - exp
-              key_claim_name: iss
-              secret_is_base64: false
-              run_on_preflight: true
-          # JWT claims extraction
-          - name: post-function
-            config:
-              access:
-                - |
-                  local cjson = require "cjson"
-                  local jwt_token = kong.request.get_header("Authorization")
-                  local token_str = nil
+        plugins: *jwt_auth_plugins
 
-                  if jwt_token then
-                    local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
-                    token_str = token
-                  end
-
-                  if not token_str then
-                    token_str = kong.request.get_query_arg("jwt")
-                  end
-
-                  if token_str then
-                    local parts = {}
-                    for part in string.gmatch(token_str, "([^.]+)") do
-                      table.insert(parts, part)
-                    end
-                    if #parts >= 2 then
-                      local payload_b64 = parts[2]
-                      payload_b64 = string.gsub(payload_b64, "-", "+")
-                      payload_b64 = string.gsub(payload_b64, "_", "/")
-                      local remainder = #payload_b64 % 4
-                      if remainder > 0 then
-                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
-                      end
-                      local payload_str = ngx.decode_base64(payload_b64)
-                      if payload_str then
-                        local status, claims = pcall(cjson.decode, payload_str)
-                        if status and claims then
-                          -- Debug Log
-                          print("Kong Claims: ", cjson.encode(claims))
-                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
-                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
-                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
-                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
-                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
-                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
-                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
-                        end
-                      end
-                    end
-                  end
-
-
-  # 2. Meal Service
-  - name: meal-service
-    url: http://meal-service:8000
-
-    routes:
-      # Protected routes (JWT required) - All meal-service endpoints
-      - name: meal-service-protected
-        paths:
-          - /v1/meals # http:loalhost:8000/v1/meals
-        strip_path: true
-        plugins:
-          # JWT verification (MUST run first)
-          - name: jwt
-            config:
-              uri_param_names:
-                - jwt
-              header_names:
-                - Authorization
-              cookie_names:
-                - jwt_token
-              claims_to_verify:
-                - exp
-              key_claim_name: iss
-              secret_is_base64: false
-              run_on_preflight: true
-          # JWT claims extraction
-          - name: post-function
-            config:
-              access:
-                - |
-                  local cjson = require "cjson"
-                  local jwt_token = kong.request.get_header("Authorization")
-                  local token_str = nil
-
-                  if jwt_token then
-                    local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
-                    token_str = token
-                  end
-
-                  if not token_str then
-                    token_str = kong.request.get_query_arg("jwt")
-                  end
-
-                  if token_str then
-                    local parts = {}
-                    for part in string.gmatch(token_str, "([^.]+)") do
-                      table.insert(parts, part)
-                    end
-                    if #parts >= 2 then
-                      local payload_b64 = parts[2]
-                      payload_b64 = string.gsub(payload_b64, "-", "+")
-                      payload_b64 = string.gsub(payload_b64, "_", "/")
-                      local remainder = #payload_b64 % 4
-                      if remainder > 0 then
-                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
-                      end
-                      local payload_str = ngx.decode_base64(payload_b64)
-                      if payload_str then
-                        local status, claims = pcall(cjson.decode, payload_str)
-                        if status and claims then
-                          -- Debug Log
-                          print("Kong Claims: ", cjson.encode(claims))
-                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
-                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
-                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
-                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
-                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
-                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
-                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
-                        end
-                      end
-                    end
-                  end
-
-      # Documentation routes for meal-service (no JWT required)
-      - name: meal-service-docs
-        paths:
-          - /docs/meal-service
-        strip_path: true
-        plugins:
-          - name: post-function
-            config:
-              access:
-                - |
-                  kong.service.request.set_path("/docs")
-
-
-
-  # 3. Recipe Service
+  # Recipe Service
   - name: recipe-service
     url: http://recipe-service:8000
-
     routes:
-      # Protected routes (JWT required) - All recipe-service endpoints
+      # 1. OpenAPI JSON - must be first
+      - name: recipe-service-openapi
+        paths:
+          - /docs/recipe-service/openapi.json
+        strip_path: false
+        methods:
+          - GET
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /openapi.json
+
+      # 2. Protected routes
       - name: recipe-service-protected
         paths:
-          - /v2/recipes # http://localhost:8000/v2/recipes
+          - /v2/recipes
           - /v2/ingredients
-          - /v2/recipes/search
-          - /v2/recipes/recommend
-          - /v2/recipes/flattened
-          - /v2/recipes/detailed
-          - /v2/ingredients/search
-          - /v2/ingredients/filter
-        strip_path: true
-        plugins:
-          # JWT verification (MUST run first)
-          - name: jwt
-            config:
-              uri_param_names:
-                - jwt
-              header_names:
-                - Authorization
-              cookie_names:
-                - jwt_token
-              claims_to_verify:
-                - exp
-              key_claim_name: iss
-              secret_is_base64: false
-              run_on_preflight: true
-          # JWT claims extraction
-          - name: post-function
-            config:
-              access:
-                - |
-                  local cjson = require "cjson"
-                  local jwt_token = kong.request.get_header("Authorization")
-                  local token_str = nil
+        strip_path: false
+        plugins: *jwt_auth_plugins
 
-                  if jwt_token then
-                    local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
-                    token_str = token
-                  end
-
-                  if not token_str then
-                    token_str = kong.request.get_query_arg("jwt")
-                  end
-
-                  if token_str then
-                    local parts = {}
-                    for part in string.gmatch(token_str, "([^.]+)") do
-                      table.insert(parts, part)
-                    end
-                    if #parts >= 2 then
-                      local payload_b64 = parts[2]
-                      payload_b64 = string.gsub(payload_b64, "-", "+")
-                      payload_b64 = string.gsub(payload_b64, "_", "/")
-                      local remainder = #payload_b64 % 4
-                      if remainder > 0 then
-                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
-                      end
-                      local payload_str = ngx.decode_base64(payload_b64)
-                      if payload_str then
-                        local status, claims = pcall(cjson.decode, payload_str)
-                        if status and claims then
-                          -- Debug Log
-                          print("Kong Claims: ", cjson.encode(claims))
-                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
-                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
-                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
-                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
-                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
-                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
-                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
-                        end
-                      end
-                    end
-                  end
-
-      # Documentation routes for recipe-service (no JWT required)
+      # 3. Docs page
       - name: recipe-service-docs
         paths:
           - /docs/recipe-service
-        strip_path: true
+        strip_path: false
+        methods:
+          - GET
+          - HEAD
+          - OPTIONS
         plugins:
-          - name: post-function
+          - name: pre-function
             config:
               access:
                 - |
-                  kong.service.request.set_path("/docs")
+                  local path = kong.request.get_path()
+                  kong.service.request.set_header("X-Forwarded-Host", kong.request.get_host())
+                  kong.service.request.set_header("X-Forwarded-Proto", kong.request.get_scheme())
+                  
+                  if path == "/docs/recipe-service" or path == "/docs/recipe-service/" then
+                    kong.service.request.set_path("/docs")
+                  end
 
+  # Meal Service
+  - name: meal-service
+    url: http://meal-service:8000
+    routes:
+      # 1. OpenAPI JSON - must be first
+      - name: meal-service-openapi
+        paths:
+          - /docs/meal-service/openapi.json
+        strip_path: false
+        methods:
+          - GET
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /openapi.json
 
-  # 4. Shopping storage service
+      # 2. Protected API routes
+      - name: meal-service-protected
+        paths:
+          - /v1/meals
+        strip_path: false
+        plugins: *jwt_auth_plugins
+
+      # 3. Docs page
+      - name: meal-service-docs
+        paths:
+          - /docs/meal-service
+        strip_path: false
+        methods:
+          - GET
+          - HEAD
+          - OPTIONS
+        plugins:
+          - name: pre-function
+            config:
+              access:
+                - |
+                  local path = kong.request.get_path()
+                  kong.service.request.set_header("X-Forwarded-Host", kong.request.get_host())
+                  kong.service.request.set_header("X-Forwarded-Proto", kong.request.get_scheme())
+                  
+                  if path == "/docs/meal-service" or path == "/docs/meal-service/" then
+                    kong.service.request.set_path("/docs")
+                  end
+
+  # Shopping Storage Service
   - name: shopping-storage-service
     url: http://shopping-storage-service:8000
-
     routes:
-      # Protected routes (JWT required) - All shopping-storage-service endpoints
+      # 1. OpenAPI JSON - must be first
+      - name: shopping-storage-service-openapi
+        paths:
+          - /docs/shopping-storage-service/openapi.json
+        strip_path: false
+        methods:
+          - GET
+        plugins:
+          - name: request-transformer
+            config:
+              replace:
+                uri: /openapi.json
+
+      # 2. Protected routes
       - name: shopping-storage-service-protected
         paths:
-          - /v1/shopping_plans # http://localhost:8000/v1/shopping_plans
+          - /v1/shopping_plans
           - /v1/storable_units
           - /v1/storages
-          - /v1/shopping_plans/filter
-          - /v1/storable_units/filter
-          - /v1/storable_units/stacked
-        strip_path: true
-        plugins:
-          # JWT verification (MUST run first)
-          - name: jwt
-            config:
-              uri_param_names:
-                - jwt
-              header_names:
-                - Authorization
-              cookie_names:
-                - jwt_token
-              claims_to_verify:
-                - exp
-              key_claim_name: iss
-              secret_is_base64: false
-              run_on_preflight: true
-          # JWT claims extraction
-          - name: post-function
-            config:
-              access:
-                - |
-                  local cjson = require "cjson"
-                  local jwt_token = kong.request.get_header("Authorization")
-                  local token_str = nil
+        strip_path: false
+        plugins: *jwt_auth_plugins
 
-                  if jwt_token then
-                    local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
-                    token_str = token
-                  end
-
-                  if not token_str then
-                    token_str = kong.request.get_query_arg("jwt")
-                  end
-
-                  if token_str then
-                    local parts = {}
-                    for part in string.gmatch(token_str, "([^.]+)") do
-                      table.insert(parts, part)
-                    end
-                    if #parts >= 2 then
-                      local payload_b64 = parts[2]
-                      payload_b64 = string.gsub(payload_b64, "-", "+")
-                      payload_b64 = string.gsub(payload_b64, "_", "/")
-                      local remainder = #payload_b64 % 4
-                      if remainder > 0 then
-                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
-                      end
-                      local payload_str = ngx.decode_base64(payload_b64)
-                      if payload_str then
-                        local status, claims = pcall(cjson.decode, payload_str)
-                        if status and claims then
-                          -- Debug Log
-                          print("Kong Claims: ", cjson.encode(claims))
-                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
-                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
-                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
-                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
-                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
-                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
-                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
-                        end
-                      end
-                    end
-                  end
-
-      # Documentation routes for shopping-storage-service (no JWT required)
+      # 3. Docs page
       - name: shopping-storage-service-docs
         paths:
           - /docs/shopping-storage-service
-        strip_path: true
+        strip_path: false
+        methods:
+          - GET
+          - HEAD
+          - OPTIONS
         plugins:
-          - name: post-function
+          - name: pre-function
             config:
               access:
                 - |
-                  kong.service.request.set_path("/docs")
+                  local path = kong.request.get_path()
+                  kong.service.request.set_header("X-Forwarded-Host", kong.request.get_host())
+                  kong.service.request.set_header("X-Forwarded-Proto", kong.request.get_scheme())
+                  
+                  if path == "/docs/shopping-storage-service" or path == "/docs/shopping-storage-service/" then
+                    kong.service.request.set_path("/docs")
+                  end
 
-  # 5. Notification service
+  # Notification service
   - name: notification-service
     url: http://notification-service:8000
     connect_timeout: 60000
-    write_timeout: 3600000 # 1 hour for WebSocket
-    read_timeout: 3600000  # 1 hour for WebSocket
-
+    write_timeout: 3600000
+    read_timeout: 3600000
     routes:
       - name: notification-service-websocket-groups
         paths:
@@ -528,86 +313,7 @@ services:
         protocols:
           - http
           - https
-        plugins:
-          - name: cors
-            config:
-              origins:
-                - "*"
-              credentials: true
-              methods:
-                - GET
-                - POST
-                - PUT
-                - DELETE
-                - OPTIONS
-                - PATCH
-                - HEAD
-                - CONNECT  # Important for WebSocket
-                - TRACE
-              headers:
-                - "*"
-          # JWT verification for WebSocket
-          - name: jwt
-            config:
-              uri_param_names:
-                - jwt
-              header_names:
-                - Authorization
-              cookie_names:
-                - jwt_token
-              claims_to_verify:
-                - exp
-              key_claim_name: iss
-              secret_is_base64: false
-              run_on_preflight: true
-          # JWT claims extraction
-          - name: post-function
-            config:
-              access:
-                - |
-                  local cjson = require "cjson"
-                  local jwt_token = kong.request.get_header("Authorization")
-                  local token_str = nil
-
-                  if jwt_token then
-                    local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
-                    token_str = token
-                  end
-
-                  if not token_str then
-                    token_str = kong.request.get_query_arg("jwt")
-                  end
-
-                  if token_str then
-                    local parts = {}
-                    for part in string.gmatch(token_str, "([^.]+)") do
-                      table.insert(parts, part)
-                    end
-                    if #parts >= 2 then
-                      local payload_b64 = parts[2]
-                      payload_b64 = string.gsub(payload_b64, "-", "+")
-                      payload_b64 = string.gsub(payload_b64, "_", "/")
-                      local remainder = #payload_b64 % 4
-                      if remainder > 0 then
-                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
-                      end
-                      local payload_str = ngx.decode_base64(payload_b64)
-                      if payload_str then
-                        local status, claims = pcall(cjson.decode, payload_str)
-                        if status and claims then
-                          -- Debug Log
-                          print("Kong Claims: ", cjson.encode(claims))
-                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
-                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
-                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
-                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
-                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
-                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
-                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
-                        end
-                      end
-                    end
-                  end
+        plugins: *jwt_auth_plugins
 
       - name: notification-service-websocket-users
         paths:
@@ -616,83 +322,4 @@ services:
         protocols:
           - http
           - https
-        plugins:
-          - name: cors
-            config:
-              origins:
-                - "*"
-              credentials: true
-              methods:
-                - GET
-                - POST
-                - PUT
-                - DELETE
-                - OPTIONS
-                - PATCH
-                - HEAD
-                - CONNECT  # Important for WebSocket
-                - TRACE
-              headers:
-                - "*"
-          # JWT verification for WebSocket
-          - name: jwt
-            config:
-              uri_param_names:
-                - jwt
-              header_names:
-                - Authorization
-              cookie_names:
-                - jwt_token
-              claims_to_verify:
-                - exp
-              key_claim_name: iss
-              secret_is_base64: false
-              run_on_preflight: true
-          # JWT claims extraction
-          - name: post-function
-            config:
-              access:
-                - |
-                  local cjson = require "cjson"
-                  local jwt_token = kong.request.get_header("Authorization")
-                  local token_str = nil
-
-                  if jwt_token then
-                    local _, _, token = string.find(jwt_token, "Bearer%s+(.+)")
-                    token_str = token
-                  end
-
-                  if not token_str then
-                    token_str = kong.request.get_query_arg("jwt")
-                  end
-
-                  if token_str then
-                    local parts = {}
-                    for part in string.gmatch(token_str, "([^.]+)") do
-                      table.insert(parts, part)
-                    end
-                    if #parts >= 2 then
-                      local payload_b64 = parts[2]
-                      payload_b64 = string.gsub(payload_b64, "-", "+")
-                      payload_b64 = string.gsub(payload_b64, "_", "/")
-                      local remainder = #payload_b64 % 4
-                      if remainder > 0 then
-                        payload_b64 = payload_b64 .. string.rep("=", 4 - remainder)
-                      end
-                      local payload_str = ngx.decode_base64(payload_b64)
-                      if payload_str then
-                        local status, claims = pcall(cjson.decode, payload_str)
-                        if status and claims then
-                          -- Debug Log
-                          print("Kong Claims: ", cjson.encode(claims))
-                          if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
-                          if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
-                          if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
-                          if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
-                          if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
-                          if claims.iat then kong.service.request.set_header("X-IAT", tostring(claims.iat)) end
-                          if claims.aud then kong.service.request.set_header("X-AUD", tostring(claims.aud)) end
-                        end
-                      end
-                    end
-                  end
+        plugins: *jwt_auth_plugins

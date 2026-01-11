@@ -14,6 +14,9 @@ import { groupService } from '../../../services/group';
 import { userService } from '../../../services/user';
 import type { UserCoreInfo, UserIdentityProfile, UserHealthProfile } from '../../../services/schema/groupSchema';
 
+// Default user avatar
+const DEFAULT_USER_AVATAR = new URL('../../../assets/user.png', import.meta.url).href;
+
 // Helper function to get display name from user
 function getDisplayName(user: UserCoreInfo | null): string {
   if (!user) return 'Người dùng';
@@ -49,7 +52,7 @@ function calculateAge(dateOfBirth: string | null | undefined): number | null {
   return age;
 }
 
-type TabType = 'personal-info' | 'health-profile' | 'favorite-dishes';
+type TabType = 'personal-info' | 'health-profile' | 'favorite-dishes'; // 'favorite-dishes' is commented out
 
 const UserDetail = () => {
   const navigate = useNavigate();
@@ -63,6 +66,7 @@ const UserDetail = () => {
     identityProfile: UserIdentityProfile | null;
     healthProfile: UserHealthProfile | null;
     currentUserRole: 'head_chef' | 'member';
+    currentUserId: string | null;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +82,14 @@ const UserDetail = () => {
   // Modal States
   const [isSetLeaderModalOpen, setIsSetLeaderModalOpen] = useState(false);
   const [isRemoveMemberModalOpen, setIsRemoveMemberModalOpen] = useState(false);
+
+  // Selected member state for set leader
+  type MemberType = {
+    id: string;
+    name: string;
+  };
+  const [selectedMemberForLeader, setSelectedMemberForLeader] = useState<MemberType | null>(null);
+  const [selectedMemberForRemoval, setSelectedMemberForRemoval] = useState<MemberType | null>(null);
 
   // Fetch user data on mount
   useEffect(() => {
@@ -95,35 +107,51 @@ const UserDetail = () => {
         // Fetch current user to check role
         const currentUserResult = await userService.getCurrentUser();
 
-        // Fetch group detail to get current user's role
-        const groupResult = await groupService.getGroupById(id);
+        // Fetch group members to get membership data
+        const groupResult = await groupService.getGroupMembers(id);
 
         if (groupResult.isErr()) {
           throw groupResult.error;
         }
 
-        const memberships = groupResult.value.data.group_memberships || [];
+        const groupData = groupResult.value.data;
+        // Check members first since group_memberships might be empty array (truthy in ||)
+        const memberships = groupData.members || groupData.group_memberships || [];
+        const creator = groupData.creator;
+
         const currentUserRole = memberships.find(
           (m) => m.user.id === (currentUserResult.isOk() ? currentUserResult.value.data.id : null)
         )?.role || 'member';
 
-        // Fetch user by ID
-        const userResult = await userService.getUserById(userId);
-        const user = userResult.isOk() ? userResult.value.data : null;
+        // Get user info from group memberships or creator (for newly created groups)
+        let user: UserCoreInfo | null = null;
+        const member = memberships.find((m) => m.user.id === userId || m.user.user_id === userId);
+        if (member) {
+          // User is in group memberships
+          user = member.user;
+        } else if (creator && (creator.id === userId || creator.user_id === userId)) {
+          // User is the creator/leader but not in memberships (newly created group)
+          user = creator;
+        } else {
+          console.log('User not found in group. userId:', userId, 'Available members:', memberships.map(m => ({ id: m.user.id, user_id: m.user.user_id })), 'Creator:', creator?.id || creator?.user_id);
+          const notFoundError = { type: 'not-found' } as const;
+          throw notFoundError;
+        }
 
         // Fetch identity profile using group-specific endpoint
         const identityResult = await groupService.getMemberIdentityProfile(id, userId);
-        const identityProfile = identityResult.isOk() ? identityResult.value : null;
+        const identityProfile = identityResult.isOk() ? identityResult.value.data : null;
 
         // Fetch health profile using group-specific endpoint
         const healthResult = await groupService.getMemberHealthProfile(id, userId);
-        const healthProfile = healthResult.isOk() ? healthResult.value : null;
+        const healthProfile = healthResult.isOk() ? healthResult.value.data : null;
 
         setUserData({
           user,
           identityProfile,
           healthProfile,
-          currentUserRole
+          currentUserRole,
+          currentUserId: currentUserResult.isOk() ? currentUserResult.value.data.id : null
         });
       } catch (err) {
         console.error('Failed to fetch user data:', err);
@@ -132,7 +160,7 @@ const UserDetail = () => {
           if (error.type === 'unauthorized') {
             setError('Bạn cần đăng nhập để xem thông tin');
           } else if (error.type === 'not-found') {
-            setError('Không tìm thấy người dùng');
+            setError('Không tìm thấy người dùng trong nhóm');
           } else {
             setError('Không thể tải thông tin người dùng');
           }
@@ -178,19 +206,53 @@ const UserDetail = () => {
   };
 
   const handleSetLeader = async () => {
-    if (!id || !userId) return;
+    if (!id || !selectedMemberForLeader || !userData?.currentUserId) return;
 
     setIsSettingLeader(true);
     setSetLeaderError(null);
 
-    const result = await groupService.setLeader(id, userId);
+    // Transfer leadership by making requests sequentially
+    // (not in parallel to avoid race conditions)
+    const currentLeaderId = userData.currentUserId;
+    const targetMemberId = selectedMemberForLeader.id;
 
-    result.match(
-      () => {
-        setIsSetLeaderModalOpen(false);
-        setIsSettingsOpen(false);
-        // Refresh group data
-        window.location.reload();
+    // First, set the target member as head_chef
+    const firstResult = await groupService.updateMemberRole(
+      id,
+      targetMemberId,
+      'head_chef'
+    );
+
+    firstResult.match(
+      async () => {
+        // Then, set the current leader as member
+        const secondResult = await groupService.updateMemberRole(
+          id,
+          currentLeaderId,
+          'member'
+        );
+
+        secondResult.match(
+          () => {
+            setIsSetLeaderModalOpen(false);
+            setSelectedMemberForLeader(null);
+            setIsSettingsOpen(false);
+            // Navigate back to group detail
+            navigate(`/main/family-group/${id}`);
+          },
+          (error) => {
+            console.error('Failed to demote current leader:', error);
+            if (error.type === 'unauthorized') {
+              setSetLeaderError('Bạn cần đăng nhập để thực hiện thao tác này');
+            } else if (error.type === 'not-found') {
+              setSetLeaderError('Không tìm thấy nhóm');
+            } else if (error.type === 'forbidden') {
+              setSetLeaderError('Bạn không có quyền thực hiện thao tác này');
+            } else {
+              setSetLeaderError('Không thể đặt làm trưởng nhóm');
+            }
+          }
+        );
       },
       (error) => {
         console.error('Failed to set leader:', error);
@@ -210,16 +272,23 @@ const UserDetail = () => {
   };
 
   const handleRemoveMember = async () => {
-    if (!id || !userId) return;
+    if (!id || !selectedMemberForRemoval || !userData) return;
+
+    // Only head_chef can remove members
+    if (userData?.currentUserRole !== 'head_chef') {
+      setRemoveMemberError('Chỉ trưởng nhóm mới có quyền xóa thành viên');
+      return;
+    }
 
     setIsRemovingMember(true);
     setRemoveMemberError(null);
 
-    const result = await groupService.removeMember(id, userId);
+    const result = await groupService.removeMember(id, selectedMemberForRemoval.id);
 
     result.match(
       () => {
         setIsRemoveMemberModalOpen(false);
+        setSelectedMemberForRemoval(null);
         setIsSettingsOpen(false);
         navigate(`/main/family-group/${id}`);
       },
@@ -244,12 +313,14 @@ const UserDetail = () => {
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsSettingsOpen(false);
+    setSelectedMemberForLeader({ id: userId!, name: displayName });
     setIsSetLeaderModalOpen(true);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsSettingsOpen(false);
+    setSelectedMemberForRemoval({ id: userId!, name: displayName });
     setIsRemoveMemberModalOpen(true);
   };
 
@@ -329,7 +400,11 @@ const UserDetail = () => {
 
       {/* Profile Summary */}
       <div className="flex flex-col items-center mt-4 px-4">
-        <div className="w-24 h-24 bg-gray-200 rounded-full mb-4"></div>
+        <img
+          src={user?.avatar_url || DEFAULT_USER_AVATAR}
+          alt={displayName}
+          className="w-24 h-24 rounded-full object-cover mb-4"
+        />
         <h2 className="text-2xl font-bold">{displayName}</h2>
         <div className="flex items-center text-sm text-gray-600 mt-2">
           <User size={16} className="mr-1" />
@@ -359,7 +434,7 @@ const UserDetail = () => {
         >
           Hồ sơ sức khỏe
         </button>
-        <button
+        {/* <button
           className={`px-6 py-3 text-center font-bold text-sm whitespace-nowrap ${
             activeTab === 'favorite-dishes'
               ? 'text-gray-900 border-b-2 border-[#C3485C]'
@@ -368,7 +443,7 @@ const UserDetail = () => {
           onClick={() => setActiveTab('favorite-dishes')}
         >
           Món ăn yêu thích
-        </button>
+        </button> */}
       </div>
 
       {/* Tab Content */}
@@ -404,12 +479,12 @@ const UserDetail = () => {
                   }[healthProfile.activity_level]
                 : 'Chưa cập nhật'
             } />
-            <InfoRow label="Tình trạng sức khỏe" value={
+            <InfoRow label="Tình trạng hiện tại" value={
               healthProfile?.curr_condition
                 ? {
                     normal: 'Bình thường',
                     pregnant: 'Mang thai',
-                    injured: 'Bị thương'
+                    injured: 'Chấn thương'
                   }[healthProfile.curr_condition]
                 : 'Chưa cập nhật'
             } />
@@ -424,15 +499,15 @@ const UserDetail = () => {
             } />
           </div>
         )}
-        {activeTab === 'favorite-dishes' && (
+        {/* {activeTab === 'favorite-dishes' && (
           <div className="text-center text-gray-500 py-8">
             <p>Chưa cập nhật</p>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* SET LEADER CONFIRMATION MODAL */}
-      {isSetLeaderModalOpen && (
+      {isSetLeaderModalOpen && selectedMemberForLeader && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div
             className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl animate-in fade-in zoom-in-95 duration-200"
@@ -451,7 +526,7 @@ const UserDetail = () => {
             </div>
 
             <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">
-              Bạn có chắc muốn chuyển quyền trưởng nhóm cho <span className="text-[#C3485C] font-semibold">{displayName}</span>?
+              Bạn có chắc muốn chuyển quyền trưởng nhóm cho <span className="text-[#C3485C] font-semibold">{selectedMemberForLeader.name}</span>?
             </p>
 
             {setLeaderError && (
@@ -474,6 +549,7 @@ const UserDetail = () => {
                   variant={isSettingLeader ? 'disabled' : 'secondary'}
                   onClick={() => {
                     setIsSetLeaderModalOpen(false);
+                    setSelectedMemberForLeader(null);
                     setSetLeaderError(null);
                   }}
                   icon={X}
@@ -488,7 +564,7 @@ const UserDetail = () => {
       )}
 
       {/* REMOVE MEMBER CONFIRMATION MODAL */}
-      {isRemoveMemberModalOpen && (
+      {isRemoveMemberModalOpen && selectedMemberForRemoval && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div
             className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl animate-in fade-in zoom-in-95 duration-200"
@@ -507,7 +583,7 @@ const UserDetail = () => {
             </div>
 
             <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">
-              Bạn có chắc muốn xóa <span className="text-[#C3485C] font-semibold">{displayName}</span> khỏi nhóm?
+              Bạn có chắc muốn xóa <span className="text-[#C3485C] font-semibold">{selectedMemberForRemoval.name}</span> khỏi nhóm?
             </p>
 
             {removeMemberError && (
@@ -530,6 +606,7 @@ const UserDetail = () => {
                   variant={isRemovingMember ? 'disabled' : 'secondary'}
                   onClick={() => {
                     setIsRemoveMemberModalOpen(false);
+                    setSelectedMemberForRemoval(null);
                     setRemoveMemberError(null);
                   }}
                   icon={X}

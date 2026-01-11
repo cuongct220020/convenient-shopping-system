@@ -1,8 +1,45 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, Info, HeartPulse, Heart, LogOut } from 'lucide-react'
+import { userService } from '../../../services/user'
+import { LocalStorage } from '../../../services/storage/local'
+import { NotificationCard } from '../../../components/NotificationCard'
+import userAvatar from '../../../assets/user.png'
+
 const Profile = () => {
   const navigate = useNavigate()
+  const [user, setUser] = useState<{ username: string; email: string; first_name: string | null; last_name: string | null } | null>(null)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+  useEffect(() => {
+    userService.getCurrentUser().match(
+      (response) => setUser(response.data),
+      (error) => console.error('Failed to fetch user:', error)
+    )
+  }, [])
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    const result = await userService.logout()
+    result.match(
+      () => {
+        // Clear local auth token
+        LocalStorage.inst.auth = null
+        // Close modal and navigate to login page
+        setShowLogoutModal(false)
+        navigate('/auth/login')
+      },
+      (error) => {
+        console.error('Logout failed:', error)
+        // Even if API call fails, clear local auth, close modal and navigate to login
+        LocalStorage.inst.auth = null
+        setShowLogoutModal(false)
+        navigate('/auth/login')
+      }
+    )
+    setIsLoggingOut(false)
+  }
   return (
     <div className="mx-auto w-full max-w-sm flex-1 overflow-y-auto bg-white p-5 pb-24">
       {/* Header */}
@@ -10,12 +47,14 @@ const Profile = () => {
 
       {/* User Profile Info */}
       <div className="mb-8 flex items-center">
-        <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-purple-300">
-          <span className="text-2xl font-bold text-white">UN</span>
-        </div>
+        <img src={userAvatar} alt="User Avatar" className="size-16 shrink-0 rounded-full object-cover" />
         <div className="ml-4">
-          <h3 className="text-lg font-bold text-gray-900">username1234</h3>
-          <p className="text-sm text-gray-500">user-email@gmail.com</p>
+          <h3 className="text-lg font-bold text-gray-900">
+            {user?.first_name || user?.last_name
+              ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+              : user?.username || 'Name'}
+          </h3>
+          <p className="text-sm text-gray-500">{user?.email || 'user-email@gmail.com'}</p>
         </div>
       </div>
 
@@ -43,14 +82,17 @@ const Profile = () => {
         />
 
         {/* Item 4: Favorites */}
-        <MenuItem
+        {/* <MenuItem
           icon={<Heart size={20} className="fill-black text-black" />}
           text="Danh mục yêu thích"
           onClick={() => navigate('/main/profile/favorites')}
-        />
+        /> */}
 
         {/* Logout Button */}
-        <button className="group mt-2 flex w-full items-center py-4">
+        <button
+          className="group mt-2 flex w-full items-center py-4"
+          onClick={() => setShowLogoutModal(true)}
+        >
           <div className="flex w-8 justify-center">
             <LogOut size={20} className="text-red-600" />
           </div>
@@ -59,6 +101,23 @@ const Profile = () => {
           </span>
         </button>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <NotificationCard
+            title="Xác nhận đăng xuất"
+            message="Bạn có chắc chắn muốn đăng xuất không?"
+            iconBgColor="bg-yellow-500"
+            buttonText={isLoggingOut ? 'Đang đăng xuất...' : 'Xác nhận'}
+            buttonIcon={LogOut}
+            onButtonClick={handleLogout}
+            isButtonDisabled={isLoggingOut}
+            button2Text="Hủy"
+            onButton2Click={() => setShowLogoutModal(false)}
+          />
+        </div>
+      )}
     </div>
   )
 }
