@@ -6,8 +6,14 @@ import {
   IngredientSearchResponseSchema,
   type GetIngredientsResponse
 } from '../schema/ingredientSchema'
-
-import { AppUrl, Clients, httpClients, httpGet, ResponseError } from '../client'
+import {
+  AppUrl,
+  Clients,
+  httpClients,
+  httpDelete,
+  httpGet,
+  ResponseError
+} from '../client'
 
 type IngredientError = ResponseError<'not-found' | 'unauthorized'>
 
@@ -39,27 +45,26 @@ export class IngredientService {
       queryParams.append('categories', params.categories.join(','))
     }
 
-    const url = `/v2/ingredients/?${queryParams.toString()}`
+    const url = `${AppUrl.INGREDIENTS}?${queryParams.toString()}`
 
-    return httpGet(this.clients.auth, url)
-      .mapErr((e): IngredientError => {
-        switch (e.type) {
-          case 'unauthorized':
-            return { ...e, type: 'unauthorized' }
-          case 'path-not-found':
-            return { ...e, type: 'not-found' }
-          default:
-            return e
-        }
-      })
-      .andThen((response) =>
-        parseZodObject(GetIngredientsResponseSchema, response.body).mapErr(
-          (e): IngredientError => ({
-            type: 'invalid-response-format',
-            desc: e
-          })
-        )
+    return httpGet(this.clients.auth, url).andThen((response) =>
+      parseZodObject(GetIngredientsResponseSchema, response.body).mapErr(
+        (e): IngredientError => ({
+          type: 'invalid-response-format',
+          desc: e
+        })
       )
+    )
+  }
+
+  /**
+   * Delete an ingredient by ID
+   * @param id - The component_id of the ingredient to delete
+   */
+  public deleteIngredient(id: string): ResultAsync<void, IngredientError> {
+    const url = AppUrl.INGREDIENTS_BY_ID(id)
+
+    return httpDelete(this.clients.auth, url).map(() => {})
   }
 
   /**

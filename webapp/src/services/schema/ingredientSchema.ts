@@ -18,7 +18,10 @@ export const IngredientSchema = z
     fiber: z.number().nonnegative().nullable().optional(),
     calories: z.number().nonnegative().nullable().optional(),
     estimated_price: z.number().nonnegative().nullable().optional(),
-    ingredient_tag_list: z.array(z.string()).nullable().optional(),
+    ingredient_tag_list: z
+      .array(z.number().int().nonnegative())
+      .nullable()
+      .optional(),
     component_id: z.number().int().positive(),
     component_name: z.string(),
     category: z.string().nullable().optional(),

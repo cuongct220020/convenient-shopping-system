@@ -9,6 +9,7 @@ import garlicImg from '../assets/garlic.png'
 import { ingredientService } from '../services/ingredient'
 import { useIsMounted } from '../hooks/useIsMounted'
 import type { Ingredient } from '../services/schema/ingredientSchema'
+import { NotificationCard } from '../components/NotificationCard'
 
 // Dữ liệu giả lập để hiển thị giống hình ảnh (no longer used, data now fetches from server)
 
@@ -47,6 +48,11 @@ const IngredientMenu = () => {
   const [showAddIngredientForm, setShowAddIngredientForm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ItemData | null>(null)
   const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
+  const [reportModal, setReportModal] = useState<{
+    type: 'success' | 'error'
+    title: string
+    message: string
+  } | null>(null)
 
   const fetchIngredients = useCallback(
     async (pageNumber: number = 1) => {
@@ -145,9 +151,27 @@ const IngredientMenu = () => {
     closeModal()
   }
 
-  const handleDeleteClick = () => {
-    // Here you would typically delete the item
-    closeModal()
+  const handleDeleteClick = async () => {
+    if (!selectedItem) return
+    const result = await ingredientService.deleteIngredient(
+      `${selectedItem.id}`
+    )
+    if (result.isOk()) {
+      setIngredients((prev) => prev.filter((i) => i.id !== selectedItem.id))
+      setReportModal({
+        type: 'success',
+        title: 'Xóa nguyên liệu thành công',
+        message: `Nguyên liệu ${selectedItem.name} đã được xóa.`
+      })
+      setSelectedItem(null)
+      setViewMode(null)
+    } else {
+      setReportModal({
+        type: 'error',
+        title: 'Xóa thất bại',
+        message: 'Không thể xóa nguyên liệu này. Vui lòng thử lại sau.'
+      })
+    }
   }
 
   const closeModal = () => {
@@ -398,6 +422,24 @@ const IngredientMenu = () => {
               />
             )}
           </div>
+        </div>
+      )}
+
+      {/* Action Report Modal */}
+      {reportModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <NotificationCard
+            title={reportModal.title}
+            message={reportModal.message}
+            iconBgColor={
+              reportModal.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }
+            buttonText="Đóng"
+            onButtonClick={() => {
+              setReportModal(null)
+              closeModal()
+            }}
+          />
         </div>
       )}
     </div>
