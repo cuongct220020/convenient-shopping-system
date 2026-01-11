@@ -1,7 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from tasks.expire_plans_task import expire_plans
-from tasks.expiration_units_task import publish_expiration_notifications
+from tasks.expire_units_task import publish_expiration_notifications
 
 scheduler = AsyncIOScheduler()
 
