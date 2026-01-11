@@ -204,9 +204,45 @@ const IngredientMenu = () => {
     setViewMode('edit')
   }
 
-  const handleSaveClick = () => {
-    // Here you would typically save the changes
-    closeModal()
+  const handleSaveClick = async (formData: Partial<Ingredient>) => {
+    if (!selectedItem) return
+    setLoading(true)
+    try {
+      const result = await ingredientService.updateIngredient(
+        `${selectedItem.id}`,
+        formData
+      )
+
+      if (result.isOk()) {
+        setReportModal({
+          type: 'success',
+          title: 'Cập nhật nguyên liệu thành công',
+          message: `Nguyên liệu "${
+            formData.component_name || selectedItem.name
+          }" đã được cập nhật.`
+        })
+        setViewMode(null)
+        setSelectedItem(null)
+        // Refresh current page
+        await fetchIngredients(currentPage)
+      } else {
+        setReportModal({
+          type: 'error',
+          title: 'Cập nhật thất bại',
+          message:
+            result.error.desc ||
+            'Không thể cập nhật nguyên liệu. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      setReportModal({
+        type: 'error',
+        title: 'Lỗi',
+        message: String(err)
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleDeleteClick = async () => {

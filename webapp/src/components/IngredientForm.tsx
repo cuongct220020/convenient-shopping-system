@@ -238,8 +238,10 @@ export const IngredientForm = ({
             <input
               type="checkbox"
               checked={isCountable}
-              onChange={() => !readOnly && setIsCountable(!isCountable)}
-              disabled={readOnly}
+              onChange={() =>
+                !readOnly && !initialData && setIsCountable(!isCountable)
+              }
+              disabled={readOnly || !!initialData}
               className="rounded border-gray-300 text-rose-500 focus:ring-rose-500"
             />
             <span>Nguyên liệu đếm được</span>
@@ -303,10 +305,12 @@ export const IngredientForm = ({
             <div className="relative">
               <select
                 value={unit || ''}
-                onChange={(e) => !readOnly && setUnit(e.target.value || null)}
-                disabled={readOnly}
+                onChange={(e) =>
+                  !readOnly && !initialData && setUnit(e.target.value || null)
+                }
+                disabled={readOnly || !!initialData}
                 className={`w-full rounded-lg border border-gray-300 p-3 text-gray-700 ${
-                  readOnly
+                  readOnly || !!initialData
                     ? 'cursor-default bg-gray-50'
                     : 'bg-white focus:border-gray-400 focus:outline-none'
                 }`}
@@ -533,8 +537,12 @@ export const IngredientForm = ({
                     type: isCountable
                       ? 'countable_ingredient'
                       : 'uncountable_ingredient',
-                    ...(isCountable && { c_measurement_unit: unit }),
-                    ...(!isCountable && { uc_measurement_unit: unit }),
+                    // Only include unit fields when creating (no initialData)
+                    // Units are immutable after creation
+                    ...(initialData === undefined &&
+                      isCountable && { c_measurement_unit: unit }),
+                    ...(initialData === undefined &&
+                      !isCountable && { uc_measurement_unit: unit }),
                     estimated_shelf_life: shelfLife,
                     estimated_price: price,
                     ingredient_tag_list:
