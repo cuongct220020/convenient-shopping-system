@@ -2,7 +2,7 @@
 from datetime import datetime, UTC
 from typing import List
 
-from app.enums import OtpAction, GroupRole
+from app.enums import OtpAction
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
@@ -242,9 +242,31 @@ class KafkaService:
 
     @staticmethod
     async def publish_user_update_tag_message(
+        user_id: str,
+        username: str,
+        email: str,
+        tags: List[str],
+        list_group_ids: List[str],
         topic: str = USER_UPDATE_TAG_EVENTS_TOPIC
     ):
-        pass
+
+        payload = kafka_service._build_payload(
+            event_type="user_tags_updated",
+            user_id=str(user_id),
+            username=str(username),
+            email=str(email),
+            tags=tags,
+            list_group_ids=str(list_group_ids),
+            timestamp=datetime.now(UTC)
+        )
+
+        await kafka_service._publish_message(
+            topic=topic,
+            payload=payload,
+            key=str(user_id)
+        )
+
+        logger.info(f"User update tag message published successfully to topic: {topic}")
 
 
 kafka_service = KafkaService()
