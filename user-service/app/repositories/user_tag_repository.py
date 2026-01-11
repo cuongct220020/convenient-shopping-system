@@ -1,11 +1,13 @@
 # user-service/app/repositories/user_tag_repository.py
+from datetime import datetime
 from typing import List, Dict, Optional, Sequence
 from uuid import UUID
 from sqlalchemy import select, delete, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shopping_shared.databases.base_repository import BaseRepository
 from app.models.user_tag import Tag, UserTag
+
+from shopping_shared.databases.base_repository import BaseRepository
 
 
 class TagRepository(BaseRepository[Tag, None, None]):
@@ -42,19 +44,21 @@ class UserTagRepository:
         self.session = session
         self.tag_repo = TagRepository(session)
 
-    async def get_user_tags_by_category(self, user_id: UUID) -> Dict[str, List[Tag]]:
+    async def get_user_tags_by_category(self, user_id: UUID) -> Dict[str, List[tuple[Tag, datetime]]]:
         """Get all user tags grouped by category with optimized query."""
+        from datetime import datetime
         stmt = (
-            select(Tag)
+            select(Tag, UserTag.updated_at)
             .join(UserTag)
             .where(UserTag.user_id == user_id)
             .order_by(Tag.tag_category, Tag.tag_value)
         )
         result = await self.session.execute(stmt)
-        tags = result.scalars().all()
+        # Result contains tuples of (Tag, updated_at)
+        rows = result.all()
 
         # Group tags by category
-        grouped_tags: Dict[str, List[Tag]] = {
+        grouped_tags: Dict[str, List[tuple[Tag, datetime]]] = {
             'age': [],
             'medical': [],
             'allergy': [],
@@ -62,9 +66,9 @@ class UserTagRepository:
             'taste': []
         }
 
-        for tag in tags:
+        for tag, updated_at in rows:
             if tag.tag_category in grouped_tags:
-                grouped_tags[tag.tag_category].append(tag)
+                grouped_tags[tag.tag_category].append((tag, updated_at))
 
         return grouped_tags
 

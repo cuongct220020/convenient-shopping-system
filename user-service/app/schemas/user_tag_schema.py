@@ -124,7 +124,7 @@ class UserTagSchema(BaseSchema):
         description="The description of the tag",
         examples=["Adult age group", "Diabetes condition", "Dairy allergy"]
     )
-    created_at: Optional[str] = Field(
+    updated_at: Optional[str] = Field(
         None,
         description="The creation timestamp of the tag",
         examples=["2023-01-01T00:00:00Z"]
