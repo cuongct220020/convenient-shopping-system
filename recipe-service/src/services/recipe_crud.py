@@ -1,9 +1,7 @@
 import uuid
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, selectinload
-from sqlalchemy import select, or_, cast
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, or_
 from typing import Sequence, Optional
 from shopping_shared.crud.crud_base import CRUDBase
 from models.recipe_component import Recipe, ComponentList
