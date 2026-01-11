@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from core.head_chef_middleware import HeadChefMiddleware
+from core.messaging import kafka_manager
 from apis.v1.meal_api import meal_router
 from tasks.scheduler import setup_scheduler
 from shopping_shared.caching.redis_manager import redis_manager
@@ -18,10 +19,16 @@ async def lifespan(app: FastAPI):
         db=settings.REDIS_DB,
         password=settings.REDIS_PASSWORD
     )
+
+    kafka_manager.setup(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
+
     scheduler = setup_scheduler()
     scheduler.start()
+
     yield
+
     scheduler.shutdown()
+    await kafka_manager.close()
     await redis_manager.close()
 
 
