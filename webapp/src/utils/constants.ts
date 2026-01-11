@@ -49,6 +49,58 @@ export function foodStorageCategoryStr(e: FoodStorageCategory): i18nKeys {
   }
 }
 
+// Ingredient measurement units
+export const COUNTABLE_UNITS = [
+  'quả',
+  'củ',
+  'gói',
+  'bó',
+  'miếng',
+  'nhánh',
+  'tép',
+  'con',
+  'viên',
+  'túi',
+  'cây',
+  'lát',
+  'khúc',
+  'lá',
+  'hộp',
+  'cái'
+] as const
+
+export type CountableUnit = (typeof COUNTABLE_UNITS)[number]
+
+export const UNCOUNTABLE_UNITS = ['G', 'ML'] as const
+
+export type UncountableUnit = (typeof UNCOUNTABLE_UNITS)[number]
+
+// Ingredient categories
+export const INGREDIENT_CATEGORIES = [
+  'Đồ uống có cồn',
+  'Đồ uống',
+  'Bánh ngọt',
+  'Kẹo',
+  'Ngũ cốc và hạt',
+  'Thịt nguội, xúc xích và giăm bông',
+  'Trái cây sấy khô',
+  'Trái cây tươi',
+  'Thịt tươi',
+  'Mứt trái cây',
+  'Lương thực',
+  'Kem và phô mai',
+  'Thực phẩm ăn liền',
+  'Sữa',
+  'Khác',
+  'Hải sản và cá viên',
+  'Gia vị',
+  'Đồ ăn vặt',
+  'Rau củ',
+  'Sữa chua'
+] as const
+
+export type IngredientCategory = (typeof INGREDIENT_CATEGORIES)[number]
+
 export const Constant = {
   keys: {
     localStorage: 'ShopSense',

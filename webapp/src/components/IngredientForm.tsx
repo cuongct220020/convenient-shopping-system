@@ -1,32 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
-import { Check, X, Image as ImageIcon, ChevronDown, Trash2 } from 'lucide-react'
+import { Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react'
 import { Button } from './Button'
 import { InputField } from './InputField'
 import {
   Ingredient,
   IngredientCreate
 } from '../services/schema/ingredientSchema'
-
-// Hardcoded measurement units
-const C_UNITS = [
-  'quả',
-  'củ',
-  'gói',
-  'bó',
-  'miếng',
-  'nhánh',
-  'tép',
-  'con',
-  'viên',
-  'túi',
-  'cây',
-  'lát',
-  'khúc',
-  'lá',
-  'hộp',
-  'cái'
-]
-const UC_UNITS = ['G', 'ML']
+import {
+  COUNTABLE_UNITS,
+  UNCOUNTABLE_UNITS,
+  INGREDIENT_CATEGORIES
+} from '../utils/constants'
 
 // Mock tags for tag selector
 const MOCK_TAGS = [
@@ -88,27 +72,8 @@ export const IngredientForm = ({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const categories = [
-    'Thịt trắng',
-    'Thịt đỏ',
-    'Hải sản',
-    'Rau củ',
-    'Trái cây',
-    'Gia vị',
-    'Đồ khô',
-    'Thực phẩm đông lạnh',
-    'Đồ hộp',
-    'Bơ sữa',
-    'Bánh kẹo',
-    'Đồ uống'
-  ]
-
   // TagSelector Component
   const TagSelector = () => {
-    const availableTags = MOCK_TAGS.filter(
-      (tag) => !selectedTags.includes(tag.id)
-    )
-
     const handleAddTag = (tagId: number) => {
       if (!readOnly && !selectedTags.includes(tagId)) {
         setSelectedTags([...selectedTags, tagId])
@@ -135,17 +100,17 @@ export const IngredientForm = ({
 
     return (
       <div>
-        <label className="block text-gray-700 font-medium mb-2">
+        <label className="mb-2 block font-medium text-gray-700">
           Thẻ nguyên liệu
         </label>
         {selectedTags.length > 0 ? (
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="mb-3 flex flex-wrap gap-2">
             {selectedTags.map((tagId) => {
               const tag = MOCK_TAGS.find((t) => t.id === tagId)
               return (
                 <div
                   key={tagId}
-                  className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                  className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
                 >
                   {tag?.name}
                   {!readOnly && (
@@ -162,7 +127,7 @@ export const IngredientForm = ({
             })}
           </div>
         ) : (
-          <p className="text-gray-500 text-sm mb-3">Không có dữ liệu</p>
+          <p className="mb-3 text-sm text-gray-500">Không có dữ liệu</p>
         )}
 
         {!readOnly && (
@@ -173,7 +138,7 @@ export const IngredientForm = ({
               value={tagInputValue}
               onChange={(e) => setTagInputValue(e.target.value)}
               onKeyPress={handleTagInputKeyPress}
-              className="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+              className="flex-1 rounded-lg border border-gray-300 p-2 text-sm focus:border-gray-400 focus:outline-none"
             />
             <Button
               variant="secondary"
@@ -225,20 +190,13 @@ export const IngredientForm = ({
     }
   }, [])
 
-  const getDisplayValue = (value: string | number | undefined) => {
-    if (readOnly && (value === undefined || value === null || value === '')) {
-      return 'Chưa có thông tin'
-    }
-    return value
-  }
-
   return (
     <div
-      className="bg-white p-8 rounded-xl shadow-md grid grid-cols-1 md:grid-cols-5 gap-8"
+      className="grid grid-cols-1 gap-8 rounded-xl bg-white p-8 shadow-md md:grid-cols-5"
       style={{ width: '800px', height: '600px' }}
     >
       {/* Left Column */}
-      <div className="md:col-span-2 flex flex-col gap-6">
+      <div className="flex flex-col gap-6 md:col-span-2">
         {/* Tên nguyên liệu */}
         <InputField
           label="Tên nguyên liệu"
@@ -252,16 +210,16 @@ export const IngredientForm = ({
 
         {/* Phân loại */}
         <div>
-          <label className="block text-gray-700 font-medium mb-2">
+          <label className="mb-2 block font-medium text-gray-700">
             Phân loại
           </label>
           <div className="relative" ref={dropdownRef}>
             <button
               type="button"
-              className={`w-full p-3 border border-gray-300 rounded-lg text-gray-700 flex justify-between items-center ${
+              className={`flex w-full items-center justify-between rounded-lg border border-gray-300 p-3 text-gray-700 ${
                 readOnly
-                  ? 'bg-gray-50 cursor-default'
-                  : 'bg-white focus:outline-none focus:border-gray-400'
+                  ? 'cursor-default bg-gray-50'
+                  : 'bg-white focus:border-gray-400 focus:outline-none'
               }`}
               onClick={() => !readOnly && setIsOpen(!isOpen)}
             >
@@ -276,11 +234,11 @@ export const IngredientForm = ({
             </button>
 
             {isOpen && !readOnly && (
-              <div className="absolute w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                {categories.map((category, index) => (
+              <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-lg">
+                {INGREDIENT_CATEGORIES.map((category, index) => (
                   <div
                     key={index}
-                    className="p-3 hover:bg-gray-100 cursor-pointer text-gray-700"
+                    className="cursor-pointer p-3 text-gray-700 hover:bg-gray-100"
                     onClick={() => {
                       setSelectedCategory(category)
                       setIsOpen(false)
@@ -296,7 +254,7 @@ export const IngredientForm = ({
 
         {/* Countable Ingredient Checkbox */}
         <div>
-          <label className="flex items-center space-x-2 text-gray-700 font-medium">
+          <label className="flex items-center space-x-2 font-medium text-gray-700">
             <input
               type="checkbox"
               checked={isCountable}
@@ -309,7 +267,7 @@ export const IngredientForm = ({
         </div>
 
         {/* Thêm hình ảnh */}
-        <div className="bg-[#FFD7C1] rounded-lg aspect-square flex items-center justify-center relative overflow-hidden">
+        <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-[#FFD7C1]">
           {!readOnly && (
             <input
               type="file"
@@ -320,14 +278,14 @@ export const IngredientForm = ({
             />
           )}
           {image ? (
-            <div className="group relative w-full h-full">
+            <div className="group relative size-full">
               <img
                 src={image}
                 alt="Selected"
-                className="w-full h-full object-cover"
+                className="size-full object-cover"
               />
               {!readOnly && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-all">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-all">
                   <Button
                     variant="primary"
                     size="fit"
@@ -346,7 +304,7 @@ export const IngredientForm = ({
               size="fit"
               icon={ImageIcon}
               onClick={handleImageUploadClick}
-              className={readOnly ? '!p-0 !mx-0 !hover:bg-transparent' : ''}
+              className={readOnly ? '!hover:bg-transparent !mx-0 !p-0' : ''}
             >
               {readOnly ? 'Chưa có hình ảnh' : 'Thêm hình ảnh'}
             </Button>
@@ -355,11 +313,11 @@ export const IngredientForm = ({
       </div>
 
       {/* Right Column */}
-      <div className="md:col-span-3 flex flex-col justify-between overflow-y-auto pr-4">
+      <div className="flex flex-col justify-between overflow-y-auto pr-4 md:col-span-3">
         <div className="flex flex-col gap-6">
           {/* Measurement Unit */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">
+            <label className="mb-2 block font-medium text-gray-700">
               Đơn vị tính
             </label>
             <div className="relative">
@@ -367,27 +325,29 @@ export const IngredientForm = ({
                 value={unit || ''}
                 onChange={(e) => !readOnly && setUnit(e.target.value || null)}
                 disabled={readOnly}
-                className={`w-full p-3 border border-gray-300 rounded-lg text-gray-700 ${
+                className={`w-full rounded-lg border border-gray-300 p-3 text-gray-700 ${
                   readOnly
-                    ? 'bg-gray-50 cursor-default'
-                    : 'bg-white focus:outline-none focus:border-gray-400'
+                    ? 'cursor-default bg-gray-50'
+                    : 'bg-white focus:border-gray-400 focus:outline-none'
                 }`}
               >
                 <option value="">
                   {!unit ? (readOnly ? 'Không có dữ liệu' : 'Chọn đơn vị') : ''}
                 </option>
-                {(isCountable ? C_UNITS : UC_UNITS).map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
+                {(isCountable ? COUNTABLE_UNITS : UNCOUNTABLE_UNITS).map(
+                  (u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  )
+                )}
               </select>
             </div>
           </div>
 
           {/* Shelf Life */}
           <div>
-            <label className="block text-gray-700 font-bold mb-2">
+            <label className="mb-2 block font-bold text-gray-700">
               Thời hạn sử dụng (ngày)
             </label>
             <input
@@ -399,20 +359,20 @@ export const IngredientForm = ({
                 setShelfLife(e.target.value ? parseInt(e.target.value) : null)
               }
               disabled={readOnly}
-              className={`w-full p-2 border-b border-gray-300 text-gray-700 ${
+              className={`w-full border-b border-gray-300 p-2 text-gray-700 ${
                 readOnly
                   ? 'bg-gray-50 focus:outline-none'
-                  : 'focus:outline-none focus:border-gray-400'
+                  : 'focus:border-gray-400 focus:outline-none'
               }`}
             />
             {readOnly && !shelfLife && (
-              <p className="text-gray-500 text-sm">Không có dữ liệu</p>
+              <p className="text-sm text-gray-500">Không có dữ liệu</p>
             )}
           </div>
 
           {/* Price */}
           <div>
-            <label className="block text-gray-700 font-bold mb-2">
+            <label className="mb-2 block font-bold text-gray-700">
               Giá ước tính
             </label>
             <input
@@ -424,20 +384,20 @@ export const IngredientForm = ({
                 setPrice(e.target.value ? parseInt(e.target.value) : null)
               }
               disabled={readOnly}
-              className={`w-full p-2 border-b border-gray-300 text-gray-700 ${
+              className={`w-full border-b border-gray-300 p-2 text-gray-700 ${
                 readOnly
                   ? 'bg-gray-50 focus:outline-none'
-                  : 'focus:outline-none focus:border-gray-400'
+                  : 'focus:border-gray-400 focus:outline-none'
               }`}
             />
             {readOnly && !price && (
-              <p className="text-gray-500 text-sm">Không có dữ liệu</p>
+              <p className="text-sm text-gray-500">Không có dữ liệu</p>
             )}
           </div>
 
           {/* Hàm lượng dinh dưỡng trên */}
           <div>
-            <label className="block text-gray-700 font-bold mb-2">
+            <label className="mb-2 block font-bold text-gray-700">
               Lượng dinh dưỡng trên 1 đơn vị
             </label>
             {/* <input
@@ -460,7 +420,7 @@ export const IngredientForm = ({
             </label> */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-6">
               <div className="col-span-2">
-                <label className="block text-gray-700 font-bold mb-1">
+                <label className="mb-1 block font-bold text-gray-700">
                   Calo
                 </label>
                 <input
@@ -473,16 +433,16 @@ export const IngredientForm = ({
                       ? 'Không có dữ liệu'
                       : initialData?.calories ?? ''
                   }
-                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${
+                  className={`w-full border-b border-gray-300 p-2 text-gray-700 ${
                     readOnly
                       ? 'bg-gray-50 focus:outline-none'
-                      : 'focus:outline-none focus:border-gray-400'
+                      : 'focus:border-gray-400 focus:outline-none'
                   }`}
                   readOnly={readOnly}
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-1">
+                <label className="mb-1 block font-bold text-gray-700">
                   Đạm
                 </label>
                 <input
@@ -495,16 +455,16 @@ export const IngredientForm = ({
                       ? 'Không có dữ liệu'
                       : initialData?.protein ?? ''
                   }
-                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${
+                  className={`w-full border-b border-gray-300 p-2 text-gray-700 ${
                     readOnly
                       ? 'bg-gray-50 focus:outline-none'
-                      : 'focus:outline-none focus:border-gray-400'
+                      : 'focus:border-gray-400 focus:outline-none'
                   }`}
                   readOnly={readOnly}
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-1">
+                <label className="mb-1 block font-bold text-gray-700">
                   Chất bột đường
                 </label>
                 <input
@@ -517,16 +477,16 @@ export const IngredientForm = ({
                       ? 'Không có dữ liệu'
                       : initialData?.carb ?? ''
                   }
-                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${
+                  className={`w-full border-b border-gray-300 p-2 text-gray-700 ${
                     readOnly
                       ? 'bg-gray-50 focus:outline-none'
-                      : 'focus:outline-none focus:border-gray-400'
+                      : 'focus:border-gray-400 focus:outline-none'
                   }`}
                   readOnly={readOnly}
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-1">
+                <label className="mb-1 block font-bold text-gray-700">
                   Chất xơ
                 </label>
                 <input
@@ -539,16 +499,16 @@ export const IngredientForm = ({
                       ? 'Không có dữ liệu'
                       : initialData?.fiber ?? ''
                   }
-                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${
+                  className={`w-full border-b border-gray-300 p-2 text-gray-700 ${
                     readOnly
                       ? 'bg-gray-50 focus:outline-none'
-                      : 'focus:outline-none focus:border-gray-400'
+                      : 'focus:border-gray-400 focus:outline-none'
                   }`}
                   readOnly={readOnly}
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-1">
+                <label className="mb-1 block font-bold text-gray-700">
                   Chất béo
                 </label>
                 <input
@@ -561,10 +521,10 @@ export const IngredientForm = ({
                       ? 'Không có dữ liệu'
                       : initialData?.fat ?? ''
                   }
-                  className={`w-full p-2 border-b border-gray-300 text-gray-700 ${
+                  className={`w-full border-b border-gray-300 p-2 text-gray-700 ${
                     readOnly
                       ? 'bg-gray-50 focus:outline-none'
-                      : 'focus:outline-none focus:border-gray-400'
+                      : 'focus:border-gray-400 focus:outline-none'
                   }`}
                   readOnly={readOnly}
                 />
@@ -577,7 +537,7 @@ export const IngredientForm = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-6 justify-center mt-8">
+        <div className="mt-8 flex justify-center gap-6">
           {actions ? (
             actions
           ) : (
