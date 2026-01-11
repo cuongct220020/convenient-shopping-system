@@ -8,10 +8,7 @@ from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC,
-    ADD_USERS_GROUP_EVENTS_TOPIC,
-    LEAVE_GROUP_EVENTS_TOPIC,
-    REMOVE_USERS_GROUP_EVENTS_TOPIC,
-    UPDATE_HEADCHEF_ROLE_EVENTS_TOPIC
+    NOTIFICATION_TOPIC
 )
 
 # Import Handlers
@@ -21,6 +18,12 @@ from app.consumers.handlers.add_user_group_handler import AddUserGroupHandler
 from app.consumers.handlers.remove_user_group_handler import RemoveUserGroupHandler
 from app.consumers.handlers.user_leave_group_handler import UserLeaveGroupHandler
 from app.consumers.handlers.update_head_chef_role_handler import UpdateHeadChefRoleHandler
+from app.consumers.handlers.food_expiring_soon_handler import FoodExpiringSoonHandler
+from app.consumers.handlers.food_expired_handler import FoodExpiredHandler
+from app.consumers.handlers.plan_assigned_handler import PlanAssignedHandler
+from app.consumers.handlers.plan_reported_handler import PlanReportedHandler
+from app.consumers.handlers.plan_expired_handler import PlanExpiredHandler
+from app.consumers.handlers.daily_meal_handler import DailyMealHandler
 
 
 logger = get_logger("Notification Consumer")
@@ -37,21 +40,48 @@ def request_shutdown():
 async def consume_notifications(app=None):
     """
     A long-running task that consumes messages and dispatches them to appropriate handlers.
+    
+    General Message Format for NOTIFICATION_TOPIC:
+    {
+        "event_type": str,                    # Required: Event type identifier (e.g., "group_user_added", "food_expiring_soon")
+        "group_id": "uuid_string",            # Required: UUID of the group
+        "receivers": ["uuid_string"],         # Optional: List of receiver user IDs. If not provided, will be determined by handler logic
+        "receiver_is_head_chef": bool,        # Optional: Whether the receiver is the head chef of the group
+        "data": {                             # Required: Data fields corresponding to notification_templates
+            # Fields vary by template, examples:
+            # "group_name": str,
+            # "requester_username": str,
+            # "unit_name": str,
+            # "plan_id": int,
+            # etc.
+        }
+    }
     """
     
-    # 1. Define Topic -> Handler Mapping
-    # We use the same generic OTPMessageHandler but configured for specific actions validation
-    handlers: Dict[str, BaseMessageHandler] = {
+    # 1. Define Topic -> Handler Mapping for OTP topics (kept separate)
+    otp_handlers: Dict[str, BaseMessageHandler] = {
         REGISTRATION_EVENTS_TOPIC: OTPMessageHandler(expected_action="register"),
         RESET_PASSWORD_EVENTS_TOPIC: OTPMessageHandler(expected_action="reset_password"),
         EMAIL_CHANGE_EVENTS_TOPIC: OTPMessageHandler(expected_action="change_email"),
-        ADD_USERS_GROUP_EVENTS_TOPIC: AddUserGroupHandler(),
-        REMOVE_USERS_GROUP_EVENTS_TOPIC: RemoveUserGroupHandler(),
-        LEAVE_GROUP_EVENTS_TOPIC: UserLeaveGroupHandler(),
-        UPDATE_HEADCHEF_ROLE_EVENTS_TOPIC: UpdateHeadChefRoleHandler(),
     }
     
-    topics = list(handlers.keys())
+    # 2. Define Event Type -> Handler Mapping for NOTIFICATION_TOPIC
+    # All non-OTP notifications are routed by event_type
+    event_type_handlers: Dict[str, BaseMessageHandler] = {
+        "group_user_added": AddUserGroupHandler(),
+        "group_user_removed": RemoveUserGroupHandler(),
+        "group_user_left": UserLeaveGroupHandler(),
+        "group_head_chef_updated": UpdateHeadChefRoleHandler(),
+        "food_expiring_soon": FoodExpiringSoonHandler(),
+        "food_expired": FoodExpiredHandler(),
+        "plan_assigned": PlanAssignedHandler(),
+        "plan_reported": PlanReportedHandler(),
+        "plan_expired": PlanExpiredHandler(),
+        "daily_meal": DailyMealHandler(),
+    }
+    
+    # Combine all topics (OTP topics + NOTIFICATION_TOPIC)
+    topics = list(otp_handlers.keys()) + [NOTIFICATION_TOPIC]
 
     max_retries = 10
     retry_count = 0
@@ -106,11 +136,27 @@ async def consume_notifications(app=None):
                 logger.debug(f"Received message on {message_topic}: {message_value}")
 
                 # Dispatch to Handler
-                handler = handlers.get(message_topic)
-                if handler:
-                    await handler.handle(message_value, app)
+                if message_topic in otp_handlers:
+                    # OTP topics: route by topic
+                    handler = otp_handlers.get(message_topic)
+                    if handler:
+                        await handler.handle(message_value, app)
+                    else:
+                        logger.warning(f"No handler found for OTP topic: {message_topic}")
+                elif message_topic == NOTIFICATION_TOPIC:
+                    # NOTIFICATION_TOPIC: route by event_type
+                    event_type = message_value.get("event_type")
+                    if not event_type:
+                        logger.error(f"Missing event_type in message from {NOTIFICATION_TOPIC}: {message_value}")
+                        continue
+                    
+                    handler = event_type_handlers.get(event_type)
+                    if handler:
+                        await handler.handle(message_value, app)
+                    else:
+                        logger.warning(f"No handler found for event_type: {event_type}")
                 else:
-                    logger.warning(f"No handler found for topic: {message_topic}")
+                    logger.warning(f"Unknown topic: {message_topic}")
 
             except Exception as e:
                 # Log error but don't crash the loop.

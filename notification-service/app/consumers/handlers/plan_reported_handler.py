@@ -1,31 +1,31 @@
-# notification-service/app/consumers/handlers/remove_user_group_handler.py
+# notification-service/app/consumers/handlers/plan_reported_handler.py
 from uuid import UUID
 
 from app.consumers.handlers.base_handler import BaseMessageHandler
 from app.repositories.notification_repository import NotificationRepository
 from app.schemas.notification_schema import NotificationCreateSchema, NotificationResponseSchema
-from app.templates.notification_templates import GroupUserRemovedNotificationTemplate
+from app.templates.notification_templates import PlanReportedNotificationTemplate
 from app.utils.get_group_info import get_group_info
 from app.websocket.websocket_manager import websocket_manager
 from shopping_shared.databases.database_manager import database_manager as postgres_db
 from shopping_shared.utils.logger_utils import get_logger
 
+logger = get_logger("Plan Reported Handler")
 
-logger = get_logger("Remove User Group Handler")
 
-
-class RemoveUserGroupHandler(BaseMessageHandler):
+class PlanReportedHandler(BaseMessageHandler):
     async def handle(self, message: dict, app=None):
         """
-        Handle the group_user_removed notification.
+        Handle the PLAN_REPORTED notification.
         Expected message format:
         {
-          "event_type": "group_user_removed",
+          "event_type": "plan_reported",
           "group_id": "uuid_string",
           "receivers": ["uuid_string"],  # optional
           "data": {
-            "group_name": str,
-            "requester_username": str
+            "plan_id": int,
+            "assignee_username": str,
+            "group_name": str
           }
         }
         """
@@ -39,7 +39,7 @@ class RemoveUserGroupHandler(BaseMessageHandler):
 
         # 1) Render template title/content
         try:
-            rendered = GroupUserRemovedNotificationTemplate.render(raw_data)
+            rendered = PlanReportedNotificationTemplate.render(raw_data)
         except Exception as e:
             logger.error(f"Failed to render template for message: {message}. Error: {e}", exc_info=True)
             return
@@ -107,7 +107,7 @@ class RemoveUserGroupHandler(BaseMessageHandler):
                         receiver=receiver_uuid,
                         group_id=group_id,
                         group_name=final_group_name,
-                        template_code=GroupUserRemovedNotificationTemplate.template_code,
+                        template_code=PlanReportedNotificationTemplate.template_code,
                         title=rendered["title"],
                         content=rendered["content"],
                         raw_data=raw_data,
@@ -123,3 +123,4 @@ class RemoveUserGroupHandler(BaseMessageHandler):
         # 4) Push created rows to websocket
         for user_id, payload in created_for_ws:
             await websocket_manager.send_to_user(user_id, {"event_type": event_type, "data": payload})
+
