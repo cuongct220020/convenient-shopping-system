@@ -210,19 +210,23 @@ export function httpPost<T>(
         }
       }
       const status = e.response.status
+      // Extract error message from response body if available
+      const responseData = e.response.data as { status?: string; message?: string } | undefined
+      const errorMessage = responseData?.message || null
+
       switch (status) {
         case 401:
-          return { type: 'unauthorized', desc: null }
+          return { type: 'unauthorized', desc: errorMessage }
         case 404:
-          return { type: 'path-not-found', desc: null }
+          return { type: 'path-not-found', desc: errorMessage }
         case 403:
-          return { type: 'forbidden', desc: null }
+          return { type: 'forbidden', desc: errorMessage }
         case 409:
-          return { type: 'conflict', desc: null }
+          return { type: 'conflict', desc: errorMessage }
         default:
           return {
             type: 'network-error',
-            desc: `HTTP ${status}`
+            desc: errorMessage || `HTTP ${status}`
           }
       }
     }

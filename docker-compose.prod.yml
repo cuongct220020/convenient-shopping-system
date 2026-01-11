@@ -389,3 +389,21 @@ services:
       resources:
         limits:
           memory: 200M
+
+  # Kafka UI for managing and monitoring Kafka (Xoá service này khi deploy lên AWS)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    hostname: kafka-ui
+    ports:
+      - "8080:8080"
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-kafka-broker
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker:9092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - shopping-network
+    restart: unless-stopped
