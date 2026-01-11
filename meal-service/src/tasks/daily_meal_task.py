@@ -70,6 +70,7 @@ async def publish_daily_meals() -> None:
                 key=f"{group_id}-meal",
                 wait=True,
             )
+            logger.info(f"Published daily_meal event: group_id={group_id}")
         except Exception as e:
             logger.error(f"Failed to publish daily_meal for group {group_id}: {e}", exc_info=True)
 
