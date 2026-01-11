@@ -23,7 +23,6 @@ class DailyMealHandler(BaseMessageHandler):
           "group_id": "uuid_string",
           "receivers": ["uuid_string"],  # optional
           "data": {
-            "group_name": str,
             "breakfast": list[str],
             "lunch": list[str],
             "dinner": list[str]
@@ -38,25 +37,31 @@ class DailyMealHandler(BaseMessageHandler):
             logger.warning(f"Invalid message format: {message}")
             return
 
-        # 1) Render template title/content
-        try:
-            rendered = DailyMealNotificationTemplate.render(raw_data)
-        except Exception as e:
-            logger.error(f"Failed to render template for message: {message}. Error: {e}", exc_info=True)
-            return
-
         try:
             group_id = UUID(str(group_id_raw))
         except Exception:
             logger.warning(f"Invalid group_id: {group_id_raw}")
             return
 
-        # 2) Get group info + resolve receivers
+        # 1) Get group info first (to inject group_name into data)
         if app is None:
             logger.error("App context is required to resolve group info / DB config")
             return
 
         group_name_from_service, members, head_chef = await get_group_info(group_id, app.config)
+
+        if not group_name_from_service:
+            logger.error(f"Missing group_name for group {group_id}. message={message}")
+            return
+
+        raw_data["group_name"] = group_name_from_service
+
+        # 2) Render template title/content (after group_name injection)
+        try:
+            rendered = DailyMealNotificationTemplate.render(raw_data)
+        except Exception as e:
+            logger.error(f"Failed to render template for message: {message}. Error: {e}", exc_info=True)
+            return
 
         has_receivers_field = "receivers" in message
         receivers = message.get("receivers") if has_receivers_field else None
@@ -81,11 +86,6 @@ class DailyMealHandler(BaseMessageHandler):
                     if member_id:
                         receivers.append(member_id)
 
-        final_group_name = group_name_from_service or raw_data.get("group_name")
-        if not final_group_name:
-            logger.error(f"Missing group_name for group {group_id}. message={message}")
-            return
-
         # Ensure DB is initialized for consumer context (learn from user-service: setup_db listener)
         if postgres_db.engine is None:
             logger.error("Database is not initialized. Ensure setup_db is registered in app listeners.")
@@ -107,7 +107,7 @@ class DailyMealHandler(BaseMessageHandler):
                     created = await repo.create(NotificationCreateSchema(
                         receiver=receiver_uuid,
                         group_id=group_id,
-                        group_name=final_group_name,
+                        group_name=group_name_from_service,
                         template_code=DailyMealNotificationTemplate.template_code,
                         title=rendered["title"],
                         content=rendered["content"],
