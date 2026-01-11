@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { Search, Plus, Filter, Check, Edit, Trash2 } from 'lucide-react'
 import Item from '../components/Item'
 import { Button } from '../components/Button'
+import { Pagination } from '../components/Pagination'
 import { DishForm } from '../components/DishForm'
 import { IngredientForm } from '../components/IngredientForm'
 import garlicImg from '../assets/garlic.png'
@@ -37,10 +38,8 @@ const IngredientMenu = () => {
   >([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [nextCursor, setNextCursor] = useState<number | null>(null)
-  const [currentCursor, setCurrentCursor] = useState<number | undefined>(
-    undefined
-  )
+  const [pagesCursors, setPagesCursors] = useState<(number | null)[]>([null])
+  const [currentPage, setCurrentPage] = useState(1)
   const [showFilter, setShowFilter] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -49,41 +48,61 @@ const IngredientMenu = () => {
   const [selectedItem, setSelectedItem] = useState<ItemData | null>(null)
   const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
 
-  const fetchIngredients = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await ingredientService.getIngredients({
-        cursor: currentCursor,
-        limit: ITEMS_PER_PAGE,
-        search: searchQuery || undefined,
-        categories:
-          selectedCategories.length > 0 ? selectedCategories : undefined
-      })
+  const fetchIngredients = useCallback(
+    async (pageNumber: number = 1) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const cursor = pagesCursors[pageNumber - 1] ?? undefined
+        const result = await ingredientService.getIngredients({
+          cursor,
+          limit: ITEMS_PER_PAGE,
+          search: searchQuery || undefined,
+          categories:
+            selectedCategories.length > 0 ? selectedCategories : undefined
+        })
 
-      if (!isMounted.current) return
+        if (!isMounted.current) return
 
-      if (result.isOk()) {
-        const response = result.value
-        setIngredients(response.data.map(mapIngredientToItem))
-        setNextCursor(response.next_cursor)
-      } else {
-        setError(result.error.desc || 'Failed to fetch ingredients')
+        if (result.isOk()) {
+          const response = result.value
+          setIngredients(response.data.map(mapIngredientToItem))
+          setCurrentPage(pageNumber)
+
+          // Add next page cursor if it doesn't exist yet
+          if (response.next_cursor !== null && !pagesCursors[pageNumber]) {
+            setPagesCursors((prev) => {
+              const updated = [...prev]
+              updated[pageNumber] = response.next_cursor
+              return updated
+            })
+          }
+        } else {
+          setError(result.error.desc || 'Failed to fetch ingredients')
+        }
+      } catch (err) {
+        if (isMounted.current) {
+          setError(String(err))
+        }
+      } finally {
+        if (isMounted.current) {
+          setLoading(false)
+        }
       }
-    } catch (err) {
-      if (isMounted.current) {
-        setError(String(err))
-      }
-    } finally {
-      if (isMounted.current) {
-        setLoading(false)
-      }
-    }
-  }, [currentCursor, searchQuery, selectedCategories, isMounted])
+    },
+    [pagesCursors, searchQuery, selectedCategories, isMounted]
+  )
 
   useEffect(() => {
-    fetchIngredients()
-  }, [fetchIngredients])
+    // Reset pagination when filters change, then fetch page 1
+    setPagesCursors([null])
+    setCurrentPage(1)
+    // Call fetchIngredients to fetch page 1 with new filters
+    // Intentionally not in dependency array to avoid circular dependency
+    // with pagesCursors (which gets updated during fetch)
+    fetchIngredients(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedCategories])
 
   const handleToggleFilter = () => {
     setShowFilter((prev) => !prev)
@@ -147,12 +166,14 @@ const IngredientMenu = () => {
         ? prev.filter((c) => c !== category)
         : [...prev, category]
     )
-    setCurrentCursor(undefined)
+    setPagesCursors([null])
+    setCurrentPage(1)
   }
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
-    setCurrentCursor(undefined)
+    setPagesCursors([null])
+    setCurrentPage(1)
   }
 
   // UI calculations for display
@@ -295,15 +316,11 @@ const IngredientMenu = () => {
             {' / '}
             {totalItems} nguyên liệu
           </div>
-          {nextCursor !== null && nextCursor !== undefined && (
-            <Button
-              variant="primary"
-              size="fit"
-              onClick={() => setCurrentCursor(nextCursor)}
-            >
-              Tải thêm
-            </Button>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={pagesCursors.length}
+            onPageChange={(page) => fetchIngredients(page)}
+          />
         </div>
       </div>
 
