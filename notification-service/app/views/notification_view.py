@@ -38,6 +38,13 @@ class NotificationListView(BaseAPIView):
     async def get(self, request: Request, user_id: UUID):
         """Get all notifications for a specific user."""
         try:
+            requesting_user_id = getattr(request.ctx, "auth_payload", {}).get("sub")
+            if requesting_user_id and str(requesting_user_id) != str(user_id):
+                return self.fail_response(
+                    message="Forbidden",
+                    status_code=403
+                )
+
             # Initialize dependencies
             notification_service = NotificationService(request.ctx.db_session)
             
@@ -63,8 +70,8 @@ class NotificationListView(BaseAPIView):
             )
 
 
-class NotificationDetailView(BaseAPIView):
-    """View for notification detail operations (mark as read, delete)."""
+class NotificationReadView(BaseAPIView):
+    """View for marking notifications as read."""
 
     @openapi.definition(
         summary="Mark notification as read",
@@ -91,6 +98,13 @@ class NotificationDetailView(BaseAPIView):
     async def patch(self, request: Request, notification_id: int, user_id: UUID):
         """Mark a notification as read."""
         try:
+            requesting_user_id = getattr(request.ctx, "auth_payload", {}).get("sub")
+            if requesting_user_id and str(requesting_user_id) != str(user_id):
+                return self.fail_response(
+                    message="Forbidden",
+                    status_code=403
+                )
+
             # Initialize dependencies
             notification_service = NotificationService(request.ctx.db_session)
             
@@ -121,6 +135,10 @@ class NotificationDetailView(BaseAPIView):
                 status_code=500
             )
 
+
+class NotificationDeleteView(BaseAPIView):
+    """View for deleting notifications."""
+
     @openapi.definition(
         summary="Delete notification",
         description="Deletes a specific notification. Only the owner of the notification can delete it.",
@@ -146,6 +164,13 @@ class NotificationDetailView(BaseAPIView):
     async def delete(self, request: Request, notification_id: int, user_id: UUID):
         """Delete a notification."""
         try:
+            requesting_user_id = getattr(request.ctx, "auth_payload", {}).get("sub")
+            if requesting_user_id and str(requesting_user_id) != str(user_id):
+                return self.fail_response(
+                    message="Forbidden",
+                    status_code=403
+                )
+
             # Initialize dependencies
             notification_service = NotificationService(request.ctx.db_session)
             
