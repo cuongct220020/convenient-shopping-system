@@ -7,7 +7,7 @@ from shopping_shared.utils.logger_utils import get_logger
 logger = get_logger("Group Info Utils")
 
 
-def _get_user_service_url(config) -> str:
+def get_user_service_url(config) -> str:
     """
     Lấy user service URL từ config.
     
@@ -39,7 +39,7 @@ async def get_group_info(
             - members_list: List các dict chứa thông tin members (user info và role), empty list nếu có lỗi
             - head_chef_info: Dict chứa thông tin head chef (user info và role) hoặc None nếu không tìm thấy
     """
-    user_service_url = _get_user_service_url(config)
+    user_service_url = get_user_service_url(config)
     url = f"{user_service_url}/groups/{group_id}/members"
     
     headers = {}
