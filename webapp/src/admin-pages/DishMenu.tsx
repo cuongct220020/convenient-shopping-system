@@ -1,5 +1,13 @@
 import React, { useState, useMemo } from 'react'
-import { Search, Plus, Filter, LayoutGrid, Check, Edit, Trash2 } from 'lucide-react'
+import {
+  Search,
+  Plus,
+  Filter,
+  LayoutGrid,
+  Check,
+  Edit,
+  Trash2
+} from 'lucide-react'
 import Item from '../components/Item'
 import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
@@ -55,7 +63,9 @@ const allDishesData = Array(200)
     return {
       id: index,
       name: isHamburger ? 'Hamburger' : possibleNames[randomNameIndex],
-      category: isHamburger ? 'Món ăn vặt' : possibleCategories[randomCategoryIndex],
+      category: isHamburger
+        ? 'Món ăn vặt'
+        : possibleCategories[randomCategoryIndex],
       image: hamburgerImg
     }
   })
@@ -168,12 +178,15 @@ const DishMenu = () => {
       {/* Header */}
       <div className="mb-8 flex flex-col space-y-6 px-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-800">
-            Danh mục món ăn
-          </h2>
+          <h2 className="text-xl font-bold text-gray-800">Danh mục món ăn</h2>
 
           <div className="flex items-center space-x-4">
-            <Button variant="primary" icon={Plus} size="fit" onClick={handleAddDishClick}>
+            <Button
+              variant="primary"
+              icon={Plus}
+              size="fit"
+              onClick={handleAddDishClick}
+            >
               Thêm món ăn
             </Button>
 
@@ -244,7 +257,7 @@ const DishMenu = () => {
       {/* Grid Container - Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         {currentItems.length > 0 ? (
-          <div className="px-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 px-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {currentItems.map((item) => (
               <Item
                 key={item.id}
@@ -256,7 +269,7 @@ const DishMenu = () => {
             ))}
           </div>
         ) : (
-          <div className="px-6 flex h-64 items-center justify-center text-gray-500">
+          <div className="flex h-64 items-center justify-center px-6 text-gray-500">
             Không tìm thấy món ăn nào.
           </div>
         )}
@@ -312,8 +325,16 @@ const DishMenu = () => {
                   servings: selectedItem.servings || 'Chưa có thông tin',
                   cookTime: selectedItem.cookTime || 'Chưa có thông tin',
                   prepTime: selectedItem.prepTime || 'Chưa có thông tin',
-                  ingredients: selectedItem.ingredients && selectedItem.ingredients.length > 0 ? selectedItem.ingredients : [],
-                  instructions: selectedItem.instructions && selectedItem.instructions.length > 0 ? selectedItem.instructions : []
+                  ingredients:
+                    selectedItem.ingredients &&
+                    selectedItem.ingredients.length > 0
+                      ? selectedItem.ingredients
+                      : [],
+                  instructions:
+                    selectedItem.instructions &&
+                    selectedItem.instructions.length > 0
+                      ? selectedItem.instructions
+                      : []
                 }}
                 readOnly={true}
                 actions={
