@@ -46,7 +46,7 @@ class PlanTransition:
                 "receivers": [str(plan.assigner_id)],
                 "data": {
                     "plan_id": plan.plan_id,
-                    "deadline": plan.deadline.isoformat(),
+                    "deadline": plan.deadline.strftime("%H:%M %d/%m/%Y"),
                     "assignee_username": assignee_username,
                 }
             },
