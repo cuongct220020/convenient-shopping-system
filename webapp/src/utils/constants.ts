@@ -1,14 +1,11 @@
 import { i18nKeys } from './i18n/keys'
+import {
+  type MealType as MT,
+  MealTypeSchema as MTS
+} from '../services/schema/mealSchema'
 
-export const MealTypes = [
-  'breakfast',
-  'lunch',
-  'dinner',
-  'late-night',
-  'snack'
-] as const
-
-export type MealType = (typeof MealTypes)[number]
+export type MealType = MT
+export const MealTypes = MTS.options
 
 export function mealTypeStr(e: MealType): i18nKeys {
   switch (e) {
@@ -16,12 +13,8 @@ export function mealTypeStr(e: MealType): i18nKeys {
       return 'meal_breakfast'
     case 'dinner':
       return 'meal_dinner'
-    case 'late-night':
-      return 'meal_late_night'
     case 'lunch':
       return 'meal_lunch'
-    case 'snack':
-      return 'meal_snack'
   }
 }
 

@@ -59,6 +59,7 @@ export class AppUrl {
   static readonly ADMIN_USERS = 'api/v1/user-service/admin/users'
   static readonly SHOPPING_PLANS_FILTER = 'v1/shopping_plans/filter'
   static readonly SHOPPING_PLANS = 'v1/shopping_plans/'
+  static readonly MEALS = 'v1/meals/'
   static readonly INGREDIENTS = 'v2/ingredients/'
   static readonly INGREDIENTS_BY_ID = (id: string) => `v2/ingredients/${id}`
   static readonly NOTIFICATIONS = (userId: string) =>

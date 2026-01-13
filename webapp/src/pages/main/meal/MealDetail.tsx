@@ -17,7 +17,8 @@ export function MealDetail() {
     <div className="flex flex-col px-3 py-4">
       <div className="flex w-full flex-row">
         <BackButton
-          to={`/main/family-group/${groupId}/meal`}
+          to={`/main/family-group/${groupId}`}
+          state={{ activeTab: 'meal' }}
           text="Quay lại"
         ></BackButton>
       </div>
