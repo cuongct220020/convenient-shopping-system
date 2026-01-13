@@ -59,6 +59,7 @@ export class AppUrl {
   static readonly INGREDIENTS_BY_ID = (id: string) => `v2/ingredients/${id}`
   static readonly INGREDIENTS_SEARCH = (keyword: string) =>
     `v2/ingredients/search?keyword=${encodeURIComponent(keyword)}`
+  static readonly RECIPES = 'v2/recipes/'
 }
 
 export type Clients = {
@@ -213,7 +214,9 @@ export function httpPost<T>(
       }
       const status = e.response.status
       // Extract error message from response body if available
-      const responseData = e.response.data as { status?: string; message?: string } | undefined
+      const responseData = e.response.data as
+        | { status?: string; message?: string }
+        | undefined
       const errorMessage = responseData?.message || null
 
       switch (status) {

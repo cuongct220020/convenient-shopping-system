@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
 import {
   Search,
   Plus,
@@ -12,63 +12,9 @@ import Item from '../components/Item'
 import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
 import { DishForm } from '../components/DishForm'
-// Assuming the uploaded image is placed in assets
+import { dishService } from '../services/dish'
 import hamburgerImg from '../assets/hamburger.png'
-
-// Dữ liệu giả lập cho Món ăn
-const possibleNames = [
-  'Hamburger',
-  'Pizza Hải Sản',
-  'Phở Bò',
-  'Bún Chả',
-  'Cơm Tấm',
-  'Mì Ý Sốt Kem',
-  'Gà Rán',
-  'Khoai Tây Chiên',
-  'Bánh Mì',
-  'Sushi',
-  'Sashimi',
-  'Lẩu Thái',
-  'Bò Bít Tết',
-  'Salad Nga',
-  'Nem Rán',
-  'Bánh Xèo',
-  'Trà Sữa',
-  'Cà Phê Sữa',
-  'Sinh Tố Bơ',
-  'Nước Ép Cam'
-]
-
-const possibleCategories = [
-  'Món ăn vặt',
-  'Món chính',
-  'Món khai vị',
-  'Tráng miệng',
-  'Đồ uống',
-  'Đồ chay',
-  'Bánh ngọt'
-]
-
-// Tạo 200 món ăn giả lập
-const allDishesData = Array(200)
-  .fill(null)
-  .map((_, index) => {
-    // Để giống screenshot, ta ưu tiên hiển thị Hamburger nhiều hơn một chút trong random
-    const isHamburger = Math.random() > 0.7
-    const randomNameIndex = Math.floor(Math.random() * possibleNames.length)
-    const randomCategoryIndex = Math.floor(
-      Math.random() * possibleCategories.length
-    )
-
-    return {
-      id: index,
-      name: isHamburger ? 'Hamburger' : possibleNames[randomNameIndex],
-      category: isHamburger
-        ? 'Món ăn vặt'
-        : possibleCategories[randomCategoryIndex],
-      image: hamburgerImg
-    }
-  })
+import type { Dish } from '../services/schema/dishSchema'
 
 const ITEMS_PER_PAGE = 20
 
@@ -78,8 +24,51 @@ const DishMenu = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddDishForm, setShowAddDishForm] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [selectedItem, setSelectedItem] = useState<Dish | null>(null)
   const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
+  const [dishes, setDishes] = useState<Dish[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pagesCursors, setPagesCursors] = useState<(number | null)[]>([null])
+
+  const fetchDishes = useCallback(
+    async (pageNumber: number = 1) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const cursor = pagesCursors[pageNumber - 1] ?? undefined
+        const result = await dishService.getDishes({
+          cursor,
+          limit: ITEMS_PER_PAGE
+        })
+
+        if (result.isOk()) {
+          const response = result.value
+          setDishes(response.data)
+
+          // Store next_cursor for pagination
+          if (response.next_cursor !== null && !pagesCursors[pageNumber]) {
+            setPagesCursors((prev) => {
+              const updated = [...prev]
+              updated[pageNumber] = response.next_cursor
+              return updated
+            })
+          }
+        } else {
+          setError(result.error.desc || 'Failed to fetch dishes')
+        }
+      } catch (err) {
+        setError('An error occurred while fetching dishes')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [pagesCursors]
+  )
+
+  useEffect(() => {
+    fetchDishes(1)
+  }, [])
 
   const handleToggleFilter = () => {
     setShowFilter((prev) => !prev)
@@ -123,9 +112,12 @@ const DishMenu = () => {
   }
 
   const uniqueCategories = useMemo(() => {
-    const categories = new Set(allDishesData.map((item) => item.category))
-    return Array.from(categories)
-  }, [])
+    const categories = new Set<string>()
+    dishes.forEach((item) => {
+      if (item.level) categories.add(item.level)
+    })
+    return Array.from(categories).sort()
+  }, [dishes])
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategories((prev) =>
@@ -143,18 +135,18 @@ const DishMenu = () => {
 
   const { totalPages, currentItems, startIndex, endIndex, totalItems } =
     useMemo(() => {
-      let filteredData = allDishesData
+      let filteredData = dishes
 
       if (selectedCategories.length > 0) {
         filteredData = filteredData.filter((item) =>
-          selectedCategories.includes(item.category)
+          selectedCategories.includes(item.level || '')
         )
       }
 
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         filteredData = filteredData.filter((item) =>
-          item.name.toLowerCase().includes(query)
+          item.component_name.toLowerCase().includes(query)
         )
       }
 
@@ -171,7 +163,7 @@ const DishMenu = () => {
         endIndex: Math.min(endIndex, totalItems),
         totalItems
       }
-    }, [currentPage, selectedCategories, searchQuery])
+    }, [currentPage, dishes, selectedCategories, searchQuery])
 
   return (
     <div className="flex min-h-screen flex-1 flex-col pt-6">
@@ -204,7 +196,7 @@ const DishMenu = () => {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <h3 className="mb-2 font-semibold text-gray-700">
-                    Lọc theo danh mục
+                    Lọc theo độ khó
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
                     {uniqueCategories.map((category) => (
@@ -256,14 +248,28 @@ const DishMenu = () => {
 
       {/* Grid Container - Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        {currentItems.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 px-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        {loading ? (
+          <div className="flex h-64 items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <div className="size-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
+              <span className="text-sm text-gray-600">Đang tải...</span>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="flex h-64 items-center justify-center">
+            <div className="text-center">
+              <p className="text-red-500 font-semibold mb-2">Lỗi</p>
+              <p className="text-gray-500">{error}</p>
+            </div>
+          </div>
+        ) : currentItems.length > 0 ? (
+          <div className="px-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {currentItems.map((item) => (
               <Item
-                key={item.id}
-                name={item.name}
-                category={item.category}
-                image={item.image}
+                key={item.component_id}
+                name={item.component_name}
+                category={item.level || 'N/A'}
+                image={item.image_url || hamburgerImg}
                 onClick={() => handleItemClick(item)}
               />
             ))}
@@ -318,23 +324,15 @@ const DishMenu = () => {
             {viewMode === 'view' && (
               <DishForm
                 initialData={{
-                  dishName: selectedItem.name || 'Chưa có thông tin',
-                  category: selectedItem.category || 'Chưa có thông tin',
-                  difficulty: selectedItem.difficulty || 'Chưa có thông tin',
-                  image: selectedItem.image || null,
-                  servings: selectedItem.servings || 'Chưa có thông tin',
-                  cookTime: selectedItem.cookTime || 'Chưa có thông tin',
-                  prepTime: selectedItem.prepTime || 'Chưa có thông tin',
-                  ingredients:
-                    selectedItem.ingredients &&
-                    selectedItem.ingredients.length > 0
-                      ? selectedItem.ingredients
-                      : [],
-                  instructions:
-                    selectedItem.instructions &&
-                    selectedItem.instructions.length > 0
-                      ? selectedItem.instructions
-                      : []
+                  dishName: selectedItem.component_name || 'Chưa có thông tin',
+                  category: selectedItem.level || 'Chưa có thông tin',
+                  difficulty: selectedItem.level || 'Chưa có thông tin',
+                  image: selectedItem.image_url || hamburgerImg,
+                  servings: selectedItem.default_servings || 0,
+                  cookTime: String(selectedItem.cook_time || '0'),
+                  prepTime: String(selectedItem.prep_time || '0'),
+                  ingredients: [],
+                  instructions: []
                 }}
                 readOnly={true}
                 actions={
@@ -375,15 +373,15 @@ const DishMenu = () => {
             {viewMode === 'edit' && (
               <DishForm
                 initialData={{
-                  dishName: selectedItem.name || '',
-                  category: selectedItem.category || '',
-                  difficulty: selectedItem.difficulty || '',
-                  image: selectedItem.image || null,
-                  servings: selectedItem.servings || 0,
-                  cookTime: selectedItem.cookTime || '',
-                  prepTime: selectedItem.prepTime || '',
-                  ingredients: selectedItem.ingredients || [],
-                  instructions: selectedItem.instructions || []
+                  dishName: selectedItem.component_name || '',
+                  category: selectedItem.level || '',
+                  difficulty: selectedItem.level || '',
+                  image: selectedItem.image_url || hamburgerImg,
+                  servings: selectedItem.default_servings || 0,
+                  cookTime: String(selectedItem.cook_time || ''),
+                  prepTime: String(selectedItem.prep_time || ''),
+                  ingredients: [],
+                  instructions: []
                 }}
                 onSubmit={handleSaveClick}
                 onCancel={() => setViewMode('view')}
