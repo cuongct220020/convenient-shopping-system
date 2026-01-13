@@ -38,17 +38,12 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
     }, 300)
   }
 
-  const timeAgo = new Intl.RelativeTimeFormat('vi', { numeric: 'auto' }).format(
-    Math.floor((toast.timestamp.getTime() - Date.now()) / 1000 / 60),
-    'minute'
-  )
-
   return (
     <div
       className={`
-        flex items-start gap-3 w-full max-w-sm bg-white rounded-lg shadow-lg border border-gray-200 p-4
+        flex items-start gap-3 w-full bg-white rounded-lg shadow-lg border border-gray-200 p-4
         transition-all duration-300 ease-in-out
-        ${isVisible && !isExiting ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
+        ${isVisible && !isExiting ? 'translate-y-0 opacity-100' : 'translate-y-[-20px] opacity-0'}
       `}
     >
       {/* Icon */}
@@ -62,14 +57,9 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-900 truncate">
+            <p className="text-sm font-semibold text-gray-900">
               {toast.title}
             </p>
-            {toast.groupName && (
-              <p className="text-xs text-blue-600 mt-0.5">
-                {toast.groupName}
-              </p>
-            )}
           </div>
           <button
             onClick={handleClose}
@@ -78,11 +68,8 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
             <X className="w-4 h-4" />
           </button>
         </div>
-        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+        <p className="text-sm text-gray-600 mt-1">
           {toast.content}
-        </p>
-        <p className="text-xs text-gray-400 mt-2">
-          {timeAgo}
         </p>
       </div>
     </div>
@@ -96,8 +83,8 @@ interface ToastContainerProps {
 
 export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
   return createPortal(
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-      <div className="flex flex-col gap-2 pointer-events-auto">
+    <div className="fixed inset-x-0 top-4 z-50 flex flex-col items-center gap-2 pointer-events-none px-4">
+      <div className="flex flex-col items-center gap-2 pointer-events-auto max-w-sm mx-auto w-full">
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onClose={onClose} />
         ))}
