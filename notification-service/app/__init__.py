@@ -26,8 +26,9 @@ def register_routes(sanic_app: Sanic):
         })
 
     # Register API Blueprints
-    from app.apis import api
+    from app.apis import api, ws_api
     sanic_app.blueprint(api)
+    sanic_app.blueprint(ws_api)
 
 
 def register_middleware(sanic_app: Sanic):
