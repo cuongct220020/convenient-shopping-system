@@ -10,7 +10,6 @@ from app.services.notification_service import NotificationService
 from app.schemas.notification_schema import NotificationResponseSchema
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
-from shopping_shared.exceptions import NotFound
 
 logger = get_logger("Notification View")
 

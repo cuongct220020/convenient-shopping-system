@@ -19,6 +19,7 @@ interface DropdownInputFieldProps {
   onChange?: (value: string) => void
   placeholder?: string
   disabled?: boolean
+  readOnly?: boolean
   id?: string
 }
 
@@ -45,6 +46,7 @@ export const DropdownInputField = forwardRef<
       onChange,
       placeholder = 'Select an option',
       disabled = false,
+      readOnly = false,
       id
     },
     ref
@@ -97,8 +99,8 @@ export const DropdownInputField = forwardRef<
           <button
             type="button"
             id={id}
-            disabled={disabled}
-            onClick={() => !disabled && setIsOpen(!isOpen)}
+            disabled={disabled || readOnly}
+            onClick={() => !disabled && !readOnly && setIsOpen(!isOpen)}
             className={`
               w-full rounded-lg border border-gray-300 px-3 py-2
               text-left
@@ -114,25 +116,27 @@ export const DropdownInputField = forwardRef<
               <span className="truncate">
                 {selectedOption ? selectedOption.label : placeholder}
               </span>
-              <svg
-                className={`size-5 text-gray-400 transition-transform ${
-                  isOpen ? 'rotate-180' : ''
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              {!readOnly && (
+                <svg
+                  className={`size-5 text-gray-400 transition-transform ${
+                    isOpen ? 'rotate-180' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              )}
             </span>
           </button>
 
-          {isOpen && !disabled && (
+          {isOpen && !disabled && !readOnly && (
             <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-300 bg-white shadow-lg">
               {options.map((option) => (
                 <button

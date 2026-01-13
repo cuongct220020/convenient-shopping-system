@@ -311,6 +311,7 @@ services:
       - name: notification-service-public
         paths:
           - /api/v2/notification-service/health
+          - /api/v2/notification-service/docs
           - /api/v2/notification-service
           - /api/v2/notification-service/
         strip_path: false

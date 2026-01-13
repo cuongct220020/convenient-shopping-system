@@ -73,7 +73,7 @@ export default function ProtectedAdminLayout() {
         </div>
 
         {/* User Profile */}
-        <div className="mt-auto">
+        <div className="sticky bottom-0">
           <div className="mx-auto mb-6 h-0.5 w-full bg-gray-200"></div>
           <div className="flex items-center space-x-3">
             <div className="flex size-10 items-center justify-center rounded-full bg-emerald-400 text-white">

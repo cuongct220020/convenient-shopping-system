@@ -187,7 +187,7 @@ const EditPlan: React.FC = () => {
       // Get the measurement unit from API (e.g., "g", "ml", "củ")
       const unit = searchResult.measurementUnit || '';
       // For display, combine them (e.g., "100g")
-      const displayQuantity = numericValue > 0 ? `${numericValue}${unit}` : unit;
+      const displayQuantity = numericValue > 0 ? `${numericValue} ${unit}` : unit;
 
       const newIngredient: ExtendedIngredient = {
         id: Date.now(),

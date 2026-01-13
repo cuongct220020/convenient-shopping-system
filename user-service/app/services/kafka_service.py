@@ -1,5 +1,6 @@
 # user-service/app/services/kafka_service.py
 from datetime import datetime, UTC
+from typing import List
 
 from app.enums import OtpAction
 from shopping_shared.messaging.kafka_manager import kafka_manager
@@ -10,7 +11,7 @@ from shopping_shared.messaging.kafka_topics import (
     EMAIL_CHANGE_EVENTS_TOPIC,
     USER_UPDATE_TAG_EVENTS_TOPIC,
     LOGOUT_EVENTS_TOPIC,
-    NOTIFICATION_TOPIC,
+    NOTIFICATION_TOPIC
 )
 
 

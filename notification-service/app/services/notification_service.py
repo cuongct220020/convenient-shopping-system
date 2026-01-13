@@ -3,11 +3,9 @@ from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.notifications import Notification
 from app.repositories.notification_repository import NotificationRepository
 from app.schemas.notification_schema import NotificationResponseSchema, NotificationCreateSchema
 from shopping_shared.utils.logger_utils import get_logger
-from shopping_shared.exceptions import NotFound
 
 logger = get_logger("Notification Service")
 
