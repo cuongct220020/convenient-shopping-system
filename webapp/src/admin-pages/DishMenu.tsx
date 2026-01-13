@@ -223,7 +223,6 @@ const DishMenu = () => {
       }
     }
   }
-
   const handleDeleteClick = async () => {
     if (!selectedItem) return
     setLoading(true)
@@ -231,11 +230,58 @@ const DishMenu = () => {
       const result = await dishService.deleteDish(selectedItem.component_id)
       if (!isMounted.current) return
       if (result.isOk()) {
-        // Invalidate pages after current page
-        setPagesCursors((prev) => prev.slice(0, currentPage))
-        // Refetch current page to get updated data
-        await fetchDishes(currentPage)
         closeModal()
+
+        // Invalidate cursor chain after deletion
+        // Trim cursors from current page onwards since dataset has changed
+        setPagesCursors((prev) => prev.slice(0, currentPage))
+
+        // Refetch current page to rebuild cursor chain and refresh displayed data
+        const freshResult = await dishService.getDishes({
+          cursor: pagesCursors[currentPage - 1] ?? undefined,
+          limit: ITEMS_PER_PAGE,
+          search: searchQuery || undefined,
+          level: selectedCategories.length > 0 ? selectedCategories : undefined
+        })
+
+        if (!isMounted.current) return
+
+        if (freshResult.isOk()) {
+          const response = freshResult.value
+          setDishes(response.data)
+
+          // Handle edge case: current page is now empty
+          if (response.data.length === 0 && currentPage > 1) {
+            // Redirect to previous page and reset pagination
+            setCurrentPage(currentPage - 1)
+            setPagesCursors([null])
+            // Refetch previous page
+            const prevPageResult = await dishService.getDishes({
+              cursor: undefined,
+              limit: ITEMS_PER_PAGE,
+              search: searchQuery || undefined,
+              level:
+                selectedCategories.length > 0 ? selectedCategories : undefined
+            })
+            if (isMounted.current && prevPageResult.isOk()) {
+              const prevResponse = prevPageResult.value
+              setDishes(prevResponse.data)
+              if (prevResponse.next_cursor !== null) {
+                setPagesCursors([null, prevResponse.next_cursor])
+              }
+            }
+          } else if (response.data.length > 0) {
+            // Update pagination cursors if next page exists
+            if (response.next_cursor !== null) {
+              setPagesCursors((prev) => {
+                const updated = [...prev]
+                updated[currentPage] = response.next_cursor
+                return updated
+              })
+            }
+          }
+        }
+
         setReportModal({
           type: 'success',
           title: 'Xóa thành công',
