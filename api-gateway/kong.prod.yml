@@ -142,6 +142,7 @@ services:
                         if status and claims then
                           if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
                           if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
+                          if claims.username then kong.service.request.set_header("X-User-Username", tostring(claims.username)) end
                           if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
                           if claims.jti then kong.service.request.set_header("X-JTI", tostring(claims.jti)) end
                           if claims.exp then kong.service.request.set_header("X-EXP", tostring(claims.exp)) end
