@@ -7,6 +7,7 @@ from app.schemas.notification_schema import NotificationCreateSchema, Notificati
 from app.templates.notification_templates import GroupUserAddedNotificationTemplate
 from app.utils.get_group_info import get_group_info
 from app.websocket.websocket_manager import websocket_manager
+
 from shopping_shared.databases.database_manager import database_manager as postgres_db
 from shopping_shared.utils.logger_utils import get_logger
 

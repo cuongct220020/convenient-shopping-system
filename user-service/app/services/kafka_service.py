@@ -1,5 +1,6 @@
 # user-service/app/services/kafka_service.py
 from datetime import datetime, UTC
+from typing import List
 
 from app.enums import OtpAction
 from shopping_shared.messaging.kafka_manager import kafka_manager

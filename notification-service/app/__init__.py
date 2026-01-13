@@ -69,29 +69,18 @@ def register_listeners(sanic_app: Sanic):
         app.ctx.email_service = EmailService(app.config)
         logger.info("Email Service attached to app.ctx")
 
-        # # Initialize services that require Database Engine
-        # @sanic_app.listener("after_server_start")
-        # async def init_db_services(app, loop):
-        #     # Inject the engine into the global notification service
-        #     if hasattr(app.ctx, 'db_engine'):
-        #         notification_service.set_engine(app.ctx.db_engine)
-        #     else:
-        #         logger.error("DB Engine not found in app.ctx during service init")
-
-
+    # Start Kafka Consumer
     sanic_app.register_listener(start_consumer, "after_server_start")
-
 
     # Register Redis hooks
     sanic_app.register_listener(setup_redis, "before_server_start")
     sanic_app.register_listener(close_redis, "before_server_stop")
 
-
     # Register Kafka hooks
     sanic_app.register_listener(setup_kafka, "before_server_start")
     sanic_app.register_listener(close_kafka, "after_server_stop")
 
-
+    # Stop Kafka cosumer
     sanic_app.register_listener(stop_consumer, "before_server_stop")
 
 
