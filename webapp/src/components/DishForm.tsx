@@ -4,6 +4,7 @@ import { Button } from './Button'
 import { InputField } from './InputField'
 import { DropdownInputField } from './DropDownInputField'
 import { ComponentList } from './ComponentList'
+import { Time } from '../utils/time'
 import {
   DishLevelTypeSchema,
   DishLevelType,
@@ -43,12 +44,18 @@ export const DishForm: React.FC<DishFormProps> = ({
   const [servings, setServings] = useState<number | ''>(
     initialData?.default_servings || ''
   )
-  const [cookTime, setCookTime] = useState<number | null | ''>(
-    initialData?.cook_time ?? ''
+  const [cookTime, setCookTime] = useState<string>(
+    initialData?.cook_time
+      ? Time.formatDuration(initialData.cook_time * 60)
+      : ''
   )
-  const [prepTime, setPrepTime] = useState<number | null | ''>(
-    initialData?.prep_time ?? ''
+  const [cookTimeError, setCookTimeError] = useState<string | null>(null)
+  const [prepTime, setPrepTime] = useState<string>(
+    initialData?.prep_time
+      ? Time.formatDuration(initialData.prep_time * 60)
+      : ''
   )
+  const [prepTimeError, setPrepTimeError] = useState<string | null>(null)
   const [keywords, setKeywords] = useState<string[]>(
     initialData?.keywords || []
   )
@@ -100,14 +107,63 @@ export const DishForm: React.FC<DishFormProps> = ({
     setInstructions(instructions.map((inst, i) => (i === index ? value : inst)))
   }
 
+  const handleCookTimeChange = (value: string) => {
+    setCookTime(value)
+    if (!value.trim()) {
+      setCookTimeError(null)
+      return
+    }
+    const result = Time.parseTimeToMinutes(value)
+    if (result.isOk()) {
+      setCookTimeError(null)
+    } else {
+      setCookTimeError(result.error || null)
+    }
+  }
+
+  const handlePrepTimeChange = (value: string) => {
+    setPrepTime(value)
+    if (!value.trim()) {
+      setPrepTimeError(null)
+      return
+    }
+    const result = Time.parseTimeToMinutes(value)
+    if (result.isOk()) {
+      setPrepTimeError(null)
+    } else {
+      setPrepTimeError(result.error || null)
+    }
+  }
+
   const handleSave = () => {
+    let parsedCookTime: number | null = null
+    let parsedPrepTime: number | null = null
+
+    if (cookTime.trim()) {
+      const cookResult = Time.parseTimeToMinutes(cookTime)
+      if (!cookResult.isOk()) {
+        setCookTimeError(cookResult.error || null)
+        return
+      }
+      parsedCookTime = cookResult.value || null
+    }
+
+    if (prepTime.trim()) {
+      const prepResult = Time.parseTimeToMinutes(prepTime)
+      if (!prepResult.isOk()) {
+        setPrepTimeError(prepResult.error || null)
+        return
+      }
+      parsedPrepTime = prepResult.value || null
+    }
+
     onSubmit({
       component_name: componentName || undefined,
       level,
       image_url: imageUrl,
       default_servings: servings ? Number(servings) : undefined,
-      cook_time: cookTime ? Number(cookTime) : null,
-      prep_time: prepTime ? Number(prepTime) : null,
+      cook_time: parsedCookTime,
+      prep_time: parsedPrepTime,
       keywords: keywords.filter(Boolean),
       instructions: instructions.filter(Boolean),
       component_list: componentList
@@ -216,42 +272,66 @@ export const DishForm: React.FC<DishFormProps> = ({
               htmlFor="cookTime"
               className="block text-sm font-bold text-gray-700"
             >
-              Thời gian nấu (phút)
+              Thời gian nấu
             </label>
-            <input
-              type="number"
-              id="cookTime"
-              value={cookTime === null || cookTime === '' ? '' : cookTime}
-              placeholder="0"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setCookTime(e.target.value ? parseInt(e.target.value) : null)
-              }
-              readOnly={readOnly}
-              className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${
-                readOnly ? 'bg-gray-50' : ''
-              }`}
-            />
+            {readOnly ? (
+              <div className="mt-1 rounded border border-gray-300 bg-gray-50 p-2 text-lg text-gray-700">
+                {initialData?.cook_time
+                  ? Time.formatDuration(initialData.cook_time * 60)
+                  : 'Chưa có thông tin'}
+              </div>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  id="cookTime"
+                  value={cookTime}
+                  placeholder="e.g., 1h 30m"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleCookTimeChange(e.target.value)
+                  }
+                  className={`mt-1 block w-full border-b p-2 text-lg focus:outline-none ${
+                    cookTimeError ? 'border-red-500' : 'border-gray-300'
+                  } focus:border-rose-500`}
+                />
+                {cookTimeError && (
+                  <p className="mt-1 text-sm text-red-600">{cookTimeError}</p>
+                )}
+              </>
+            )}
           </div>
           <div className="w-1/2">
             <label
               htmlFor="prepTime"
               className="block text-sm font-bold text-gray-700"
             >
-              Thời gian chuẩn bị (phút)
+              Thời gian chuẩn bị
             </label>
-            <input
-              type="number"
-              id="prepTime"
-              value={prepTime === null || prepTime === '' ? '' : prepTime}
-              placeholder="0"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setPrepTime(e.target.value ? parseInt(e.target.value) : null)
-              }
-              readOnly={readOnly}
-              className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${
-                readOnly ? 'bg-gray-50' : ''
-              }`}
-            />
+            {readOnly ? (
+              <div className="mt-1 rounded border border-gray-300 bg-gray-50 p-2 text-lg text-gray-700">
+                {initialData?.prep_time
+                  ? Time.formatDuration(initialData.prep_time * 60)
+                  : 'Chưa có thông tin'}
+              </div>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  id="prepTime"
+                  value={prepTime}
+                  placeholder="e.g., 30m"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handlePrepTimeChange(e.target.value)
+                  }
+                  className={`mt-1 block w-full border-b p-2 text-lg focus:outline-none ${
+                    prepTimeError ? 'border-red-500' : 'border-gray-300'
+                  } focus:border-rose-500`}
+                />
+                {prepTimeError && (
+                  <p className="mt-1 text-sm text-red-600">{prepTimeError}</p>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
