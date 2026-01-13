@@ -86,7 +86,7 @@ export class AppUrl {
     params?: { cursor?: number; limit?: number }
   ) {
     const queryParams = new URLSearchParams()
-    queryParams.append('categories', categories.join(','))
+    categories.forEach(cat => queryParams.append('category', cat))
     if (params?.cursor !== undefined) {
       queryParams.append('cursor', String(params.cursor))
     }
