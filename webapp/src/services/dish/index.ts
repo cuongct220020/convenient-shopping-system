@@ -1,6 +1,7 @@
 import { ResultAsync } from 'neverthrow'
 import { parseZodObject } from '../../utils/zod-result'
 import {
+  DishLevelType,
   GetDishesResponseSchema,
   type GetDishesResponse
 } from '../schema/dishSchema'
@@ -18,6 +19,10 @@ export class DishService {
   public getDishes(params?: {
     cursor?: number
     limit?: number
+    /** @note This is a place holder, search has different endpoints */
+    search?: string
+    /** @note This is a place holder, filtering probably has different endpoints */
+    level?: DishLevelType[]
   }): ResultAsync<GetDishesResponse, DishError> {
     const queryParams = new URLSearchParams()
 

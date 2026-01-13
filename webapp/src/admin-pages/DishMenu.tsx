@@ -13,15 +13,23 @@ import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
 import { DishForm } from '../components/DishForm'
 import { dishService } from '../services/dish'
+import { useIsMounted } from '../hooks/useIsMounted'
 import hamburgerImg from '../assets/hamburger.png'
-import type { Dish } from '../services/schema/dishSchema'
+import {
+  DishLevelTypeSchema,
+  type Dish,
+  type DishLevelType
+} from '../services/schema/dishSchema'
 
 const ITEMS_PER_PAGE = 20
 
 const DishMenu = () => {
+  const isMounted = useIsMounted()
   const [currentPage, setCurrentPage] = useState(1)
   const [showFilter, setShowFilter] = useState(false)
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<DishLevelType[]>(
+    []
+  )
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddDishForm, setShowAddDishForm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<Dish | null>(null)
@@ -39,14 +47,19 @@ const DishMenu = () => {
         const cursor = pagesCursors[pageNumber - 1] ?? undefined
         const result = await dishService.getDishes({
           cursor,
-          limit: ITEMS_PER_PAGE
+          limit: ITEMS_PER_PAGE,
+          search: searchQuery || undefined,
+          level: selectedCategories.length > 0 ? selectedCategories : undefined
         })
+
+        if (!isMounted.current) return
 
         if (result.isOk()) {
           const response = result.value
           setDishes(response.data)
+          setCurrentPage(pageNumber)
 
-          // Store next_cursor for pagination
+          // Add next page cursor if it doesn't exist yet
           if (response.next_cursor !== null && !pagesCursors[pageNumber]) {
             setPagesCursors((prev) => {
               const updated = [...prev]
@@ -58,17 +71,28 @@ const DishMenu = () => {
           setError(result.error.desc || 'Failed to fetch dishes')
         }
       } catch (err) {
-        setError('An error occurred while fetching dishes')
+        if (isMounted.current) {
+          setError(String(err))
+        }
       } finally {
-        setLoading(false)
+        if (isMounted.current) {
+          setLoading(false)
+        }
       }
     },
-    [pagesCursors]
+    [pagesCursors, searchQuery, selectedCategories, isMounted]
   )
 
   useEffect(() => {
+    // Reset pagination when filters change, then fetch page 1
+    setPagesCursors([null])
+    setCurrentPage(1)
+    // Call fetchDishes to fetch page 1 with new filters
+    // Intentionally not in dependency array to avoid circular dependency
+    // with pagesCursors (which gets updated during fetch)
     fetchDishes(1)
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedCategories])
 
   const handleToggleFilter = () => {
     setShowFilter((prev) => !prev)
@@ -120,50 +144,24 @@ const DishMenu = () => {
   }, [dishes])
 
   const handleCategoryChange = (category: string) => {
+    if (DishLevelTypeSchema.safeParse(category).success === false) {
+      return
+    }
+    const typedCategory = category as DishLevelType
     setSelectedCategories((prev) =>
-      prev.includes(category)
+      prev.includes(typedCategory)
         ? prev.filter((c) => c !== category)
-        : [...prev, category]
+        : [...prev, typedCategory]
     )
+    setPagesCursors([null])
     setCurrentPage(1)
   }
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
+    setPagesCursors([null])
     setCurrentPage(1)
   }
-
-  const { totalPages, currentItems, startIndex, endIndex, totalItems } =
-    useMemo(() => {
-      let filteredData = dishes
-
-      if (selectedCategories.length > 0) {
-        filteredData = filteredData.filter((item) =>
-          selectedCategories.includes(item.level || '')
-        )
-      }
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        filteredData = filteredData.filter((item) =>
-          item.component_name.toLowerCase().includes(query)
-        )
-      }
-
-      const totalItems = filteredData.length
-      const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-      const endIndex = startIndex + ITEMS_PER_PAGE
-      const currentItems = filteredData.slice(startIndex, endIndex)
-
-      return {
-        totalPages,
-        currentItems,
-        startIndex: totalItems === 0 ? 0 : startIndex + 1,
-        endIndex: Math.min(endIndex, totalItems),
-        totalItems
-      }
-    }, [currentPage, dishes, selectedCategories, searchQuery])
 
   return (
     <div className="flex min-h-screen flex-1 flex-col pt-6">
@@ -238,33 +236,31 @@ const DishMenu = () => {
           <LayoutGrid size={16} className="mr-2" />
           <span>
             Đang hiển thị{' '}
-            <span className="font-bold">
-              {startIndex} - {endIndex}
-            </span>{' '}
-            / {totalItems} món ăn
+            <span className="font-bold">{dishes.length} món ăn</span>
+            {' (trang '}
+            <span className="font-bold">{currentPage}</span>
+            {' trên '}
+            <span className="font-bold">{pagesCursors.length}</span>
+            {')'}.
           </span>
         </div>
       </div>
 
       {/* Grid Container - Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <div className="flex flex-col items-center gap-2">
-              <div className="size-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
-              <span className="text-sm text-gray-600">Đang tải...</span>
-            </div>
+        {loading && (
+          <div className="flex h-64 items-center justify-center px-6 text-gray-500">
+            <p>Đang tải...</p>
           </div>
-        ) : error ? (
-          <div className="flex h-64 items-center justify-center">
-            <div className="text-center">
-              <p className="text-red-500 font-semibold mb-2">Lỗi</p>
-              <p className="text-gray-500">{error}</p>
-            </div>
+        )}
+        {error && (
+          <div className="flex h-64 items-center justify-center px-6 text-red-500">
+            <p>Lỗi: {error}</p>
           </div>
-        ) : currentItems.length > 0 ? (
-          <div className="px-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {currentItems.map((item) => (
+        )}
+        {!loading && !error && dishes.length > 0 && (
+          <div className="grid grid-cols-2 gap-4 px-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {dishes.map((item) => (
               <Item
                 key={item.component_id}
                 name={item.component_name}
@@ -274,7 +270,8 @@ const DishMenu = () => {
               />
             ))}
           </div>
-        ) : (
+        )}
+        {!loading && !error && dishes.length === 0 && (
           <div className="flex h-64 items-center justify-center px-6 text-gray-500">
             Không tìm thấy món ăn nào.
           </div>
@@ -283,12 +280,13 @@ const DishMenu = () => {
 
       {/* Pagination - Always at Bottom */}
       <div className="sticky bottom-0 bg-white px-6 py-4">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          className=""
-        />
+        <div className="flex items-center justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={pagesCursors.length}
+            onPageChange={(page) => fetchDishes(page)}
+          />
+        </div>
       </div>
 
       {/* Add Dish Form Modal */}
