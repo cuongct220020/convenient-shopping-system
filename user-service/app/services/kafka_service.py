@@ -114,7 +114,10 @@ class KafkaService:
             key=f"{group_id}-group"
         )
 
-        logger.info(f"Group user added message published successfully to topic: {topic}")
+        logger.info(
+            f"Published notification to {topic}: event_type=group_user_added "
+            f"group_id={group_id} receivers={[str(user_to_add_id)]}"
+        )
 
 
     @staticmethod
@@ -137,6 +140,10 @@ class KafkaService:
                 topic=NOTIFICATION_TOPIC,
                 payload=payload,
                 key=f"{group_id}-group"
+            )
+            logger.info(
+                f"Published notification to {NOTIFICATION_TOPIC}: event_type=group_user_removed "
+                f"group_id={group_id} receivers={[str(user_to_remove_id)]}"
             )
         except Exception as err:
             logger.error(f"Failed to publish remove user group message: {err}")
@@ -162,7 +169,10 @@ class KafkaService:
             key=f"{group_id}-group"
         )
 
-        logger.info(f"User leave group message published successfully to topic: {topic}")
+        logger.info(
+            f"Published notification to {topic}: event_type=group_user_left "
+            f"group_id={group_id} receivers={[str(user_id)]}"
+        )
 
 
     @staticmethod
@@ -205,6 +215,10 @@ class KafkaService:
                 topic=NOTIFICATION_TOPIC,
                 payload=payload,
                 key=f"{group_id}-group"
+            )
+            logger.info(
+                f"Published notification to {NOTIFICATION_TOPIC}: event_type=group_head_chef_updated "
+                f"group_id={group_id} receivers=[]"
             )
 
         except Exception as e:
