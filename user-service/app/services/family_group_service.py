@@ -147,25 +147,16 @@ class FamilyGroupService:
         if existing:
             raise Conflict("User is already a member of this group.")
 
-        # 3. Get group name and group membership ids before adding the member
-        # OPTIMIZED: Use single query to get group info and member IDs
+        # 3. (Optional) Validate group exists (keep behavior consistent)
         group_result = await self.repository.get_group_with_members_and_info(group_id)
         if not group_result:
             raise NotFound(f"Group with id {group_id} not found")
 
-        group, member_count, group_members_ids = group_result
-        group_name = group.group_name
-        user_to_add_identifier = self._get_user_identifier(target_user)
-
-        # 4. Publish message to kafka topics
+        # 4. Publish message to kafka topics (minimal payload)
         await kafka_service.publish_add_user_group_message(
-            requester_id=requester_id,
             requester_username=requester_username,
             group_id=group_id,
-            group_name=group_name,
             user_to_add_id=target_user.id,
-            user_to_add_identifier=user_to_add_identifier,
-            group_members_ids=group_members_ids
         )
 
         # 5. Add Member (requester adds target user)
@@ -196,15 +187,10 @@ class FamilyGroupService:
         if not is_self and not await self._is_head_chef(requester_id, group_id):
             raise Forbidden("You do not have permission to remove this member.")
 
-        # OPTIMIZED: Use single query to get both group and member details
+        # Validate membership exists (so we can return 404 consistently)
         result = await self.member_repo.get_group_with_member_and_info(group_id, target_user_id)
         if not result:
             raise NotFound("Membership not found.")
-
-        group, existing_member, member_count, member_ids = result
-        # Access the user's email/username from the fetched member object
-        target_user_identifier = self._get_user_identifier(existing_member.user)
-        group_name = group.group_name
 
         await self.member_repo.remove_membership(target_user_id, group_id)
         logger.info(f"Removed user {target_user_id} from group {group_id}")
@@ -215,12 +201,9 @@ class FamilyGroupService:
         await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
 
         await kafka_service.publish_remove_user_group_message(
-            requester_id=str(requester_id),
             requester_username=str(requester_username),
             group_id=str(group_id),
-            group_name=str(group_name),
             user_to_remove_id=str(target_user_id),
-            user_to_remove_identifier = str(target_user_identifier)
         )
 
 
@@ -242,8 +225,7 @@ class FamilyGroupService:
         if not result:
             raise NotFound("Membership not found.")
 
-        group, existing_membership, member_count, member_ids = result
-        group_name = group.group_name
+        _group, existing_membership, _member_count, _member_ids = result
 
         membership = await self.member_repo.update_role(target_user_id, group_id, new_role)
         if not membership:
@@ -262,14 +244,9 @@ class FamilyGroupService:
             target_user_identifier = self._get_user_identifier(existing_membership.user)
 
             await kafka_service.publish_update_headchef_group_message(
-                requester_id=str(requester_id),
                 requester_username=str(requester_username),
                 group_id=str(group_id),
-                group_name=str(group_name),
-                old_head_chef_id=str(requester_id),
-                old_head_chef_identifier=str(requester_username) if requester_username else requester_email,
-                new_head_chef_id=str(target_user_id),
-                new_head_chef_identifier=target_user_identifier
+                new_head_chef_username=target_user_identifier,
             )
 
         return membership
@@ -288,13 +265,10 @@ class FamilyGroupService:
         if not membership:
             raise NotFound("You are not a member of this group")
 
-        # OPTIMIZED: Use single query to get group info and all members
+        # Validate group exists (keep behavior consistent)
         group_result = await self.repository.get_group_with_members_and_info(group_id)
         if not group_result:
             raise NotFound(f"Group with id {group_id} not found")
-
-        group, member_count, member_ids = group_result
-        group_name = group.group_name
 
         # Get all members with user info in a single query
         all_members = await self.member_repo.get_all_members(group_id)
@@ -316,14 +290,9 @@ class FamilyGroupService:
             logger.info(f"Transferred HEAD_CHEF from {user_id} to {new_head_chef.user_id}")
 
             await kafka_service.publish_update_headchef_group_message(
-                requester_id=str(user_id),
                 requester_username=str(user_name),
                 group_id=str(group_id),
-                group_name=str(group_name),
-                old_head_chef_id=str(user_id),
-                old_head_chef_identifier=str(user_name),
-                new_head_chef_id=str(new_head_chef.user_id),
-                new_head_chef_identifier=self._get_user_identifier(new_head_chef.user)
+                new_head_chef_username=self._get_user_identifier(new_head_chef.user),
             )
 
         if len(all_members) <= 1:
@@ -333,9 +302,7 @@ class FamilyGroupService:
             # Publish user leave group events
             await kafka_service.publish_user_leave_group_message(
                 user_id=user_id,
-                user_identifier=user_name if user_name else user_email,
                 group_id=group_id,
-                group_name=group_name
             )
             return
 
@@ -350,9 +317,7 @@ class FamilyGroupService:
         # Publish user leave group events
         await kafka_service.publish_user_leave_group_message(
             user_id=user_id,
-            user_identifier=user_name if user_name else user_email,
             group_id=group_id,
-            group_name=group_name
         )
 
     async def check_group_access(

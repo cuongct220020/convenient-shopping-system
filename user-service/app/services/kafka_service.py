@@ -1,20 +1,16 @@
 # user-service/app/services/kafka_service.py
 from datetime import datetime, UTC
-from typing import List
 
-from app.enums import OtpAction, GroupRole
+from app.enums import OtpAction
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC,
-    ADD_USERS_GROUP_EVENTS_TOPIC,
     USER_UPDATE_TAG_EVENTS_TOPIC,
     LOGOUT_EVENTS_TOPIC,
-    LEAVE_GROUP_EVENTS_TOPIC,
-    REMOVE_USERS_GROUP_EVENTS_TOPIC,
-    UPDATE_HEADCHEF_ROLE_EVENTS_TOPIC
+    NOTIFICATION_TOPIC,
 )
 
 
@@ -98,61 +94,49 @@ class KafkaService:
 
     @staticmethod
     async def publish_add_user_group_message(
-        requester_id: str,
         requester_username: str,
         group_id: str,
-        group_name: str,
-        group_members_ids: List[str],
         user_to_add_id: str,
-        user_to_add_identifier: str,
-        topic: str = ADD_USERS_GROUP_EVENTS_TOPIC
+        topic: str = NOTIFICATION_TOPIC
     ):
-        payload = kafka_service._build_payload(
-            event_type="group_user_added",
-            requester_id=str(requester_id),
-            requester_username=requester_username,
-            group_id=str(group_id),
-            group_name=str(group_name),
-            user_to_add_id=str(user_to_add_id),
-            user_to_add_identifier=user_to_add_identifier,
-            group_members_ids=group_members_ids,
-            timestamp=datetime.now(UTC)
-        )
+        payload = {
+            "event_type": "group_user_added",
+            "group_id": str(group_id),
+            "receivers": [str(user_to_add_id)],
+            "data": {
+                "requester_username": str(requester_username),
+            },
+        }
 
         await kafka_service._publish_message(
             topic=topic,
             payload=payload,
-            key=str(group_id)
+            key=f"{group_id}-group"
         )
 
         logger.info(f"Group user added message published successfully to topic: {topic}")
 
 
+    @staticmethod
     async def publish_remove_user_group_message(
-        self,
-        requester_id: str,
         requester_username: str,
         user_to_remove_id: str,
-        user_to_remove_identifier: str,
         group_id: str,
-        group_name: str,
     ):
-        payload = self._build_payload(
-            event_type="group_user_removed",
-            requester_id=str(requester_id),
-            requester_username=str(requester_username),
-            group_id=str(group_id),
-            group_name=str(group_name),
-            user_to_remove_id=str(user_to_remove_id),
-            user_to_remove_identifier=str(user_to_remove_identifier),
-            timestamp=datetime.now(UTC)
-        )
+        payload = {
+            "event_type": "group_user_removed",
+            "group_id": str(group_id),
+            "receivers": [str(user_to_remove_id)],
+            "data": {
+                "requester_username": str(requester_username),
+            },
+        }
 
         try:
             await kafka_service._publish_message(
-                topic=REMOVE_USERS_GROUP_EVENTS_TOPIC,
+                topic=NOTIFICATION_TOPIC,
                 payload=payload,
-                key=str(group_id)
+                key=f"{group_id}-group"
             )
         except Exception as err:
             logger.error(f"Failed to publish remove user group message: {err}")
@@ -162,24 +146,20 @@ class KafkaService:
     @staticmethod
     async def publish_user_leave_group_message(
         user_id: str,
-        user_identifier: str,
         group_id: str,
-        group_name: str,
-        topic: str = LEAVE_GROUP_EVENTS_TOPIC
+        topic: str = NOTIFICATION_TOPIC
     ):
-        payload = kafka_service._build_payload(
-            event_type="group_user_left",
-            user_id=str(user_id),
-            user_identifier=str(user_identifier),
-            group_id=str(group_id),
-            group_name=str(group_name),
-            timestamp=datetime.now(UTC)
-        )
+        payload = {
+            "event_type": "group_user_left",
+            "group_id": str(group_id),
+            "receivers": [str(user_id)],
+            "data": {},
+        }
 
         await kafka_service._publish_message(
             topic=topic,
             payload=payload,
-            key=str(group_id)
+            key=f"{group_id}-group"
         )
 
         logger.info(f"User leave group message published successfully to topic: {topic}")
@@ -206,33 +186,25 @@ class KafkaService:
 
     @staticmethod
     async def publish_update_headchef_group_message(
-        requester_id: str,
         requester_username: str,
         group_id: str,
-        group_name: str,
-        old_head_chef_id: str,
-        old_head_chef_identifier: str,
-        new_head_chef_id: str,
-        new_head_chef_identifier: str,
+        new_head_chef_username: str,
     ):
-        payload = kafka_service._build_payload(
-            event_type="group_head_chef_updated",
-            requester_id=str(requester_id),
-            requester_username=str(requester_username),
-            group_id=str(group_id),
-            group_name=str(group_name),
-            old_head_chef_id=str(old_head_chef_id),
-            old_head_chef_identifier=str(old_head_chef_identifier),
-            new_head_chef_id=str(new_head_chef_id),
-            new_head_chef_identifier=str(new_head_chef_identifier),
-            timestamp=datetime.now(UTC)
-        )
+        payload = {
+            "event_type": "group_head_chef_updated",
+            "group_id": str(group_id),
+            "receivers": [],
+            "data": {
+                "new_head_chef_username": str(new_head_chef_username),
+                "requester_username": str(requester_username),
+            },
+        }
 
         try:
             await kafka_service._publish_message(
-                topic = UPDATE_HEADCHEF_ROLE_EVENTS_TOPIC,
+                topic=NOTIFICATION_TOPIC,
                 payload=payload,
-                key=str(group_id)
+                key=f"{group_id}-group"
             )
 
         except Exception as e:
