@@ -53,6 +53,9 @@ class Config:
     EMAIL_SENDER = os.getenv('EMAIL_SENDER', 'noreply@example.com')
     EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', 'dummy')
 
+    # User Service URL (internal container URL)
+    USER_SERVICE_URL: str = os.getenv('USER_SERVICE_URL', 'http://user-service:8000')
+
     # # OpenAPI / Swagger Configuration
     # OAS_URL_PREFIX = "/api/v1/notification-service/docs"
     # SWAGGER_UI_CONFIGURATION = {

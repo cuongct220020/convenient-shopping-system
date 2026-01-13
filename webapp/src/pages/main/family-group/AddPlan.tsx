@@ -8,11 +8,14 @@ import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
 import { shoppingPlanService } from '../../../services/shopping-plan';
 import { userService } from '../../../services/user';
 import { ingredientService } from '../../../services/ingredient';
+import { groupService } from '../../../services/group';
 import type { PlanItemBase } from '../../../services/schema/shoppingPlanSchema';
 import type { Ingredient as IngredientSearchResult } from '../../../services/schema/ingredientSchema';
 
-// Dummy image for broccoli
-const BROCCOLI_IMAGE_URL = 'https://i.imgur.com/0Zl3xYm.png';
+// Default ingredient image
+const DEFAULT_INGREDIENT_IMAGE = new URL('../../../assets/ingredient.png', import.meta.url).href;
+// Default group avatar
+const DEFAULT_GROUP_AVATAR = new URL('../../../assets/family.png', import.meta.url).href;
 
 // Extended ingredient type to include original search result data
 type ExtendedIngredient = Ingredient & {
@@ -30,6 +33,10 @@ const AddPlan = () => {
   const [ingredientQuantity, setIngredientQuantity] = useState('');
   const [ingredients, setIngredients] = useState<ExtendedIngredient[]>([]);
 
+  // Group data state
+  const [groupName, setGroupName] = useState<string>('');
+  const [groupAvatar, setGroupAvatar] = useState<string>(DEFAULT_GROUP_AVATAR);
+
   // Search states
   const [searchResult, setSearchResult] = useState<IngredientSearchResult | null>(null);
   const [showNotFound, setShowNotFound] = useState(false);
@@ -42,6 +49,26 @@ const AddPlan = () => {
   // Loading and error states
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Fetch group data on mount
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchGroup = async () => {
+      const result = await groupService.getGroupById(id);
+      result.match(
+        (response) => {
+          setGroupName(response.data.group_name);
+          setGroupAvatar(response.data.group_avatar_url || DEFAULT_GROUP_AVATAR);
+        },
+        (error) => {
+          console.error('Failed to fetch group:', error);
+        }
+      );
+    };
+
+    fetchGroup();
+  }, [id]);
 
   // --- Search Logic (Debounced) ---
   useEffect(() => {
@@ -121,7 +148,7 @@ const AddPlan = () => {
         quantity: displayQuantity,
         numericQuantity: numericValue,
         measurementUnit: unit,
-        image: BROCCOLI_IMAGE_URL,
+        image: DEFAULT_INGREDIENT_IMAGE,
         originalItem: searchResult,
       };
       setIngredients([...ingredients, newIngredient]);
@@ -225,6 +252,19 @@ const AddPlan = () => {
   return (
     <div className="p-4 max-w-sm mx-auto pb-20">
       <BackButton text="Quay lại" to={`/main/family-group/${id}`} state={{ activeTab: 'shopping-plan' }} className="mb-2" />
+
+      {/* Group Avatar Display */}
+      <div className="flex flex-col items-center mb-4">
+        <img
+          src={groupAvatar}
+          alt={groupName || 'Group'}
+          className="w-16 h-16 rounded-full object-cover"
+        />
+        {groupName && (
+          <p className="text-sm text-gray-600 mt-1">{groupName}</p>
+        )}
+      </div>
+
       <h1 className="text-xl font-bold text-[#C3485C] text-center mb-6">
         Tạo Kế Hoạch Mới
       </h1>

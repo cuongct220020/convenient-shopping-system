@@ -104,21 +104,21 @@ services:
 
 
   # Redis Insight for monitoring Redis
-  redis-insight:
-    image: redis/redisinsight:2.70
-    container_name: redis-insight
-    hostname: redis-insight
-    environment:
-      - RI_APP_ACCEPT_EULA=yes
-      - RI_APP_LOGIN_REQUIRED=false
-    ports:
-      - "5540:5540"
-    volumes:
-      - redis-insight-data:/data
-    networks:
-      - shopping-network
-    depends_on:
-      - redis-caching
+  # redis-insight:
+  #   image: redis/redisinsight:2.70
+  #   container_name: redis-insight
+  #   hostname: redis-insight
+  #   environment:
+  #     - RI_APP_ACCEPT_EULA=yes
+  #     - RI_APP_LOGIN_REQUIRED=false
+  #   ports:
+  #     - "5540:5540"
+  #   volumes:
+  #     - redis-insight-data:/data
+  #   networks:
+  #     - shopping-network
+  #   depends_on:
+  #     - redis-caching
 
 
   # Kafka Broker Service
@@ -313,152 +313,152 @@ services:
 
 
   # Recipe Service
-  recipe-service:
-    build:
-      context: .
-      dockerfile: recipe-service/Dockerfile
-    container_name: recipe-service
-    hostname: recipe-service
-    image: recipe-service:v1.0.0
+  # recipe-service:
+  #   build:
+  #     context: .
+  #     dockerfile: recipe-service/Dockerfile
+  #   container_name: recipe-service
+  #   hostname: recipe-service
+  #   image: recipe-service:v1.0.0
 #    profiles:
 #      - recipe-service
-    depends_on:
-      kafka-broker:
-        condition: service_healthy
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - TZ=Asia/Ho_Chi_Minh
+  #   depends_on:
+  #     kafka-broker:
+  #       condition: service_healthy
+  #   environment:
+  #     - DB_HOST=${DB_HOST}
+  #     - DB_PORT=${DB_PORT}
+  #     - DB_USER=${DB_USER}
+  #     - DB_PASSWORD=${DB_PASSWORD}
+  #     - TZ=Asia/Ho_Chi_Minh
 
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+  #     - REDIS_HOST=${REDIS_HOST}
+  #     - REDIS_PORT=${REDIS_PORT}
+  #     - REDIS_DB=${REDIS_DB}
+  #     - REDIS_PASSWORD=${REDIS_PASSWORD}
+  #     - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
 
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+  #     - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
 
-      - USER_SERVICE_URL=http://user-service:8000
-    env_file:
-      - .env
-    ports:
-      - "9002:8000" # Access via localhost:9002
-    networks:
-      - shopping-network
-    restart: unless-stopped
+  #     - USER_SERVICE_URL=http://user-service:8000
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "9002:8000" # Access via localhost:9002
+  #   networks:
+  #     - shopping-network
+  #   restart: unless-stopped
 
 
   # Meal Service
-  meal-service:
-    build:
-      context: .
-      dockerfile: meal-service/Dockerfile
-    image: meal-service:v1.0.0
-    container_name: meal-service
-    hostname: meal-service
+  # meal-service:
+  #   build:
+  #     context: .
+  #     dockerfile: meal-service/Dockerfile
+  #   image: meal-service:v1.0.0
+  #   container_name: meal-service
+  #   hostname: meal-service
 #    profiles:
 #      - meal-service
-    depends_on:
-      kafka-broker:
-        condition: service_healthy
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - TZ=Asia/Ho_Chi_Minh
+  #   depends_on:
+  #     kafka-broker:
+  #       condition: service_healthy
+  #   environment:
+  #     - DB_HOST=${DB_HOST}
+  #     - DB_PORT=${DB_PORT}
+  #     - DB_USER=${DB_USER}
+  #     - DB_PASSWORD=${DB_PASSWORD}
+  #     - TZ=Asia/Ho_Chi_Minh
 
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+  #     - REDIS_HOST=${REDIS_HOST}
+  #     - REDIS_PORT=${REDIS_PORT}
+  #     - REDIS_DB=${REDIS_DB}
+  #     - REDIS_PASSWORD=${REDIS_PASSWORD}
+  #     - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
 
-      - USER_SERVICE_URL=http://user-service:8000
-    env_file:
-      - .env
-    ports:
-      - "9003:8000" # Access via localhost:9003
-    networks:
-      - shopping-network
-    restart: unless-stopped
+  #     - USER_SERVICE_URL=http://user-service:8000
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "9003:8000" # Access via localhost:9003
+  #   networks:
+  #     - shopping-network
+  #   restart: unless-stopped
 
 
   # Shopping Storage Service
-  shopping-storage-service:
-    build:
-      context: .
-      dockerfile: shopping-storage-service/Dockerfile
-    image: shopping-storage-service:v1.0.0
-    container_name: shopping-storage-service
-    hostname: shopping-storage-service
+  # shopping-storage-service:
+  #   build:
+  #     context: .
+  #     dockerfile: shopping-storage-service/Dockerfile
+  #   image: shopping-storage-service:v1.0.0
+  #   container_name: shopping-storage-service
+  #   hostname: shopping-storage-service
 #    profiles:
 #      - shopping-storage
-    depends_on:
-      kafka-broker:
-        condition: service_healthy
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - TZ=Asia/Ho_Chi_Minh
+  #   depends_on:
+  #     kafka-broker:
+  #       condition: service_healthy
+  #   environment:
+  #     - DB_HOST=${DB_HOST}
+  #     - DB_PORT=${DB_PORT}
+  #     - DB_USER=${DB_USER}
+  #     - DB_PASSWORD=${DB_PASSWORD}
+  #     - TZ=Asia/Ho_Chi_Minh
 
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+  #     - REDIS_HOST=${REDIS_HOST}
+  #     - REDIS_PORT=${REDIS_PORT}
+  #     - REDIS_DB=${REDIS_DB}
+  #     - REDIS_PASSWORD=${REDIS_PASSWORD}
+  #     - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
 
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+  #     - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
 
-      - USER_SERVICE_URL=http://user-service:8000
-    env_file:
-      - .env
-    ports:
-      - "9004:8000" # Access via localhost:9004
-    networks:
-      - shopping-network
-    restart: unless-stopped
+  #     - USER_SERVICE_URL=http://user-service:8000
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "9004:8000" # Access via localhost:9004
+  #   networks:
+  #     - shopping-network
+  #   restart: unless-stopped
 
 
   # Notification service
-  notification-service:
-    build:
-      context: .
-      dockerfile: notification-service/Dockerfile
-    container_name: notification-service
-    image: notification-service:v1.0.0
-    hostname: notification-service
+  # notification-service:
+  #   build:
+  #     context: .
+  #     dockerfile: notification-service/Dockerfile
+  #   container_name: notification-service
+  #   image: notification-service:v1.0.0
+  #   hostname: notification-service
 #    profiles:
 #      - notification-service
-    depends_on:
-      redis-caching:
-        condition: service_healthy
-      kafka-broker:
-        condition: service_healthy
-    environment:
-      - POSTGRES_DB_NAME=shopping_notification_service_db
-      - POSTGRES_DB_PORT=5432
-      - TZ=Asia/Ho_Chi_Minh
+  #   depends_on:
+  #     redis-caching:
+  #       condition: service_healthy
+  #     kafka-broker:
+  #       condition: service_healthy
+  #   environment:
+  #     - POSTGRES_DB_NAME=shopping_notification_service_db
+  #     - POSTGRES_DB_PORT=5432
+  #     - TZ=Asia/Ho_Chi_Minh
 
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
+  #     - REDIS_HOST=${REDIS_HOST}
+  #     - REDIS_PORT=${REDIS_PORT}
+  #     - REDIS_DB=${REDIS_DB}
+  #     - REDIS_PASSWORD=${REDIS_PASSWORD}
+  #     - REDIS_DECODE_RESPONSES=${REDIS_DECODE_RESPONSES}
 
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
-    env_file:
-      - .env
-      - notification-service/.env
-    ports:
-      - "9005:8000" # Access via localhost:9005
-    volumes:
-      - ./notification-service:/app/notification-service
-      - /app/notification-service/.venv  # Exclude virtual environment
-    networks:
-      - shopping-network
-    restart: unless-stopped
+  #     - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+  #   env_file:
+  #     - .env
+  #     - notification-service/.env
+  #   ports:
+  #     - "9005:8000" # Access via localhost:9005
+  #   volumes:
+  #     - ./notification-service:/app/notification-service
+  #     - /app/notification-service/.venv  # Exclude virtual environment
+  #   networks:
+  #     - shopping-network
+  #   restart: unless-stopped

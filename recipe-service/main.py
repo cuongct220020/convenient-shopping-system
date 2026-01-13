@@ -7,23 +7,32 @@ from fastapi.responses import HTMLResponse
 from core.admin_middleware import AdminMiddleware
 from apis.v2.ingredient_api import ingredient_router
 from apis.v2.recipe_api import recipe_router
-from messaging.manager import kafka_manager
+from core.messaging import kafka_manager
 from messaging.consumers.component_existence_consumer import consume_component_existence_events
 from messaging.consumers.group_tags_consumer import consume_group_tags_events
 from shopping_shared.caching.redis_manager import redis_manager
+from shopping_shared.utils.logger_utils import get_logger
 import asyncio
+
+logger = get_logger("RecipeService")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await redis_manager.setup(
-        host=settings.REDIS_HOST,
-        port=settings.REDIS_PORT,
-        db=settings.REDIS_DB,
-        password=settings.REDIS_PASSWORD
-    )
-
-    kafka_manager.setup(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
+    logger.info("Starting Recipe Service...")
+    
+    try:
+        await redis_manager.setup(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_PASSWORD
+        )
+        kafka_manager.setup(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
+        logger.info("Recipe Service started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start Recipe Service: {str(e)}", exc_info=True)
+        raise
 
     tasks = [
         asyncio.create_task(consume_component_existence_events()),
@@ -32,11 +41,18 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    logger.info("Shutting down Recipe Service...")
     for task in tasks:
         task.cancel()
     await asyncio.gather(*tasks, return_exceptions=True)
-    await kafka_manager.close()
-    await redis_manager.close()
+    
+    try:
+        await kafka_manager.close()
+        await redis_manager.close()
+    except Exception as e:
+        logger.error(f"Error during shutdown: {str(e)}", exc_info=True)
+    
+    logger.info("Recipe Service shutdown completed")
 
 
 app = FastAPI(

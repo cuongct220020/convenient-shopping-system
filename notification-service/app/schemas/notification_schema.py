@@ -7,10 +7,13 @@ from app.enums.notification_priority import NotificationPriority
 
 class NotificationCreateSchema(BaseModel):
     """Schema for creating a new notification."""
-    user_id: UUID
-    group_id: Optional[UUID] = None
-    type_code: str
-    payload: Dict[str, Any]
+    receiver: UUID
+    group_id: UUID
+    group_name: str
+    template_code: str
+    title: str
+    content: str
+    raw_data: Optional[Dict[str, Any]] = None
     is_read: bool = False
 
 
@@ -35,13 +38,19 @@ class NotificationTypeUpdateSchema(BaseModel):
 
 class NotificationResponseSchema(BaseModel):
     """Schema for notification response."""
-    id: UUID
-    user_id: UUID
-    group_id: Optional[UUID] = None
-    type_code: str
-    payload: Dict[str, Any]
-    is_read: bool
+    id: int
+    group_id: UUID
+    group_name: str
+    receiver: UUID
     created_at: datetime
+    template_code: str
+    raw_data: Optional[Dict[str, Any]] = None
+    is_read: bool
+    title: str
+    content: str
+
+    class Config:
+        from_attributes = True
 
 
 class NotificationDeliveryLogCreateSchema(BaseModel):

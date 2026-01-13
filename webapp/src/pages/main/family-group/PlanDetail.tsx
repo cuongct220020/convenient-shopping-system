@@ -9,6 +9,9 @@ import { userService } from '../../../services/user';
 import type { PlanResponse } from '../../../services/schema/shoppingPlanSchema';
 import type { UserCoreInfo } from '../../../services/schema/groupSchema';
 
+// Default ingredient image
+const DEFAULT_INGREDIENT_IMAGE = new URL('../../../assets/ingredient.png', import.meta.url).href;
+
 export const PlanDetail = () => {
   const { id, planId } = useParams<{ id: string; planId: string }>();
   const navigate = useNavigate();
@@ -140,6 +143,10 @@ export const PlanDetail = () => {
       );
   };
 
+  const handleContinueImplement = () => {
+    navigate(`/main/family-group/${id}/plan/${planId}/implement`);
+  };
+
   const handleEdit = () => {
     if (!planData) return;
     const planForEdit = {
@@ -180,7 +187,7 @@ export const PlanDetail = () => {
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'created':
-        return 'Chờ duyệt';
+        return 'Mới tạo';
       case 'in_progress':
         return 'Đang thực hiện';
       case 'completed':
@@ -228,6 +235,11 @@ export const PlanDetail = () => {
   };
 
   const getAssigneeDisplayName = (assignee: UserCoreInfo | null) => {
+    // If no assignee_id, show "Chưa có"
+    if (!planData?.assignee_id) {
+      return 'Chưa có';
+    }
+
     if (!assignee) {
       // If we've finished loading but don't have assignee info, show a fallback
       if (!isLoading) {
@@ -354,33 +366,33 @@ export const PlanDetail = () => {
               </div>
             </div>
 
-            {/* Creator Card (Full Width) */}
-            <div className="bg-gray-100 rounded-2xl p-4 flex items-center mb-3">
-              <User size={16} className="text-black mr-3" strokeWidth={2.5} />
-              <div>
-                <span className="font-bold text-sm text-gray-700">Người tạo</span>
+            {/* Creator & Assignee Card (Full Width) */}
+            <div className="bg-gray-100 rounded-2xl p-4 flex justify-between items-center mb-3">
+              {/* Left: Creator */}
+              <div className="flex flex-col items-center w-1/2 border-r border-gray-300">
+                <div className="flex items-center gap-1 mb-1">
+                  <User size={16} className="text-black" strokeWidth={2.5} />
+                  <span className="font-bold text-sm text-gray-700">Người tạo</span>
+                </div>
                 <p className="text-sm font-medium">{getCreatorDisplayName(creatorInfo)}</p>
+              </div>
+
+              {/* Right: Assignee */}
+              <div className="flex flex-col items-center w-1/2">
+                <div className="flex items-center gap-1 mb-1">
+                  <User size={16} className="text-black" strokeWidth={2.5} />
+                  <span className="font-bold text-sm text-gray-700">Người thực hiện</span>
+                </div>
+                <p className="text-sm font-medium">{getAssigneeDisplayName(assigneeInfo)}</p>
               </div>
             </div>
 
-            {/* Assignee & Total Money Spent Row (Only show if completed) */}
+            {/* Total Money Spent Card (Only show if completed) */}
             {planData.plan_status === 'completed' && (
-              <div className="bg-gray-100 rounded-2xl p-4 flex justify-between items-center mb-3">
-                {/* Left: Assignee Name */}
-                <div className="flex flex-col items-center w-1/2 border-r border-gray-300">
-                  <div className="flex items-center gap-1 mb-1">
-                    <User size={16} className="text-black" strokeWidth={2.5} />
-                    <span className="font-bold text-sm text-gray-700">Người thực hiện</span>
-                  </div>
-                  <p className="text-sm font-medium">{getAssigneeDisplayName(assigneeInfo)}</p>
-                </div>
-
-                {/* Right: Total Money Spent */}
-                <div className="flex flex-col items-center w-1/2">
-                  <div className="flex items-center gap-1 mb-1">
-                    <DollarSign size={16} className="text-black" strokeWidth={2.5} />
-                    <span className="font-bold text-sm text-gray-700">Tổng chi tiêu</span>
-                  </div>
+              <div className="bg-gray-100 rounded-2xl p-4 flex items-center mb-3">
+                <DollarSign size={16} className="text-black mr-3" strokeWidth={2.5} />
+                <div className="flex-1">
+                  <span className="font-bold text-sm text-gray-700">Tổng chi tiêu</span>
                   <p className="text-sm font-bold">
                     {getTotalMoneySpent(planData) !== null
                       ? `${formatCurrency(getTotalMoneySpent(planData)!)} VND`
@@ -419,11 +431,18 @@ export const PlanDetail = () => {
               {planData.shopping_list.map((item, index) => (
                 <div key={index} className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-200">
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1">{item.component_name}</h3>
-                      <p className="text-sm text-gray-600">
-                        Số lượng: {item.quantity} {item.unit}
-                      </p>
+                    <div className="flex items-center gap-3 flex-1">
+                      <img
+                        src={DEFAULT_INGREDIENT_IMAGE}
+                        alt={item.component_name}
+                        className="w-16 h-12 rounded-lg object-cover"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">{item.component_name}</h3>
+                        <p className="text-sm text-gray-600">
+                          Số lượng: {item.quantity} {item.unit}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -431,19 +450,35 @@ export const PlanDetail = () => {
             </div>
 
             {/* Footer Button */}
-            {planData.plan_status !== 'completed' && planData.plan_status !== 'cancelled' && (
+            {planData.plan_status === 'in_progress' ? (
+              // If in_progress and current user is assignee, show "Tiếp tục làm" button
+              currentUserId === planData.assignee_id ? (
+                <div className="flex justify-center">
+                  <Button
+                    variant="primary"
+                    size="fit"
+                    icon={ArrowRight}
+                    className="!px-10 !py-3 text-base rounded-2xl shadow-lg shadow-red-200/50"
+                    onClick={handleContinueImplement}
+                  >
+                    Tiếp tục làm
+                  </Button>
+                </div>
+              ) : null
+            ) : planData.plan_status !== 'completed' && planData.plan_status !== 'cancelled' ? (
+              // If created, show "Duyệt kế hoạch" button
               <div className="flex justify-center">
                 <Button
                   variant="primary"
                   size="fit"
-                  icon={planData.plan_status === 'in_progress' ? ArrowRight : Check}
+                  icon={Check}
                   className="!px-10 !py-3 text-base rounded-2xl shadow-lg shadow-red-200/50"
                   onClick={() => setIsApproveModalOpen(true)}
                 >
-                  {planData.plan_status === 'in_progress' ? "Tiếp tục thực hiện kế hoạch" : "Duyệt kế hoạch"}
+                  Đăng ký làm
                 </Button>
               </div>
-            )}
+            ) : null}
           </>
         )}
       </div>
@@ -452,9 +487,9 @@ export const PlanDetail = () => {
       {isApproveModalOpen && planData && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Duyệt Kế Hoạch?</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Đăng Ký Làm?</h3>
             <div className="flex justify-center mb-5"><div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center"><Check size={36} className="text-white" strokeWidth={3} /></div></div>
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn duyệt kế hoạch <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
+            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn Đăng ký làm <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
             <div className="flex gap-3 justify-center">
               <div className="w-1/2">
                 <Button
@@ -463,7 +498,7 @@ export const PlanDetail = () => {
                   icon={isAssigning ? Loader2 : Check}
                   className={isAssigning ? '' : 'bg-[#C3485C] hover:bg-[#a83648]'}
                 >
-                  {isAssigning ? 'Đang duyệt...' : 'Xác nhận'}
+                  {isAssigning ? 'Đang làm...' : 'Xác nhận'}
                 </Button>
               </div>
               <div className="w-1/2">

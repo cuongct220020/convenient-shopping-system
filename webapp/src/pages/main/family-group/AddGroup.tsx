@@ -67,9 +67,11 @@ const AddGroup: React.FC = () => {
       {/* 2. Group Image Upload */}
       <div className="flex flex-col items-center mb-8">
         <div className="relative">
-          <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center">
-            {/* Placeholder for avatar */}
-          </div>
+          <img
+            src={new URL('../../../assets/family.png', import.meta.url).href}
+            alt="Group avatar"
+            className="w-32 h-32 rounded-full object-cover"
+          />
           <button className="absolute bottom-0 right-0 bg-gray-200 p-2 rounded-full text-gray-600 hover:bg-gray-300 transition-colors border-2 border-white">
             <Camera size={20} />
           </button>

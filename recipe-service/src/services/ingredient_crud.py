@@ -3,11 +3,14 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from shopping_shared.crud.crud_base import CRUDBase
 from typing import Optional, Sequence
-from fastapi import HTTPException
-from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient
+from fastapi import HTTPException, status
+from models.recipe_component import Ingredient, CountableIngredient, UncountableIngredient, ComponentList, Recipe
 from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate
 from enums.category import Category
 from sqlalchemy import or_
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger("IngredientCRUD")
 
 class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
     model_map = {
@@ -45,10 +48,33 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         return db_obj
 
     def delete(self, db: Session, id: int) -> Ingredient:
-        obj = db.get(Ingredient, id)
+        logger.info(f"Attempting to delete ingredient with id={id}")
+        obj = db.get(self.model, id)
         if obj is None:
-            raise HTTPException(status_code=404, detail=f"Ingredient with id={id} not found")
-        return super().delete(db, id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Ingredient with id={id} not found")
+
+        try:
+            db.delete(obj)
+            db.commit()
+            logger.info(f"Successfully deleted ingredient with id={id}")
+        except IntegrityError:
+            db.rollback()
+            logger.warning(f"Integrity error when deleting ingredient with id={id}, checking referenced recipes")
+            recipe_names = db.execute(
+                select(Recipe.component_name).join(
+                    ComponentList,
+                    ComponentList.recipe_id == Recipe.component_id
+                ).where(
+                    ComponentList.component_id == id
+                )
+            ).scalars().all()
+            recipe_names_list = list(recipe_names)
+            logger.error(f"Cannot delete ingredient with id={id} because it is referenced by recipes: {recipe_names_list}")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Cannot delete this ingredient because it is being referenced by the following recipes: {recipe_names_list}"
+            )
+        return obj
 
     def search(self, db: Session, keyword: str, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
         IngredientPoly = with_polymorphic(Ingredient, "*")
@@ -63,9 +89,9 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         stmt = stmt.order_by(IngredientPoly.component_id.desc()).limit(limit)
         return db.execute(stmt).scalars().all()
 
-    def filter(self, db: Session, category: Category, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
+    def filter(self, db: Session, category: list[Category], cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
         IngredientPoly = with_polymorphic(Ingredient, "*")
-        stmt = select(IngredientPoly).where(IngredientPoly.category == category.value)      # type: ignore
+        stmt = select(IngredientPoly).where(IngredientPoly.category.in_([c.value for c in category]))      # type: ignore
         if cursor is not None:
             stmt = stmt.where(IngredientPoly.component_id < cursor)
         stmt = stmt.order_by(IngredientPoly.component_id.desc()).limit(limit)

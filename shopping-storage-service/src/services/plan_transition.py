@@ -6,6 +6,8 @@ from sqlalchemy import select
 from enums.plan_status import PlanStatus
 from models.shopping_plan import ShoppingPlan
 from schemas.plan_schemas import PlanReport, PlanResponse
+from shopping_shared.messaging.kafka_topics import NOTIFICATION_TOPIC
+from core.messaging import kafka_manager
 
 class PlanTransition:
     def _preconditions_check(self, plan: Optional[ShoppingPlan], allowed_status: PlanStatus | List[PlanStatus]):
@@ -20,7 +22,7 @@ class PlanTransition:
                 raise HTTPException(status_code=400,
                                     detail=f"Operation not allowed: plan status must be {allowed_status}, got {plan.plan_status}")
 
-    def assign(self, db: Session, id: int, assignee_id: UUID) -> PlanResponse:
+    async def assign(self, db: Session, id: int, assignee_id: UUID, assignee_username: str) -> PlanResponse:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -33,7 +35,23 @@ class PlanTransition:
             plan.assignee_id = assignee_id
             plan.plan_status = PlanStatus.IN_PROGRESS
 
-            return PlanResponse.model_validate(plan)
+        await kafka_manager.send_message(
+            topic=NOTIFICATION_TOPIC,
+            value={
+                "event_type": "plan_assigned",
+                "group_id": str(plan.group_id),
+                "receivers": [str(plan.assigner_id)],
+                "data": {
+                    "plan_id": plan.plan_id,
+                    "deadline": plan.deadline.isoformat(),
+                    "assignee_username": assignee_username,
+                }
+            },
+            key=f"{plan.group_id}-plan",
+            wait=True,
+        )
+
+        return PlanResponse.model_validate(plan)
 
     def unassign(self, db: Session, id: int, assignee_id: UUID) -> PlanResponse:
         with db.begin():
@@ -114,7 +132,15 @@ class PlanTransition:
         is_complete = len(missing_quantities) == 0
         return is_complete, missing_quantities
 
-    def report(self, db: Session, id: int, assignee_id: UUID, report: PlanReport, confirm: bool = True) -> tuple[bool, str, Any]:
+    async def report(
+        self,
+        db: Session,
+        id: int,
+        assignee_id: UUID,
+        assignee_username: str,
+        report: PlanReport,
+        confirm: bool = True
+    ) -> tuple[bool, str, Any]:
         with db.begin():
             plan = db.execute(
                 select(ShoppingPlan)
@@ -134,9 +160,23 @@ class PlanTransition:
                     return False, "Report incomplete", {"missing_items": missing_quantities}
 
             plan.plan_status = PlanStatus.COMPLETED
-            validated_plan = PlanResponse.model_validate(plan)
 
-            return True, "Report accepted and plan completed", validated_plan
+        await kafka_manager.send_message(
+            topic=NOTIFICATION_TOPIC,
+            value={
+                "event_type": "plan_reported",
+                "group_id": str(plan.group_id),
+                "receivers": [str(plan.assigner_id)],
+                "data": {
+                    "plan_id": plan.plan_id,
+                    "assignee_username": assignee_username,
+                }
+            },
+            key=f"{plan.group_id}-plan",
+            wait=True,
+        )
+
+        return True, "Report accepted and plan completed", PlanResponse.model_validate(plan)
 
     def reopen(self, db: Session, id: int, assigner_id: UUID) -> PlanResponse:
         with db.begin():

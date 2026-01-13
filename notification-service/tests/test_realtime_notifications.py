@@ -107,20 +107,9 @@ class NotificationReceiver:
         self.tasks.append(task)
         await asyncio.sleep(1) 
 
-    async def connect_to_group(self, group_id):
-        # Start group channel listener
-        print(f"{Colors.INFO}[{self.user['username']}] Connecting to Group Channel: {group_id}{Colors.END}")
-        task = asyncio.create_task(self._run_group_channel(group_id))
-        self.tasks.append(task)
-        await asyncio.sleep(1)
-
     async def _run_user_channel(self):
         url = f"{WS_URL}/users/{self.user['user_id']}"
         await self._connect_and_listen(url, "User Channel")
-
-    async def _run_group_channel(self, group_id):
-        url = f"{WS_URL}/groups/{group_id}"
-        await self._connect_and_listen(url, f"Group {group_id}")
 
     async def _connect_and_listen(self, url, channel_name):
         headers = {"Authorization": f"Bearer {self.user['token']}"}
@@ -185,14 +174,8 @@ async def run_comprehensive_test():
         group_resp = api_request("POST", "/groups", {"group_name": "Family Team"}, user_a['token'])
         group_id = group_resp['data']['id']
         
-        # User A joins group channel immediately after creation
-        await receivers["user_a"].connect_to_group(group_id)
-        
         print(f"[User A] Adding {user_b['username']} to group...")
         api_request("POST", f"/groups/{group_id}/members", {"identifier": user_b['username']}, user_a['token'])
-        
-        # User B joins group channel after being added (simulating frontend logic)
-        await receivers["user_b"].connect_to_group(group_id)
 
         # Verify User B received notification
         notif = await receivers["user_b"].wait_for_event("group_user_added")
@@ -222,9 +205,6 @@ async def run_comprehensive_test():
         print(f"\n{Colors.INFO}--- Scenario 3: Remove Member ---{Colors.END}")
         print(f"[User B] Adding {user_c['username']} to group...")
         api_request("POST", f"/groups/{group_id}/members", {"identifier": user_c['username']}, user_b['token'])
-        
-        # User C joins group channel
-        await receivers["user_c"].connect_to_group(group_id)
         await receivers["user_c"].wait_for_event("group_user_added") # Clear queue
         
         print(f"[User B] Removing {user_c['username']} from group...")
