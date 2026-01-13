@@ -58,9 +58,9 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         stmt = stmt.order_by(IngredientPoly.component_id.desc()).limit(limit)
         return db.execute(stmt).scalars().all()
 
-    def filter(self, db: Session, category: Category, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
+    def filter(self, db: Session, category: list[Category], cursor: Optional[int] = None, limit: int = 100) -> Sequence[Ingredient]:
         IngredientPoly = with_polymorphic(Ingredient, "*")
-        stmt = select(IngredientPoly).where(IngredientPoly.category == category.value)      # type: ignore
+        stmt = select(IngredientPoly).where(IngredientPoly.category.in_([c.value for c in category]))      # type: ignore
         if cursor is not None:
             stmt = stmt.where(IngredientPoly.component_id < cursor)
         stmt = stmt.order_by(IngredientPoly.component_id.desc()).limit(limit)
