@@ -1,9 +1,9 @@
 import React from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Apple, Soup, User, Archive, ShoppingCart } from 'lucide-react'
+import { Bell, Soup, User, Archive, ShoppingCart } from 'lucide-react'
 
 // Define the available tab names
-const TabNames = ['ingredient-recipe', 'food', 'meal', 'family-group', 'profile'] as const
+const TabNames = ['notification', 'food', 'meal', 'family-group', 'profile'] as const
 type TabName = (typeof TabNames)[number]
 
 export default function MainLayout() {
@@ -30,15 +30,15 @@ export default function MainLayout() {
       {/* Bottom Navigation Bar - Fixed at bottom */}
       <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 px-2.5 py-2.5 h-16 flex justify-around items-center max-w-sm mx-auto w-full z-50">
 
-        {/* Tab 1: Ingredient Recipe (Apple) */}
+        {/* Tab 1: Notification (Bell) */}
         <TabItem
-          isActive={currentActiveTab === 'ingredient-recipe'}
-          onPress={() => handlePress('ingredient-recipe')}
+          isActive={currentActiveTab === 'notification'}
+          onPress={() => handlePress('notification')}
         >
-          <Apple
+          <Bell
             size={24}
             strokeWidth={2.5}
-            className={currentActiveTab === 'ingredient-recipe' ? 'text-[#C3485C] fill-[#C3485C]' : 'text-gray-400'}
+            className={currentActiveTab === 'notification' ? 'text-[#C3485C] fill-[#C3485C]' : 'text-gray-400'}
           />
         </TabItem>
 
