@@ -57,8 +57,23 @@ export class AppUrl {
   static readonly SHOPPING_PLANS = 'v1/shopping_plans/'
   static readonly INGREDIENTS = 'v2/ingredients/'
   static readonly INGREDIENTS_BY_ID = (id: string) => `v2/ingredients/${id}`
-  static readonly INGREDIENTS_SEARCH = (keyword: string) =>
-    `v2/ingredients/search?keyword=${encodeURIComponent(keyword)}`
+  public static INGREDIENTS_SEARCH(
+    keyword: string,
+    params?: { cursor?: number; limit?: number }
+  ) {
+    const queryParams = new URLSearchParams()
+    queryParams.append('keyword', keyword)
+    if (params?.cursor !== undefined) {
+      queryParams.append('cursor', String(params.cursor))
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append('limit', String(params.limit))
+    }
+
+    return `v2/ingredients/search?keyword=${keyword}${
+      queryParams.toString() ? '&' + queryParams.toString() : ''
+    }`
+  }
   static readonly RECIPES = 'v2/recipes/'
 }
 

@@ -44,6 +44,35 @@ export class DishService {
   }
 
   /**
+   * Search dishes by keyword with pagination
+   */
+  public searchDishes(params: {
+    keyword: string
+    cursor?: number
+    limit?: number
+  }): ResultAsync<GetDishesResponse, DishError> {
+    const queryParams = new URLSearchParams()
+    queryParams.append('keyword', params.keyword)
+    if (params.cursor !== undefined) {
+      queryParams.append('cursor', String(params.cursor))
+    }
+    if (params.limit !== undefined) {
+      queryParams.append('limit', String(params.limit))
+    }
+
+    const url = `${AppUrl.RECIPES}search?${queryParams.toString()}`
+
+    return httpGet(this.clients.recipe, url).andThen((response) =>
+      parseZodObject(GetDishesResponseSchema, response.body).mapErr(
+        (e): DishError => ({
+          type: 'invalid-response-format',
+          desc: e
+        })
+      )
+    )
+  }
+
+  /**
    * Get list of dishes with cursor-based pagination
    * @param params - Query parameters (cursor, limit)
    */

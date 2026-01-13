@@ -354,7 +354,8 @@ const DishMenu = () => {
                   cook_time: selectedItem.cook_time,
                   prep_time: selectedItem.prep_time,
                   keywords: selectedItem.keywords,
-                  instructions: selectedItem.instructions
+                  instructions: selectedItem.instructions,
+                  component_list: selectedItem.component_list
                 }}
                 readOnly={true}
                 actions={
@@ -402,7 +403,8 @@ const DishMenu = () => {
                   cook_time: selectedItem.cook_time,
                   prep_time: selectedItem.prep_time,
                   keywords: selectedItem.keywords,
-                  instructions: selectedItem.instructions
+                  instructions: selectedItem.instructions,
+                  component_list: selectedItem.component_list
                 }}
                 onSubmit={handleSaveClick}
                 onCancel={() => setViewMode('view')}
