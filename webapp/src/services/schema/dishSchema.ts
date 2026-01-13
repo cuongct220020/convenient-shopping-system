@@ -3,8 +3,7 @@ import z from 'zod'
 export const DishLevelTypeSchema = z.enum(['Dễ', 'Trung bình', 'Khó'])
 export type DishLevelType = z.infer<typeof DishLevelTypeSchema>
 
-export const DishSchema = z.object({
-  component_id: z.number().int().positive(),
+export const DishCreateSchema = z.object({
   component_name: z.string(),
   image_url: z.string().nullable().optional(),
   prep_time: z.number().int().nonnegative().nullable().optional(),
@@ -19,6 +18,9 @@ export const DishSchema = z.object({
       quantity: z.number().nonnegative()
     })
   )
+})
+export const DishSchema = DishCreateSchema.extend({
+  component_id: z.number().int().positive()
 })
 export type Dish = z.infer<typeof DishSchema>
 

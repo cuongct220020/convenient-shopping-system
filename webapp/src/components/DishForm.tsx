@@ -134,7 +134,35 @@ export const DishForm: React.FC<DishFormProps> = ({
     }
   }
 
+  const getValidationErrors = (): string[] => {
+    const errors: string[] = []
+    if (!componentName.trim()) {
+      errors.push('Tên món ăn')
+    }
+    if (!servings || servings === '') {
+      errors.push('Số người ăn')
+    }
+    if (keywords.filter(Boolean).length === 0) {
+      errors.push('Ít nhất một từ khóa')
+    }
+    if (instructions.filter(Boolean).length === 0) {
+      errors.push('Ít nhất một hướng dẫn nấu')
+    }
+    if (componentList.length === 0) {
+      errors.push('Ít nhất một nguyên liệu')
+    }
+    return errors
+  }
+
+  const validationErrors = getValidationErrors()
+  const isFormValid = validationErrors.length === 0
+
   const handleSave = () => {
+    // Validate required fields
+    if (!isFormValid) {
+      return
+    }
+
     let parsedCookTime: number | null = null
     let parsedPrepTime: number | null = null
 
@@ -471,31 +499,45 @@ export const DishForm: React.FC<DishFormProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-8 flex justify-center gap-6">
-          {actions ? (
-            actions
-          ) : (
-            <>
-              <Button
-                variant={loading ? 'disabled' : 'primary'}
-                size="fit"
-                icon={Check}
-                onClick={handleSave}
-                className="!mx-0 -mr-2"
-              >
-                {submitLabel}
-              </Button>
-              <Button
-                variant="secondary"
-                size="fit"
-                icon={X}
-                onClick={onCancel}
-                className="!mx-0 -ml-2"
-              >
-                Hủy
-              </Button>
-            </>
+        <div className="mt-8 flex flex-col gap-4">
+          {!readOnly && !isFormValid && (
+            <div className="rounded-lg bg-red-50 p-4">
+              <p className="mb-2 text-sm font-semibold text-red-700">
+                Vui lòng điền đầy đủ các trường bắt buộc:
+              </p>
+              <ul className="space-y-1 text-sm text-red-600">
+                {validationErrors.map((error, index) => (
+                  <li key={index}>• {error}</li>
+                ))}
+              </ul>
+            </div>
           )}
+          <div className="flex justify-center gap-6">
+            {actions ? (
+              actions
+            ) : (
+              <>
+                <Button
+                  variant={loading || !isFormValid ? 'disabled' : 'primary'}
+                  size="fit"
+                  icon={Check}
+                  onClick={handleSave}
+                  className="!mx-0 -mr-2"
+                >
+                  {submitLabel}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="fit"
+                  icon={X}
+                  onClick={onCancel}
+                  className="!mx-0 -ml-2"
+                >
+                  Hủy
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

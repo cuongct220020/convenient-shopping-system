@@ -16,10 +16,13 @@ import { dishService } from '../services/dish'
 import { useIsMounted } from '../hooks/useIsMounted'
 import hamburgerImg from '../assets/hamburger.png'
 import {
+  DishCreateSchema,
   DishLevelTypeSchema,
   type Dish,
   type DishLevelType
 } from '../services/schema/dishSchema'
+import { parseZodObject } from '../utils/zod-result'
+import { NotificationCard } from '../components/NotificationCard'
 
 const ITEMS_PER_PAGE = 20
 
@@ -38,6 +41,11 @@ const DishMenu = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pagesCursors, setPagesCursors] = useState<(number | null)[]>([null])
+  const [reportModal, setReportModal] = useState<{
+    type: 'success' | 'error'
+    title: string
+    message: string
+  } | null>(null)
 
   const fetchDishes = useCallback(
     async (pageNumber: number = 1) => {
@@ -102,9 +110,78 @@ const DishMenu = () => {
     setShowAddDishForm(true)
   }
 
-  const handleDishFormSubmit = (dishData: Partial<Dish>) => {
-    console.log('Saving dish:', dishData)
-    setShowAddDishForm(false)
+  const handleDishFormSubmit = async (dishData: Partial<Dish>) => {
+    setLoading(true)
+    try {
+      const parseData = parseZodObject(DishCreateSchema, dishData)
+      // Validate that dishData is a complete Dish object
+      if (parseData.isErr()) {
+        throw new Error(
+          'Developer Error: DishForm must return a complete Dish object' +
+            parseData.error
+        )
+      }
+
+      const result = await dishService.createDish(dishData as Dish)
+
+      if (result.isOk()) {
+        setShowAddDishForm(false)
+        setReportModal({
+          type: 'success',
+          title: 'Tạo món ăn thành công',
+          message: `Món ăn "${dishData.component_name}" đã được tạo.`
+        })
+        // Reset pagination state and refetch page 1
+        setPagesCursors([null])
+        setCurrentPage(1)
+        // Fetch with fresh state - pass cursor explicitly as undefined for page 1
+        try {
+          const freshResult = await dishService.getDishes({
+            cursor: undefined,
+            limit: ITEMS_PER_PAGE,
+            search: searchQuery || undefined,
+            level:
+              selectedCategories.length > 0 ? selectedCategories : undefined
+          })
+
+          if (isMounted.current && freshResult.isOk()) {
+            const response = freshResult.value
+            setDishes(response.data)
+            // Set pagination cursors - second page cursor is available if next_cursor exists
+            if (
+              response.next_cursor !== null &&
+              response.next_cursor !== undefined
+            ) {
+              setPagesCursors([null, response.next_cursor])
+            } else {
+              // No next page available, keep pagination at length 1 (single page)
+              setPagesCursors([null])
+            }
+          }
+        } catch (err) {
+          if (isMounted.current) {
+            setError(String(err))
+          }
+        }
+      } else {
+        setReportModal({
+          type: 'error',
+          title: 'Tạo thất bại',
+          message:
+            result.error.desc || 'Không thể tạo món ăn. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      setReportModal({
+        type: 'error',
+        title: 'Lỗi',
+        message: String(err)
+      })
+    } finally {
+      if (isMounted.current) {
+        setLoading(false)
+      }
+    }
   }
 
   const handleDishFormCancel = () => {
@@ -412,6 +489,24 @@ const DishMenu = () => {
               />
             )}
           </div>
+        </div>
+      )}
+
+      {/* Action Report Modal */}
+      {reportModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <NotificationCard
+            title={reportModal.title}
+            message={reportModal.message}
+            iconBgColor={
+              reportModal.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }
+            buttonText="Đóng"
+            onButtonClick={() => {
+              setReportModal(null)
+              closeModal()
+            }}
+          />
         </div>
       )}
     </div>

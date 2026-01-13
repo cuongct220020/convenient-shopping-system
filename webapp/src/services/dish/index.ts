@@ -12,6 +12,7 @@ import {
   Clients,
   httpClients,
   httpGet,
+  httpPost,
   httpPut,
   ResponseError
 } from '../client'
@@ -56,6 +57,22 @@ export class DishService {
           desc: e
         })
       )
+    )
+  }
+
+  /**
+   * Create a new dish
+   * @param data - Dish data to create
+   */
+  public createDish(data: Dish): ResultAsync<Dish, DishError> {
+    return httpPost(this.clients.recipe, AppUrl.RECIPES, data).andThen(
+      (response) =>
+        parseZodObject(DishSchema, response.body).mapErr(
+          (e): DishError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
     )
   }
 
