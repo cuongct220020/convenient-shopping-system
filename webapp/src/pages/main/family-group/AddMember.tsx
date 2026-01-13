@@ -50,7 +50,6 @@ const AddMember = ({ groupId, onMemberAdded, onCancel }: AddMemberProps) => {
         }, 2000)
       },
       (error) => {
-        console.error('Failed to add member:', error)
         if (error.type === 'unauthorized') {
           setMessage({
             type: 'error',

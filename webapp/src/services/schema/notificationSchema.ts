@@ -7,7 +7,7 @@ export const NotificationDataSchema = z.object({
   receiver: z.string().uuid(),
   created_at: z.string(),
   template_code: z.string(),
-  raw_data: z.record(z.unknown()),
+  raw_data: z.record(z.string(), z.unknown()),
   is_read: z.boolean(),
   title: z.string(),
   content: z.string()
