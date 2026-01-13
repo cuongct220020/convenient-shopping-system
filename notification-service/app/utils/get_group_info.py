@@ -40,11 +40,11 @@ async def get_group_info(
             - head_chef_info: Dict chứa thông tin head chef (user info và role) hoặc None nếu không tìm thấy
     """
     user_service_url = get_user_service_url(config)
-    url = f"{user_service_url}/groups/{group_id}/members"
+    # Use INTERNAL endpoint (bypasses JWT middleware on user-service)
+    url = f"{user_service_url}/groups/internal/{group_id}/members"
     
     headers = {}
-    # Note: API này yêu cầu authentication, nhưng hiện tại chưa có service token
-    # Có thể cần thêm authentication trong tương lai
+    # Internal endpoint is whitelisted by user-service auth middleware.
     
     try:
         async with aiohttp.ClientSession() as session:
