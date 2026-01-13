@@ -18,7 +18,7 @@ The project aims to promote sustainable consumption habits while ensuring proper
 
 ## System Architecture Overview
 
-![System Architecture](./docs/assets/system-architecture.png)
+![System Architecture](./docs/assets/system-architecture-overview.png)
 
 The system follows a **microservices architecture** with **event-driven communication** patterns:
 

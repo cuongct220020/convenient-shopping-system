@@ -58,14 +58,30 @@ export class AppUrl {
   static readonly SHOPPING_PLANS = 'v1/shopping_plans/'
   static readonly INGREDIENTS = 'v2/ingredients/'
   static readonly INGREDIENTS_BY_ID = (id: string) => `v2/ingredients/${id}`
-  static readonly INGREDIENTS_SEARCH = (keyword: string) =>
-    `v2/ingredients/search?keyword=${encodeURIComponent(keyword)}`
   static readonly NOTIFICATIONS = (userId: string) =>
     `api/v2/notification-service/notifications/users/${userId}`
   static readonly NOTIFICATION_MARK_READ = (notificationId: number, userId: string) =>
     `api/v2/notification-service/notifications/${notificationId}/users/${userId}/read`
   static readonly NOTIFICATION_DELETE = (notificationId: number, userId: string) =>
     `api/v2/notification-service/notifications/${notificationId}/users/${userId}`
+  public static INGREDIENTS_SEARCH(
+    keyword: string,
+    params?: { cursor?: number; limit?: number }
+  ) {
+    const queryParams = new URLSearchParams()
+    queryParams.append('keyword', keyword)
+    if (params?.cursor !== undefined) {
+      queryParams.append('cursor', String(params.cursor))
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append('limit', String(params.limit))
+    }
+
+    return `v2/ingredients/search?keyword=${keyword}${
+      queryParams.toString() ? '&' + queryParams.toString() : ''
+    }`
+  }
+  static readonly RECIPES = 'v2/recipes/'
 }
 
 export type Clients = {
@@ -234,7 +250,9 @@ export function httpPost<T>(
       }
       const status = e.response.status
       // Extract error message from response body if available
-      const responseData = e.response.data as { status?: string; message?: string } | undefined
+      const responseData = e.response.data as
+        | { status?: string; message?: string }
+        | undefined
       const errorMessage = responseData?.message || null
 
       switch (status) {

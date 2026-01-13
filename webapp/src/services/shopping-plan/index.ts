@@ -39,7 +39,7 @@ export class ShoppingPlanService {
   ): ResultAsync<PlanResponse, ShoppingPlanError> {
     const url = `${AppUrl.SHOPPING_PLANS}${planId}`
 
-    return httpGet(this.clients.shopping, url)
+    return httpGet(this.clients.auth, url)
       .mapErr((e) => {
         switch (e.type) {
           case 'path-not-found':
@@ -51,10 +51,7 @@ export class ShoppingPlanService {
         }
       })
       .andThen((response) =>
-        parseZodObject(
-          PlanResponseSchema,
-          response.body
-        ).mapErr((e) =>
+        parseZodObject(PlanResponseSchema, response.body).mapErr((e) =>
           createShoppingPlanError('validation-error', e)
         )
       )
@@ -66,7 +63,12 @@ export class ShoppingPlanService {
   public filterPlans(
     groupId: string,
     options?: {
-      planStatus?: 'created' | 'in_progress' | 'completed' | 'cancelled' | 'expired'
+      planStatus?:
+        | 'created'
+        | 'in_progress'
+        | 'completed'
+        | 'cancelled'
+        | 'expired'
       sortBy?: 'last_modified' | 'deadline'
       order?: 'asc' | 'desc'
       cursor?: number | null
@@ -94,7 +96,7 @@ export class ShoppingPlanService {
 
     const url = `${AppUrl.SHOPPING_PLANS_FILTER}?${params.toString()}`
 
-    return httpGet(this.clients.shopping, url)
+    return httpGet(this.clients.auth, url)
       .mapErr((e) => {
         switch (e.type) {
           case 'unauthorized':
@@ -104,11 +106,8 @@ export class ShoppingPlanService {
         }
       })
       .andThen((response) =>
-        parseZodObject(
-          ShoppingPlansFilterResponseSchema,
-          response.body
-        ).mapErr((e) =>
-          createShoppingPlanError('validation-error', e)
+        parseZodObject(ShoppingPlansFilterResponseSchema, response.body).mapErr(
+          (e) => createShoppingPlanError('validation-error', e)
         )
       )
   }
@@ -138,7 +137,7 @@ export class ShoppingPlanService {
     // Debug logging
     console.log('Create plan request body:', JSON.stringify(body, null, 2))
 
-    return httpPost(this.clients.shopping, AppUrl.SHOPPING_PLANS, body)
+    return httpPost(this.clients.auth, AppUrl.SHOPPING_PLANS, body)
       .mapErr((e) => {
         switch (e.type) {
           case 'unauthorized':
@@ -174,7 +173,7 @@ export class ShoppingPlanService {
     // Debug logging
     console.log('Update plan request body:', JSON.stringify(body, null, 2))
 
-    return httpPut(this.clients.shopping, `${AppUrl.SHOPPING_PLANS}${planId}`, body)
+    return httpPut(this.clients.auth, `${AppUrl.SHOPPING_PLANS}${planId}`, body)
       .mapErr((e) => {
         switch (e.type) {
           case 'path-not-found':
@@ -194,7 +193,7 @@ export class ShoppingPlanService {
   public deletePlan(
     planId: number
   ): ResultAsync<{ message: string }, ShoppingPlanError> {
-    return httpDelete(this.clients.shopping, `${AppUrl.SHOPPING_PLANS}${planId}`)
+    return httpDelete(this.clients.auth, `${AppUrl.SHOPPING_PLANS}${planId}`)
       .mapErr((e) => {
         switch (e.type) {
           case 'path-not-found':
@@ -217,7 +216,7 @@ export class ShoppingPlanService {
   ): ResultAsync<PlanResponse, ShoppingPlanError> {
     const url = `${AppUrl.SHOPPING_PLANS}${planId}/assign?assignee_id=${assigneeId}`
 
-    return httpPost(this.clients.shopping, url, {})
+    return httpPost(this.clients.auth, url, {})
       .mapErr((e) => {
         switch (e.type) {
           case 'path-not-found':
@@ -229,10 +228,7 @@ export class ShoppingPlanService {
         }
       })
       .andThen((response) =>
-        parseZodObject(
-          PlanResponseSchema,
-          response.body
-        ).mapErr((e) =>
+        parseZodObject(PlanResponseSchema, response.body).mapErr((e) =>
           createShoppingPlanError('validation-error', e)
         )
       )
@@ -253,7 +249,7 @@ export class ShoppingPlanService {
       report_content: []
     }
 
-    return httpPost(this.clients.shopping, url, body)
+    return httpPost(this.clients.auth, url, body)
       .mapErr((e) => {
         switch (e.type) {
           case 'path-not-found':
@@ -276,7 +272,7 @@ export class ShoppingPlanService {
   ): ResultAsync<{ message: string }, ShoppingPlanError> {
     const url = `${AppUrl.SHOPPING_PLANS}${planId}/unassign?assignee_id=${assigneeId}`
 
-    return httpPost(this.clients.shopping, url, {})
+    return httpPost(this.clients.auth, url, {})
       .mapErr((e) => {
         switch (e.type) {
           case 'path-not-found':
