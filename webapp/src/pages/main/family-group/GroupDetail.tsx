@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
-import {
-  Settings,
-  Edit2,
-  Trash2,
-  LogOut,
-  ChevronLeft
-} from 'lucide-react'
+import { Settings, Edit2, Trash2, LogOut } from 'lucide-react'
 import { Button } from '../../../components/Button'
 import { GroupHeader } from '../../../components/GroupHeader'
 import GroupDetailMembers from './GroupDetailMembers'
@@ -17,6 +11,7 @@ import type {
   UserCoreInfo,
   GroupMembership
 } from '../../../services/schema/groupSchema'
+import { Meal } from '../meal/Meal'
 
 // Helper function to map backend role to UI role
 function mapRoleToUI(
@@ -36,7 +31,7 @@ function getDisplayName(user: UserCoreInfo | null): string {
   return user.username || 'Người dùng'
 }
 
-type TabType = 'members' | 'shopping-plan'
+type TabType = 'members' | 'shopping-plan' | 'meal'
 
 const GroupDetail = () => {
   const navigate = useNavigate()
@@ -69,10 +64,17 @@ const GroupDetail = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [activeTab, setActiveTab] = useState<TabType>(() => {
-    return (location.state as { activeTab?: TabType })?.activeTab || 'members'
-  })
+  const [activeTab, setActiveTab] = useState<TabType>('members')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
+  // Update activeTab when location.state changes
+  useEffect(() => {
+    const stateActiveTab = (location.state as { activeTab?: TabType })
+      ?.activeTab
+    if (stateActiveTab) {
+      setActiveTab(stateActiveTab)
+    }
+  }, [location.state])
 
   // Trigger refresh when navigation state has refresh flag
   useEffect(() => {
@@ -96,13 +98,15 @@ const GroupDetail = () => {
       }
 
       // Check if groupData was passed via navigation state
-      const stateGroupData = (location.state as { groupData?: typeof groupData })?.groupData
+      const stateGroupData = (
+        location.state as { groupData?: typeof groupData }
+      )?.groupData
       if (stateGroupData) {
         // Set groupData immediately from state to avoid loading/reload
         // We still need to fetch full data for members list and current user role
         // But we can use stateGroupData for basic info to avoid layout reload
         setError(null)
-        
+
         // Set groupData immediately with basic info to prevent reload
         setGroupData({
           id: stateGroupData.id,
@@ -114,16 +118,18 @@ const GroupDetail = () => {
           currentUserRole: 'member', // Will be updated after fetch
           currentUserId: null // Will be updated after fetch
         })
-        
+
         setIsLoading(false) // Set loading to false immediately
 
         // Fetch full data in background
         const fetchFullData = async () => {
           const userResult = await userService.getCurrentUser()
-          const currentUserId = userResult.isOk() ? userResult.value.data.id : null
+          const currentUserId = userResult.isOk()
+            ? userResult.value.data.id
+            : null
 
           const membersResult = await groupService.getGroupMembers(id)
-          
+
           membersResult.match(
             (response) => {
               const group = response.data
@@ -170,7 +176,7 @@ const GroupDetail = () => {
             }
           )
         }
-        
+
         fetchFullData()
         return
       }
@@ -326,9 +332,17 @@ const GroupDetail = () => {
       <GroupHeader
         groupName={groupData.name}
         avatarUrl={groupData.avatarUrl}
+        groupId={groupData.id}
         memberCount={groupData.memberCount}
         adminName={groupData.adminName}
         isCompact={activeTab !== 'members'}
+        activeNav={
+          activeTab === 'members'
+            ? 'members'
+            : activeTab === 'meal'
+              ? 'meal'
+              : 'shopping'
+        }
         onBack={handleBack}
         settingsButton={settingsButton}
       />
@@ -380,61 +394,6 @@ const GroupDetail = () => {
       )}
 
       <div className="px-4 pb-4">
-
-        {/* Tabs */}
-        <div className="mt-8 flex border-b border-gray-200">
-          <button
-            className={`flex-1 py-3 text-center text-sm font-bold ${
-              activeTab === 'members'
-                ? 'border-b-2 border-[#C3485C] text-gray-900'
-                : 'text-gray-500'
-            }`}
-            onClick={() => setActiveTab('members')}
-          >
-            Thành viên
-          </button>
-          <button
-            className={`flex-1 py-3 text-center text-sm font-bold ${
-              activeTab === 'shopping-plan'
-                ? 'border-b-2 border-[#C3485C] text-gray-900'
-                : 'text-gray-500'
-            }`}
-            onClick={() => setActiveTab('shopping-plan')}
-          >
-            Kế hoạch mua sắm
-          </button>
-        </div>
-
-        {/* Quick Access Buttons */}
-        <div className="mt-4 flex border-b border-gray-200">
-          <button
-            className="flex-1 py-3 text-center text-sm font-bold text-gray-500 hover:text-gray-900"
-            onClick={() => {
-              // TODO: Navigate to food storage management
-            }}
-          >
-            Quản lý kho thực phẩm
-          </button>
-          <button
-            className="flex-1 py-3 text-center text-sm font-bold text-gray-500 hover:text-gray-900"
-            onClick={() => {
-              navigate(`/main/family-group/${groupData.id}/meal`, {
-                state: {
-                  groupData: {
-                    id: groupData.id,
-                    name: groupData.name,
-                    avatarUrl: groupData.avatarUrl,
-                    memberCount: groupData.memberCount,
-                    adminName: groupData.adminName
-                  }
-                }
-              })
-            }}
-          >
-            Quản lý bữa ăn
-          </button>
-        </div>
-
         {/* Tab Content */}
         <div className="mt-4">
           {activeTab === 'members' && (
@@ -454,6 +413,8 @@ const GroupDetail = () => {
               }))}
             />
           )}
+
+          {activeTab === 'meal' && <Meal />}
         </div>
       </div>
     </div>
