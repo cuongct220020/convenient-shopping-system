@@ -108,12 +108,9 @@ export const DishForm: React.FC<DishFormProps> = ({
   }
 
   return (
-    <div
-      className="bg-white p-8 rounded-xl shadow-md grid grid-cols-1 md:grid-cols-5 gap-8 overflow-y-auto"
-      style={{ width: '950px', height: '850px' }}
-    >
+    <div className="mx-auto grid h-3/4 w-full max-w-3xl grid-cols-1 gap-6 overflow-y-auto rounded-xl bg-white p-6 shadow-md md:grid-cols-5">
       {/* Left Column */}
-      <div className="md:col-span-2 space-y-6">
+      <div className="space-y-6 md:col-span-2">
         <div>
           <InputField
             label="Tên món ăn"
@@ -139,47 +136,49 @@ export const DishForm: React.FC<DishFormProps> = ({
           readOnly={readOnly}
         />
 
-        <div className="bg-[#FFD7C1] rounded-lg aspect-square flex items-center justify-center relative overflow-hidden">
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            accept="image/*"
-            onChange={handleFileChange}
-          />
-          {imageUrl ? (
-            <div className="group relative w-full h-full">
-              <img
-                src={imageUrl}
-                alt="Selected"
-                className="w-full h-full object-cover"
-              />
-              {!readOnly && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-all">
-                  <Button
-                    variant="primary"
-                    size="fit"
-                    icon={ImageIcon}
-                    onClick={handleImageUploadClick}
-                    className="!shadow-none"
-                  >
-                    Thay đổi hình ảnh
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : readOnly ? (
-            <div className="text-gray-500">Không có hình ảnh</div>
-          ) : (
-            <Button
-              variant="primary"
-              size="fit"
-              icon={ImageIcon}
-              onClick={handleImageUploadClick}
-            >
-              Thêm hình ảnh
-            </Button>
-          )}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="relative flex aspect-square h-48 flex-col items-center justify-center overflow-hidden rounded-lg bg-[#FFD7C1]">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+            {imageUrl ? (
+              <div className="group relative size-full">
+                <img
+                  src={imageUrl}
+                  alt="Selected"
+                  className="size-full object-cover"
+                />
+                {!readOnly && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-all">
+                    <Button
+                      variant="primary"
+                      size="fit"
+                      icon={ImageIcon}
+                      onClick={handleImageUploadClick}
+                      className="!shadow-none"
+                    >
+                      Thay đổi hình ảnh
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : readOnly ? (
+              <div className="text-gray-500">Không có hình ảnh</div>
+            ) : (
+              <Button
+                variant="primary"
+                size="fit"
+                icon={ImageIcon}
+                onClick={handleImageUploadClick}
+              >
+                Thêm hình ảnh
+              </Button>
+            )}
+          </div>
         </div>
 
         <div>
@@ -251,21 +250,21 @@ export const DishForm: React.FC<DishFormProps> = ({
       </div>
 
       {/* Right Column */}
-      <div className="md:col-span-3 flex flex-col space-y-8">
+      <div className="flex flex-col space-y-8 md:col-span-3">
         {/* Keywords */}
         <div>
           <h3 className="mb-4 text-lg font-bold text-gray-800">Từ khóa</h3>
           <div className="space-y-4">
             {keywords.length === 0 && readOnly ? (
-              <div className="text-gray-500 italic p-4 text-center bg-gray-50 rounded-lg">
+              <div className="rounded-lg bg-gray-50 p-4 text-center italic text-gray-500">
                 Chưa có thông tin từ khóa
               </div>
             ) : (
               keywords.map((keyword, index) => (
                 <div key={index} className="flex items-center space-x-4">
-                  <span className="text-gray-600 w-8">{index + 1}.</span>
+                  <span className="w-8 text-gray-600">{index + 1}.</span>
                   {readOnly ? (
-                    <div className="flex-1 p-2 border border-gray-300 rounded-lg bg-gray-50">
+                    <div className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2">
                       <span className="text-gray-700">
                         {keyword || 'Chưa có thông tin'}
                       </span>
@@ -285,7 +284,7 @@ export const DishForm: React.FC<DishFormProps> = ({
                         onClick={() => handleRemoveKeyword(index)}
                         variant="icon"
                         icon={Trash2}
-                        className="!py-2 !px-2 !w-fit !h-fit"
+                        className="!h-fit !w-fit !p-2"
                       />
                     </>
                   )}
@@ -315,18 +314,18 @@ export const DishForm: React.FC<DishFormProps> = ({
           <div className="mb-6">
             <div className="space-y-4">
               {instructions.length === 0 && readOnly ? (
-                <div className="text-gray-500 italic p-4 text-center bg-gray-50 rounded-lg">
+                <div className="rounded-lg bg-gray-50 p-4 text-center italic text-gray-500">
                   Chưa có thông tin hướng dẫn nấu
                 </div>
               ) : (
                 instructions.map((instruction, index) => (
                   <div key={index} className="flex items-start space-x-4">
-                    <span className="text-gray-600 w-8 flex-shrink-0 pt-2">
+                    <span className="w-8 shrink-0 pt-2 text-gray-600">
                       {index + 1}.
                     </span>
                     <div className="flex-1">
                       {readOnly ? (
-                        <div className="text-gray-700 px-2 py-1 whitespace-pre-wrap">
+                        <div className="whitespace-pre-wrap px-2 py-1 text-gray-700">
                           {instruction || 'Chưa có thông tin'}
                         </div>
                       ) : (
@@ -336,7 +335,7 @@ export const DishForm: React.FC<DishFormProps> = ({
                             handleInstructionChange(index, e.target.value)
                           }
                           placeholder="Nhập hướng dẫn..."
-                          className="text-gray-700 w-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded px-2 py-1 min-h-[2.5rem] resize-none overflow-hidden"
+                          className="min-h-10 w-full resize-none overflow-hidden rounded border border-gray-300 px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
                           rows={1}
                           style={{
                             height: 'auto'
@@ -354,7 +353,7 @@ export const DishForm: React.FC<DishFormProps> = ({
                         onClick={() => handleRemoveInstruction(index)}
                         variant="icon"
                         icon={Trash2}
-                        className="!py-2 !px-2 !w-fit !h-fit flex-shrink-0"
+                        className="!h-fit !w-fit shrink-0 !p-2"
                       />
                     )}
                   </div>
@@ -376,7 +375,7 @@ export const DishForm: React.FC<DishFormProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-6 justify-center mt-8">
+        <div className="mt-8 flex justify-center gap-6">
           {actions ? (
             actions
           ) : (
