@@ -273,7 +273,10 @@ const IngredientMenu = () => {
       setReportModal({
         type: 'error',
         title: 'Xóa thất bại',
-        message: 'Không thể xóa nguyên liệu này. Vui lòng thử lại sau.'
+        message:
+          result.error.type === 'ingredient-still-used'
+            ? 'Nguyên liệu đang được sử dụng trong công thức nấu ăn.'
+            : 'Không thể xóa nguyên liệu này. Vui lòng thử lại sau.'
       })
     }
   }

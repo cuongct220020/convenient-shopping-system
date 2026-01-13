@@ -19,8 +19,8 @@ import {
   ResponseError
 } from '../client'
 
-type IngredientError = ResponseError<'not-found' | 'unauthorized'>
-
+type IngredientError = ResponseError<never>
+type IngredientDeleteError = ResponseError<'ingredient-still-used'>
 export class IngredientService {
   constructor(private clients: Clients) {}
 
@@ -122,10 +122,21 @@ export class IngredientService {
    * Delete an ingredient by ID
    * @param id - The component_id of the ingredient to delete
    */
-  public deleteIngredient(id: string): ResultAsync<void, IngredientError> {
+  public deleteIngredient(
+    id: string
+  ): ResultAsync<void, IngredientDeleteError> {
     const url = AppUrl.INGREDIENTS_BY_ID(id)
 
-    return httpDelete(this.clients.auth, url).map(() => {})
+    return httpDelete(this.clients.auth, url)
+      .map(() => {})
+      .mapErr((e) =>
+        e.type === 'conflict'
+          ? {
+              type: 'ingredient-still-used',
+              desc: e.desc
+            }
+          : e
+      )
   }
 
   /**
