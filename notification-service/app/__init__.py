@@ -8,7 +8,7 @@ logger = get_logger("Initialize Notification Service Application")
 def register_routes(sanic_app: Sanic):
     """Register routes for the Notification Service."""
 
-    @sanic_app.route("/api/v1/notification-service/", methods=["GET"])
+    @sanic_app.route("/api/v2/notification-service/", methods=["GET"])
     async def root(request):
         """Root endpoint."""
         return sanic_json({
@@ -17,7 +17,7 @@ def register_routes(sanic_app: Sanic):
             "message": "Notification Service is running"
         })
 
-    @sanic_app.route("/api/v1/notification-service/health", methods=["GET"])
+    @sanic_app.route("/api/v2/notification-service/health", methods=["GET"])
     async def health_check(request):
         """Health check endpoint."""
         return sanic_json({
@@ -26,14 +26,23 @@ def register_routes(sanic_app: Sanic):
         })
 
     # Register API Blueprints
-    from app.apis import api
+    from app.apis import api, ws_api
     sanic_app.blueprint(api)
+    sanic_app.blueprint(ws_api)
 
 
 def register_middleware(sanic_app: Sanic):
     """Register middleware for the Notification Service."""
     from app.hooks.request_authentication import auth_middleware
     from app.hooks.caching import inject_redis_client
+    from app.hooks.database import open_db_session, close_db_session
+
+    # Follow user-service pattern:
+    # - open_db_session early so request handlers can use request.ctx.db_session
+    # - inject_redis_client before auth_middleware so token validation can use Redis
+    sanic_app.register_middleware(open_db_session, "request")
+    sanic_app.register_middleware(close_db_session, "response")
+
     # Register inject_redis_client FIRST so auth_middleware can use it
     sanic_app.register_middleware(inject_redis_client, "request")
     sanic_app.register_middleware(auth_middleware, "request")
@@ -43,14 +52,14 @@ def register_listeners(sanic_app: Sanic):
     """Register lifecycle listeners for the Notification Service."""
     from app.hooks.message_broker import setup_kafka, close_kafka
     from app.hooks.caching import setup_redis, close_redis
-    # from app.hooks.database import setup_db, close_db
+    from app.hooks.database import setup_db, close_db
     from app.services.email_service import EmailService
     # from app.services.noti_service import notification_service
     from app.hooks.message_broker import start_consumer, stop_consumer
 
-    # # Database setup must be registered
-    # sanic_app.register_listener(setup_db, "before_server_start")
-    # sanic_app.register_listener(close_db, "before_server_stop")
+    # Database setup must be registered (learn from user-service)
+    sanic_app.register_listener(setup_db, "before_server_start")
+    sanic_app.register_listener(close_db, "before_server_stop")
 
     # Initialize email service with the app config
     @sanic_app.listener("before_server_start")
@@ -95,6 +104,9 @@ def create_app(*config_cls) -> Sanic:
     # Load configurations
     for config in config_cls:
         sanic_app.update_config(config)
+        # Make DEBUG available (used by setup_db)
+        if hasattr(config, "RUN_SETTING") and "debug" in config.RUN_SETTING:
+            sanic_app.config.DEBUG = config.RUN_SETTING["debug"]
 
     # Register routes (required by Sanic - at least one route must exist)
     register_routes(sanic_app)

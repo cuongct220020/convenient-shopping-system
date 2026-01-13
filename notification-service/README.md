@@ -6,21 +6,18 @@ This service handles real-time notifications for the Convenient Shopping System.
 
 ## WebSocket Endpoints
 
-The service exposes two main WebSocket endpoints. In a local development environment (via Kong Gateway), use the following URLs:
+The service exposes a single WebSocket endpoint (user-only). In a local development environment (via Kong Gateway), use:
 
-*   **Group Notifications:**
-    *   URL: `ws://localhost:8000/ws/v1/notification-service/notifications/groups/<group_id>`
-    *   Usage: For receiving notifications relevant to a specific family/group (e.g., member added/removed, role changes).
 *   **User Notifications:**
-    *   URL: `ws://localhost:8000/ws/v1/notification-service/notifications/users/<user_id>`
-    *   Usage: For receiving personal notifications for a specific user (e.g., being added to a group, account alerts).
+    *   URL: `ws://localhost:8000/ws/v2/notification-service/notifications/users/<user_id>`
+    *   Usage: For receiving personal notifications for a specific user.
 
 **Authentication:**
 These endpoints are protected. You must provide a valid JWT token.
 1.  **Header:** `Authorization: Bearer <YOUR_JWT_TOKEN>` (Recommended for generic clients)
 2.  **Query Parameter:** Append `?jwt=<YOUR_JWT_TOKEN>` to the URL (Useful for browser/simple testing)
 
-    *Example:* `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/123e4567-e89b-12d3-a456-426614174000?jwt=eyJhbG...`
+    *Example:* `ws://localhost:8000/ws/v2/notification-service/notifications/users/123e4567-e89b-12d3-a456-426614174000?jwt=eyJhbG...`
 
 *Note: In production, these endpoints are accessed via WSS (secure WebSocket).*
 
@@ -40,13 +37,13 @@ This section details the complete lifecycle of a WebSocket notification, from cl
 
 ### 1. Client Connection (HTTP Upgrade to WSS)
 
-1.  **Client Request:** The client initiates a connection by sending an HTTP `GET` request to the WebSocket endpoint (e.g., `wss://<gateway-host>/api/v1/notification-service/ws/notifications/users/<user_id>`).
+1.  **Client Request:** The client initiates a connection by sending an HTTP `GET` request to the WebSocket endpoint (e.g., `wss://<gateway-host>/ws/v2/notification-service/notifications/users/<user_id>`).
 2.  **Kong Gateway:** Kong receives the request. It performs authentication (e.g., validating the `Authorization: Bearer <JWT_TOKEN>` header) based on configured plugins (like `jwt` or `key-auth`). If successful, Kong forwards the request to the `notification-service`.
 3.  **Notification Service:**
-    *   The `ws_bp.py` endpoint (`ws_user_notifications` or `ws_group_notifications`) receives the request.
+    *   The `ws_bp.py` endpoint (`ws_user_notifications`) receives the request.
     *   It performs any additional application-level authorization checks (e.g., verifying the requesting user ID matches the `user_id` in the path).
-    *   If authorized, it calls `websocket_manager.connect_to_user(user_id, ws)` or `websocket_manager.connect_to_group(group_id, ws)`.
-    *   The `WebSocketManager` stores the WebSocket connection object (`ws`) in its internal dictionaries (`user_connections` or `group_connections`) using the `user_id` or `group_id` as the key.
+    *   If authorized, it calls `websocket_manager.connect_to_user(user_id, ws)`.
+    *   The `WebSocketManager` stores the WebSocket connection object (`ws`) in its internal dictionary (`user_connections`) using the `user_id` as the key.
     *   The HTTP connection is upgraded to a persistent WSS connection.
 
 ### 2. Event Occurrence & Kafka Publishing
@@ -60,32 +57,27 @@ This section details the complete lifecycle of a WebSocket notification, from cl
 2.  **Message Received:** A message is received from a topic.
 3.  **Handler Dispatch:** The consumer identifies the topic and routes the message to the corresponding `BaseMessageHandler` (e.g., `AddUserGroupHandler`).
 4.  **Message Processing:** The handler validates the message structure and content.
-5.  **Notification Service Call:** The handler calls the appropriate method on `websocket_notification_service` (e.g., `send_group_user_added_notification`).
-6.  **WebSocket Dispatch:**
-    *   The `WebSocketNotificationService` prepares the notification message payload.
-    *   It calls methods on `websocket_manager` (e.g., `send_to_user` for the added user, `broadcast_to_group` for group members).
-    *   `websocket_manager` retrieves the relevant WebSocket connections from its internal dictionaries based on the target `user_id` or `group_id`.
-    *   It sends the prepared message to each active WebSocket connection.
+5.  **WebSocket Dispatch:** The handler sends the prepared payload to each receiver via `websocket_manager.send_to_user(user_id, message)`.
 
 ### 4. Client Disconnection (Client Initiated)
 
 1.  **Client Closes:** The client application closes the WebSocket connection.
 2.  **Notification Service Receives Close Event:** The `async for message in ws:` loop in the endpoint function exits.
-3.  **Manager Cleanup:** The `finally` block in the endpoint executes, calling `websocket_manager.disconnect_from_user(ws, user_id)` or `websocket_manager.disconnect_from_group(ws, group_id)`.
-4.  **Connection Removed:** The `WebSocketManager` removes the specific WebSocket connection object from its internal dictionaries. If the set of connections for a `user_id` or `group_id` becomes empty, the key is removed entirely.
+3.  **Manager Cleanup:** The `finally` block in the endpoint executes, calling `websocket_manager.disconnect_from_user(ws, user_id)`.
+4.  **Connection Removed:** The `WebSocketManager` removes the specific WebSocket connection object from its internal dictionary. If the set of connections for a `user_id` becomes empty, the key is removed entirely.
 
 ### 5. Server Disconnection (Server Initiated)
 
 1.  **Server Shutdown:** The `notification-service` application receives a shutdown signal (SIGTERM, SIGINT).
 2.  **Sanic Shutdown Hooks:** Sanic triggers shutdown hooks if configured.
 3.  **Consumer Shutdown:** The Kafka consumer loop (`consume_notifications`) should be gracefully stopped using an event (e.g., `asyncio.Event`).
-4.  **Manager Cleanup:** The `WebSocketManager` should ideally have a shutdown method to close all active connections gracefully, sending a close frame to each client. This might involve iterating through `user_connections` and `group_connections` and calling `ws.close()` on each.
+4.  **Manager Cleanup:** The `WebSocketManager` should ideally have a shutdown method to close all active connections gracefully, sending a close frame to each client. This might involve iterating through `user_connections` and calling `ws.close()` on each.
 5.  **Client Notified:** Clients receive a WebSocket close event, indicating the disconnection.
 
 ### 6. Connection Errors & Recovery
 
 *   **Network Issues:** If the network connection between client and server (or server and Kong, or server and Kafka) is lost, the connection will eventually timeout or close.
-*   **Manager Error Handling:** The `WebSocketManager`'s `send_to_user` and `broadcast_to_group` methods include error handling. If sending a message to a specific WebSocket connection fails (e.g., due to a broken pipe), the manager removes that connection from its internal storage to prevent sending to stale connections.
+*   **Manager Error Handling:** The `WebSocketManager`'s `send_to_user` method includes error handling. If sending a message to a specific WebSocket connection fails (e.g., due to a broken pipe), the manager removes that connection from its internal storage to prevent sending to stale connections.
 *   **Kafka Consumer Errors:** The Kafka consumer (`aiokafka`) has built-in retry mechanisms and error handling. If it fails to consume messages temporarily, it will attempt to reconnect and resume from the last committed offset.
 *   **Client Reconnection:** Best practice for clients is to implement a reconnection strategy (e.g., exponential backoff) to handle temporary disconnections and resume listening for notifications.
 
@@ -110,8 +102,7 @@ This section describes how to test the real-time notification flow end-to-end, f
 #### Scenario 1: User Added to Group (`ADD_USERS_GROUP_EVENTS_TOPIC`)
 
 1.  **Setup WebSocket Connections:**
-    *   **Client 1 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID`. Include a valid `Authorization: Bearer <JWT_TOKEN_USER_B>` header.
-    *   **Client 2 (Group Members):** Optionally, connect another client for `user_A` (or any other group member) to `ws://localhost:8000/api/v1/notification-service/ws/notifications/groups/GROUP_ID` with `user_A`'s token.
+    *   **Client 1 (User B):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_B_ID`. Include a valid `Authorization: Bearer <JWT_TOKEN_USER_B>` header.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong to add `user_B` to `Family_Group`.
     *   **Endpoint:** `POST http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members`
@@ -138,13 +129,11 @@ This section describes how to test the real-time notification flow end-to-end, f
           }
         }
         ```
-    *   **Client 2 (if connected to group):** Should receive the *same* message as it's broadcast to the group channel.
 
 #### Scenario 2: User Removed from Group (`REMOVE_USERS_GROUP_EVENTS_TOPIC`)
 
 1.  **Setup WebSocket Connections:**
-    *   **Client 1 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID`. Include a valid `Authorization: Bearer <JWT_TOKEN_USER_B>` header.
-    *   **Client 2 (Group Members):** Connect another client for `user_A` (or any other group member) to `ws://localhost:8000/api/v1/notification-service/ws/notifications/groups/GROUP_ID` with `user_A`'s token.
+    *   **Client 1 (User B):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_B_ID`. Include a valid `Authorization: Bearer <JWT_TOKEN_USER_B>` header.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong to remove `user_B` from `Family_Group`.
     *   **Endpoint:** `DELETE http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members/USER_B_ID`
@@ -165,12 +154,11 @@ This section describes how to test the real-time notification flow end-to-end, f
           }
         }
         ```
-    *   **Client 2:** Should receive the *same* message as it's broadcast to the group channel.
 
 #### Scenario 3: User Leaves Group (`LEAVE_GROUP_EVENTS_TOPIC`)
 
 1.  **Setup WebSocket Connections:**
-    *   **Client (Group Members):** Connect a client for `user_A` (or any other group member) to `ws://localhost:8000/api/v1/notification-service/ws/notifications/groups/GROUP_ID` with `user_A`'s token.
+    *   Connect a client for `user_A` (or any other receiver) to the user notifications endpoint.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong for `user_B` to leave the `Family_Group`.
     *   **Endpoint:** `DELETE http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members/me`
@@ -193,7 +181,7 @@ This section describes how to test the real-time notification flow end-to-end, f
 #### Scenario 4: Head Chef Role Updated (`UPDATE_HEADCHEF_ROLE_EVENTS_TOPIC`)
 
 1.  **Setup WebSocket Connections:**
-    *   **Client (Group Members):** Connect a client for `user_A` (or any group member) to `ws://localhost:8000/api/v1/notification-service/ws/notifications/groups/GROUP_ID` with `user_A`'s token.
+    *   Connect clients for the expected receivers to the user notifications endpoint.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong to transfer the Head Chef role (e.g., from `user_A` to `user_B`).
     *   **Endpoint:** `PATCH http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/head-chef`
@@ -226,8 +214,8 @@ This section describes how to test the real-time notification flow end-to-end, f
 #### Scenario 5: User Account Logout (`LOGOUT_EVENTS_TOPIC`)
 
 1.  **Setup WebSocket Connections:**
-    *   **Client 1 (User A):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_A_ID` with `user_A`'s token.
-    *   **Client 2 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID` with `user_B`'s token.
+    *   **Client 1 (User A):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_A_ID` with `user_A`'s token.
+    *   **Client 2 (User B):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_B_ID` with `user_B`'s token.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong to logout `user_A`.
     *   **Endpoint:** `POST http://localhost:8000/api/v1/user-service/api/v1/user-service/auth/logout`
@@ -239,9 +227,8 @@ This section describes how to test the real-time notification flow end-to-end, f
 #### Scenario 6: Multiple Group Members Added Simultaneously
 
 1.  **Setup WebSocket Connections:**
-    *   **Client 1 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID` with `user_B`'s token.
-    *   **Client 2 (User C):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_C_ID` with `user_C`'s token.
-    *   **Client 3 (Group Members):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/groups/GROUP_ID` with a group member's token.
+    *   **Client 1 (User B):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_B_ID` with `user_B`'s token.
+    *   **Client 2 (User C):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_C_ID` with `user_C`'s token.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong to add multiple users to the group simultaneously.
     *   **Endpoint:** `POST http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members`
@@ -254,18 +241,17 @@ This section describes how to test the real-time notification flow end-to-end, f
         ```
 3.  **Observe Notifications:**
     *   **Client 1 & 2:** Each should receive individual `group_user_added` notifications.
-    *   **Client 3:** Should receive multiple broadcast notifications for each user added.
 
 #### Scenario 7: Group Deletion (When Last Member Leaves)
 
 1.  **Setup WebSocket Connections:**
-    *   **Client (Group Members):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/groups/GROUP_ID` with a group member's token.
+    *   Connect clients for the expected receivers to the user notifications endpoint.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong for the last member to leave the group.
     *   **Endpoint:** `DELETE http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members/me`
     *   **Headers:** `Authorization: Bearer <JWT_TOKEN_USER_A>` (last member)
 3.  **Observe Notifications:**
-    *   **Client:** Should receive a `group_user_left` notification before the group channel is automatically closed due to group deletion.
+    *   Clients should receive a `group_user_left` notification as applicable.
 
 #### Scenario 8: Concurrent Notifications to Multiple Recipients
 
@@ -273,12 +259,10 @@ This section describes how to test the real-time notification flow end-to-end, f
     *   **Client 1 (User A):** Connect to user notifications endpoint.
     *   **Client 2 (User B):** Connect to user notifications endpoint.
     *   **Client 3 (User C):** Connect to user notifications endpoint.
-    *   **Client 4 (Group):** Connect to group notifications endpoint.
 2.  **Trigger Multiple Events:**
     *   Simultaneously trigger multiple group events (add, remove, role update) using different API calls.
 3.  **Observe Notifications:**
     *   Each client should receive only the notifications relevant to them.
-    *   Group clients should receive all group-related notifications.
     *   Individual clients should receive only their personal notifications.
 
 ### Notes

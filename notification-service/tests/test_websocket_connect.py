@@ -95,7 +95,7 @@ async def main():
 
     # 2. TEST TRỰC TIẾP SERVICE (9005)
     # Đường dẫn trong Sanic sau khi bỏ prefix dư thừa là /ws/v1/notifications/...
-    direct_url = f"ws://localhost:9005/ws/v1/notification-service/notifications/users/{user_id}"
+    direct_url = f"ws://localhost:9005/ws/v2/notification-service/notifications/users/{user_id}"
     direct_headers = {
         "Authorization": f"Bearer {token}",
         "X-User-ID": user_id,
@@ -112,7 +112,7 @@ async def main():
         return
 
     # 3. TEST QUA KONG (8000)
-    kong_url = f"ws://localhost:8000/ws/v1/notification-service/notifications/users/{user_id}"
+    kong_url = f"ws://localhost:8000/ws/v2/notification-service/notifications/users/{user_id}"
     kong_headers = {"Authorization": f"Bearer {token}"}
     
     print("\n[BƯỚC 2] Kiểm tra qua Kong Gateway (Port 8000)")
