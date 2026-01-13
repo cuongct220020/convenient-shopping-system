@@ -48,6 +48,9 @@ export class AppUrl {
     'api/v1/user-service/users/me/email/confirm-change'
   static readonly CHANGE_PASSWORD =
     'api/v1/user-service/users/me/change-password'
+  static readonly USERS_ME_TAGS = 'api/v1/user-service/users/me/tags'
+  static readonly USERS_ME_TAGS_DELETE =
+    'api/v1/user-service/users/me/tags/delete'
   static readonly USER_BY_ID = (id: string) => `api/v1/user-service/users/${id}`
   static readonly USER_IDENTITY_PROFILE_BY_ID = (id: string) =>
     `api/v1/user-service/users/${id}/profile/identity`
@@ -80,6 +83,21 @@ export class AppUrl {
     return `v2/ingredients/search?keyword=${keyword}${
       queryParams.toString() ? '&' + queryParams.toString() : ''
     }`
+  }
+  public static INGREDIENTS_FILTER(
+    categories: string[],
+    params?: { cursor?: number; limit?: number }
+  ) {
+    const queryParams = new URLSearchParams()
+    categories.forEach(cat => queryParams.append('category', cat))
+    if (params?.cursor !== undefined) {
+      queryParams.append('cursor', String(params.cursor))
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append('limit', String(params.limit))
+    }
+
+    return `v2/ingredients/filter?${queryParams.toString()}`
   }
   static readonly RECIPES = 'v2/recipes/'
 }

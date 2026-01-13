@@ -33,6 +33,10 @@ import {
   type AdminUsersListResponse,
   type AdminUserInfo
 } from '../schema/groupSchema'
+import type {
+  UserTagsData,
+  TagValue
+} from '../tags'
 
 type UserError = ResponseError<'not-found' | 'validation-error' | 'unauthorized' | 'conflict'>
 
@@ -367,6 +371,162 @@ export class UserService {
           })
         )
       )
+  }
+
+  /**
+   * Get current user's tags
+   */
+  public getMyTags(): ResultAsync<{ data: UserTagsData }, UserError> {
+    return httpGet(this.clients.auth, AppUrl.USERS_ME_TAGS)
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) => {
+        return parseZodObject(
+          z.object({
+            status: z.literal('success'),
+            message: z.string(),
+            data: z.object({
+              data: z.object({
+                age: z.array(z.object({
+                  id: z.number(),
+                  tag_value: z.string(),
+                  tag_category: z.string(),
+                  tag_name: z.string(),
+                  description: z.string(),
+                  updated_at: z.string()
+                })),
+                medical: z.array(z.object({
+                  id: z.number(),
+                  tag_value: z.string(),
+                  tag_category: z.string(),
+                  tag_name: z.string(),
+                  description: z.string(),
+                  updated_at: z.string()
+                })),
+                allergy: z.array(z.object({
+                  id: z.number(),
+                  tag_value: z.string(),
+                  tag_category: z.string(),
+                  tag_name: z.string(),
+                  description: z.string(),
+                  updated_at: z.string()
+                })),
+                diet: z.array(z.object({
+                  id: z.number(),
+                  tag_value: z.string(),
+                  tag_category: z.string(),
+                  tag_name: z.string(),
+                  description: z.string(),
+                  updated_at: z.string()
+                })),
+                taste: z.array(z.object({
+                  id: z.number(),
+                  tag_value: z.string(),
+                  tag_category: z.string(),
+                  tag_name: z.string(),
+                  description: z.string(),
+                  updated_at: z.string()
+                }))
+              }),
+              total_tags: z.number(),
+              categories_count: z.object({
+                age: z.number(),
+                medical: z.number(),
+                allergy: z.number(),
+                diet: z.number(),
+                taste: z.number()
+              })
+            })
+          }),
+          response.body
+        ).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      })
+      .map((parsed) => ({
+        data: {
+          age: parsed.data.data.age as UserTagsData['age'],
+          medical: parsed.data.data.medical as UserTagsData['medical'],
+          allergy: parsed.data.data.allergy as UserTagsData['allergy'],
+          diet: parsed.data.data.diet as UserTagsData['diet'],
+          taste: parsed.data.data.taste as UserTagsData['taste']
+        }
+      }))
+  }
+
+  /**
+   * Add tags to current user
+   */
+  public addMyTags(
+    tagValues: TagValue[]
+  ): ResultAsync<{ status: string; message: string }, UserError> {
+    return httpPost(this.clients.auth, AppUrl.USERS_ME_TAGS, {
+      tag_values: tagValues
+    })
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) => {
+        return parseZodObject(
+          z.object({
+            status: z.string(),
+            message: z.string()
+          }),
+          response.body
+        ).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      })
+  }
+
+  /**
+   * Remove tags from current user
+   */
+  public removeMyTags(
+    tagValues: TagValue[]
+  ): ResultAsync<{ status: string; message: string }, UserError> {
+    return httpPost(this.clients.auth, AppUrl.USERS_ME_TAGS_DELETE, {
+      tag_values: tagValues
+    })
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) => {
+        return parseZodObject(
+          z.object({
+            status: z.string(),
+            message: z.string()
+          }),
+          response.body
+        ).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      })
   }
 
   /**
