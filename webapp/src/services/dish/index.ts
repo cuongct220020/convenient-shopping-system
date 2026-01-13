@@ -1,6 +1,7 @@
 import { ResultAsync } from 'neverthrow'
 import { parseZodObject } from '../../utils/zod-result'
 import {
+  Dish,
   DishLevelType,
   DishSchema,
   GetDishesResponseSchema,
@@ -19,6 +20,21 @@ type DishError = ResponseError<never>
 
 export class DishService {
   constructor(private clients: Clients) {}
+
+  /**
+   * Get a single dish by ID
+   */
+  public getDishById(id: number): ResultAsync<Dish, DishError> {
+    return httpGet(this.clients.recipe, `${AppUrl.RECIPES}${id}`).andThen(
+      (response) =>
+        parseZodObject(DishSchema, response.body).mapErr(
+          (e): DishError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+    )
+  }
 
   /**
    * Update a dish by ID

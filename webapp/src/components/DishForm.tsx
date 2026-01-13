@@ -3,6 +3,7 @@ import { Trash2, Plus, Check, X, Image as ImageIcon } from 'lucide-react'
 import { Button } from './Button'
 import { InputField } from './InputField'
 import { DropdownInputField } from './DropDownInputField'
+import { ComponentList } from './ComponentList'
 import {
   DishLevelTypeSchema,
   DishLevelType,
@@ -54,6 +55,10 @@ export const DishForm: React.FC<DishFormProps> = ({
   const [instructions, setInstructions] = useState<string[]>(
     initialData?.instructions || []
   )
+  const [componentList, setComponentList] = useState(
+    initialData?.component_list || []
+  )
+  const [showComponentList, setShowComponentList] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -105,7 +110,7 @@ export const DishForm: React.FC<DishFormProps> = ({
       prep_time: prepTime ? Number(prepTime) : null,
       keywords: keywords.filter(Boolean),
       instructions: instructions.filter(Boolean),
-      component_list: []
+      component_list: componentList
     })
   }
 
@@ -376,6 +381,35 @@ export const DishForm: React.FC<DishFormProps> = ({
           </div>
         </div>
 
+        {/* Component List Section */}
+        <div className="mt-8">
+          {readOnly ? (
+            <ComponentList
+              initialData={componentList}
+              onSubmit={() => {}}
+              onCancel={() => {}}
+              readOnly={true}
+            />
+          ) : (
+            <div className="space-y-4">
+              <Button
+                variant="secondary"
+                size="fit"
+                icon={Plus}
+                onClick={() => setShowComponentList(true)}
+                className="!mx-0"
+              >
+                Quản lý thành phần
+              </Button>
+              {componentList.length > 0 && (
+                <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
+                  Đã chọn {componentList.length} thành phần
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Action Buttons */}
         <div className="mt-8 flex justify-center gap-6">
           {actions ? (
@@ -404,6 +438,27 @@ export const DishForm: React.FC<DishFormProps> = ({
           )}
         </div>
       </div>
+
+      {/* Component List Modal */}
+      {showComponentList && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => setShowComponentList(false)}
+          />
+          <div className="relative z-10 w-full max-w-2xl p-4">
+            <ComponentList
+              initialData={componentList}
+              onSubmit={(list) => {
+                setComponentList(list)
+                setShowComponentList(false)
+              }}
+              onCancel={() => setShowComponentList(false)}
+              readOnly={false}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

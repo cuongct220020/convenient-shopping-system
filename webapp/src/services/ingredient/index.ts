@@ -25,6 +25,24 @@ export class IngredientService {
   constructor(private clients: Clients) {}
 
   /**
+   * Get a single ingredient by ID
+   */
+  public getIngredientById(
+    id: number
+  ): ResultAsync<Ingredient, IngredientError> {
+    const url = AppUrl.INGREDIENTS_BY_ID(String(id))
+
+    return httpGet(this.clients.recipe, url).andThen((response) =>
+      parseZodObject(IngredientSchema, response.body).mapErr(
+        (e): IngredientError => ({
+          type: 'invalid-response-format',
+          desc: e
+        })
+      )
+    )
+  }
+
+  /**
    * Get list of ingredients with cursor-based pagination
    * @param params - Query parameters (cursor, limit, search, categories)
    */
