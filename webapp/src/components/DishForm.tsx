@@ -1,30 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Trash2, Plus, Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react'
-import { Button } from './Button' // Assuming Button component exists
+import { useState, useRef } from 'react'
+import { Trash2, Plus, Check, X, Image as ImageIcon } from 'lucide-react'
+import { Button } from './Button'
 import { InputField } from './InputField'
+import { DropdownInputField } from './DropDownInputField'
+import {
+  DishLevelTypeSchema,
+  DishLevelType,
+  Dish
+} from '../services/schema/dishSchema'
 
-// Mock data for dropdowns
-const categories = ['Đồ ăn vặt', 'Món chính', 'Món khai vị', 'Tráng miệng', 'Đồ uống']
-const difficulties = ['Dễ', 'Trung bình', 'Khó']
-const ingredientOptions = ['Hành tím', 'Tỏi', 'Ớt', 'Gừng', 'Thịt gà', 'Thịt bò']
+const DISH_LEVELS = DishLevelTypeSchema.options as readonly DishLevelType[]
 
 interface DishFormProps {
-  onSubmit: (dishData: any) => void
+  onSubmit: (dishData: Partial<Dish>) => void
   onCancel: () => void
   submitLabel?: string
   readOnly?: boolean
   actions?: React.ReactNode
-  initialData?: {
-    dishName: string
-    category: string
-    difficulty: string
-    image: string | null
-    servings: number
-    cookTime: string
-    prepTime: string
-    ingredients: { id: number; name: string; quantity: string }[]
-    instructions: { id: number; title: string; description: string }[]
-  }
+  initialData?: Partial<Dish>
 }
 
 export const DishForm: React.FC<DishFormProps> = ({
@@ -35,164 +28,82 @@ export const DishForm: React.FC<DishFormProps> = ({
   actions,
   initialData
 }) => {
-  const [dishName, setDishName] = useState('')
-  const [dishNameError, setDishNameError] = useState('')
-  const [category, setCategory] = useState('Chọn loại món ăn')
-  const [difficulty, setDifficulty] = useState('Chọn độ khó')
-  const [image, setImage] = useState<string | null>(null)
-  const [servings, setServings] = useState<string | number>('')
-  const [cookTime, setCookTime] = useState('')
-  const [prepTime, setPrepTime] = useState('')
+  const [componentName, setComponentName] = useState(
+    initialData?.component_name || ''
+  )
+  const [level, setLevel] = useState<DishLevelType | undefined>(
+    initialData?.level
+  )
+  const [imageUrl, setImageUrl] = useState<string | null>(
+    initialData?.image_url || null
+  )
+  const [servings, setServings] = useState<number | ''>(
+    initialData?.default_servings || ''
+  )
+  const [cookTime, setCookTime] = useState<number | null | ''>(
+    initialData?.cook_time ?? ''
+  )
+  const [prepTime, setPrepTime] = useState<number | null | ''>(
+    initialData?.prep_time ?? ''
+  )
+  const [keywords, setKeywords] = useState<string[]>(
+    initialData?.keywords || []
+  )
+  const [instructions, setInstructions] = useState<string[]>(
+    initialData?.instructions || []
+  )
 
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false)
-  const [isDifficultyOpen, setIsDifficultyOpen] = useState(false)
-  const [openIngredientDropdowns, setOpenIngredientDropdowns] = useState<Set<number>>(new Set())
-
-  const categoryDropdownRef = useRef<HTMLDivElement>(null)
-  const difficultyDropdownRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [ingredients, setIngredients] = useState<{ id: number; name: string; quantity: string }[]>([])
-
-  const [instructions, setInstructions] = useState<{ id: number; title: string; description: string }[]>([])
-
-  // Initialize form with initialData when provided
-  useEffect(() => {
-    if (initialData) {
-      setDishName(initialData.dishName || '')
-      setCategory(initialData.category || 'Chọn loại món ăn')
-      setDifficulty(initialData.difficulty || 'Chọn độ khó')
-      setImage(initialData.image || null)
-      setServings(initialData.servings || 0)
-      setCookTime(initialData.cookTime || '')
-      setPrepTime(initialData.prepTime || '')
-      setIngredients(initialData.ingredients || [])
-      setInstructions(initialData.instructions || [])
-    }
-  }, [initialData])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        categoryDropdownRef.current &&
-        !categoryDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsCategoryOpen(false)
-      }
-      if (
-        difficultyDropdownRef.current &&
-        !difficultyDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsDifficultyOpen(false)
-      }
-      // Close all ingredient dropdowns when clicking outside
-      const ingredientDropdownElements = document.querySelectorAll('[data-ingredient-dropdown]')
-      let clickedOutsideAll = true
-      ingredientDropdownElements.forEach((element) => {
-        if (element.contains(event.target as Node)) {
-          clickedOutsideAll = false
-        }
-      })
-      if (clickedOutsideAll) {
-        setOpenIngredientDropdowns(new Set())
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
-
   const handleImageUploadClick = () => {
-    fileInputRef.current?.click()
+    if (!readOnly) {
+      fileInputRef.current?.click()
+    }
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      const imageUrl = URL.createObjectURL(file)
-      setImage(imageUrl)
+      const url = URL.createObjectURL(file)
+      setImageUrl(url)
     }
   }
 
-  const handleAddIngredient = () => {
-    const newId = ingredients.length > 0 ? Math.max(...ingredients.map(i => i.id)) + 1 : 1
-    setIngredients([...ingredients, { id: newId, name: 'Chọn nguyên liệu', quantity: '' }])
+  const handleAddKeyword = () => {
+    setKeywords([...keywords, ''])
   }
 
-  const handleRemoveIngredient = (id: number) => {
-    setIngredients(ingredients.filter((item) => item.id !== id))
-    // Close dropdown if this ingredient was open
-    const newOpenSet = new Set(openIngredientDropdowns)
-    newOpenSet.delete(id)
-    setOpenIngredientDropdowns(newOpenSet)
+  const handleRemoveKeyword = (index: number) => {
+    setKeywords(keywords.filter((_, i) => i !== index))
   }
 
-  const handleIngredientChange = (id: number, field: 'name' | 'quantity', value: string) => {
-    setIngredients(
-      ingredients.map((item) => (item.id === id ? { ...item, [field]: value } : item))
-    )
-  }
-
-  const toggleIngredientDropdown = (id: number) => {
-    const newOpenSet = new Set(openIngredientDropdowns)
-    if (newOpenSet.has(id)) {
-      newOpenSet.delete(id)
-    } else {
-      // Close all other dropdowns and open this one
-      newOpenSet.clear()
-      newOpenSet.add(id)
-    }
-    setOpenIngredientDropdowns(newOpenSet)
-  }
-
-  const selectIngredient = (ingredientId: number, value: string) => {
-    handleIngredientChange(ingredientId, 'name', value)
-    // Close dropdown after selection
-    const newOpenSet = new Set(openIngredientDropdowns)
-    newOpenSet.delete(ingredientId)
-    setOpenIngredientDropdowns(newOpenSet)
+  const handleKeywordChange = (index: number, value: string) => {
+    setKeywords(keywords.map((kw, i) => (i === index ? value : kw)))
   }
 
   const handleAddInstruction = () => {
-    const newId = instructions.length > 0 ? Math.max(...instructions.map(i => i.id)) + 1 : 1
-    setInstructions([
-      ...instructions,
-      { id: newId, title: 'Bước mới', description: '' },
-    ])
+    setInstructions([...instructions, ''])
   }
 
-
-  const handleAddCookInstruction = () => {
-    const newId = instructions.length > 0 ? Math.max(...instructions.map(i => i.id)) + 1 : 1
-    setInstructions([
-      ...instructions,
-      { id: newId, title: '', description: '' },
-    ])
+  const handleRemoveInstruction = (index: number) => {
+    setInstructions(instructions.filter((_, i) => i !== index))
   }
 
-  const handleRemoveInstruction = (id: number) => {
-    setInstructions(instructions.filter((item) => item.id !== id))
-  }
-
-  const handleInstructionChange = (id: number, field: 'title' | 'description', value: string) => {
-    setInstructions(
-      instructions.map((item) => (item.id === id ? { ...item, [field]: value } : item))
-    )
+  const handleInstructionChange = (index: number, value: string) => {
+    setInstructions(instructions.map((inst, i) => (i === index ? value : inst)))
   }
 
   const handleSave = () => {
     onSubmit({
-      dishName,
-      category,
-      difficulty,
-      image,
-      servings,
-      cookTime,
-      prepTime,
-      ingredients,
-      instructions,
+      component_name: componentName || undefined,
+      level,
+      image_url: imageUrl,
+      default_servings: servings ? Number(servings) : undefined,
+      cook_time: cookTime ? Number(cookTime) : null,
+      prep_time: prepTime ? Number(prepTime) : null,
+      keywords: keywords.filter(Boolean),
+      instructions: instructions.filter(Boolean),
+      component_list: []
     })
   }
 
@@ -208,90 +119,25 @@ export const DishForm: React.FC<DishFormProps> = ({
             label="Tên món ăn"
             placeholder="Nhập tên món ăn"
             type="text"
-            id="dishName"
-            value={dishName}
-            onChange={(e) => setDishName(e.target.value)}
-            error={dishNameError}
+            id="componentName"
+            value={componentName}
+            onChange={(e) => setComponentName(e.target.value)}
             readOnly={readOnly}
           />
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex gap-2 w-full">
-            <div className="w-1/2">
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                Phân loại
-              </label>
-              <div className="relative" ref={categoryDropdownRef}>
-                <button
-                  type="button"
-                  className={`w-full p-2 border border-gray-300 rounded-lg text-gray-700 flex justify-between items-center ${
-                    readOnly
-                      ? 'bg-gray-50 cursor-default'
-                      : 'bg-white focus:outline-none focus:border-gray-400'
-                  }`}
-                  onClick={() => !readOnly && setIsCategoryOpen(!isCategoryOpen)}
-                >
-                  <span className={category === 'Chưa có thông tin' ? 'text-gray-400 italic' : ''}>{category}</span>
-                  {!readOnly && <ChevronDown size={20} className="text-gray-500" />}
-                </button>
-
-                {isCategoryOpen && !readOnly && (
-                  <div className="absolute w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                    {categories.map((c, index) => (
-                      <div
-                        key={index}
-                        className="p-3 hover:bg-gray-100 cursor-pointer text-gray-700"
-                        onClick={() => {
-                          setCategory(c)
-                          setIsCategoryOpen(false)
-                        }}
-                      >
-                        {c}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="w-1/2">
-              <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700">
-                Độ khó
-              </label>
-              <div className="relative" ref={difficultyDropdownRef}>
-                <button
-                  type="button"
-                  className={`w-full p-2 border border-gray-300 rounded-lg text-gray-700 flex justify-between items-center ${
-                    readOnly
-                      ? 'bg-gray-50 cursor-default'
-                      : 'bg-white focus:outline-none focus:border-gray-400'
-                  }`}
-                  onClick={() => !readOnly && setIsDifficultyOpen(!isDifficultyOpen)}
-                >
-                  <span className={difficulty === 'Chưa có thông tin' ? 'text-gray-400 italic' : ''}>{difficulty}</span>
-                  {!readOnly && <ChevronDown size={20} className="text-gray-500" />}
-                </button>
-
-                {isDifficultyOpen && !readOnly && (
-                  <div className="absolute w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                    {difficulties.map((d, index) => (
-                      <div
-                        key={index}
-                        className="p-3 hover:bg-gray-100 cursor-pointer text-gray-700"
-                        onClick={() => {
-                          setDifficulty(d)
-                          setIsDifficultyOpen(false)
-                        }}
-                      >
-                        {d}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <DropdownInputField
+          label="Độ khó"
+          id="level"
+          options={DISH_LEVELS.map((lv) => ({
+            value: lv,
+            label: lv
+          }))}
+          value={level}
+          onChange={(value) => setLevel(value as DishLevelType)}
+          placeholder="Chọn độ khó"
+          readOnly={readOnly}
+        />
 
         <div className="bg-[#FFD7C1] rounded-lg aspect-square flex items-center justify-center relative overflow-hidden">
           <input
@@ -301,10 +147,10 @@ export const DishForm: React.FC<DishFormProps> = ({
             accept="image/*"
             onChange={handleFileChange}
           />
-          {image ? (
+          {imageUrl ? (
             <div className="group relative w-full h-full">
               <img
-                src={image}
+                src={imageUrl}
                 alt="Selected"
                 className="w-full h-full object-cover"
               />
@@ -337,118 +183,106 @@ export const DishForm: React.FC<DishFormProps> = ({
         </div>
 
         <div>
-          <label htmlFor="servings" className="block text-sm font-bold text-gray-700">
+          <label
+            htmlFor="servings"
+            className="block text-sm font-bold text-gray-700"
+          >
             Số người ăn
           </label>
           <input
-            type="text"
+            type="number"
             id="servings"
-            value={servings === undefined || servings === null ? '' : servings}
+            value={servings}
             placeholder="0"
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setServings(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setServings(e.target.value ? parseInt(e.target.value) : '')
+            }
             readOnly={readOnly}
-            className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${readOnly ? 'bg-gray-50' : ''}`}
+            className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${
+              readOnly ? 'bg-gray-50' : ''
+            }`}
           />
         </div>
 
         <div className="flex space-x-4">
           <div className="w-1/2">
-            <div>
-              <label htmlFor="cookTime" className="block text-sm font-bold text-gray-700">
-                Thời gian nấu
-              </label>
-              <input
-                type="text"
-                id="cookTime"
-                value={cookTime === undefined || cookTime === null ? '' : cookTime}
-                placeholder="VD: 1 giờ"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCookTime(e.target.value)}
-                readOnly={readOnly}
-                className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${readOnly ? 'bg-gray-50' : ''}`}
-              />
-            </div>
+            <label
+              htmlFor="cookTime"
+              className="block text-sm font-bold text-gray-700"
+            >
+              Thời gian nấu (phút)
+            </label>
+            <input
+              type="number"
+              id="cookTime"
+              value={cookTime === null || cookTime === '' ? '' : cookTime}
+              placeholder="0"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setCookTime(e.target.value ? parseInt(e.target.value) : null)
+              }
+              readOnly={readOnly}
+              className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${
+                readOnly ? 'bg-gray-50' : ''
+              }`}
+            />
           </div>
           <div className="w-1/2">
-            <div>
-              <label htmlFor="prepTime" className="block text-sm font-bold text-gray-700">
-                Thời gian chuẩn bị
-              </label>
-              <input
-                type="text"
-                id="prepTime"
-                value={prepTime === undefined || prepTime === null ? '' : prepTime}
-                placeholder="VD: 30 phút"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrepTime(e.target.value)}
-                readOnly={readOnly}
-                className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${readOnly ? 'bg-gray-50' : ''}`}
-              />
-            </div>
+            <label
+              htmlFor="prepTime"
+              className="block text-sm font-bold text-gray-700"
+            >
+              Thời gian chuẩn bị (phút)
+            </label>
+            <input
+              type="number"
+              id="prepTime"
+              value={prepTime === null || prepTime === '' ? '' : prepTime}
+              placeholder="0"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setPrepTime(e.target.value ? parseInt(e.target.value) : null)
+              }
+              readOnly={readOnly}
+              className={`mt-1 block w-full border-b border-gray-300 p-2 text-lg focus:border-rose-500 focus:outline-none ${
+                readOnly ? 'bg-gray-50' : ''
+              }`}
+            />
           </div>
         </div>
       </div>
 
       {/* Right Column */}
       <div className="md:col-span-3 flex flex-col space-y-8">
-        {/* Ingredients */}
+        {/* Keywords */}
         <div>
-          <h3 className="mb-4 text-lg font-bold text-gray-800">Nguyên liệu</h3>
+          <h3 className="mb-4 text-lg font-bold text-gray-800">Từ khóa</h3>
           <div className="space-y-4">
-            {ingredients.length === 0 && readOnly ? (
+            {keywords.length === 0 && readOnly ? (
               <div className="text-gray-500 italic p-4 text-center bg-gray-50 rounded-lg">
-                Chưa có thông tin nguyên liệu
+                Chưa có thông tin từ khóa
               </div>
             ) : (
-              ingredients.map((ingredient, index) => (
-                <div key={ingredient.id} className="flex items-center space-x-4">
+              keywords.map((keyword, index) => (
+                <div key={index} className="flex items-center space-x-4">
                   <span className="text-gray-600 w-8">{index + 1}.</span>
                   {readOnly ? (
-                    <>
-                      <div className="flex-1 p-2 border border-gray-300 rounded-lg bg-gray-50">
-                        <span className="text-gray-700">{ingredient.name}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="p-2 border border-gray-300 rounded-lg bg-gray-50">
-                          <span className="text-gray-700">{ingredient.quantity || 'Chưa có thông tin'}</span>
-                        </div>
-                      </div>
-                    </>
+                    <div className="flex-1 p-2 border border-gray-300 rounded-lg bg-gray-50">
+                      <span className="text-gray-700">
+                        {keyword || 'Chưa có thông tin'}
+                      </span>
+                    </div>
                   ) : (
                     <>
-                      <div className="flex-1 relative" data-ingredient-dropdown>
-                        <button
-                          type="button"
-                          className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 flex justify-between items-center bg-white focus:outline-none focus:border-gray-400 text-left"
-                          onClick={() => toggleIngredientDropdown(ingredient.id)}
-                        >
-                          <span className="truncate">{ingredient.name}</span>
-                          <ChevronDown size={20} className="text-gray-500 flex-shrink-0" />
-                        </button>
-
-                        {openIngredientDropdowns.has(ingredient.id) && (
-                          <div className="absolute w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                            {ingredientOptions.map((option) => (
-                              <div
-                                key={option}
-                                className="p-3 hover:bg-gray-100 cursor-pointer text-gray-700"
-                                onClick={() => selectIngredient(ingredient.id, option)}
-                              >
-                                {option}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
                       <InputField
                         type="text"
-                        value={ingredient.quantity}
+                        value={keyword}
                         onChange={(e) =>
-                          handleIngredientChange(ingredient.id, 'quantity', e.target.value)
+                          handleKeywordChange(index, e.target.value)
                         }
-                        placeholder="Số lượng (VD: 100g)"
+                        placeholder="Nhập từ khóa"
                         containerClassName="flex-1"
                       />
                       <Button
-                        onClick={() => handleRemoveIngredient(ingredient.id)}
+                        onClick={() => handleRemoveKeyword(index)}
                         variant="icon"
                         icon={Trash2}
                         className="!py-2 !px-2 !w-fit !h-fit"
@@ -462,7 +296,7 @@ export const DishForm: React.FC<DishFormProps> = ({
           {!readOnly && (
             <div className="mt-4">
               <Button
-                onClick={handleAddIngredient}
+                onClick={handleAddKeyword}
                 variant="secondary"
                 size="fit"
                 icon={Plus}
@@ -472,62 +306,55 @@ export const DishForm: React.FC<DishFormProps> = ({
           )}
         </div>
 
-        {/* Cooking Instructions */}
+        {/* Instructions */}
         <div className="flex-1">
-          <h3 className="mb-4 text-lg font-bold text-gray-800">Hướng dẫn nấu</h3>
+          <h3 className="mb-4 text-lg font-bold text-gray-800">
+            Hướng dẫn nấu
+          </h3>
 
           <div className="mb-6">
-            <div className="space-y-2">
+            <div className="space-y-4">
               {instructions.length === 0 && readOnly ? (
                 <div className="text-gray-500 italic p-4 text-center bg-gray-50 rounded-lg">
                   Chưa có thông tin hướng dẫn nấu
                 </div>
               ) : (
-                instructions.map((instruction) => (
-                  <div key={instruction.id} className="flex items-start space-x-4">
+                instructions.map((instruction, index) => (
+                  <div key={index} className="flex items-start space-x-4">
+                    <span className="text-gray-600 w-8 flex-shrink-0 pt-2">
+                      {index + 1}.
+                    </span>
                     <div className="flex-1">
                       {readOnly ? (
-                        <>
-                          <div className="font-bold text-gray-800 px-2 py-1">
-                            {instruction.title || 'Chưa có thông tin'}
-                          </div>
-                          <div className="text-gray-600 px-2 py-1 mt-1 whitespace-pre-wrap">
-                            {instruction.description || 'Chưa có thông tin'}
-                          </div>
-                        </>
+                        <div className="text-gray-700 px-2 py-1 whitespace-pre-wrap">
+                          {instruction || 'Chưa có thông tin'}
+                        </div>
                       ) : (
-                        <>
-                          <input
-                            type="text"
-                            value={instruction.title}
-                            onChange={(e) => handleInstructionChange(instruction.id, 'title', e.target.value)}
-                            placeholder="Nhập tên bước"
-                            className="font-bold text-gray-800 w-full border-0 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded px-2 py-1 placeholder:font-normal"
-                          />
-                          <textarea
-                            value={instruction.description}
-                            onChange={(e) => handleInstructionChange(instruction.id, 'description', e.target.value)}
-                            placeholder="Nhập mô tả chi tiết..."
-                            className="text-gray-600 w-full border-0 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded px-2 py-1 mt-1 min-h-[2.5rem] resize-none overflow-hidden"
-                            rows={1}
-                            style={{
-                              height: 'auto'
-                            }}
-                            onInput={(e) => {
-                              const target = e.target as HTMLTextAreaElement;
-                              target.style.height = 'auto';
-                              target.style.height = target.scrollHeight + 'px';
-                            }}
-                          />
-                        </>
+                        <textarea
+                          value={instruction}
+                          onChange={(e) =>
+                            handleInstructionChange(index, e.target.value)
+                          }
+                          placeholder="Nhập hướng dẫn..."
+                          className="text-gray-700 w-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded px-2 py-1 min-h-[2.5rem] resize-none overflow-hidden"
+                          rows={1}
+                          style={{
+                            height: 'auto'
+                          }}
+                          onInput={(e) => {
+                            const target = e.target as HTMLTextAreaElement
+                            target.style.height = 'auto'
+                            target.style.height = target.scrollHeight + 'px'
+                          }}
+                        />
                       )}
                     </div>
                     {!readOnly && (
                       <Button
-                        onClick={() => handleRemoveInstruction(instruction.id)}
+                        onClick={() => handleRemoveInstruction(index)}
                         variant="icon"
                         icon={Trash2}
-                        className="!py-2 !px-2 !w-fit !h-fit"
+                        className="!py-2 !px-2 !w-fit !h-fit flex-shrink-0"
                       />
                     )}
                   </div>
@@ -537,7 +364,7 @@ export const DishForm: React.FC<DishFormProps> = ({
             {!readOnly && (
               <div className="mt-4">
                 <Button
-                  onClick={handleAddCookInstruction}
+                  onClick={handleAddInstruction}
                   variant="secondary"
                   size="fit"
                   icon={Plus}
