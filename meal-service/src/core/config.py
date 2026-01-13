@@ -1,8 +1,15 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).resolve().parent.parent.parent.parent / ".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore"  # bỏ qua các field dư trong .env
+    )
+
     # Database Configuration
     DB_HOST: str
     DB_PORT: int
@@ -21,11 +28,7 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str = "myredis"
 
-    class Config:
-        env_file = Path(__file__).resolve().parent.parent.parent.parent / ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
-        extra = "ignore"
+    KAFKA_BOOTSTRAP_SERVERS: str = "kafka-broker:9092"
 
 
 settings = Settings()

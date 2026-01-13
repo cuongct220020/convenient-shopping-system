@@ -5,7 +5,7 @@ import os
 
 HOST = "localhost"
 PORT = 9005
-PATH = "/ws/v1/notification-service/notifications/users/a532384b-65f3-4fd1-a66f-a1e2d43c7777"
+PATH = "/ws/v2/notification-service/notifications/users/a532384b-65f3-4fd1-a66f-a1e2d43c7777"
 
 def test_raw_socket():
     print(f"Connecting to {HOST}:{PORT}...")

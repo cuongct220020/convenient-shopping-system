@@ -48,7 +48,7 @@ def recommend_recipes(
     status_code=status.HTTP_200_OK,
     description="Search for recipes by keyword in their names or ingredients with cursor-based pagination. Returns a paginated list of matching recipes."
 )
-async def search_recipes(
+def search_recipes(
     keyword: str = Query(..., description="Keyword to search for in recipe names or ingredients"),
     cursor: Optional[int] = Query(None, ge=0, description="Cursor for pagination (ID of the last item from previous page)"),
     limit: int = Query(100, ge=1, description="Maximum number of results to return"),
@@ -73,7 +73,7 @@ async def search_recipes(
         "Returns 404 if at least one of the Recipes does not exist."
     )
 )
-async def get_recipe_flattened(
+def get_recipe_flattened(
     recipes_with_quantity: list[RecipeQuantityInput] = Body(
         ...,
         description="List of recipes with their quantities to aggregate",
@@ -92,7 +92,7 @@ async def get_recipe_flattened(
             detail="group_id is required when check_existence is True"
         )
     
-    result = await recipe_crud.get_flattened(recipes_with_quantity, group_id, check_existence, db)
+    result = recipe_crud.get_flattened(recipes_with_quantity, group_id, check_existence, db)
 
     ingredients = [
         FlattenedIngredientItem(

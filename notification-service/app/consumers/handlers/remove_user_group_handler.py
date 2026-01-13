@@ -1,8 +1,13 @@
 # notification-service/app/consumers/handlers/remove_user_group_handler.py
-from app.consumers.handlers.base_handler import BaseMessageHandler
-from app.services.websocket_notification_service import websocket_notification_service
-from app.utils.get_current_timestamp import get_current_timestamp
+from uuid import UUID
 
+from app.consumers.handlers.base_handler import BaseMessageHandler
+from app.repositories.notification_repository import NotificationRepository
+from app.schemas.notification_schema import NotificationCreateSchema, NotificationResponseSchema
+from app.templates.notification_templates import GroupUserRemovedNotificationTemplate
+from app.utils.get_group_info import get_group_info
+from app.websocket.websocket_manager import websocket_manager
+from shopping_shared.databases.database_manager import database_manager as postgres_db
 from shopping_shared.utils.logger_utils import get_logger
 
 
@@ -12,60 +17,118 @@ logger = get_logger("Remove User Group Handler")
 class RemoveUserGroupHandler(BaseMessageHandler):
     async def handle(self, message: dict, app=None):
         """
-        Handle the REMOVE_USERS_GROUP_EVENTS_TOPIC message.
+        Handle the group_user_removed notification.
         Expected message format:
         {
           "event_type": "group_user_removed",
-          "requester_id": "uuid_string",
-          "requester_username": "string",
-          "requester_user_role": "string",
           "group_id": "uuid_string",
-          "group_name": "string",
-          "user_to_remove_id": "uuid_string",
-          "user_to_remove_identifier": "string",
-          "timestamp": "iso8601_string"
+          "receivers": ["uuid_string"],  # optional
+          "data": {
+            "requester_username": str
+          }
         }
         """
+        event_type = message.get("event_type")
+        group_id_raw = message.get("group_id")
+        raw_data = message.get("data") or {}
+
+        if not event_type or not group_id_raw or not isinstance(raw_data, dict):
+            logger.warning(f"Invalid message format: {message}")
+            return
+
         try:
-            event_type = message.get("event_type")
-            requester_id = message.get("requester_id")
-            requester_username = message.get("requester_username")
-            requester_user_role = message.get("requester_user_role")
-            group_id = message.get("group_id")
-            group_name = message.get("group_name")
-            user_to_remove_id = message.get("user_to_remove_id")
-            user_to_remove_identifier = message.get("user_to_remove_identifier")
-            timestamp = message.get("timestamp")
+            group_id = UUID(str(group_id_raw))
+        except Exception:
+            logger.warning(f"Invalid group_id: {group_id_raw}")
+            return
 
-            # Validate required fields
-            if not all([event_type, requester_id, requester_username, group_id, group_name, user_to_remove_id, user_to_remove_identifier, timestamp]):
-                logger.error(f"Missing required fields in message: {message}")
-                return
+        # 1) Get group info first (to inject group_name into data)
+        if app is None:
+            logger.error("App context is required to resolve group info / DB config")
+            return
 
-            # Log the received message for debugging
-            logger.info(
-                f"Processing remove user from group event: "
-                f"requester_id={requester_id}, "
-                f"group_id={group_id}, "
-                f"user_to_remove_id={user_to_remove_id}, "
-                f"user_to_remove_identifier={user_to_remove_identifier}"
-            )
+        group_name_from_service, members, head_chef = await get_group_info(group_id, app.config)
 
+        if not group_name_from_service:
+            logger.error(f"Missing group_name for group {group_id}. message={message}")
+            return
 
+        raw_data["group_name"] = group_name_from_service
 
-            await websocket_notification_service.send_group_user_removed_notification(
-                event_type=event_type,
-                requester_id=requester_id,
-                requester_username=requester_username,
-                requester_user_role=requester_user_role,
-                group_id=group_id,
-                group_name=group_name,
-                user_to_remove_id=user_to_remove_id,
-                user_to_remove_identifier=user_to_remove_identifier,
-                timestamp=timestamp if timestamp else get_current_timestamp(),
-            )
-
-            logger.info(f"Successfully processed remove user from group event for user {user_to_remove_identifier}")
-
+        # 2) Render template title/content (after group_name injection)
+        try:
+            rendered = GroupUserRemovedNotificationTemplate.render(raw_data)
         except Exception as e:
-            logger.error(f"Error processing remove user group message: {e}", exc_info=True)
+            logger.error(f"Failed to render template for message: {message}. Error: {e}", exc_info=True)
+            return
+
+        has_receivers_field = "receivers" in message
+        receivers = message.get("receivers") if has_receivers_field else None
+
+        if not has_receivers_field:
+            receiver_is_head_chef = bool(message.get("receiver_is_head_chef", False))
+            if receiver_is_head_chef:
+                head_chef_id = None
+                if isinstance(head_chef, dict):
+                    head_chef_id = head_chef.get("user_id") or head_chef.get("userId")
+                    if head_chef_id is None and isinstance(head_chef.get("user"), dict):
+                        head_chef_id = head_chef["user"].get("user_id") or head_chef["user"].get("id")
+                receivers = [head_chef_id] if head_chef_id else []
+            else:
+                receivers = []
+                for m in members or []:
+                    if not isinstance(m, dict):
+                        continue
+                    member_id = m.get("user_id") or m.get("userId")
+                    if member_id is None and isinstance(m.get("user"), dict):
+                        member_id = m["user"].get("user_id") or m["user"].get("id")
+                    if member_id:
+                        receivers.append(member_id)
+
+        # Ensure DB is initialized for consumer context (learn from user-service: setup_db listener)
+        if postgres_db.engine is None:
+            logger.error("Database is not initialized. Ensure setup_db is registered in app listeners.")
+            return
+
+        created_for_ws: list[tuple[str, dict]] = []
+
+        # 3) Insert one row per receiver
+        try:
+            async with postgres_db.get_session() as session:
+                repo = NotificationRepository(session)
+                for r in receivers or []:
+                    try:
+                        receiver_uuid = UUID(str(r))
+                    except Exception:
+                        logger.warning(f"Invalid receiver id: {r}")
+                        continue
+
+                    created = await repo.create(NotificationCreateSchema(
+                        receiver=receiver_uuid,
+                        group_id=group_id,
+                        group_name=group_name_from_service,
+                        template_code=GroupUserRemovedNotificationTemplate.template_code,
+                        title=rendered["title"],
+                        content=rendered["content"],
+                        raw_data=raw_data,
+                        is_read=False,
+                    ))
+                    logger.info(
+                        f"DB created notification: event_type={event_type} group_id={group_id} "
+                        f"template={GroupUserRemovedNotificationTemplate.template_code} "
+                        f"receiver={receiver_uuid} notification_id={getattr(created, 'id', None)}"
+                    )
+                    created_for_ws.append(
+                        (str(receiver_uuid), NotificationResponseSchema.model_validate(created).model_dump(mode="json"))
+                    )
+        except Exception as e:
+            logger.error(f"Failed to persist notifications for message: {message}. Error: {e}", exc_info=True)
+            return
+
+        # 4) Push created rows to websocket
+        for user_id, payload in created_for_ws:
+            await websocket_manager.send_to_user(user_id, {"event_type": event_type, "data": payload})
+            logger.info(
+                f"WebSocket sent: event_type={event_type} user_id={user_id} "
+                f"notification_id={payload.get('id')}"
+            )

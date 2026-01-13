@@ -8,8 +8,9 @@ from core.database import Base
 class GroupPreference(Base):
     __tablename__ = "group_preferences"
 
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    group_tag_list: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    user_tag_list: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
 
 
 class TagRelation(Base):

@@ -18,7 +18,10 @@ export const IngredientSchema = z
     fiber: z.number().nonnegative().nullable().optional(),
     calories: z.number().nonnegative().nullable().optional(),
     estimated_price: z.number().nonnegative().nullable().optional(),
-    ingredient_tag_list: z.array(z.string()).nullable().optional(),
+    ingredient_tag_list: z
+      .array(z.number().int().nonnegative())
+      .nullable()
+      .optional(),
     component_id: z.number().int().positive(),
     component_name: z.string(),
     category: z.string().nullable().optional(),
@@ -54,3 +57,24 @@ export const GetIngredientsResponseSchema = z.object({
 export type GetIngredientsResponse = z.infer<
   typeof GetIngredientsResponseSchema
 >
+
+// Schema for creating/updating ingredients (without component_id)
+export const IngredientCreateSchema = z.object({
+  type: IngredientTypeSchema,
+  estimated_shelf_life: z.number().nonnegative().nullable().optional(),
+  protein: z.number().nonnegative().nullable().optional(),
+  fat: z.number().nonnegative().nullable().optional(),
+  carb: z.number().nonnegative().nullable().optional(),
+  fiber: z.number().nonnegative().nullable().optional(),
+  calories: z.number().nonnegative().nullable().optional(),
+  estimated_price: z.number().nonnegative().nullable().optional(),
+  ingredient_tag_list: z
+    .array(z.number().int().nonnegative())
+    .nullable()
+    .optional(),
+  component_name: z.string(),
+  category: z.string().nullable().optional(),
+  c_measurement_unit: z.string().nullable().optional(),
+  uc_measurement_unit: z.string().nullable().optional()
+})
+export type IngredientCreate = z.infer<typeof IngredientCreateSchema>

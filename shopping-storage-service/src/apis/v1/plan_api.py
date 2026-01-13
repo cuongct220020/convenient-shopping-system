@@ -80,12 +80,13 @@ plan_router.include_router(crud_router)
         "After assignment, the plan status will be IN_PROGRESS."
     )
 )
-def assign_plan(
+async def assign_plan(
     id: int = Path(..., ge=1),
     assignee_id: UUID = Query(..., description="The UUID of the user to assign the plan to"),
+    assignee_username: str = Query(..., description="Username of the assignee (temporary required field)"),
     db: Session = Depends(get_db)
 ):
-    return plan_transition.assign(db, id, assignee_id)
+    return await plan_transition.assign(db, id, assignee_id, assignee_username)
 
 
 @plan_router.post(
@@ -136,15 +137,16 @@ def cancel_plan(
         "After successful report, items from report_content will be added to their respective storages as StorableUnits."
     )
 )
-def report_plan(
+async def report_plan(
     background_tasks: BackgroundTasks,
     id: int = Path(..., ge=1),
     report: PlanReport = Body(..., description="Report data containing the items purchased"),
     db: Session = Depends(get_db),
     assignee_id: UUID = Query(..., description="The UUID of the user reporting the plan completion"),
+    assignee_username: str = Query(..., description="Username of the assignee (temporary required field)"),
     confirm: bool = Query(True, description="If True, immediately complete without validation. If False, validate report content first")
 ):
-    is_completed, message, data = plan_transition.report(db, id, assignee_id, report, confirm)
+    is_completed, message, data = await plan_transition.report(db, id, assignee_id, assignee_username, report, confirm)
     if is_completed:
         background_tasks.add_task(report_process, report)
     return GenericResponse(message=message, data=data)

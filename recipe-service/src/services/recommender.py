@@ -21,21 +21,24 @@ class Recommender:
         self._load_tag_relation_dict(db)
     
     def _load_tag_relation_dict(self, db: Session):
-        """Load tag relations: (ingredient_tag, user_tag) -> 1 (match) or -1 (no match)."""
+        """Load tag relations: (ingredient_tag, user_tag) -> 1 (match) or -10 (no match)."""
         tag_relations = db.query(TagRelation).all()
         self.tag_relation_dict = {}
         for relation in tag_relations:
-            self.tag_relation_dict[(relation.ingredient_tag, relation.user_tag)] = 1 if relation.relation else -1
+            self.tag_relation_dict[(relation.ingredient_tag, relation.user_tag)] = 1 if relation.relation else -10
     
     def recommend(self, db: Session, group_id: uuid.UUID) -> List[int]:
         """Return top 10 recipe IDs for the given group_id."""
         if group_id in self.cache:
             return self.cache[group_id]
 
-        group_preference = db.query(GroupPreference).filter(
+        group_preferences = db.query(GroupPreference).filter(
             GroupPreference.group_id == group_id
-        ).first()
-        group_tag_list = group_preference.group_tag_list if group_preference else []
+        ).all()
+        group_tag_set: set[str] = set()
+        for pref in group_preferences:
+            if pref.user_tag_list:
+                group_tag_set.update(pref.user_tag_list)                                # type: ignore
 
         component_existence = db.query(ComponentExistence).filter(
             ComponentExistence.group_id == group_id
@@ -63,7 +66,7 @@ class Recommender:
             tag_points = sum(
                 self.tag_relation_dict.get((ingredient_tag, user_tag), 0)
                 for ingredient_tag in recipe_tag_list
-                for user_tag in group_tag_list
+                for user_tag in group_tag_set
             )
 
             total_point = tanh(exist_points) + tanh(tag_points)
