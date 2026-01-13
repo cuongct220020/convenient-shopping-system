@@ -1,7 +1,7 @@
 import { Button } from '../../../components/Button'
 import { useState } from 'react'
 import { NotificationList } from '../../../components/NotificationList'
-import { Bell, Calendar, Info, Plus, Trash } from 'lucide-react'
+import { Calendar, Info, Plus, Trash } from 'lucide-react'
 import { DayPicker, getDefaultClassNames } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { Time } from '../../../utils/time'
@@ -32,7 +32,7 @@ function DateThumbnail({
     <button
       onClick={onClick}
       className={[
-        'flex w-16 flex-col items-center rounded-xl transition',
+        'flex w-11 flex-col items-center rounded-xl transition',
         'p-2 gap-1',
         isSelected && 'bg-red-500 shadow-sm'
       ].join(' ')}
@@ -122,17 +122,9 @@ export function Meal() {
     <div className="flex flex-col px-3 py-4">
       <BackButton to={`/main/family-group/${groupId}`} text="Quay lại" />
       {/* Header */}
-      <div className="flex items-center justify-between pb-3">
-        <p className="whitespace-nowrap text-xl font-bold text-red-600">
-          Kế hoạch bữa ăn
-        </p>
-        <Button
-          icon={Bell}
-          variant="danger"
-          size="fit"
-          onClick={() => setShowNoti(true)}
-        />
-      </div>
+      <p className="whitespace-nowrap pb-3 text-xl font-bold text-red-600">
+        Kế hoạch bữa ăn
+      </p>
       <div className="relative">
         <button
           className="flex w-fit gap-3 transition-all duration-200 active:scale-95"

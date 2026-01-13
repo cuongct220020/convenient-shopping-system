@@ -28,7 +28,7 @@ export default function MainLayout() {
       </main>
 
       {/* Bottom Navigation Bar - Fixed at bottom */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-16 w-full max-w-sm items-center justify-around bg-gray-100 p-2.5">
+      <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-16 w-full items-center justify-around bg-gray-100 p-2.5">
         {/* Tab 1: Notification (Bell) */}
         <TabItem
           isActive={currentActiveTab === 'notification'}
