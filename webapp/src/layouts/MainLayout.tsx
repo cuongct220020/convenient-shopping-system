@@ -1,9 +1,9 @@
 import React from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Bell, Soup, User, Archive, ShoppingCart } from 'lucide-react'
+import { Bell, User, Archive, ShoppingCart } from 'lucide-react'
 
 // Define the available tab names
-const TabNames = ['notification', 'food', 'meal', 'family-group', 'profile'] as const
+const TabNames = ['notification', 'food', 'family-group', 'profile'] as const
 type TabName = (typeof TabNames)[number]
 
 export default function MainLayout() {
@@ -23,13 +23,12 @@ export default function MainLayout() {
   return (
     <div className="relative min-h-screen bg-white">
       {/* Main Content Area - Renders the specific screen content */}
-      <main className="pb-16 max-w-sm mx-auto w-full">
+      <main className="mx-auto w-full max-w-sm pb-16">
         <Outlet />
       </main>
 
       {/* Bottom Navigation Bar - Fixed at bottom */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 px-2.5 py-2.5 h-16 flex justify-around items-center max-w-sm mx-auto w-full z-50">
-
+      <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-16 w-full max-w-sm items-center justify-around bg-gray-100 p-2.5">
         {/* Tab 1: Notification (Bell) */}
         <TabItem
           isActive={currentActiveTab === 'notification'}
@@ -38,7 +37,11 @@ export default function MainLayout() {
           <Bell
             size={24}
             strokeWidth={2.5}
-            className={currentActiveTab === 'notification' ? 'text-[#C3485C] fill-[#C3485C]' : 'text-gray-400'}
+            className={
+              currentActiveTab === 'notification'
+                ? 'fill-[#C3485C] text-[#C3485C]'
+                : 'text-gray-400'
+            }
           />
         </TabItem>
 
@@ -50,23 +53,13 @@ export default function MainLayout() {
           <Archive
             size={24}
             strokeWidth={2.5}
-            className={currentActiveTab === 'food' ? 'text-[#C3485C]' : 'text-gray-400'}
+            className={
+              currentActiveTab === 'food' ? 'text-[#C3485C]' : 'text-gray-400'
+            }
           />
         </TabItem>
 
-        {/* Tab 3: Meal (Book) */}
-        <TabItem
-          isActive={currentActiveTab === 'meal'}
-          onPress={() => handlePress('meal')}
-        >
-          <Soup
-            size={24}
-            strokeWidth={2.5}
-            className={currentActiveTab === 'meal' ? 'text-[#C3485C]' : 'text-gray-400'}
-          />
-        </TabItem>
-
-        {/* Tab 4: Family Group (Shopping) */}
+        {/* Tab 3: Family Group (Shopping) */}
         <TabItem
           isActive={currentActiveTab === 'family-group'}
           onPress={() => handlePress('family-group')}
@@ -74,11 +67,15 @@ export default function MainLayout() {
           <ShoppingCart
             size={24}
             strokeWidth={2.5}
-            className={currentActiveTab === 'family-group' ? 'text-[#C3485C]' : 'text-gray-400'}
+            className={
+              currentActiveTab === 'family-group'
+                ? 'text-[#C3485C]'
+                : 'text-gray-400'
+            }
           />
         </TabItem>
 
-        {/* Tab 5: Profile (User)1*/}
+        {/* Tab 4: Profile (User) */}
         <TabItem
           isActive={currentActiveTab === 'profile'}
           onPress={() => handlePress('profile')}
@@ -86,7 +83,11 @@ export default function MainLayout() {
           <User
             size={24}
             strokeWidth={2.5}
-            className={currentActiveTab === 'profile' ? 'text-[#C3485C] fill-[#C3485C]' : 'text-gray-400'}
+            className={
+              currentActiveTab === 'profile'
+                ? 'fill-[#C3485C] text-[#C3485C]'
+                : 'text-gray-400'
+            }
           />
         </TabItem>
       </nav>
@@ -106,7 +107,7 @@ const TabItem: React.FC<TabItemProps> = ({ isActive, children, onPress }) => {
     <button
       onClick={onPress}
       className={`
-        w-12 h-10 flex justify-center items-center rounded-xl
+        flex h-10 w-12 items-center justify-center rounded-xl
         transition-colors duration-200 hover:bg-[#FFD7C1]
         ${isActive ? 'bg-[#FFD7C1]' : ''}
       `}

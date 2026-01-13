@@ -6,7 +6,8 @@ import { DayPicker, getDefaultClassNames } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { Time } from '../../../utils/time'
 import MealImage from '../../../assets/meal.png'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { BackButton } from '../../../components/BackButton'
 
 function dayName(index: number) {
   return index === 6 ? 'CN' : `Thứ ${index + 2}`
@@ -112,12 +113,14 @@ function getWeekDates(d: Date) {
 }
 
 export function Meal() {
+  const { id: groupId } = useParams<{ id: string }>()
   const [showNoti, setShowNoti] = useState(false)
   const [date, setDate] = useState(new Date(Date.now()))
   const [showDatePicker, setShowDatePicker] = useState(false)
   const navigate = useNavigate()
   return (
     <div className="flex flex-col px-3 py-4">
+      <BackButton to={`/main/family-group/${groupId}`} text="Quay lại" />
       {/* Header */}
       <div className="flex items-center justify-between pb-3">
         <p className="whitespace-nowrap text-xl font-bold text-red-600">
@@ -167,7 +170,7 @@ export function Meal() {
           )
         })}
       </div>
-      <div className="flex flex-col gap-2 py-4 items-center">
+      <div className="flex flex-col items-center gap-2 py-4">
         <div className="mx-auto flex w-full max-w-sm rounded-xl bg-yellow-100 px-6 py-3">
           <img src={MealImage} alt="Meal" className="aspect-square" />
           <div className="flex flex-col justify-between pl-2">
@@ -187,7 +190,9 @@ export function Meal() {
               icon={Info}
               variant="secondary"
               size="fit"
-              onClick={() => navigate('detail')}
+              onClick={() =>
+                navigate(`/main/family-group/${groupId}/meal/detail`)
+              }
             />
           </div>
         </div>
@@ -211,7 +216,9 @@ export function Meal() {
               icon={Info}
               variant="secondary"
               size="fit"
-              onClick={() => navigate('detail')}
+              onClick={() =>
+                navigate(`/main/family-group/${groupId}/meal/detail`)
+              }
             />
           </div>
         </div>
@@ -232,7 +239,9 @@ export function Meal() {
               icon={Info}
               variant="secondary"
               size="fit"
-              onClick={() => navigate('detail')}
+              onClick={() =>
+                navigate(`/main/family-group/${groupId}/meal/detail`)
+              }
             />
           </div>
         </div>
@@ -240,7 +249,7 @@ export function Meal() {
           icon={Plus}
           variant="icon"
           size="fit"
-          onClick={() => navigate('add')}
+          onClick={() => navigate(`/main/family-group/${groupId}/meal/add`)}
         />
       </div>
 

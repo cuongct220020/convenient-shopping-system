@@ -93,21 +93,6 @@ const FoodRoutes: RouteObject = {
   ]
 }
 
-const MealRoutes: RouteObject = {
-  path: 'meal',
-  children: [
-    { index: true, element: <Meal /> },
-    {
-      path: 'add',
-      element: <AddMeal />
-    },
-    {
-      path: 'detail',
-      element: <MealDetail />
-    }
-  ]
-}
-
 const FavoriteRoutes: RouteObject = {
   path: 'nutrition',
   element: <div>Favorite Screen</div>
@@ -128,7 +113,6 @@ export const MainRoutes: RouteObject = {
     ProfileRoutes,
     NutritionRoutes,
     FoodRoutes,
-    MealRoutes,
     FavoriteRoutes,
     {
       path: 'family-group',
@@ -149,6 +133,18 @@ export const MainRoutes: RouteObject = {
     {
       path: 'family-group/:id/user/:userId',
       element: <UserDetail />
+    },
+    {
+      path: 'family-group/:id/meal',
+      element: <Meal />
+    },
+    {
+      path: 'family-group/:id/meal/add',
+      element: <AddMeal />
+    },
+    {
+      path: 'family-group/:id/meal/detail',
+      element: <MealDetail />
     },
     {
       path: 'family-group/:id/add-plan',

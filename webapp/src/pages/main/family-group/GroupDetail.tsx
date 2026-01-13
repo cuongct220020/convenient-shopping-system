@@ -316,6 +316,28 @@ const GroupDetail = () => {
           </div>
         </div>
 
+        {/* Quick Access Buttons */}
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <Button
+            variant="secondary"
+            size="fit"
+            onClick={() => {
+              // TODO: Navigate to food storage management
+            }}
+          >
+            Quản lý kho thực phẩm
+          </Button>
+          <Button
+            variant="secondary"
+            size="fit"
+            onClick={() => {
+              navigate(`/main/family-group/${groupData.id}/meal`)
+            }}
+          >
+            Quản lý bữa ăn
+          </Button>
+        </div>
+
         {/* Tabs */}
         <div className="mt-8 flex border-b border-gray-200">
           <button
