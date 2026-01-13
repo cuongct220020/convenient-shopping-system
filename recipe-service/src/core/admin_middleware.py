@@ -14,6 +14,10 @@ class AdminMiddleware(BaseHTTPMiddleware):
         if request.method in ("GET", "OPTIONS"):
             return await call_next(request)
         
+        # Skip authentication for recipe flattened endpoint
+        if request.url.path == "/v2/recipes/flattened":
+            return await call_next(request)
+        
         try:
             auth_payload = await get_current_user(request)
             user_role = auth_payload.get("role")
