@@ -237,13 +237,18 @@ export class ShoppingPlanService {
 
   /**
    * Report a shopping plan as completed (confirm implementation)
+   * Returns response with message and optional missing_items if report is incomplete
    */
   public reportPlan(
     planId: number,
     assigneeId: string,
     assigneeUsername: string,
-    confirm: boolean = true
-  ): ResultAsync<{ message: string }, ShoppingPlanError> {
+    confirm: boolean = false
+  ): ResultAsync<
+    | { message: string; missing_items?: undefined }
+    | { message: string; missing_items: Array<{ component_id: number; component_name: string; missing_quantity: number }> },
+    ShoppingPlanError
+  > {
     const url = `${AppUrl.SHOPPING_PLANS}${planId}/report?assignee_id=${assigneeId}&assignee_username=${assigneeUsername}&confirm=${confirm}`
 
     const body = {
@@ -262,7 +267,18 @@ export class ShoppingPlanService {
             return createShoppingPlanError(e.type, e.desc)
         }
       })
-      .map((response) => response.body as { message: string })
+      .map((response) => {
+        const body = response.body as { message: string; data?: { missing_items?: Array<{ component_id: number; component_name: string; missing_quantity: number }> } }
+        if (body.data?.missing_items) {
+          return {
+            message: body.message,
+            missing_items: body.data.missing_items
+          }
+        }
+        return {
+          message: body.message
+        }
+      })
   }
 
   /**

@@ -76,8 +76,9 @@ export const IngredientCard = ({
               <div className="flex items-center bg-white rounded-lg px-2 py-1 shadow-sm">
                 <input
                   type="number"
-                  inputMode="decimal"
-                  step="0.1"
+                  inputMode="numeric"
+                  step="1"
+                  min="1"
                   value={ingredient.quantity.split(' ')[0]}
                   onChange={(e) => onQuantityChange!(e.target.value)}
                   className="w-12 text-xs font-medium text-right outline-none bg-transparent"
