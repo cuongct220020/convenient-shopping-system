@@ -390,11 +390,13 @@ services:
         limits:
           memory: 200M
 
-  # Kafka UI for managing and monitoring Kafka (Xoá service này khi deploy lên AWS)
+  # Kafka UI for managing and monitoring Kafka (service không cần thiết khi deploy lên AWS)
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     hostname: kafka-ui
+    profiles:
+      - ui
     ports:
       - "8080:8080"
     depends_on:
