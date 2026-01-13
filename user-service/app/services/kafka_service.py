@@ -11,7 +11,7 @@ from shopping_shared.messaging.kafka_topics import (
     EMAIL_CHANGE_EVENTS_TOPIC,
     USER_UPDATE_TAG_EVENTS_TOPIC,
     LOGOUT_EVENTS_TOPIC,
-    NOTIFICATION_TOPIC,
+    NOTIFICATION_TOPIC
 )
 
 
