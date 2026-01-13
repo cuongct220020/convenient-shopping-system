@@ -327,6 +327,7 @@ const DishMenu = () => {
             <DishForm
               onSubmit={handleDishFormSubmit}
               onCancel={handleDishFormCancel}
+              loading={loading}
             />
           </div>
         </div>
@@ -405,6 +406,7 @@ const DishMenu = () => {
                 }}
                 onSubmit={handleSaveClick}
                 onCancel={() => setViewMode('view')}
+                loading={loading}
               />
             )}
           </div>

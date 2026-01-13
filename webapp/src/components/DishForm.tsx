@@ -18,6 +18,7 @@ interface DishFormProps {
   readOnly?: boolean
   actions?: React.ReactNode
   initialData?: Partial<Dish>
+  loading?: boolean
 }
 
 export const DishForm: React.FC<DishFormProps> = ({
@@ -26,7 +27,8 @@ export const DishForm: React.FC<DishFormProps> = ({
   submitLabel = 'Xác nhận',
   readOnly = false,
   actions,
-  initialData
+  initialData,
+  loading = false
 }) => {
   const [componentName, setComponentName] = useState(
     initialData?.component_name || ''
@@ -381,7 +383,7 @@ export const DishForm: React.FC<DishFormProps> = ({
           ) : (
             <>
               <Button
-                variant="primary"
+                variant={loading ? 'disabled' : 'primary'}
                 size="fit"
                 icon={Check}
                 onClick={handleSave}
