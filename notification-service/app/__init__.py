@@ -8,7 +8,7 @@ logger = get_logger("Initialize Notification Service Application")
 def register_routes(sanic_app: Sanic):
     """Register routes for the Notification Service."""
 
-    @sanic_app.route("/api/v1/notification-service/", methods=["GET"])
+    @sanic_app.route("/api/v2/notification-service/", methods=["GET"])
     async def root(request):
         """Root endpoint."""
         return sanic_json({
@@ -17,7 +17,7 @@ def register_routes(sanic_app: Sanic):
             "message": "Notification Service is running"
         })
 
-    @sanic_app.route("/api/v1/notification-service/health", methods=["GET"])
+    @sanic_app.route("/api/v2/notification-service/health", methods=["GET"])
     async def health_check(request):
         """Health check endpoint."""
         return sanic_json({

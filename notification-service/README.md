@@ -9,7 +9,7 @@ This service handles real-time notifications for the Convenient Shopping System.
 The service exposes a single WebSocket endpoint (user-only). In a local development environment (via Kong Gateway), use:
 
 *   **User Notifications:**
-    *   URL: `ws://localhost:8000/ws/v1/notification-service/notifications/users/<user_id>`
+    *   URL: `ws://localhost:8000/ws/v2/notification-service/notifications/users/<user_id>`
     *   Usage: For receiving personal notifications for a specific user.
 
 **Authentication:**
@@ -17,7 +17,7 @@ These endpoints are protected. You must provide a valid JWT token.
 1.  **Header:** `Authorization: Bearer <YOUR_JWT_TOKEN>` (Recommended for generic clients)
 2.  **Query Parameter:** Append `?jwt=<YOUR_JWT_TOKEN>` to the URL (Useful for browser/simple testing)
 
-    *Example:* `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/123e4567-e89b-12d3-a456-426614174000?jwt=eyJhbG...`
+    *Example:* `ws://localhost:8000/ws/v2/notification-service/notifications/users/123e4567-e89b-12d3-a456-426614174000?jwt=eyJhbG...`
 
 *Note: In production, these endpoints are accessed via WSS (secure WebSocket).*
 
@@ -37,7 +37,7 @@ This section details the complete lifecycle of a WebSocket notification, from cl
 
 ### 1. Client Connection (HTTP Upgrade to WSS)
 
-1.  **Client Request:** The client initiates a connection by sending an HTTP `GET` request to the WebSocket endpoint (e.g., `wss://<gateway-host>/api/v1/notification-service/ws/notifications/users/<user_id>`).
+1.  **Client Request:** The client initiates a connection by sending an HTTP `GET` request to the WebSocket endpoint (e.g., `wss://<gateway-host>/ws/v2/notification-service/notifications/users/<user_id>`).
 2.  **Kong Gateway:** Kong receives the request. It performs authentication (e.g., validating the `Authorization: Bearer <JWT_TOKEN>` header) based on configured plugins (like `jwt` or `key-auth`). If successful, Kong forwards the request to the `notification-service`.
 3.  **Notification Service:**
     *   The `ws_bp.py` endpoint (`ws_user_notifications`) receives the request.
@@ -102,7 +102,7 @@ This section describes how to test the real-time notification flow end-to-end, f
 #### Scenario 1: User Added to Group (`ADD_USERS_GROUP_EVENTS_TOPIC`)
 
 1.  **Setup WebSocket Connections:**
-    *   **Client 1 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID`. Include a valid `Authorization: Bearer <JWT_TOKEN_USER_B>` header.
+    *   **Client 1 (User B):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_B_ID`. Include a valid `Authorization: Bearer <JWT_TOKEN_USER_B>` header.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong to add `user_B` to `Family_Group`.
     *   **Endpoint:** `POST http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members`
@@ -133,7 +133,7 @@ This section describes how to test the real-time notification flow end-to-end, f
 #### Scenario 2: User Removed from Group (`REMOVE_USERS_GROUP_EVENTS_TOPIC`)
 
 1.  **Setup WebSocket Connections:**
-    *   **Client 1 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID`. Include a valid `Authorization: Bearer <JWT_TOKEN_USER_B>` header.
+    *   **Client 1 (User B):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_B_ID`. Include a valid `Authorization: Bearer <JWT_TOKEN_USER_B>` header.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong to remove `user_B` from `Family_Group`.
     *   **Endpoint:** `DELETE http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members/USER_B_ID`
@@ -214,8 +214,8 @@ This section describes how to test the real-time notification flow end-to-end, f
 #### Scenario 5: User Account Logout (`LOGOUT_EVENTS_TOPIC`)
 
 1.  **Setup WebSocket Connections:**
-    *   **Client 1 (User A):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_A_ID` with `user_A`'s token.
-    *   **Client 2 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID` with `user_B`'s token.
+    *   **Client 1 (User A):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_A_ID` with `user_A`'s token.
+    *   **Client 2 (User B):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_B_ID` with `user_B`'s token.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong to logout `user_A`.
     *   **Endpoint:** `POST http://localhost:8000/api/v1/user-service/api/v1/user-service/auth/logout`
@@ -227,8 +227,8 @@ This section describes how to test the real-time notification flow end-to-end, f
 #### Scenario 6: Multiple Group Members Added Simultaneously
 
 1.  **Setup WebSocket Connections:**
-    *   **Client 1 (User B):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_B_ID` with `user_B`'s token.
-    *   **Client 2 (User C):** Connect to `ws://localhost:8000/api/v1/notification-service/ws/notifications/users/USER_C_ID` with `user_C`'s token.
+    *   **Client 1 (User B):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_B_ID` with `user_B`'s token.
+    *   **Client 2 (User C):** Connect to `ws://localhost:8000/ws/v2/notification-service/notifications/users/USER_C_ID` with `user_C`'s token.
 2.  **Trigger the Event:**
     *   Use the `user-service` API via Kong to add multiple users to the group simultaneously.
     *   **Endpoint:** `POST http://localhost:8000/api/v1/user-service/api/v1/user-service/groups/GROUP_ID/members`

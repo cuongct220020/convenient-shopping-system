@@ -247,15 +247,15 @@ services:
       # Public routes (no JWT required)
       - name: notification-service-public
         paths:
-          - /api/v1/notification-service/health
-          - /api/v1/notification-service
-          - /api/v1/notification-service/
+          - /api/v2/notification-service/health
+          - /api/v2/notification-service
+          - /api/v2/notification-service/
         strip_path: false
 
       # Protected REST routes (JWT required)
       - name: notification-service-protected
         paths:
-          - /api/v1/notification-service/notifications
+          - /api/v2/notification-service/notifications
         strip_path: false
         plugins:
           # Step 1: JWT verification (MUST run first)
@@ -323,7 +323,7 @@ services:
 
       - name: notification-service-websocket-users
         paths:
-          - /ws/v1/notification-service/notifications/users
+          - /ws/v2/notification-service/notifications/users
         strip_path: false
         protocols:
           - http

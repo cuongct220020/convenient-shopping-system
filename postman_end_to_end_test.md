@@ -104,8 +104,8 @@ Thay `otp_code` bằng giá trị OTP thật (từ email hoặc từ response n�
 ### 4) Kết nối WebSocket notifications (user channel)
 
 Mở một **WebSocket Request** trong Postman:
-- **URL**: `ws://localhost:8000/ws/v1/notification-service/notifications/users/{{USER_ID}}`
-  - Nếu bạn dùng `https://localhost` cho API thì WS tương ứng là `wss://localhost/ws/v1/notification-service/notifications/users/{{USER_ID}}`
+- **URL**: `ws://localhost:8000/ws/v2/notification-service/notifications/users/{{USER_ID}}`
+  - Nếu bạn dùng `https://localhost` cho API thì WS tương ứng là `wss://localhost/ws/v2/notification-service/notifications/users/{{USER_ID}}`
 - **Headers**:
   - `Authorization: Bearer {{ACCESS_TOKEN}}`
 
@@ -271,7 +271,7 @@ Kỳ vọng:
 
 Ghi chú:
 - Notification realtime (group_user_removed) sẽ được gửi cho **user bị xóa** (tức `{{NEW_USER_ID}}`). Muốn quan sát, cần login user đó và mở thêm WS:
-  - `ws://localhost:8000/ws/v1/notification-service/notifications/users/{{NEW_USER_ID}}`
+  - `ws://localhost:8000/ws/v2/notification-service/notifications/users/{{NEW_USER_ID}}`
 
 ---
 
@@ -279,12 +279,12 @@ Ghi chú:
 
 **Request**
 - **Method**: `GET`
-- **URL**: `{{BASE_URL}}/api/v1/notification-service/notifications/users/{{USER_ID}}`
+- **URL**: `{{BASE_URL}}/api/v2/notification-service/notifications/users/{{USER_ID}}`
 - **Headers**: `Authorization: Bearer {{ACCESS_TOKEN}}`
 
 Ghi chú (đường dẫn chuẩn):
-- **Qua Kong (gateway)**: `{{BASE_URL}}/api/v1/notification-service/notifications/users/{{USER_ID}}`
-- **Gọi thẳng service** (nếu chạy direct): `http://localhost:9005/api/v1/notification-service/notifications/users/{{USER_ID}}`
+- **Qua Kong (gateway)**: `{{BASE_URL}}/api/v2/notification-service/notifications/users/{{USER_ID}}`
+- **Gọi thẳng service** (nếu chạy direct): `http://localhost:9005/api/v2/notification-service/notifications/users/{{USER_ID}}`
 
 Kỳ vọng:
 - Trả về danh sách notifications của user.
@@ -297,7 +297,7 @@ Chọn một notification id trong danh sách ở bước 13, set vào env `NOTI
 
 **Request**
 - **Method**: `PATCH`
-- **URL**: `{{BASE_URL}}/api/v1/notification-service/notifications/{{NOTIFICATION_ID}}/users/{{USER_ID}}/read`
+- **URL**: `{{BASE_URL}}/api/v2/notification-service/notifications/{{NOTIFICATION_ID}}/users/{{USER_ID}}/read`
 - **Headers**: `Authorization: Bearer {{ACCESS_TOKEN}}`
 
 Kỳ vọng:
@@ -309,7 +309,7 @@ Kỳ vọng:
 
 **Request**
 - **Method**: `DELETE`
-- **URL**: `{{BASE_URL}}/api/v1/notification-service/notifications/{{NOTIFICATION_ID}}/users/{{USER_ID}}`
+- **URL**: `{{BASE_URL}}/api/v2/notification-service/notifications/{{NOTIFICATION_ID}}/users/{{USER_ID}}`
 - **Headers**: `Authorization: Bearer {{ACCESS_TOKEN}}`
 
 Kỳ vọng:
@@ -321,7 +321,7 @@ Kỳ vọng:
 
 **Request**
 - **Method**: `GET`
-- **URL**: `{{BASE_URL}}/api/v1/notification-service/health`
+- **URL**: `{{BASE_URL}}/api/v2/notification-service/health`
 
 Kỳ vọng:
 - 200 OK.
@@ -332,7 +332,7 @@ Kỳ vọng:
 
 **Request**
 - **Method**: `GET`
-- **URL**: `{{BASE_URL}}/api/v1/notification-service/notifications/users/{{NEW_USER_ID}}`
+- **URL**: `{{BASE_URL}}/api/v2/notification-service/notifications/users/{{NEW_USER_ID}}`
 - **Headers**: `Authorization: Bearer {{ACCESS_TOKEN}}`
 
 Kỳ vọng:
