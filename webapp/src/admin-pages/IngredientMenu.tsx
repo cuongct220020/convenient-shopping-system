@@ -1,5 +1,13 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
-import { Search, Plus, Filter, Check, Edit, Trash2 } from 'lucide-react'
+import {
+  Search,
+  Plus,
+  Filter,
+  Check,
+  Edit,
+  Trash2,
+  RotateCw
+} from 'lucide-react'
 import Item from '../components/Item'
 import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
@@ -44,6 +52,7 @@ const IngredientMenu = () => {
   const [showFilter, setShowFilter] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchInputValue, setSearchInputValue] = useState('')
   const [showAddDishForm, setShowAddDishForm] = useState(false)
   const [showAddIngredientForm, setShowAddIngredientForm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ItemData | null>(null)
@@ -283,6 +292,9 @@ const IngredientMenu = () => {
   }, [ingredients])
 
   const handleCategoryChange = (category: string) => {
+    // Clear search when filter is applied
+    setSearchQuery('')
+    setSearchInputValue('')
     setSelectedCategories((prev) =>
       prev.includes(category)
         ? prev.filter((c) => c !== category)
@@ -293,7 +305,23 @@ const IngredientMenu = () => {
   }
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
+    setSearchInputValue(e.target.value)
+  }
+
+  const handleSearch = () => {
+    // Clear filters when searching
+    setSelectedCategories([])
+    setShowFilter(false)
+    // Set search query and reset pagination
+    setSearchQuery(searchInputValue)
+    setPagesCursors([null])
+    setCurrentPage(1)
+  }
+
+  const handleReload = () => {
+    // Clear search and reset to initial state
+    setSearchQuery('')
+    setSearchInputValue('')
     setPagesCursors([null])
     setCurrentPage(1)
   }
@@ -353,18 +381,36 @@ const IngredientMenu = () => {
               )}
             </button>
 
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Tìm kiếm..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="w-64 rounded-lg border border-gray-300 py-2 pl-4 pr-10 text-sm focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
-              />
-              <Search
-                className="absolute right-3 top-2.5 text-gray-400"
-                size={18}
-              />
+            <div className="flex items-center space-x-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm..."
+                  value={searchInputValue}
+                  onChange={handleSearchChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchInputValue.trim()) {
+                      handleSearch()
+                    }
+                  }}
+                  className="w-64 rounded-lg border border-gray-300 py-2 pl-4 pr-4 text-sm focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
+                />
+              </div>
+              {searchInputValue.trim() ? (
+                <Button
+                  variant="icon"
+                  size="fit"
+                  icon={Search}
+                  onClick={handleSearch}
+                />
+              ) : (
+                <Button
+                  variant="icon"
+                  size="fit"
+                  icon={RotateCw}
+                  onClick={handleReload}
+                />
+              )}
             </div>
           </div>
         </div>

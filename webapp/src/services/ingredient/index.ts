@@ -44,6 +44,7 @@ export class IngredientService {
 
   /**
    * Get list of ingredients with cursor-based pagination
+   * Dynamically selects between search and regular endpoints
    * @param params - Query parameters (cursor, limit, search, categories)
    */
   public getIngredients(params?: {
@@ -52,6 +53,30 @@ export class IngredientService {
     search?: string
     categories?: string[]
   }): ResultAsync<GetIngredientsResponse, IngredientError> {
+    // If search is provided, use search endpoint
+    if (params?.search && params.search.trim()) {
+      const queryParams = new URLSearchParams()
+      queryParams.append('keyword', params.search)
+      if (params?.cursor !== undefined) {
+        queryParams.append('cursor', String(params.cursor))
+      }
+      if (params?.limit !== undefined) {
+        queryParams.append('limit', String(params.limit))
+      }
+
+      const url = `${AppUrl.INGREDIENTS}search?${queryParams.toString()}`
+
+      return httpGet(this.clients.auth, url).andThen((response) =>
+        parseZodObject(GetIngredientsResponseSchema, response.body).mapErr(
+          (e): IngredientError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+    }
+
+    // Otherwise use regular endpoint for listing/filtering
     const queryParams = new URLSearchParams()
 
     if (params?.cursor !== undefined) {
@@ -59,9 +84,6 @@ export class IngredientService {
     }
     if (params?.limit !== undefined) {
       queryParams.append('limit', String(params.limit))
-    }
-    if (params?.search) {
-      queryParams.append('search', params.search)
     }
     if (params?.categories && params.categories.length > 0) {
       queryParams.append('categories', params.categories.join(','))
