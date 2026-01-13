@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import {
   Settings,
-  Users,
-  ChefHat,
   Edit2,
   Trash2,
   LogOut,
   ChevronLeft
 } from 'lucide-react'
 import { Button } from '../../../components/Button'
+import { GroupHeader } from '../../../components/GroupHeader'
 import GroupDetailMembers from './GroupDetailMembers'
 import GroupDetailShoppingPlans from './GroupDetailShoppingPlans'
 import { groupService } from '../../../services/group'
@@ -96,6 +95,86 @@ const GroupDetail = () => {
         return
       }
 
+      // Check if groupData was passed via navigation state
+      const stateGroupData = (location.state as { groupData?: typeof groupData })?.groupData
+      if (stateGroupData) {
+        // Set groupData immediately from state to avoid loading/reload
+        // We still need to fetch full data for members list and current user role
+        // But we can use stateGroupData for basic info to avoid layout reload
+        setError(null)
+        
+        // Set groupData immediately with basic info to prevent reload
+        setGroupData({
+          id: stateGroupData.id,
+          name: stateGroupData.name,
+          avatarUrl: stateGroupData.avatarUrl,
+          memberCount: stateGroupData.memberCount,
+          adminName: stateGroupData.adminName,
+          members: [], // Will be updated after fetch
+          currentUserRole: 'member', // Will be updated after fetch
+          currentUserId: null // Will be updated after fetch
+        })
+        
+        setIsLoading(false) // Set loading to false immediately
+
+        // Fetch full data in background
+        const fetchFullData = async () => {
+          const userResult = await userService.getCurrentUser()
+          const currentUserId = userResult.isOk() ? userResult.value.data.id : null
+
+          const membersResult = await groupService.getGroupMembers(id)
+          
+          membersResult.match(
+            (response) => {
+              const group = response.data
+              const memberships = group.members || group.group_memberships || []
+
+              const members = memberships.map((membership: GroupMembership) => {
+                const role = membership.role as 'head_chef' | 'member'
+                return {
+                  id: membership.user.id,
+                  name: getDisplayName(membership.user),
+                  role: mapRoleToUI(role),
+                  email: membership.user.email,
+                  avatar: membership.user.avatar_url,
+                  isCurrentUser: membership.user.id === currentUserId
+                }
+              })
+
+              const currentUserMembership = memberships.find(
+                (m: GroupMembership) => m.user.id === currentUserId
+              )
+              let currentUserRole: 'head_chef' | 'member' = 'member'
+
+              if (
+                currentUserMembership?.role === 'head_chef' ||
+                currentUserMembership?.role === 'member'
+              ) {
+                currentUserRole = currentUserMembership.role
+              }
+
+              // Update groupData with full info
+              setGroupData((prev) => {
+                if (!prev) return prev
+                return {
+                  ...prev,
+                  members,
+                  currentUserRole,
+                  currentUserId
+                }
+              })
+            },
+            (err) => {
+              console.error('Failed to fetch group members:', err)
+              // Don't set error state to avoid disrupting the UI
+            }
+          )
+        }
+        
+        fetchFullData()
+        return
+      }
+
       setIsLoading(true)
       setError(null)
 
@@ -169,22 +248,46 @@ const GroupDetail = () => {
 
   const isHeadChef = groupData?.currentUserRole === 'head_chef'
 
-  const toggleSettings = () => setIsSettingsOpen(!isSettingsOpen)
+  const toggleSettings = useCallback(() => {
+    setIsSettingsOpen((prev) => !prev)
+  }, [])
 
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
+    if (!id || !groupData) return
     navigate(`/main/family-group/${id}/edit`, {
       state: { group: groupData, returningFromEdit: true }
     })
     setIsSettingsOpen(false)
-  }
+  }, [id, groupData, navigate])
 
-  const handleBackdropClick = () => {
-    if (isSettingsOpen) setIsSettingsOpen(false)
-  }
+  const handleBackdropClick = useCallback(() => {
+    setIsSettingsOpen(false)
+  }, [])
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setRefreshKey((prev) => prev + 1)
-  }
+  }, [])
+
+  const handleBack = useCallback(() => {
+    navigate('/main/family-group', {
+      state: returningFromEdit ? { refresh: true } : undefined
+    })
+  }, [navigate, returningFromEdit])
+
+  const settingsButton = useMemo(
+    () => (
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          toggleSettings()
+        }}
+        className="p-2"
+      >
+        <Settings size={24} className="text-gray-700" />
+      </button>
+    ),
+    [toggleSettings]
+  )
 
   // Loading state
   if (isLoading) {
@@ -219,124 +322,64 @@ const GroupDetail = () => {
       className="relative min-h-screen bg-white"
       onClick={handleBackdropClick}
     >
-      {/* Header */}
-      <div>
-        <div className="flex items-center justify-between px-4 py-2">
-          <button
-            onClick={() =>
-              navigate('/main/family-group', {
-                state: returningFromEdit ? { refresh: true } : undefined
-              })
-            }
-            className="flex items-center text-sm font-bold text-[#C3485C] hover:opacity-80"
-          >
-            <ChevronLeft size={20} strokeWidth={3} />
-            <span className="ml-1">Quay lại</span>
-          </button>
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleSettings()
-              }}
-              className="p-2"
-            >
-              <Settings size={24} className="text-gray-700" />
-            </button>
+      {/* Header with Group Info */}
+      <GroupHeader
+        groupName={groupData.name}
+        avatarUrl={groupData.avatarUrl}
+        memberCount={groupData.memberCount}
+        adminName={groupData.adminName}
+        isCompact={activeTab !== 'members'}
+        onBack={handleBack}
+        settingsButton={settingsButton}
+      />
 
-            {/* Settings Popover */}
-            {isSettingsOpen && (
-              <div className="absolute right-0 top-full z-10 mt-2 w-32 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                {isHeadChef ? (
-                  <>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEdit()
-                      }}
-                      className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <Edit2 size={16} className="mr-2" />
-                      Chỉnh sửa
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setIsSettingsOpen(false)
-                      }}
-                      className="flex w-full items-center px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
-                    >
-                      <Trash2 size={16} className="mr-2" />
-                      Xóa nhóm
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setIsSettingsOpen(false)
-                    }}
-                    className="flex w-full items-center px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
-                  >
-                    <LogOut size={16} className="mr-2" />
-                    Rời nhóm
-                  </button>
-                )}
-              </div>
+      {/* Settings Popover */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-end px-4 pt-16">
+          <div
+            className="absolute right-4 top-16 z-10 w-32 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {isHeadChef ? (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleEdit()
+                  }}
+                  className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  <Edit2 size={16} className="mr-2" />
+                  Chỉnh sửa
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsSettingsOpen(false)
+                  }}
+                  className="flex w-full items-center px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
+                >
+                  <Trash2 size={16} className="mr-2" />
+                  Xóa nhóm
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsSettingsOpen(false)
+                }}
+                className="flex w-full items-center px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
+              >
+                <LogOut size={16} className="mr-2" />
+                Rời nhóm
+              </button>
             )}
           </div>
         </div>
-
-        <h1 className="pb-2 text-center text-xl font-bold text-[#C3485C]">
-          Chi Tiết Nhóm
-        </h1>
-      </div>
+      )}
 
       <div className="px-4 pb-4">
-        {/* Group Info */}
-        <div className="mt-4 flex flex-col items-center">
-          <img
-            src={
-              groupData.avatarUrl ||
-              new URL('../../../assets/family.png', import.meta.url).href
-            }
-            alt={groupData.name}
-            className="mb-4 size-24 rounded-full object-cover"
-          />
-          <h2 className="text-2xl font-bold text-gray-900">{groupData.name}</h2>
-          <div className="mt-2 flex items-center space-x-4 text-sm text-gray-600">
-            <div className="flex items-center">
-              <Users size={16} className="mr-1" />
-              <span>{groupData.memberCount} thành viên</span>
-            </div>
-            <div className="flex items-center">
-              <ChefHat size={16} className="mr-1" />
-              <span>{groupData.adminName}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Access Buttons */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <Button
-            variant="secondary"
-            size="fit"
-            onClick={() => {
-              // TODO: Navigate to food storage management
-            }}
-          >
-            Quản lý kho thực phẩm
-          </Button>
-          <Button
-            variant="secondary"
-            size="fit"
-            onClick={() => {
-              navigate(`/main/family-group/${groupData.id}/meal`)
-            }}
-          >
-            Quản lý bữa ăn
-          </Button>
-        </div>
 
         {/* Tabs */}
         <div className="mt-8 flex border-b border-gray-200">
@@ -359,6 +402,36 @@ const GroupDetail = () => {
             onClick={() => setActiveTab('shopping-plan')}
           >
             Kế hoạch mua sắm
+          </button>
+        </div>
+
+        {/* Quick Access Buttons */}
+        <div className="mt-4 flex border-b border-gray-200">
+          <button
+            className="flex-1 py-3 text-center text-sm font-bold text-gray-500 hover:text-gray-900"
+            onClick={() => {
+              // TODO: Navigate to food storage management
+            }}
+          >
+            Quản lý kho thực phẩm
+          </button>
+          <button
+            className="flex-1 py-3 text-center text-sm font-bold text-gray-500 hover:text-gray-900"
+            onClick={() => {
+              navigate(`/main/family-group/${groupData.id}/meal`, {
+                state: {
+                  groupData: {
+                    id: groupData.id,
+                    name: groupData.name,
+                    avatarUrl: groupData.avatarUrl,
+                    memberCount: groupData.memberCount,
+                    adminName: groupData.adminName
+                  }
+                }
+              })
+            }}
+          >
+            Quản lý bữa ăn
           </button>
         </div>
 
