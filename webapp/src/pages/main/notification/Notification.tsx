@@ -170,7 +170,7 @@ const Notification = () => {
                   e.stopPropagation()
                   handleDelete(notif.id)
                 }}
-                className="shrink-0 p-1 text-gray-400 transition-colors hover:text-gray-600"
+                className="shrink-0 p-1 text-3xl text-gray-400 transition-colors hover:text-gray-600"
                 aria-label="Xóa thông báo"
               >
                 ×
