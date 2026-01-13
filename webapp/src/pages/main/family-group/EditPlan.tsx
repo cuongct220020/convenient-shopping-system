@@ -18,8 +18,8 @@ type ExtendedIngredient = Ingredient & {
   measurementUnit?: string;  // Store the unit from API (e.g., "g", "ml")
 };
 
-// Dummy image for ingredients
-const BROCCOLI_IMAGE_URL = 'https://i.imgur.com/0Zl3xYm.png';
+// Default ingredient image
+const DEFAULT_INGREDIENT_IMAGE = new URL('../../../assets/ingredient.png', import.meta.url).href;
 
 // Helper function to parse ISO date to datetime-local format
 const parseISOToDateTimeLocal = (isoString: string): string => {
@@ -103,7 +103,7 @@ const EditPlan: React.FC = () => {
             name: item.component_name,
             category: item.type === 'countable_ingredient' ? 'Đếm được' : 'Không đếm được',
             quantity: `${item.quantity} ${item.unit}`,
-            image: BROCCOLI_IMAGE_URL,
+            image: DEFAULT_INGREDIENT_IMAGE,
             originalItem: item, // Store original item data
           }));
           setIngredients(mappedIngredients);
@@ -196,7 +196,7 @@ const EditPlan: React.FC = () => {
         quantity: displayQuantity,
         numericQuantity: numericValue,
         measurementUnit: unit,
-        image: BROCCOLI_IMAGE_URL,
+        image: DEFAULT_INGREDIENT_IMAGE,
         searchResult: searchResult,
       };
       setIngredients([...ingredients, newIngredient]);

@@ -1,31 +1,75 @@
-import { ResultAsync } from 'neverthrow'
+import { okAsync, ResultAsync } from 'neverthrow'
+import { parseZodObject } from '../../utils/zod-result'
+import {
+  GetIngredientsResponseSchema,
+  IngredientSchema,
+  IngredientSearchResponse,
+  IngredientSearchResponseSchema,
+  type GetIngredientsResponse,
+  type Ingredient
+} from '../schema/ingredientSchema'
 import {
   AppUrl,
   Clients,
   httpClients,
-  httpGet
+  httpDelete,
+  httpGet,
+  httpPost,
+  httpPut,
+  ResponseError
 } from '../client'
-import { parseZodObject } from '../../utils/zod-result'
-import {
-  IngredientSearchResponseSchema,
-  type IngredientSearchResponse,
-  type Ingredient
-} from '../schema/ingredientSchema'
 
-type IngredientError = ReturnType<typeof createIngredientError>
-
-function createIngredientError(type: string, desc: string | null = null) {
-  return { type, desc } as const
-}
-
-export type IngredientErrorType =
-  | 'not-found'
-  | 'validation-error'
-  | 'unauthorized'
-  | 'network-error'
+type IngredientError = ResponseError<'not-found' | 'unauthorized'>
 
 export class IngredientService {
   constructor(private clients: Clients) {}
+
+  /**
+   * Get list of ingredients with cursor-based pagination
+   * @param params - Query parameters (cursor, limit, search, categories)
+   */
+  public getIngredients(params?: {
+    cursor?: number
+    limit?: number
+    search?: string
+    categories?: string[]
+  }): ResultAsync<GetIngredientsResponse, IngredientError> {
+    const queryParams = new URLSearchParams()
+
+    if (params?.cursor !== undefined) {
+      queryParams.append('cursor', String(params.cursor))
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append('limit', String(params.limit))
+    }
+    if (params?.search) {
+      queryParams.append('search', params.search)
+    }
+    if (params?.categories && params.categories.length > 0) {
+      queryParams.append('categories', params.categories.join(','))
+    }
+
+    const url = `${AppUrl.INGREDIENTS}?${queryParams.toString()}`
+
+    return httpGet(this.clients.auth, url).andThen((response) =>
+      parseZodObject(GetIngredientsResponseSchema, response.body).mapErr(
+        (e): IngredientError => ({
+          type: 'invalid-response-format',
+          desc: e
+        })
+      )
+    )
+  }
+
+  /**
+   * Delete an ingredient by ID
+   * @param id - The component_id of the ingredient to delete
+   */
+  public deleteIngredient(id: string): ResultAsync<void, IngredientError> {
+    const url = AppUrl.INGREDIENTS_BY_ID(id)
+
+    return httpDelete(this.clients.auth, url).map(() => {})
+  }
 
   /**
    * Search ingredients by keyword
@@ -33,17 +77,13 @@ export class IngredientService {
   public searchIngredients(
     keyword: string
   ): ResultAsync<IngredientSearchResponse, IngredientError> {
-    if (!keyword.trim()) {
-      return ResultAsync.fromPromise(
-        Promise.resolve({
-          message: null,
-          data: [],
-          next_cursor: null,
-          size: 0
-        } as IngredientSearchResponse),
-        (e) => createIngredientError('network-error', String(e))
-      )
-    }
+    if (!keyword.trim())
+      return okAsync({
+        message: null,
+        data: [],
+        next_cursor: null,
+        size: 0
+      })
 
     const url = AppUrl.INGREDIENTS_SEARCH(keyword)
 
@@ -52,16 +92,7 @@ export class IngredientService {
     return httpGet(this.clients.recipe, url)
       .mapErr((e) => {
         console.error('HTTP error for ingredient search:', e)
-        switch (e.type) {
-          case 'path-not-found':
-            return createIngredientError('not-found', e.desc)
-          case 'unauthorized':
-            return createIngredientError('unauthorized', e.desc)
-          case 'network-error':
-            return createIngredientError('network-error', e.desc)
-          default:
-            return createIngredientError(e.type, e.desc)
-        }
+        return e
       })
       .andThen((response) => {
         console.log('Raw response body:', response.body)
@@ -70,9 +101,51 @@ export class IngredientService {
           response.body
         ).mapErr((e) => {
           console.error('Schema validation error:', e)
-          return createIngredientError('validation-error', e)
+          return {
+            type: 'invalid-response-format' as const,
+            desc: e
+          }
         })
       })
+  }
+
+  /**
+   * Create a new ingredient
+   * @param data - Ingredient creation data
+   */
+  public createIngredient(
+    data: Partial<Ingredient>
+  ): ResultAsync<Ingredient, IngredientError> {
+    return httpPost(this.clients.auth, AppUrl.INGREDIENTS, data).andThen(
+      (response) =>
+        parseZodObject(IngredientSchema, response.body).mapErr(
+          (e): IngredientError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+    )
+  }
+
+  /**
+   * Update an ingredient by ID
+   * @param id - The component_id of the ingredient
+   * @param data - Ingredient update data
+   */
+  public updateIngredient(
+    id: string,
+    data: Partial<Ingredient>
+  ): ResultAsync<Ingredient, IngredientError> {
+    const url = AppUrl.INGREDIENTS_BY_ID(id)
+
+    return httpPut(this.clients.auth, url, data).andThen((response) =>
+      parseZodObject(IngredientSchema, response.body).mapErr(
+        (e): IngredientError => ({
+          type: 'invalid-response-format',
+          desc: e
+        })
+      )
+    )
   }
 }
 

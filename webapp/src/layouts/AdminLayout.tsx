@@ -1,8 +1,12 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Navigate, NavLink, Outlet } from 'react-router-dom'
 import React from 'react'
 import { ChevronRight, Users } from 'lucide-react'
+import { authController } from '../controllers/authController'
 
-export default function AdminLayout() {
+export default function ProtectedAdminLayout() {
+  if (!authController.isLoggedIn) {
+    return <Navigate to="/admin/login" replace />
+  }
   return (
     <div className="flex min-h-screen bg-white font-sans text-gray-800">
       <aside className="w-64 flex shrink-0 flex-col justify-between border-r border-gray-200 p-6">

@@ -76,6 +76,7 @@ const GroupDetail = () => {
       name: string
       role: string
       email?: string
+      avatar?: string | null
       isCurrentUser: boolean
     }>
     currentUserRole: 'head_chef' | 'member'
@@ -174,6 +175,7 @@ const GroupDetail = () => {
               name: getDisplayName(membership.user),
               role: mapRoleToUI(role),
               email: membership.user.email,
+              avatar: membership.user.avatar_url,
               isCurrentUser: membership.user.id === currentUserId
             }
           })
@@ -632,6 +634,7 @@ const GroupDetail = () => {
             name: getDisplayName(membership.user),
             role: mapRoleToUI(role),
             email: membership.user.email,
+            avatar: membership.user.avatar_url,
             isCurrentUser: membership.user.id === currentUserId
           }
         })
@@ -848,7 +851,7 @@ const GroupDetail = () => {
         {/* Group Info */}
         <div className="mt-4 flex flex-col items-center">
           <img
-            src={groupData.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/3253/3253272.png'}
+            src={groupData.avatarUrl || new URL('../../../assets/family.png', import.meta.url).href}
             alt={groupData.name}
             className="mb-4 size-24 rounded-full object-cover"
           />
@@ -919,6 +922,7 @@ const GroupDetail = () => {
                     name={member.name}
                     role={member.role}
                     email={member.email}
+                    avatarSrc={member.avatar}
                     variant="selected"
                     onClick={() =>
                       navigate(
@@ -987,7 +991,7 @@ const GroupDetail = () => {
           {activeTab === 'shopping-plan' && (
             <div className="relative flex min-h-[400px] flex-col items-center pb-24 pt-2">
               {/* Filter Buttons */}
-              <div className="mb-6 flex w-full justify-between gap-2 px-1">
+              {/* <div className="mb-6 flex w-full justify-between gap-2 px-1">
                 {[
                   { id: 'today', label: 'Hôm nay' },
                   { id: 'week', label: 'Tuần này' },
@@ -1014,10 +1018,10 @@ const GroupDetail = () => {
                     </button>
                   )
                 })}
-              </div>
+              </div> */}
 
               {/* Calendar Strip */}
-              <div className="mb-6 w-full">
+              {/* <div className="mb-6 w-full">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
@@ -1083,7 +1087,7 @@ const GroupDetail = () => {
                     <ChevronRight size={24} className="text-gray-600" />
                   </button>
                 </div>
-              </div>
+              </div> */}
 
               {/* Plans List */}
               <div className="w-full">
