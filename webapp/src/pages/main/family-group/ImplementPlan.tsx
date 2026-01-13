@@ -39,12 +39,14 @@ export default function ImplementPlan() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isUnassigning, setIsUnassigning] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserUsername, setCurrentUserUsername] = useState<string | null>(null);
 
   // Fetch current user on mount
   useEffect(() => {
     userService.getCurrentUser().match(
       (response) => {
         setCurrentUserId(response.data.id);
+        setCurrentUserUsername(response.data.username);
       },
       (err) => {
         console.error('Failed to fetch current user:', err);
@@ -155,7 +157,7 @@ export default function ImplementPlan() {
   };
 
   const handleCompletePlan = () => {
-    if (!planId || !planData || !currentUserId) return;
+    if (!planId || !planData || !currentUserId || !currentUserUsername) return;
 
     setIsCompleting(true);
     setError(null);
@@ -182,7 +184,7 @@ export default function ImplementPlan() {
       })
       .andThen(() => {
         // Then, report the plan as completed
-        return shoppingPlanService.reportPlan(parseInt(planId), currentUserId, true);
+        return shoppingPlanService.reportPlan(parseInt(planId), currentUserId, currentUserUsername, true);
       })
       .match(
         () => {
@@ -199,14 +201,14 @@ export default function ImplementPlan() {
   };
 
   const handleCancelPlan = () => {
-    if (!planId || !currentUserId) return;
+    if (!planId || !currentUserId || !currentUserUsername) return;
 
     setIsUnassigning(true);
     setIsCancelModalOpen(false);
     setError(null);
 
     shoppingPlanService
-      .unassignPlan(parseInt(planId), currentUserId)
+      .unassignPlan(parseInt(planId), currentUserId, currentUserUsername)
       .match(
         () => {
           setIsUnassigning(false);

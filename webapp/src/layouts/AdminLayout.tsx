@@ -9,7 +9,7 @@ export default function ProtectedAdminLayout() {
   }
   return (
     <div className="flex min-h-screen bg-white font-sans text-gray-800">
-      <aside className="w-64 flex shrink-0 flex-col justify-between border-r border-gray-200 p-6">
+      <aside className="flex w-64 shrink-0 flex-col justify-between border-r border-gray-200 p-6">
         <div>
           {/* Logo */}
           <div className="mb-10">
