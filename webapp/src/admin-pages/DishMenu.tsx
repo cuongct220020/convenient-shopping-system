@@ -102,7 +102,7 @@ const DishMenu = () => {
     setShowAddDishForm(true)
   }
 
-  const handleDishFormSubmit = (dishData: any) => {
+  const handleDishFormSubmit = (dishData: Partial<Dish>) => {
     console.log('Saving dish:', dishData)
     setShowAddDishForm(false)
   }
@@ -111,7 +111,7 @@ const DishMenu = () => {
     setShowAddDishForm(false)
   }
 
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: Dish) => {
     setSelectedItem(item)
     setViewMode('view')
   }
@@ -120,9 +120,31 @@ const DishMenu = () => {
     setViewMode('edit')
   }
 
-  const handleSaveClick = () => {
-    // Here you would typically save the changes
-    closeModal()
+  const handleSaveClick = async (formData: Partial<Dish>) => {
+    if (!selectedItem) return
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await dishService.updateDish(
+        selectedItem.component_id,
+        formData
+      )
+      if (!isMounted.current) return
+      if (result.isOk()) {
+        await fetchDishes(currentPage)
+        closeModal()
+      } else {
+        setError(result.error.desc || 'Failed to update dish')
+      }
+    } catch (err) {
+      if (isMounted.current) {
+        setError(String(err))
+      }
+    } finally {
+      if (isMounted.current) {
+        setLoading(false)
+      }
+    }
   }
 
   const handleDeleteClick = () => {
@@ -204,7 +226,9 @@ const DishMenu = () => {
                       >
                         <input
                           type="checkbox"
-                          checked={selectedCategories.includes(category)}
+                          checked={selectedCategories.includes(
+                            category as DishLevelType
+                          )}
                           onChange={() => handleCategoryChange(category)}
                           className="rounded border-gray-300 text-rose-500 focus:ring-rose-500"
                         />
@@ -322,15 +346,14 @@ const DishMenu = () => {
             {viewMode === 'view' && (
               <DishForm
                 initialData={{
-                  dishName: selectedItem.component_name || 'Chưa có thông tin',
-                  category: selectedItem.level || 'Chưa có thông tin',
-                  difficulty: selectedItem.level || 'Chưa có thông tin',
-                  image: selectedItem.image_url || hamburgerImg,
-                  servings: selectedItem.default_servings || 0,
-                  cookTime: String(selectedItem.cook_time || '0'),
-                  prepTime: String(selectedItem.prep_time || '0'),
-                  ingredients: [],
-                  instructions: []
+                  component_name: selectedItem.component_name,
+                  level: selectedItem.level,
+                  image_url: selectedItem.image_url || hamburgerImg,
+                  default_servings: selectedItem.default_servings,
+                  cook_time: selectedItem.cook_time,
+                  prep_time: selectedItem.prep_time,
+                  keywords: selectedItem.keywords,
+                  instructions: selectedItem.instructions
                 }}
                 readOnly={true}
                 actions={
@@ -371,15 +394,14 @@ const DishMenu = () => {
             {viewMode === 'edit' && (
               <DishForm
                 initialData={{
-                  dishName: selectedItem.component_name || '',
-                  category: selectedItem.level || '',
-                  difficulty: selectedItem.level || '',
-                  image: selectedItem.image_url || hamburgerImg,
-                  servings: selectedItem.default_servings || 0,
-                  cookTime: String(selectedItem.cook_time || ''),
-                  prepTime: String(selectedItem.prep_time || ''),
-                  ingredients: [],
-                  instructions: []
+                  component_name: selectedItem.component_name,
+                  level: selectedItem.level,
+                  image_url: selectedItem.image_url || hamburgerImg,
+                  default_servings: selectedItem.default_servings,
+                  cook_time: selectedItem.cook_time,
+                  prep_time: selectedItem.prep_time,
+                  keywords: selectedItem.keywords,
+                  instructions: selectedItem.instructions
                 }}
                 onSubmit={handleSaveClick}
                 onCancel={() => setViewMode('view')}
