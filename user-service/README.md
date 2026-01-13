@@ -120,6 +120,11 @@ docker exec -it user-service python /app/user-service/scripts/create_admin_user.
 docker exec -it user-service python /app/user-service/scripts/create_admin_user.py --username "myadmin" --email "admin@example.com" --password "MySecurePassword123"
 ```
 
+### Seed Tag Master Data
+```bash
+docker exec -it user-service python /app/user-service/scripts/seed_tags.py
+```
+
 ### Database Setup & Migration Strategy
 
 This project uses Alembic to manage database schema changes and migrations. Alembic tracks all database structure modifications through versioned migration files, ensuring consistent schema across different environments.

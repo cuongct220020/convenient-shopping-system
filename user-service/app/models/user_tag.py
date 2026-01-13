@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import String, BigInteger, ForeignKey, DateTime, func, UniqueConstraint, Index
+from sqlalchemy import String, BigInteger, ForeignKey, DateTime, func, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shopping_shared.databases.base_model import Base
@@ -51,6 +51,22 @@ class Tag(Base):
         comment="Human-readable description"
     )
 
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        comment="When this tag was defined in the system"
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+        comment="When this tag definition was last updated"
+    )
+
     # Relationships - Many-to-Many with User via user_tags
     users: Mapped[List["User"]] = relationship(
         secondary="user_tags",
@@ -79,7 +95,7 @@ class UserTag(Base):
     )
 
     # Timestamp
-    created_at: Mapped[datetime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False

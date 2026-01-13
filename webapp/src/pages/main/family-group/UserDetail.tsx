@@ -14,6 +14,9 @@ import { groupService } from '../../../services/group';
 import { userService } from '../../../services/user';
 import type { UserCoreInfo, UserIdentityProfile, UserHealthProfile } from '../../../services/schema/groupSchema';
 
+// Default user avatar
+const DEFAULT_USER_AVATAR = new URL('../../../assets/user.png', import.meta.url).href;
+
 // Helper function to get display name from user
 function getDisplayName(user: UserCoreInfo | null): string {
   if (!user) return 'Người dùng';
@@ -397,7 +400,11 @@ const UserDetail = () => {
 
       {/* Profile Summary */}
       <div className="flex flex-col items-center mt-4 px-4">
-        <div className="w-24 h-24 bg-gray-200 rounded-full mb-4"></div>
+        <img
+          src={user?.avatar_url || DEFAULT_USER_AVATAR}
+          alt={displayName}
+          className="w-24 h-24 rounded-full object-cover mb-4"
+        />
         <h2 className="text-2xl font-bold">{displayName}</h2>
         <div className="flex items-center text-sm text-gray-600 mt-2">
           <User size={16} className="mr-1" />

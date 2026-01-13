@@ -7,6 +7,8 @@ import {
   httpGet,
   httpPost,
   httpPatch,
+  httpDelete,
+  httpPut,
   ResponseError
 } from '../client'
 import { parseZodObject } from '../../utils/zod-result'
@@ -21,16 +23,18 @@ import {
   UserHealthProfileResponseSchema,
   SearchUsersResponseSchema,
   AdminUsersListResponseSchema,
+  AdminUserInfoSchema,
   type CurrentUserResponse,
   type UserIdentityProfileResponse,
   type UserIdentityProfileUpdateResponse,
   type UserHealthProfileResponse,
   type SearchUsersResponse,
   type UserCoreInfo,
-  type AdminUsersListResponse
+  type AdminUsersListResponse,
+  type AdminUserInfo
 } from '../schema/groupSchema'
 
-type UserError = ResponseError<'not-found' | 'validation-error' | 'unauthorized'>
+type UserError = ResponseError<'not-found' | 'validation-error' | 'unauthorized' | 'conflict'>
 
 export class UserService {
   constructor(private clients: Clients) {}
@@ -153,10 +157,10 @@ export class UserService {
   }
 
   /**
-   * Get user by ID
+   * Get user by ID (admin endpoint)
    */
-  public getUserById(userId: string): ResultAsync<{ data: UserCoreInfo }, UserError> {
-    return httpGet(this.clients.auth, AppUrl.USER_BY_ID(userId))
+  public getUserById(userId: string): ResultAsync<{ data: AdminUserInfo }, UserError> {
+    return httpGet(this.clients.auth, `${AppUrl.ADMIN_USERS}/${userId}`)
       .mapErr((e): UserError => {
         switch (e.type) {
           case 'unauthorized':
@@ -168,21 +172,13 @@ export class UserService {
         }
       })
       .andThen((response) => {
-        // Wrap the user data in the expected format
-        const wrappedResponse = {
-          body: {
-            status: 'success',
-            message: null,
-            data: response.body
-          }
-        }
         return parseZodObject(
           z.object({
             status: z.literal('success'),
-            message: z.string().nullable(),
-            data: UserCoreInfoSchema
+            message: z.string(),
+            data: AdminUserInfoSchema
           }),
-          wrappedResponse.body
+          response.body
         ).mapErr(
           (e): UserError => ({
             type: 'invalid-response-format',
@@ -444,7 +440,7 @@ export class UserService {
   ): ResultAsync<AdminUsersListResponse, UserError> {
     return httpGet(
       this.clients.auth,
-      `${AppUrl.ADMIN_USERS}?page=${page}&page_size=${pageSize}`
+      `${AppUrl.ADMIN_USERS}?page=${page}&page_szie=${pageSize}`
     )
       .mapErr((e): UserError => {
         switch (e.type) {
@@ -464,6 +460,148 @@ export class UserService {
           })
         )
       )
+  }
+
+  /**
+   * Create a new user (admin endpoint)
+   */
+  public createUser(
+    data: {
+      username: string
+      email: string
+      password: string
+      first_name?: string
+      last_name?: string
+      phone_num?: string
+      is_active?: boolean
+      system_role?: 'user' | 'admin'
+    }
+  ): ResultAsync<{ data: AdminUserInfo }, UserError> {
+    return httpPost(this.clients.auth, AppUrl.ADMIN_USERS, data)
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          case 'forbidden':
+            return { ...e, type: 'validation-error' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) => {
+        return parseZodObject(
+          z.object({
+            status: z.literal('success'),
+            message: z.string().nullable(),
+            data: AdminUserInfoSchema
+          }),
+          response.body
+        ).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      })
+  }
+
+  /**
+   * Delete a user (admin endpoint)
+   */
+  public deleteUser(userId: string): ResultAsync<
+    { status: string; message: string },
+    UserError
+  > {
+    return httpDelete(this.clients.auth, `${AppUrl.ADMIN_USERS}/${userId}`)
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          case 'forbidden':
+            return { ...e, type: 'validation-error' }
+          case 'path-not-found':
+            return { ...e, type: 'not-found' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) => {
+        return parseZodObject(
+          z.object({
+            status: z.string(),
+            message: z.string()
+          }),
+          response.body
+        ).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      })
+  }
+
+  /**
+   * Update a user (admin endpoint)
+   */
+  public updateUser(
+    userId: string,
+    data: {
+      username?: string
+      first_name?: string | null
+      last_name?: string | null
+      phone_num?: string | null
+      avatar_url?: string | null
+      system_role?: 'user' | 'admin'
+      is_active?: boolean
+      identity_profile?: {
+        gender?: 'male' | 'female' | 'other' | null
+        date_of_birth?: string | null
+        occupation?: string | null
+        address?: {
+          ward?: string | null
+          district?: string | null
+          city?: string | null
+          province?: string | null
+        } | null
+      }
+      health_profile?: {
+        height_cm?: number | null
+        weight_kg?: number | null
+        activity_level?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | null
+        curr_condition?: 'normal' | 'pregnant' | 'injured' | null
+        health_goal?: 'lose_weight' | 'maintain' | 'gain_weight' | null
+      }
+    }
+  ): ResultAsync<{ data: AdminUserInfo }, UserError> {
+    return httpPut(this.clients.auth, `${AppUrl.ADMIN_USERS}/${userId}`, data)
+      .mapErr((e): UserError => {
+        switch (e.type) {
+          case 'unauthorized':
+            return { ...e, type: 'unauthorized' }
+          case 'forbidden':
+            return { ...e, type: 'validation-error' }
+          case 'path-not-found':
+            return { ...e, type: 'not-found' }
+          default:
+            return e
+        }
+      })
+      .andThen((response) => {
+        return parseZodObject(
+          z.object({
+            status: z.literal('success'),
+            message: z.string().nullable(),
+            data: AdminUserInfoSchema
+          }),
+          response.body
+        ).mapErr(
+          (e): UserError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      })
   }
 }
 
