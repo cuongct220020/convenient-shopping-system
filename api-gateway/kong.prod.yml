@@ -306,13 +306,19 @@ services:
     write_timeout: 3600000
     read_timeout: 3600000
     routes:
-      - name: notification-service-websocket-groups
+      # Public routes (no JWT required)
+      - name: notification-service-public
         paths:
-          - /ws/v1/notification-service/notifications/groups
+          - /api/v1/notification-service/health
+          - /api/v1/notification-service
+          - /api/v1/notification-service/
         strip_path: false
-        protocols:
-          - http
-          - https
+
+      # Protected REST routes (JWT required)
+      - name: notification-service-protected
+        paths:
+          - /api/v1/notification-service/notifications
+        strip_path: false
         plugins: *jwt_auth_plugins
 
       - name: notification-service-websocket-users

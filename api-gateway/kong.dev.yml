@@ -242,32 +242,21 @@ services:
     read_timeout: 3600000  # 1 hour for WebSocket
 
     routes:
-      - name: notification-service-websocket-groups
+      # Public routes (no JWT required)
+      - name: notification-service-public
         paths:
-          - /ws/v1/notification-service/notifications/groups
+          - /api/v1/notification-service/health
+          - /api/v1/notification-service
+          - /api/v1/notification-service/
         strip_path: false
-        protocols:
-          - http
-          - https
+
+      # Protected REST routes (JWT required)
+      - name: notification-service-protected
+        paths:
+          - /api/v1/notification-service/notifications
+        strip_path: false
         plugins:
-          - name: cors
-            config:
-              origins:
-                - "*"
-              credentials: true
-              methods:
-                - GET
-                - POST
-                - PUT
-                - DELETE
-                - OPTIONS
-                - PATCH
-                - HEAD
-                - CONNECT  # Important for WebSocket
-                - TRACE
-              headers:
-                - "*"
-          # JWT verification for WebSocket
+          # Step 1: JWT verification (MUST run first)
           - name: jwt
             config:
               uri_param_names:
@@ -282,7 +271,7 @@ services:
               secret_is_base64: false
               run_on_preflight: true
 
-          # Extract JWT claims and add as headers for WebSocket
+          # Step 2: Extract JWT claims and add as headers
           - name: post-function
             config:
               access:
@@ -317,8 +306,6 @@ services:
                       if payload_str then
                         local status, claims = pcall(cjson.decode, payload_str)
                         if status and claims then
-                          -- Debug Log
-                          print("Kong Claims: ", cjson.encode(claims))
                           if claims.sub then kong.service.request.set_header("X-User-ID", tostring(claims.sub)) end
                           if claims.system_role then kong.service.request.set_header("X-User-Role", tostring(claims.system_role)) end
                           if claims.email then kong.service.request.set_header("X-User-Email", tostring(claims.email)) end
