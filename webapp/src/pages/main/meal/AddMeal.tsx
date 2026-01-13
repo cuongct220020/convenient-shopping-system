@@ -7,10 +7,12 @@ import { DropdownInputField } from '../../../components/DropDownInputField'
 import { i18n } from '../../../utils/i18n/i18n'
 import { DayPicker, getDefaultClassNames } from 'react-day-picker'
 import { Time } from '../../../utils/time'
+import { useParams } from 'react-router-dom'
 
 const calendarClassNames = getDefaultClassNames()
 
 export function AddMeal() {
+  const { id: groupId } = useParams<{ id: string }>()
   const [date, setDate] = useState<Date>(new Date())
   const [mealType, setMealType] = useState<MealType>('breakfast')
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -28,7 +30,10 @@ export function AddMeal() {
   return (
     <div className="flex min-h-screen flex-col items-center bg-white p-4 pb-24">
       <div className="flex w-full flex-row">
-        <BackButton to="../" text="Quay lại"></BackButton>
+        <BackButton
+          to={`/main/family-group/${groupId}/meal`}
+          text="Quay lại"
+        ></BackButton>
       </div>
       <p className="pb-4 text-center text-xl font-bold text-red-600">
         Thêm bữa ăn mới
