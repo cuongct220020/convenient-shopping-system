@@ -212,9 +212,10 @@ export class ShoppingPlanService {
    */
   public assignPlan(
     planId: number,
-    assigneeId: string
+    assigneeId: string,
+    assigneeUsername: string
   ): ResultAsync<PlanResponse, ShoppingPlanError> {
-    const url = `${AppUrl.SHOPPING_PLANS}${planId}/assign?assignee_id=${assigneeId}`
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/assign?assignee_id=${assigneeId}&assignee_username=${assigneeUsername}`
 
     return httpPost(this.clients.auth, url, {})
       .mapErr((e) => {
@@ -240,9 +241,10 @@ export class ShoppingPlanService {
   public reportPlan(
     planId: number,
     assigneeId: string,
+    assigneeUsername: string,
     confirm: boolean = true
   ): ResultAsync<{ message: string }, ShoppingPlanError> {
-    const url = `${AppUrl.SHOPPING_PLANS}${planId}/report?assignee_id=${assigneeId}&confirm=${confirm}`
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/report?assignee_id=${assigneeId}&assignee_username=${assigneeUsername}&confirm=${confirm}`
 
     const body = {
       plan_id: planId,
@@ -268,9 +270,10 @@ export class ShoppingPlanService {
    */
   public unassignPlan(
     planId: number,
-    assigneeId: string
+    assigneeId: string,
+    assigneeUsername: string
   ): ResultAsync<{ message: string }, ShoppingPlanError> {
-    const url = `${AppUrl.SHOPPING_PLANS}${planId}/unassign?assignee_id=${assigneeId}`
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/unassign?assignee_id=${assigneeId}&assignee_username=${assigneeUsername}`
 
     return httpPost(this.clients.auth, url, {})
       .mapErr((e) => {
