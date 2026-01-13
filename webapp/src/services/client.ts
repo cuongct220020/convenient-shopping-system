@@ -48,6 +48,9 @@ export class AppUrl {
     'api/v1/user-service/users/me/email/confirm-change'
   static readonly CHANGE_PASSWORD =
     'api/v1/user-service/users/me/change-password'
+  static readonly USERS_ME_TAGS = 'api/v1/user-service/users/me/tags'
+  static readonly USERS_ME_TAGS_DELETE =
+    'api/v1/user-service/users/me/tags/delete'
   static readonly USER_BY_ID = (id: string) => `api/v1/user-service/users/${id}`
   static readonly USER_IDENTITY_PROFILE_BY_ID = (id: string) =>
     `api/v1/user-service/users/${id}/profile/identity`

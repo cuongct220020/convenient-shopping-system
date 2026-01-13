@@ -2,8 +2,20 @@ import { useState, useEffect } from 'react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
 import { NotificationCard } from '../../../components/NotificationCard';
-import { HelpCircle, X, Save, Loader2 } from 'lucide-react';
+import { HelpCircle, X, Save, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { userService } from '../../../services/user';
+import {
+  UserTagsData,
+  TagCategory,
+  getTagByValue,
+  TAG_CATEGORY_NAMES,
+  AGE_TAGS,
+  MEDICAL_TAGS,
+  ALLERGY_TAGS,
+  DIET_TAGS,
+  TASTE_TAGS,
+  type TagValue
+} from '../../../services/tags';
 
 // Define types based on API schema
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -42,13 +54,27 @@ const HealthProfile = () => {
     curr_condition: null,
     health_goal: null
   });
+  const [originalTags, setOriginalTags] = useState<Set<TagValue>>(new Set());
 
   // Error state
   const [error, setError] = useState<string | null>(null);
 
+  // Tags state
+  const [tags, setTags] = useState<UserTagsData>({
+    age: [],
+    medical: [],
+    allergy: [],
+    diet: [],
+    taste: []
+  });
+  const [selectedTags, setSelectedTags] = useState<Set<TagValue>>(new Set());
+  const [expandedCategory, setExpandedCategory] = useState<TagCategory | null>(null);
+  const [isTagsLoading, setIsTagsLoading] = useState(true);
+
   // --- Fetch Data on Mount ---
   useEffect(() => {
     fetchHealthProfile();
+    fetchTags();
   }, []);
 
   const fetchHealthProfile = () => {
@@ -83,11 +109,45 @@ const HealthProfile = () => {
       );
   };
 
+  const fetchTags = () => {
+    setIsTagsLoading(true);
+    setError(null);
+
+    userService.getMyTags()
+      .match(
+        (response) => {
+          const data = response.data;
+          setTags(data);
+          const tagValues = new Set(
+            [...data.age, ...data.medical, ...data.allergy, ...data.diet, ...data.taste]
+              .map(tag => tag.tag_value as TagValue)
+          );
+          setSelectedTags(tagValues);
+          setOriginalTags(tagValues);
+          setIsTagsLoading(false);
+        },
+        (error) => {
+          console.error('Failed to fetch tags:', error);
+          setError('Không thể tải thông tin tags. Vui lòng thử lại.');
+          setIsTagsLoading(false);
+        }
+      );
+  };
+
   // --- Handlers ---
   const handleSave = () => {
     setIsSaving(true);
     setError(null);
 
+    const currentTagValues = new Set(
+      [...tags.age, ...tags.medical, ...tags.allergy, ...tags.diet, ...tags.taste]
+        .map(tag => tag.tag_value as TagValue)
+    );
+
+    const tagsToAdd = Array.from(selectedTags).filter(tag => !currentTagValues.has(tag));
+    const tagsToRemove = Array.from(currentTagValues).filter(tag => !selectedTags.has(tag));
+
+    // Prepare health profile update data
     const updateData = {
       height_cm: height ? parseFloat(height) : null,
       weight_kg: weight ? parseFloat(weight) : null,
@@ -96,38 +156,72 @@ const HealthProfile = () => {
       health_goal: healthGoal
     };
 
-    userService.updateMyHealthProfile(updateData)
-      .match(
-        (response) => {
-          const data = response.data;
-          setOriginalValues({
-            height_cm: data.height_cm ?? null,
-            weight_kg: data.weight_kg ?? null,
-            activity_level: data.activity_level ?? null,
-            curr_condition: data.curr_condition ?? null,
-            health_goal: data.health_goal ?? null
-          });
-          setShowConfirmModal(false);
-          setIsEditMode(false);
-          setIsSaving(false);
-        },
-        (error) => {
-          console.error('Failed to update health profile:', error);
-          setError('Không thể cập nhật thông tin sức khỏe. Vui lòng thử lại.');
-          setIsSaving(false);
-          setShowConfirmModal(false);
-        }
-      );
+    // Build the operation chain - only include API calls that have actual changes
+    let saveOperation: ResultAsync<any, any> = userService.updateMyHealthProfile(updateData);
+
+    if (tagsToAdd.length > 0) {
+      saveOperation = saveOperation.andThen(() => userService.addMyTags(tagsToAdd));
+    }
+    if (tagsToRemove.length > 0) {
+      saveOperation = saveOperation.andThen(() => userService.removeMyTags(tagsToRemove));
+    }
+
+    saveOperation.match(
+      () => {
+        // Update original values
+        setOriginalValues({
+          height_cm: height ? parseFloat(height) : null,
+          weight_kg: weight ? parseFloat(weight) : null,
+          activity_level: activityLevel,
+          curr_condition: currCondition,
+          health_goal: healthGoal
+        });
+        setOriginalTags(new Set(selectedTags));
+        fetchTags();
+        setShowConfirmModal(false);
+        setIsEditMode(false);
+        setIsSaving(false);
+      },
+      (error) => {
+        console.error('Failed to save:', error);
+        setError('Không thể cập nhật thông tin. Vui lòng thử lại.');
+        setIsSaving(false);
+        setShowConfirmModal(false);
+      }
+    );
   };
 
   const handleCancelEdit = () => {
-    // Revert to original values
+    // Revert health profile to original values
     setHeight(originalValues.height_cm?.toString() ?? '');
     setWeight(originalValues.weight_kg?.toString() ?? '');
     setActivityLevel(originalValues.activity_level);
     setCurrCondition(originalValues.curr_condition);
     setHealthGoal(originalValues.health_goal);
+
+    // Revert tags to original values
+    setSelectedTags(new Set(originalTags));
+
+    // Close modal and exit edit mode
     setShowConfirmModal(false);
+    setIsEditMode(false);
+  };
+
+  const handleCancelModalOnly = () => {
+    setShowConfirmModal(false);
+  };
+
+  const handleTagToggle = (tagValue: TagValue) => {
+    if (!isEditMode) return;
+    setSelectedTags(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(tagValue)) {
+        newSet.delete(tagValue);
+      } else {
+        newSet.add(tagValue);
+      }
+      return newSet;
+    });
   };
 
   if (isLoading) {
@@ -276,27 +370,50 @@ const HealthProfile = () => {
         )}
       </div>
 
+      {/* --- Tags Section --- */}
+      <div className="mb-8">
+        <SectionTitle title="Thông tin bổ sung" />
+        {isTagsLoading ? (
+          <div className="mt-4 flex items-center justify-center">
+            <Loader2 className="animate-spin text-[#C3485C]" size={24} />
+          </div>
+        ) : !isEditMode ? (
+          <div className="mt-4 space-y-3">
+            {(['age', 'medical', 'allergy', 'diet', 'taste'] as TagCategory[]).map((category) => (
+              <TagCategorySectionReadOnly
+                key={category}
+                category={category}
+                selectedTags={selectedTags}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {(['age', 'medical', 'allergy', 'diet', 'taste'] as TagCategory[]).map((category) => (
+              <TagCategorySection
+                key={category}
+                category={category}
+                tags={tags[category]}
+                selectedTags={selectedTags}
+                onToggle={handleTagToggle}
+                isExpanded={expandedCategory === category}
+                onToggleExpand={() => setExpandedCategory(expandedCategory === category ? null : category)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* --- Edit/Save/Cancel Buttons --- */}
       <div className="flex gap-3">
         <Button
           onClick={() => {
             if (isEditMode) {
-              // Check if values have changed
-              const hasChanges =
-                height !== (originalValues.height_cm?.toString() ?? '') ||
-                weight !== (originalValues.weight_kg?.toString() ?? '') ||
-                activityLevel !== originalValues.activity_level ||
-                currCondition !== originalValues.curr_condition ||
-                healthGoal !== originalValues.health_goal;
-
-              if (hasChanges) {
-                setShowConfirmModal(true);
-              } else {
-                // No changes, just exit edit mode
-                setIsEditMode(false);
-              }
+              // Show confirmation modal to save
+              setShowConfirmModal(true);
             } else {
-              // Entering edit mode
+              // Entering edit mode - store original tags
+              setOriginalTags(new Set(selectedTags));
               setIsEditMode(true);
             }
           }}
@@ -325,14 +442,14 @@ const HealthProfile = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <NotificationCard
             title="Xác nhận thay đổi"
-            message="Bạn có chắc chắn muốn lưu thay đổi thông tin sức khỏe không?"
+            message="Bạn có chắc chắn muốn lưu thay đổi thông tin không?"
             iconBgColor="bg-yellow-500"
             buttonText={isSaving ? 'Đang lưu...' : 'Xác nhận'}
             buttonIcon={isSaving ? Loader2 : Save}
             onButtonClick={handleSave}
             button2Text="Hủy"
             button2Icon={X}
-            onButton2Click={handleCancelEdit}
+            onButton2Click={handleCancelModalOnly}
           />
         </div>
       )}
@@ -341,6 +458,148 @@ const HealthProfile = () => {
 };
 
 // --- Helper Components ---
+
+// Read-only Tag Category Section Component (display mode)
+const TagCategorySectionReadOnly = ({
+  category,
+  selectedTags
+}: {
+  category: TagCategory;
+  selectedTags: Set<TagValue>;
+}) => {
+  const allTagsByCategory: Record<TagCategory, Record<string, { value: TagValue; name: string }>> = {
+    age: AGE_TAGS,
+    medical: MEDICAL_TAGS,
+    allergy: ALLERGY_TAGS,
+    diet: DIET_TAGS,
+    taste: TASTE_TAGS
+  };
+
+  const categoryTags = allTagsByCategory[category];
+  const selectedTagsInCategory = Object.values(categoryTags).filter(t => selectedTags.has(t.value));
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-3">
+      <div className="flex items-center justify-between">
+        <span className="font-semibold text-black">{TAG_CATEGORY_NAMES[category]}</span>
+        <span className="text-sm text-gray-500">
+          {selectedTagsInCategory.length > 0 && (
+            <span className="bg-[#C3485C] text-white text-xs px-2 py-0.5 rounded-full">
+              {selectedTagsInCategory.length}
+            </span>
+          )}
+        </span>
+      </div>
+      {selectedTagsInCategory.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {selectedTagsInCategory.map(({ value, name }) => (
+            <span
+              key={value}
+              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+            >
+              {name}
+            </span>
+          ))}
+        </div>
+      )}
+      {selectedTagsInCategory.length === 0 && (
+        <p className="mt-2 text-sm text-gray-400">Chưa có thông tin</p>
+      )}
+    </div>
+  );
+};
+
+// Tag Category Section Component (edit mode)
+const TagCategorySection = ({
+  category,
+  tags,
+  selectedTags,
+  onToggle,
+  isExpanded,
+  onToggleExpand
+}: {
+  category: TagCategory;
+  tags: Array<{ id: number; tag_value: TagValue; tag_name: string; description: string }>;
+  selectedTags: Set<TagValue>;
+  onToggle: (tagValue: TagValue) => void;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+}) => {
+  const allTagsByCategory: Record<TagCategory, Record<string, { value: TagValue; name: string }>> = {
+    age: AGE_TAGS,
+    medical: MEDICAL_TAGS,
+    allergy: ALLERGY_TAGS,
+    diet: DIET_TAGS,
+    taste: TASTE_TAGS
+  };
+
+  const categoryTags = allTagsByCategory[category];
+
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <button
+        onClick={onToggleExpand}
+        className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-black">{TAG_CATEGORY_NAMES[category]}</span>
+          <span className="text-sm text-gray-500">
+            {selectedTags.size > 0 && Array.from(selectedTags).some(tag =>
+              Object.values(categoryTags).some(t => t.value === tag)
+            ) && (
+              <span className="bg-[#C3485C] text-white text-xs px-2 py-0.5 rounded-full">
+                {Array.from(selectedTags).filter(tag =>
+                  Object.values(categoryTags).some(t => t.value === tag)
+                ).length}
+              </span>
+            )}
+          </span>
+        </div>
+        {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </button>
+      {isExpanded && (
+        <div className="p-3 bg-white max-h-60 overflow-y-auto">
+          <div className="space-y-2">
+            {Object.entries(categoryTags).map(([key, { value, name }]) => (
+              <TagItem
+                key={key}
+                label={name}
+                checked={selectedTags.has(value)}
+                onToggle={() => onToggle(value)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Tag Item Component
+const TagItem = ({ label, checked, onToggle }: {
+  label: string;
+  checked: boolean;
+  onToggle: () => void;
+}) => (
+  <button
+    onClick={onToggle}
+    className="flex items-center gap-3 w-full group"
+  >
+    <div className={`
+      w-5 h-5 rounded border-2 flex items-center justify-center transition-colors
+      ${checked ? 'border-[#C3485C] bg-[#C3485C]' : 'border-gray-300 group-hover:border-gray-500'}
+    `}>
+      {checked && (
+        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+      )}
+    </div>
+    <span className={`text-sm ${checked ? 'text-[#C3485C] font-medium' : 'text-gray-500 group-hover:text-gray-700'}`}>
+      {label}
+    </span>
+  </button>
+);
 
 // 1. Stat Input (Height/Weight)
 const StatInput = ({ label, value, unit, onChange, isEditMode }: {
