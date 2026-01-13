@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
 # Import models for 'autogenerate' support
-from app.models.notifications import Notification, NotificationType
+from app.models.notifications import Notification
 from shopping_shared.databases.base_model import Base
 
 # this is the Alembic Config object, which provides

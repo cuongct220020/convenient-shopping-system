@@ -10,6 +10,9 @@ from models.storage import StorableUnit, Storage
 from schemas.storable_unit_schemas import StorableUnitCreate, StorableUnitUpdate, StorableUnitResponse
 from core.messaging import kafka_manager
 from shopping_shared.messaging.topics import COMPONENT_EXISTENCE_TOPIC
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger("StorableUnitCRUD")
 
 
 class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUpdate]):
@@ -38,6 +41,7 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                 key=str(storage.group_id),  # type: ignore
                 wait=True,
             )
+            logger.info(f"Published component_existence update: group_id={storage.group_id}")
         return db_obj
 
     async def consume(self, db: Session, id: int,consume_quantity: int) -> tuple[str, Optional[StorableUnitResponse]]:
@@ -83,6 +87,7 @@ class StorableUnitCRUD(CRUDBase[StorableUnit, StorableUnitCreate, StorableUnitUp
                             key=str(storage.group_id),  # type: ignore
                             wait=True,
                         )
+                        logger.info(f"Published component_existence update: group_id={storage.group_id}")
                     return "Consumed and deleted", None
                 else:
                     unit.package_quantity -= consume_quantity

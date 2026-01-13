@@ -85,7 +85,7 @@ async def publish_expiration_notifications() -> None:
                             "data": {
                                 "unit_name": unit_name,
                                 "storage_name": storage_name,
-                                "expiration_date": exp_date.isoformat(),
+                                "expiration_date": exp_date.strftime("%d/%m/%Y"),
                             }
                         },
                         key=f"{group_id}-food-expiring-soon",

@@ -93,7 +93,7 @@ class FoodExpiredNotificationTemplate(BaseNotificationTemplate):
 class PlanAssignedNotificationTemplate(BaseNotificationTemplate):
     template_code = "PLAN_ASSIGNED"
     title = "Kế hoạch mua sắm đã được giao!"
-    content = "Kế hoạch mua sắm #{plan_id} (hạn chót: {deadline} của nhóm {group_name} đã được đăng ký thực hiện bởi {assignee_username}."
+    content = "Kế hoạch mua sắm #{plan_id} (hạn chót: {deadline}) của nhóm {group_name} đã được đăng ký thực hiện bởi {assignee_username}."
     data_fields = {
         "plan_id": int,
         "deadline": str,

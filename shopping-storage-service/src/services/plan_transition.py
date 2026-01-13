@@ -8,6 +8,9 @@ from models.shopping_plan import ShoppingPlan
 from schemas.plan_schemas import PlanReport, PlanResponse
 from shopping_shared.messaging.kafka_topics import NOTIFICATION_TOPIC
 from core.messaging import kafka_manager
+from shopping_shared.utils.logger_utils import get_logger
+
+logger = get_logger("PlanTransition")
 
 class PlanTransition:
     def _preconditions_check(self, plan: Optional[ShoppingPlan], allowed_status: PlanStatus | List[PlanStatus]):
@@ -43,13 +46,14 @@ class PlanTransition:
                 "receivers": [str(plan.assigner_id)],
                 "data": {
                     "plan_id": plan.plan_id,
-                    "deadline": plan.deadline.isoformat(),
+                    "deadline": plan.deadline.strftime("%H:%M %d/%m/%Y"),
                     "assignee_username": assignee_username,
                 }
             },
             key=f"{plan.group_id}-plan",
             wait=True,
         )
+        logger.info(f"Published plan_assigned event: plan_id={plan.plan_id}, group_id={plan.group_id}")
 
         return PlanResponse.model_validate(plan)
 
@@ -175,6 +179,7 @@ class PlanTransition:
             key=f"{plan.group_id}-plan",
             wait=True,
         )
+        logger.info(f"Published plan_reported event: plan_id={plan.plan_id}, group_id={plan.group_id}")
 
         return True, "Report accepted and plan completed", PlanResponse.model_validate(plan)
 

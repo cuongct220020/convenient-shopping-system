@@ -6,7 +6,7 @@ auth_middleware = create_auth_middleware(
     ignore_paths={
         "/",
         "/health",
-        "/api/v1/notification-service/health"
+        "/api/v2/notification-service/health"
     },
     ignore_prefixes=[
         "/docs",

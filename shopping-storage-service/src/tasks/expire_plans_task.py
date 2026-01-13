@@ -41,7 +41,7 @@ async def expire_plans():
                     "receivers": [str(assigner_id)],
                     "data": {
                         "plan_id": plan_id,
-                        "deadline": deadline.isoformat(),
+                        "deadline": deadline.strftime("%H:%M %d/%m/%Y"),
                     }
                 },
                 key=f"{group_id}-plan",

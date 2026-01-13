@@ -9,7 +9,8 @@ from app.views.groups import (
     GroupMemberMeView,
     MemberIdentityProfileView,
     MemberHealthProfileView,
-    GroupAccessCheckView
+    GroupAccessCheckView,
+    InternalGroupMembersView
 )
 
 
@@ -37,3 +38,6 @@ group_bp.add_route(MemberHealthProfileView.as_view(), '/<group_id:uuid>/members/
 
 # Internal group access check
 group_internal_bp.add_route(GroupAccessCheckView.as_view(), '/<group_id:uuid>/members/<user_id:uuid>/access-check', name='group_access_check')
+
+# Internal group members listing (service-to-service)
+group_internal_bp.add_route(InternalGroupMembersView.as_view(), '/<group_id:uuid>/members', name='internal_group_members')

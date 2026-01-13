@@ -8,7 +8,7 @@ import sys
 
 # --- CONFIG ---
 BASE_URL = "http://localhost:8000/api/v1/user-service"
-WS_URL = "ws://localhost:8000/ws/v1/notification-service/notifications"
+WS_URL = "ws://localhost:8000/ws/v2/notification-service/notifications"
 
 class Colors:
     OK = '\033[92m'

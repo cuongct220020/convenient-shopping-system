@@ -26,7 +26,7 @@ from shopping_shared.exceptions import Unauthorized
 logger = get_logger("Websocket Blueprint")
 
 # Tạo Blueprint cho WebSocket
-ws_bp = Blueprint("websocket", url_prefix="/v1/notification-service/notifications")
+ws_bp = Blueprint("websocket", url_prefix="/v2/notification-service/notifications")
 
 
 @ws_bp.websocket("/users/<user_id>")

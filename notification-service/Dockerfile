@@ -65,7 +65,7 @@ USER appuser
 EXPOSE 9005
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:9005/api/v1/notification-service/health || exit 1
+    CMD curl -f http://localhost:9005/api/v2/notification-service/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
 
