@@ -113,6 +113,11 @@ class PlanExpiredHandler(BaseMessageHandler):
                         raw_data=raw_data,
                         is_read=False,
                     ))
+                    logger.info(
+                        f"DB created notification: event_type={event_type} group_id={group_id} "
+                        f"template={PlanExpiredNotificationTemplate.template_code} "
+                        f"receiver={receiver_uuid} notification_id={getattr(created, 'id', None)}"
+                    )
                     created_for_ws.append(
                         (str(receiver_uuid), NotificationResponseSchema.model_validate(created).model_dump(mode="json"))
                     )
@@ -123,4 +128,8 @@ class PlanExpiredHandler(BaseMessageHandler):
         # 4) Push created rows to websocket
         for user_id, payload in created_for_ws:
             await websocket_manager.send_to_user(user_id, {"event_type": event_type, "data": payload})
+            logger.info(
+                f"WebSocket sent: event_type={event_type} user_id={user_id} "
+                f"notification_id={payload.get('id')}"
+            )
 
