@@ -170,7 +170,7 @@ export const DishForm: React.FC<DishFormProps> = ({
   }
 
   return (
-    <div className="mx-auto grid h-3/4 w-full max-w-3xl grid-cols-1 gap-6 overflow-y-auto rounded-xl bg-white p-6 shadow-md md:grid-cols-5">
+    <div className="no-scrollbar mx-auto grid h-[90vh] w-full max-w-3xl grid-cols-1 gap-6 overflow-y-auto rounded-xl bg-white p-6 shadow-md md:grid-cols-5">
       {/* Left Column */}
       <div className="space-y-6 md:col-span-2">
         <div>

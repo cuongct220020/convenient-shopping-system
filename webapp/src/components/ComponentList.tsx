@@ -121,7 +121,9 @@ export const ComponentList: React.FC<ComponentListProps> = ({
               ...item,
               component_type: 'ingredient' as const
             }))
-            setResults(cursor ? [...results, ...data] : data)
+            setResults((prevResults) =>
+              cursor ? [...prevResults, ...data] : data
+            )
             setIngredientCursor(result.value.next_cursor)
           }
         } else {
@@ -135,7 +137,9 @@ export const ComponentList: React.FC<ComponentListProps> = ({
               ...item,
               component_type: 'dish' as const
             }))
-            setResults(cursor ? [...results, ...data] : data)
+            setResults((prevResults) =>
+              cursor ? [...prevResults, ...data] : data
+            )
             setDishCursor(result.value.next_cursor)
           }
         }
@@ -145,7 +149,7 @@ export const ComponentList: React.FC<ComponentListProps> = ({
         setLoading(false)
       }
     },
-    [activeTab, results]
+    [activeTab]
   )
 
   useEffect(() => {
@@ -432,15 +436,6 @@ export const ComponentList: React.FC<ComponentListProps> = ({
                   className="!mx-0"
                 >
                   Xác nhận
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="fit"
-                  icon={X}
-                  onClick={() => setShowModal(false)}
-                  className="!mx-0"
-                >
-                  Hủy
                 </Button>
               </div>
             </div>
