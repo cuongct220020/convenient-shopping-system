@@ -7,6 +7,7 @@ export class AppUrl {
   static readonly BASE = import.meta.env.VITE_API_BASE_URL
   static readonly SHOPPING_BASE = import.meta.env.VITE_SHOPPING_API_BASE_URL
   static readonly RECIPE_BASE = import.meta.env.VITE_RECIPE_API_BASE_URL
+  static readonly NOTIFICATION_BASE = import.meta.env.VITE_API_BASE_URL
   static readonly AUTH = 'api/v1/user-service/auth'
   static readonly LOGIN = this.AUTH + '/login'
   static readonly REGISTER = this.AUTH + '/register'
@@ -57,8 +58,45 @@ export class AppUrl {
   static readonly SHOPPING_PLANS = 'v1/shopping_plans/'
   static readonly INGREDIENTS = 'v2/ingredients/'
   static readonly INGREDIENTS_BY_ID = (id: string) => `v2/ingredients/${id}`
-  static readonly INGREDIENTS_SEARCH = (keyword: string) =>
-    `v2/ingredients/search?keyword=${encodeURIComponent(keyword)}`
+  static readonly NOTIFICATIONS = (userId: string) =>
+    `api/v2/notification-service/notifications/users/${userId}`
+  static readonly NOTIFICATION_MARK_READ = (notificationId: number, userId: string) =>
+    `api/v2/notification-service/notifications/${notificationId}/users/${userId}/read`
+  static readonly NOTIFICATION_DELETE = (notificationId: number, userId: string) =>
+    `api/v2/notification-service/notifications/${notificationId}/users/${userId}`
+  public static INGREDIENTS_SEARCH(
+    keyword: string,
+    params?: { cursor?: number; limit?: number }
+  ) {
+    const queryParams = new URLSearchParams()
+    queryParams.append('keyword', keyword)
+    if (params?.cursor !== undefined) {
+      queryParams.append('cursor', String(params.cursor))
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append('limit', String(params.limit))
+    }
+
+    return `v2/ingredients/search?keyword=${keyword}${
+      queryParams.toString() ? '&' + queryParams.toString() : ''
+    }`
+  }
+  public static INGREDIENTS_FILTER(
+    categories: string[],
+    params?: { cursor?: number; limit?: number }
+  ) {
+    const queryParams = new URLSearchParams()
+    categories.forEach(cat => queryParams.append('category', cat))
+    if (params?.cursor !== undefined) {
+      queryParams.append('cursor', String(params.cursor))
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append('limit', String(params.limit))
+    }
+
+    return `v2/ingredients/filter?${queryParams.toString()}`
+  }
+  static readonly RECIPES = 'v2/recipes/'
 }
 
 export type Clients = {
@@ -66,6 +104,7 @@ export type Clients = {
   auth: AxiosInstance
   shopping: AxiosInstance
   recipe: AxiosInstance
+  notification: AxiosInstance
 }
 function initClient(): Clients {
   axios.defaults.baseURL = AppUrl.BASE
@@ -78,6 +117,10 @@ function initClient(): Clients {
   const recipe = axios.create({
     url: AppUrl.RECIPE_BASE,
     baseURL: AppUrl.RECIPE_BASE
+  })
+  const notification = axios.create({
+    url: AppUrl.NOTIFICATION_BASE,
+    baseURL: AppUrl.NOTIFICATION_BASE
   })
 
   // Add token injection to auth client
@@ -172,7 +215,16 @@ function initClient(): Clients {
     return config
   })
 
-  return { pub, auth, shopping, recipe }
+  // Add token injection to notification client
+  notification.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    const token = LocalStorage.inst.auth?.access_token
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  })
+
+  return { pub, auth, shopping, recipe, notification }
 }
 export const httpClients = initClient()
 
@@ -213,7 +265,9 @@ export function httpPost<T>(
       }
       const status = e.response.status
       // Extract error message from response body if available
-      const responseData = e.response.data as { status?: string; message?: string } | undefined
+      const responseData = e.response.data as
+        | { status?: string; message?: string }
+        | undefined
       const errorMessage = responseData?.message || null
 
       switch (status) {

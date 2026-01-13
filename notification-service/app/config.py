@@ -11,6 +11,9 @@ load_dotenv(dotenv_path=env_path)
 
 class Config:
     """ Service-specific configurations for Notification-Service. """
+    # Proxy Configuration (Sanic v22+)
+    PROXIES_COUNT = 1
+    PROXIES_OR_NETWORKS = "*"
 
     RUN_SETTING = {
         'host': os.getenv('APP_HOST', 'localhost'),
@@ -56,40 +59,40 @@ class Config:
     # User Service URL (internal container URL)
     USER_SERVICE_URL: str = os.getenv('USER_SERVICE_URL', 'http://user-service:8000')
 
-    # # OpenAPI / Swagger Configuration
-    # OAS_URL_PREFIX = "/api/v2/notification-service/docs"
-    # SWAGGER_UI_CONFIGURATION = {
-    #     "docExpansion": "list",  # Expand only the endpoint list, not the full details
-    #     "filter": True,  # Enable search/filter functionality
-    #     "syntaxHighlight": {
-    #         "theme": "monokai"  # Better syntax highlighting theme
-    #     },
-    #     "tryItOutEnabled": True,  # Always show "Try it out" button
-    #     "displayRequestDuration": True,  # Show API response time
-    #     "defaultModelsExpandDepth": -1,  # Hide schemas section to reduce clutter
-    # }
-    # OAS = {
-    #     "info": {
-    #         "title": "Convenient Shopping System - Notification Service API",
-    #         "version": "1.0.0",
-    #         "description": "API quản lý thông báo thời gian thực cho hệ thống mua sắm tiện lợi.",
-    #         "contact": {
-    #             "email": "cuongct0902@example.com",
-    #         },
-    #     },
-    #     "servers": [
-    #         {"url": "http://localhost:8000", "description": "Local Kong Gateway"},
-    #         {"url": "http://localhost:9005", "description": "Local Notification Service Direct"}
-    #     ],
-    #     "components": {
-    #         "securitySchemes": {
-    #             "BearerAuth": {
-    #                 "type": "http",
-    #                 "scheme": "bearer",
-    #                 "bearerFormat": "JWT",
-    #                 "description": "JWT Authorization header using the Bearer scheme. Example: 'Authorization: Bearer {token}'"
-    #             }
-    #         }
-    #     },
-    #     "security": [{"BearerAuth": []}]
-    # }
+    # OpenAPI / Swagger Configuration
+    OAS_URL_PREFIX = "/api/v2/notification-service/docs"
+    SWAGGER_UI_CONFIGURATION = {
+        "docExpansion": "list",  # Expand only the endpoint list, not the full details
+        "filter": True,  # Enable search/filter functionality
+        "syntaxHighlight": {
+            "theme": "monokai"  # Better syntax highlighting theme
+        },
+        "tryItOutEnabled": True,  # Always show "Try it out" button
+        "displayRequestDuration": True,  # Show API response time
+        "defaultModelsExpandDepth": -1,  # Hide schemas section to reduce clutter
+    }
+    OAS = {
+        "info": {
+            "title": "Convenient Shopping System - Notification Service API",
+            "version": "2.0.0",
+            "description": "API quản lý thông báo thời gian thực cho hệ thống mua sắm tiện lợi.",
+            "contact": {
+                "email": "cuongct0902@example.com",
+            },
+        },
+        "servers": [
+            {"url": "http://localhost:8000", "description": "Local Kong Gateway"},
+            {"url": "http://localhost:9005", "description": "Local Notification Service Direct"}
+        ],
+        "components": {
+            "securitySchemes": {
+                "BearerAuth": {
+                    "type": "http",
+                    "scheme": "bearer",
+                    "bearerFormat": "JWT",
+                    "description": "JWT Authorization header using the Bearer scheme. Example: 'Authorization: Bearer {token}'"
+                }
+            }
+        },
+        "security": [{"BearerAuth": []}]
+    }

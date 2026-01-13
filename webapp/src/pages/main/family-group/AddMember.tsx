@@ -50,7 +50,6 @@ const AddMember = ({ groupId, onMemberAdded, onCancel }: AddMemberProps) => {
         }, 2000)
       },
       (error) => {
-        console.error('Failed to add member:', error)
         if (error.type === 'unauthorized') {
           setMessage({
             type: 'error',
@@ -133,7 +132,6 @@ const AddMember = ({ groupId, onMemberAdded, onCancel }: AddMemberProps) => {
           <Button
             variant={isLoading ? 'disabled' : 'primary'}
             onClick={handleAddMember}
-            icon={isLoading ? Loader2 : undefined}
             size="fit"
             className="bg-[#C3485C] hover:bg-[#a83648]"
           >

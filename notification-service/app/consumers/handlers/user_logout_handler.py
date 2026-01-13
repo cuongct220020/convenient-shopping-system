@@ -1,6 +1,7 @@
 # notification-service/app/consumers/handlers/user_logout_handler.py
 from app.consumers.handlers.base_handler import BaseMessageHandler
 from app.websocket.websocket_manager import websocket_manager
+
 from shopping_shared.utils.logger_utils import get_logger
 
 

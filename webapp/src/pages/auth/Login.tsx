@@ -12,6 +12,7 @@ import { NotificationCard } from '../../components/NotificationCard'
 import { useIsMounted } from '../../hooks/useIsMounted'
 import { LocalStorage } from '../../services/storage/local'
 import { authController } from '../../controllers/authController'
+import { connectWebSocketAfterLogin } from '../../hooks/useWebSocketNotification'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -112,6 +113,8 @@ export default function Login() {
     response
       .map((body) => {
         authController.saveUserAuth(body.data)
+        // Connect to WebSocket for real-time notifications
+        connectWebSocketAfterLogin()
         setIsLoading(false)
         navigate('/main/profile')
       })

@@ -8,6 +8,7 @@ import PersonalProfile from '../pages/main/profile/PersonalProfile'
 import HealthProfile from '../pages/main/profile/HealthProfile'
 import Favorites from '../pages/main/profile/Favorites'
 import { RouteObject } from 'react-router-dom'
+import Notification from '../pages/main/notification/Notification'
 import { Storage } from '../pages/main/food-storage/Storage'
 import { AddStorage } from '../pages/main/food-storage/AddStorage'
 import { StorageDetails } from '../pages/main/food-storage/StorageDetails'
@@ -116,6 +117,10 @@ export const MainRoutes: RouteObject = {
   path: 'main',
   element: <MainLayout />,
   children: [
+    {
+      path: 'notification',
+      element: <Notification />
+    },
     {
       index: true,
       element: <Profile />

@@ -1,94 +1,177 @@
-import React, { useState, useMemo } from 'react'
-import { Search, Plus, Filter, LayoutGrid, Check, Edit, Trash2 } from 'lucide-react'
+import React, { useState, useCallback, useEffect } from 'react'
+import {
+  Search,
+  Plus,
+  LayoutGrid,
+  Check,
+  Edit,
+  Trash2,
+  RotateCw
+} from 'lucide-react'
 import Item from '../components/Item'
 import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
 import { DishForm } from '../components/DishForm'
-// Assuming the uploaded image is placed in assets
+import { dishService } from '../services/dish'
+import { useIsMounted } from '../hooks/useIsMounted'
 import hamburgerImg from '../assets/hamburger.png'
-
-// Dữ liệu giả lập cho Món ăn
-const possibleNames = [
-  'Hamburger',
-  'Pizza Hải Sản',
-  'Phở Bò',
-  'Bún Chả',
-  'Cơm Tấm',
-  'Mì Ý Sốt Kem',
-  'Gà Rán',
-  'Khoai Tây Chiên',
-  'Bánh Mì',
-  'Sushi',
-  'Sashimi',
-  'Lẩu Thái',
-  'Bò Bít Tết',
-  'Salad Nga',
-  'Nem Rán',
-  'Bánh Xèo',
-  'Trà Sữa',
-  'Cà Phê Sữa',
-  'Sinh Tố Bơ',
-  'Nước Ép Cam'
-]
-
-const possibleCategories = [
-  'Món ăn vặt',
-  'Món chính',
-  'Món khai vị',
-  'Tráng miệng',
-  'Đồ uống',
-  'Đồ chay',
-  'Bánh ngọt'
-]
-
-// Tạo 200 món ăn giả lập
-const allDishesData = Array(200)
-  .fill(null)
-  .map((_, index) => {
-    // Để giống screenshot, ta ưu tiên hiển thị Hamburger nhiều hơn một chút trong random
-    const isHamburger = Math.random() > 0.7
-    const randomNameIndex = Math.floor(Math.random() * possibleNames.length)
-    const randomCategoryIndex = Math.floor(
-      Math.random() * possibleCategories.length
-    )
-
-    return {
-      id: index,
-      name: isHamburger ? 'Hamburger' : possibleNames[randomNameIndex],
-      category: isHamburger ? 'Món ăn vặt' : possibleCategories[randomCategoryIndex],
-      image: hamburgerImg
-    }
-  })
+import { DishCreateSchema, type Dish } from '../services/schema/dishSchema'
+import { parseZodObject } from '../utils/zod-result'
+import { NotificationCard } from '../components/NotificationCard'
 
 const ITEMS_PER_PAGE = 20
 
 const DishMenu = () => {
+  const isMounted = useIsMounted()
   const [currentPage, setCurrentPage] = useState(1)
-  const [showFilter, setShowFilter] = useState(false)
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchInputValue, setSearchInputValue] = useState('')
   const [showAddDishForm, setShowAddDishForm] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [selectedItem, setSelectedItem] = useState<Dish | null>(null)
   const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
+  const [dishes, setDishes] = useState<Dish[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pagesCursors, setPagesCursors] = useState<(number | null)[]>([null])
+  const [reportModal, setReportModal] = useState<{
+    type: 'success' | 'error'
+    title: string
+    message: string
+  } | null>(null)
 
-  const handleToggleFilter = () => {
-    setShowFilter((prev) => !prev)
-  }
+  const fetchDishes = useCallback(
+    async (pageNumber: number = 1) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const cursor = pagesCursors[pageNumber - 1] ?? undefined
+        const result = await dishService.getDishes({
+          cursor,
+          limit: ITEMS_PER_PAGE,
+          search: searchQuery || undefined
+        })
+
+        if (!isMounted.current) return
+
+        if (result.isOk()) {
+          const response = result.value
+          setDishes(response.data)
+          setCurrentPage(pageNumber)
+
+          // Add next page cursor if it doesn't exist yet
+          if (response.next_cursor !== null && !pagesCursors[pageNumber]) {
+            setPagesCursors((prev) => {
+              const updated = [...prev]
+              updated[pageNumber] = response.next_cursor
+              return updated
+            })
+          }
+        } else {
+          setError(result.error.desc || 'Failed to fetch dishes')
+        }
+      } catch (err) {
+        if (isMounted.current) {
+          setError(String(err))
+        }
+      } finally {
+        if (isMounted.current) {
+          setLoading(false)
+        }
+      }
+    },
+    [pagesCursors, searchQuery, isMounted]
+  )
+
+  useEffect(() => {
+    // Reset pagination when search changes, then fetch page 1
+    setPagesCursors([null])
+    setCurrentPage(1)
+    // Call fetchDishes to fetch page 1 with new search
+    fetchDishes(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery])
 
   const handleAddDishClick = () => {
     setShowAddDishForm(true)
   }
 
-  const handleDishFormSubmit = (dishData: any) => {
-    console.log('Saving dish:', dishData)
-    setShowAddDishForm(false)
+  const handleDishFormSubmit = async (dishData: Partial<Dish>) => {
+    setLoading(true)
+    try {
+      const parseData = parseZodObject(DishCreateSchema, dishData)
+      // Validate that dishData is a complete Dish object
+      if (parseData.isErr()) {
+        throw new Error(
+          'Developer Error: DishForm must return a complete Dish object' +
+            parseData.error
+        )
+      }
+
+      const result = await dishService.createDish(dishData as Dish)
+
+      if (result.isOk()) {
+        setShowAddDishForm(false)
+        setReportModal({
+          type: 'success',
+          title: 'Tạo món ăn thành công',
+          message: `Món ăn "${dishData.component_name}" đã được tạo.`
+        })
+        // Reset pagination state and refetch page 1
+        setPagesCursors([null])
+        setCurrentPage(1)
+        // Fetch with fresh state - pass cursor explicitly as undefined for page 1
+        try {
+          const freshResult = await dishService.getDishes({
+            cursor: undefined,
+            limit: ITEMS_PER_PAGE,
+            search: searchQuery || undefined
+          })
+
+          if (isMounted.current && freshResult.isOk()) {
+            const response = freshResult.value
+            setDishes(response.data)
+            // Set pagination cursors - second page cursor is available if next_cursor exists
+            if (
+              response.next_cursor !== null &&
+              response.next_cursor !== undefined
+            ) {
+              setPagesCursors([null, response.next_cursor])
+            } else {
+              // No next page available, keep pagination at length 1 (single page)
+              setPagesCursors([null])
+            }
+          }
+        } catch (err) {
+          if (isMounted.current) {
+            setError(String(err))
+          }
+        }
+      } else {
+        setReportModal({
+          type: 'error',
+          title: 'Tạo thất bại',
+          message:
+            result.error.desc || 'Không thể tạo món ăn. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      setReportModal({
+        type: 'error',
+        title: 'Lỗi',
+        message: String(err)
+      })
+    } finally {
+      if (isMounted.current) {
+        setLoading(false)
+      }
+    }
   }
 
   const handleDishFormCancel = () => {
     setShowAddDishForm(false)
   }
 
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: Dish) => {
     setSelectedItem(item)
     setViewMode('view')
   }
@@ -97,14 +180,116 @@ const DishMenu = () => {
     setViewMode('edit')
   }
 
-  const handleSaveClick = () => {
-    // Here you would typically save the changes
-    closeModal()
+  const handleSaveClick = async (formData: Partial<Dish>) => {
+    if (!selectedItem) return
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await dishService.updateDish(
+        selectedItem.component_id,
+        formData
+      )
+      if (!isMounted.current) return
+      if (result.isOk()) {
+        await fetchDishes(currentPage)
+        closeModal()
+      } else {
+        setError(result.error.desc || 'Failed to update dish')
+      }
+    } catch (err) {
+      if (isMounted.current) {
+        setError(String(err))
+      }
+    } finally {
+      if (isMounted.current) {
+        setLoading(false)
+      }
+    }
   }
+  const handleDeleteClick = async () => {
+    if (!selectedItem) return
+    setLoading(true)
+    try {
+      const result = await dishService.deleteDish(selectedItem.component_id)
+      if (!isMounted.current) return
+      if (result.isOk()) {
+        closeModal()
 
-  const handleDeleteClick = () => {
-    // Here you would typically delete the item
-    closeModal()
+        // Invalidate cursor chain after deletion
+        // Trim cursors from current page onwards since dataset has changed
+        setPagesCursors((prev) => prev.slice(0, currentPage))
+
+        // Refetch current page to rebuild cursor chain and refresh displayed data
+        const freshResult = await dishService.getDishes({
+          cursor: pagesCursors[currentPage - 1] ?? undefined,
+          limit: ITEMS_PER_PAGE,
+          search: searchQuery || undefined
+        })
+
+        if (!isMounted.current) return
+
+        if (freshResult.isOk()) {
+          const response = freshResult.value
+          setDishes(response.data)
+
+          // Handle edge case: current page is now empty
+          if (response.data.length === 0 && currentPage > 1) {
+            // Redirect to previous page and reset pagination
+            setCurrentPage(currentPage - 1)
+            setPagesCursors([null])
+            // Refetch previous page
+            const prevPageResult = await dishService.getDishes({
+              cursor: undefined,
+              limit: ITEMS_PER_PAGE,
+              search: searchQuery || undefined
+            })
+            if (isMounted.current && prevPageResult.isOk()) {
+              const prevResponse = prevPageResult.value
+              setDishes(prevResponse.data)
+              if (prevResponse.next_cursor !== null) {
+                setPagesCursors([null, prevResponse.next_cursor])
+              }
+            }
+          } else if (response.data.length > 0) {
+            // Update pagination cursors if next page exists
+            if (response.next_cursor !== null) {
+              setPagesCursors((prev) => {
+                const updated = [...prev]
+                updated[currentPage] = response.next_cursor
+                return updated
+              })
+            }
+          }
+        }
+
+        setReportModal({
+          type: 'success',
+          title: 'Xóa thành công',
+          message: `Món ăn "${selectedItem.component_name}" đã được xóa.`
+        })
+      } else {
+        setError(result.error.desc || 'Failed to delete dish')
+        setReportModal({
+          type: 'error',
+          title: 'Xóa thất bại',
+          message:
+            result.error.desc || 'Không thể xóa món ăn. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      if (isMounted.current) {
+        setError(String(err))
+        setReportModal({
+          type: 'error',
+          title: 'Lỗi',
+          message: String(err)
+        })
+      }
+    } finally {
+      if (isMounted.current) {
+        setLoading(false)
+      }
+    }
   }
 
   const closeModal = () => {
@@ -112,119 +297,73 @@ const DishMenu = () => {
     setViewMode(null)
   }
 
-  const uniqueCategories = useMemo(() => {
-    const categories = new Set(allDishesData.map((item) => item.category))
-    return Array.from(categories)
-  }, [])
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    )
-    setCurrentPage(1)
-  }
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-    setCurrentPage(1)
+    setSearchInputValue(e.target.value)
   }
 
-  const { totalPages, currentItems, startIndex, endIndex, totalItems } =
-    useMemo(() => {
-      let filteredData = allDishesData
+  const handleSearch = async () => {
+    setSearchQuery(searchInputValue)
+    // Reset pagination when search is triggered
+    setPagesCursors([null])
+    setCurrentPage(1)
+    // Note: useEffect will handle fetching with new searchQuery
+  }
 
-      if (selectedCategories.length > 0) {
-        filteredData = filteredData.filter((item) =>
-          selectedCategories.includes(item.category)
-        )
-      }
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        filteredData = filteredData.filter((item) =>
-          item.name.toLowerCase().includes(query)
-        )
-      }
-
-      const totalItems = filteredData.length
-      const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-      const endIndex = startIndex + ITEMS_PER_PAGE
-      const currentItems = filteredData.slice(startIndex, endIndex)
-
-      return {
-        totalPages,
-        currentItems,
-        startIndex: totalItems === 0 ? 0 : startIndex + 1,
-        endIndex: Math.min(endIndex, totalItems),
-        totalItems
-      }
-    }, [currentPage, selectedCategories, searchQuery])
+  const handleReload = () => {
+    setSearchQuery('')
+    setSearchInputValue('')
+    setPagesCursors([null])
+    setCurrentPage(1)
+    // Note: useEffect will handle fetching with cleared searchQuery
+  }
 
   return (
     <div className="flex min-h-screen flex-1 flex-col pt-6">
       {/* Header */}
       <div className="mb-8 flex flex-col space-y-6 px-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-800">
-            Danh mục món ăn
-          </h2>
+          <h2 className="text-xl font-bold text-gray-800">Danh mục món ăn</h2>
 
           <div className="flex items-center space-x-4">
-            <Button variant="primary" icon={Plus} size="fit" onClick={handleAddDishClick}>
+            <Button
+              variant="primary"
+              icon={Plus}
+              size="fit"
+              onClick={handleAddDishClick}
+            >
               Thêm món ăn
             </Button>
 
-            <button
-              className="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100"
-              onClick={handleToggleFilter}
-            >
-              <Filter size={20} />
-              {selectedCategories.length > 0 && (
-                <span className="absolute bottom-2 right-2 block size-2 rounded-full bg-red-500 ring-2 ring-white" />
-              )}
-              {showFilter && (
-                <div
-                  className="absolute right-0 top-full z-10 mt-2 w-[550px] rounded-md border border-gray-200 bg-white p-4 shadow-lg"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <h3 className="mb-2 font-semibold text-gray-700">
-                    Lọc theo danh mục
-                  </h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {uniqueCategories.map((category) => (
-                      <label
-                        key={category}
-                        className="flex items-center space-x-2 text-sm text-gray-600"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(category)}
-                          onChange={() => handleCategoryChange(category)}
-                          className="rounded border-gray-300 text-rose-500 focus:ring-rose-500"
-                        />
-                        <span>{category}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </button>
-
-            <div className="relative">
+            <div className="flex items-center space-x-2">
               <input
                 type="text"
                 placeholder="Tìm kiếm..."
-                value={searchQuery}
+                value={searchInputValue}
                 onChange={handleSearchChange}
-                className="w-64 rounded-lg border border-gray-300 py-2 pl-4 pr-10 text-sm focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchInputValue.trim()) {
+                    handleSearch()
+                  }
+                }}
+                className="w-48 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
               />
-              <Search
-                className="absolute right-3 top-2.5 text-gray-400"
-                size={18}
-              />
+              {searchInputValue.trim() ? (
+                <Button
+                  variant="icon"
+                  icon={Search}
+                  size="fit"
+                  onClick={handleSearch}
+                >
+                  Tìm kiếm
+                </Button>
+              ) : (
+                <Button
+                  variant="icon"
+                  icon={RotateCw}
+                  size="fit"
+                  onClick={handleReload}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -233,30 +372,43 @@ const DishMenu = () => {
           <LayoutGrid size={16} className="mr-2" />
           <span>
             Đang hiển thị{' '}
-            <span className="font-bold">
-              {startIndex} - {endIndex}
-            </span>{' '}
-            / {totalItems} món ăn
+            <span className="font-bold">{dishes.length} món ăn</span>
+            {' (trang '}
+            <span className="font-bold">{currentPage}</span>
+            {' trên '}
+            <span className="font-bold">{pagesCursors.length}</span>
+            {')'}.
           </span>
         </div>
       </div>
 
       {/* Grid Container - Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        {currentItems.length > 0 ? (
-          <div className="px-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {currentItems.map((item) => (
+        {loading && (
+          <div className="flex h-64 items-center justify-center px-6 text-gray-500">
+            <p>Đang tải...</p>
+          </div>
+        )}
+        {error && (
+          <div className="flex h-64 items-center justify-center px-6 text-red-500">
+            <p>Lỗi: {error}</p>
+          </div>
+        )}
+        {!loading && !error && dishes.length > 0 && (
+          <div className="grid grid-cols-2 gap-4 px-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {dishes.map((item) => (
               <Item
-                key={item.id}
-                name={item.name}
-                category={item.category}
-                image={item.image}
+                key={item.component_id}
+                name={item.component_name}
+                category={item.level || 'N/A'}
+                image={item.image_url || hamburgerImg}
                 onClick={() => handleItemClick(item)}
               />
             ))}
           </div>
-        ) : (
-          <div className="px-6 flex h-64 items-center justify-center text-gray-500">
+        )}
+        {!loading && !error && dishes.length === 0 && (
+          <div className="flex h-64 items-center justify-center px-6 text-gray-500">
             Không tìm thấy món ăn nào.
           </div>
         )}
@@ -264,12 +416,13 @@ const DishMenu = () => {
 
       {/* Pagination - Always at Bottom */}
       <div className="sticky bottom-0 bg-white px-6 py-4">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          className=""
-        />
+        <div className="flex items-center justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={pagesCursors.length}
+            onPageChange={(page) => fetchDishes(page)}
+          />
+        </div>
       </div>
 
       {/* Add Dish Form Modal */}
@@ -286,6 +439,7 @@ const DishMenu = () => {
             <DishForm
               onSubmit={handleDishFormSubmit}
               onCancel={handleDishFormCancel}
+              loading={loading}
             />
           </div>
         </div>
@@ -305,15 +459,15 @@ const DishMenu = () => {
             {viewMode === 'view' && (
               <DishForm
                 initialData={{
-                  dishName: selectedItem.name || 'Chưa có thông tin',
-                  category: selectedItem.category || 'Chưa có thông tin',
-                  difficulty: selectedItem.difficulty || 'Chưa có thông tin',
-                  image: selectedItem.image || null,
-                  servings: selectedItem.servings || 'Chưa có thông tin',
-                  cookTime: selectedItem.cookTime || 'Chưa có thông tin',
-                  prepTime: selectedItem.prepTime || 'Chưa có thông tin',
-                  ingredients: selectedItem.ingredients && selectedItem.ingredients.length > 0 ? selectedItem.ingredients : [],
-                  instructions: selectedItem.instructions && selectedItem.instructions.length > 0 ? selectedItem.instructions : []
+                  component_name: selectedItem.component_name,
+                  level: selectedItem.level,
+                  image_url: selectedItem.image_url || hamburgerImg,
+                  default_servings: selectedItem.default_servings,
+                  cook_time: selectedItem.cook_time,
+                  prep_time: selectedItem.prep_time,
+                  keywords: selectedItem.keywords,
+                  instructions: selectedItem.instructions,
+                  component_list: selectedItem.component_list
                 }}
                 readOnly={true}
                 actions={
@@ -354,21 +508,40 @@ const DishMenu = () => {
             {viewMode === 'edit' && (
               <DishForm
                 initialData={{
-                  dishName: selectedItem.name || '',
-                  category: selectedItem.category || '',
-                  difficulty: selectedItem.difficulty || '',
-                  image: selectedItem.image || null,
-                  servings: selectedItem.servings || 0,
-                  cookTime: selectedItem.cookTime || '',
-                  prepTime: selectedItem.prepTime || '',
-                  ingredients: selectedItem.ingredients || [],
-                  instructions: selectedItem.instructions || []
+                  component_name: selectedItem.component_name,
+                  level: selectedItem.level,
+                  image_url: selectedItem.image_url || hamburgerImg,
+                  default_servings: selectedItem.default_servings,
+                  cook_time: selectedItem.cook_time,
+                  prep_time: selectedItem.prep_time,
+                  keywords: selectedItem.keywords,
+                  instructions: selectedItem.instructions,
+                  component_list: selectedItem.component_list
                 }}
                 onSubmit={handleSaveClick}
                 onCancel={() => setViewMode('view')}
+                loading={loading}
               />
             )}
           </div>
+        </div>
+      )}
+
+      {/* Action Report Modal */}
+      {reportModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <NotificationCard
+            title={reportModal.title}
+            message={reportModal.message}
+            iconBgColor={
+              reportModal.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }
+            buttonText="Đóng"
+            onButtonClick={() => {
+              setReportModal(null)
+              closeModal()
+            }}
+          />
         </div>
       )}
     </div>

@@ -5,6 +5,7 @@ import { Button } from '../components/Button'
 import { InputField } from '../components/InputField'
 import { authService, AuthService } from '../services/auth'
 import { LocalStorage } from '../services/storage/local'
+import { connectWebSocketAfterLogin } from '../hooks/useWebSocketNotification'
 
 const Login: React.FC = () => {
   const navigate = useNavigate()
@@ -46,6 +47,8 @@ const Login: React.FC = () => {
     if (result.isOk()) {
       // Store auth data
       LocalStorage.inst.auth = result.value.data
+      // Connect to WebSocket for real-time notifications
+      connectWebSocketAfterLogin()
       // Navigate to admin dashboard or home
       navigate('/admin')
     } else {
