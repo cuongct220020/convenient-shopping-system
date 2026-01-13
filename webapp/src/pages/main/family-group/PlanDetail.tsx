@@ -24,6 +24,7 @@ export const PlanDetail = () => {
   const [creatorInfo, setCreatorInfo] = useState<UserCoreInfo | null>(null);
   const [assigneeInfo, setAssigneeInfo] = useState<UserCoreInfo | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserUsername, setCurrentUserUsername] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +33,7 @@ export const PlanDetail = () => {
     userService.getCurrentUser().match(
       (response) => {
         setCurrentUserId(response.data.id);
+        setCurrentUserUsername(response.data.username);
       },
       (err) => {
         console.error('Failed to fetch current user:', err);
@@ -122,13 +124,13 @@ export const PlanDetail = () => {
   };
 
   const handleApprovePlan = () => {
-    if (!planId || !currentUserId) return;
+    if (!planId || !currentUserId || !currentUserUsername) return;
 
     setIsAssigning(true);
     setError(null);
 
     shoppingPlanService
-      .assignPlan(parseInt(planId), currentUserId)
+      .assignPlan(parseInt(planId), currentUserId, currentUserUsername)
       .match(
         () => {
           setIsAssigning(false);
