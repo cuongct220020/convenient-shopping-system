@@ -32,7 +32,7 @@ export class IngredientService {
   ): ResultAsync<Ingredient, IngredientError> {
     const url = AppUrl.INGREDIENTS_BY_ID(String(id))
 
-    return httpGet(this.clients.recipe, url).andThen((response) =>
+    return httpGet(this.clients.auth, url).andThen((response) =>
       parseZodObject(IngredientSchema, response.body).mapErr(
         (e): IngredientError => ({
           type: 'invalid-response-format',
@@ -109,7 +109,7 @@ export class IngredientService {
 
     const url = AppUrl.INGREDIENTS_SEARCH(keyword, params)
 
-    return httpGet(this.clients.recipe, url)
+    return httpGet(this.clients.auth, url)
       .mapErr((e) => {
         console.error('HTTP error for ingredient search:', e)
         return e

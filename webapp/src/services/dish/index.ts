@@ -14,6 +14,7 @@ import {
   httpGet,
   httpPost,
   httpPut,
+  httpDelete,
   ResponseError
 } from '../client'
 
@@ -26,7 +27,7 @@ export class DishService {
    * Get a single dish by ID
    */
   public getDishById(id: number): ResultAsync<Dish, DishError> {
-    return httpGet(this.clients.recipe, `${AppUrl.RECIPES}${id}`).andThen(
+    return httpGet(this.clients.auth, `${AppUrl.RECIPES}${id}`).andThen(
       (response) =>
         parseZodObject(DishSchema, response.body).mapErr(
           (e): DishError => ({
@@ -47,7 +48,7 @@ export class DishService {
     data: Partial<Omit<GetDishesResponse['data'][0], 'component_id'>>
   ): ResultAsync<GetDishesResponse['data'][0], DishError> {
     return httpPut(
-      this.clients.recipe,
+      this.clients.auth,
       `${AppUrl.RECIPES}${component_id}`,
       data
     ).andThen((response) =>
@@ -65,7 +66,7 @@ export class DishService {
    * @param data - Dish data to create
    */
   public createDish(data: Dish): ResultAsync<Dish, DishError> {
-    return httpPost(this.clients.recipe, AppUrl.RECIPES, data).andThen(
+    return httpPost(this.clients.auth, AppUrl.RECIPES, data).andThen(
       (response) =>
         parseZodObject(DishSchema, response.body).mapErr(
           (e): DishError => ({
@@ -74,6 +75,17 @@ export class DishService {
           })
         )
     )
+  }
+
+  /**
+   * Delete a dish by ID
+   * @param component_id - The dish ID to delete
+   */
+  public deleteDish(component_id: number): ResultAsync<void, DishError> {
+    return httpDelete(
+      this.clients.auth,
+      `${AppUrl.RECIPES}${component_id}`
+    ).map(() => {})
   }
 
   /**
@@ -95,7 +107,7 @@ export class DishService {
 
     const url = `${AppUrl.RECIPES}search?${queryParams.toString()}`
 
-    return httpGet(this.clients.recipe, url).andThen((response) =>
+    return httpGet(this.clients.auth, url).andThen((response) =>
       parseZodObject(GetDishesResponseSchema, response.body).mapErr(
         (e): DishError => ({
           type: 'invalid-response-format',
@@ -130,7 +142,7 @@ export class DishService {
       queryParams.toString() ? '?' + queryParams.toString() : ''
     }`
 
-    return httpGet(this.clients.recipe, url).andThen((response) =>
+    return httpGet(this.clients.auth, url).andThen((response) =>
       parseZodObject(GetDishesResponseSchema, response.body).mapErr(
         (e): DishError => ({
           type: 'invalid-response-format',

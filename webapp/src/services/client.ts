@@ -5,8 +5,6 @@ import { tokenRefreshManager } from './refreshToken'
 
 export class AppUrl {
   static readonly BASE = import.meta.env.VITE_API_BASE_URL
-  static readonly SHOPPING_BASE = import.meta.env.VITE_SHOPPING_API_BASE_URL
-  static readonly RECIPE_BASE = import.meta.env.VITE_RECIPE_API_BASE_URL
   static readonly AUTH = 'api/v1/user-service/auth'
   static readonly LOGIN = this.AUTH + '/login'
   static readonly REGISTER = this.AUTH + '/register'
@@ -80,21 +78,11 @@ export class AppUrl {
 export type Clients = {
   pub: AxiosInstance
   auth: AxiosInstance
-  shopping: AxiosInstance
-  recipe: AxiosInstance
 }
 function initClient(): Clients {
   axios.defaults.baseURL = AppUrl.BASE
   const pub = axios.create({ url: AppUrl.BASE, withCredentials: true })
   const auth = axios.create({ url: AppUrl.BASE, withCredentials: true })
-  const shopping = axios.create({
-    url: AppUrl.SHOPPING_BASE,
-    baseURL: AppUrl.SHOPPING_BASE
-  })
-  const recipe = axios.create({
-    url: AppUrl.RECIPE_BASE,
-    baseURL: AppUrl.RECIPE_BASE
-  })
 
   // Add token injection to auth client
   auth.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
@@ -170,25 +158,7 @@ function initClient(): Clients {
     }
   )
 
-  // Add token injection to shopping client
-  shopping.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    const token = LocalStorage.inst.auth?.access_token
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  })
-
-  // Add token injection to recipe client
-  recipe.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    const token = LocalStorage.inst.auth?.access_token
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  })
-
-  return { pub, auth, shopping, recipe }
+  return { pub, auth }
 }
 export const httpClients = initClient()
 

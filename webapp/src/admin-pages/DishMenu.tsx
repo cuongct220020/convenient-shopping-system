@@ -224,9 +224,46 @@ const DishMenu = () => {
     }
   }
 
-  const handleDeleteClick = () => {
-    // Here you would typically delete the item
-    closeModal()
+  const handleDeleteClick = async () => {
+    if (!selectedItem) return
+    setLoading(true)
+    try {
+      const result = await dishService.deleteDish(selectedItem.component_id)
+      if (!isMounted.current) return
+      if (result.isOk()) {
+        // Invalidate pages after current page
+        setPagesCursors((prev) => prev.slice(0, currentPage))
+        // Refetch current page to get updated data
+        await fetchDishes(currentPage)
+        closeModal()
+        setReportModal({
+          type: 'success',
+          title: 'Xóa thành công',
+          message: `Món ăn "${selectedItem.component_name}" đã được xóa.`
+        })
+      } else {
+        setError(result.error.desc || 'Failed to delete dish')
+        setReportModal({
+          type: 'error',
+          title: 'Xóa thất bại',
+          message:
+            result.error.desc || 'Không thể xóa món ăn. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      if (isMounted.current) {
+        setError(String(err))
+        setReportModal({
+          type: 'error',
+          title: 'Lỗi',
+          message: String(err)
+        })
+      }
+    } finally {
+      if (isMounted.current) {
+        setLoading(false)
+      }
+    }
   }
 
   const closeModal = () => {
