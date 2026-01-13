@@ -63,9 +63,15 @@ export class AppUrl {
   static readonly INGREDIENTS_BY_ID = (id: string) => `v2/ingredients/${id}`
   static readonly NOTIFICATIONS = (userId: string) =>
     `api/v2/notification-service/notifications/users/${userId}`
-  static readonly NOTIFICATION_MARK_READ = (notificationId: number, userId: string) =>
+  static readonly NOTIFICATION_MARK_READ = (
+    notificationId: number,
+    userId: string
+  ) =>
     `api/v2/notification-service/notifications/${notificationId}/users/${userId}/read`
-  static readonly NOTIFICATION_DELETE = (notificationId: number, userId: string) =>
+  static readonly NOTIFICATION_DELETE = (
+    notificationId: number,
+    userId: string
+  ) =>
     `api/v2/notification-service/notifications/${notificationId}/users/${userId}`
   public static INGREDIENTS_SEARCH(
     keyword: string,
@@ -89,7 +95,7 @@ export class AppUrl {
     params?: { cursor?: number; limit?: number }
   ) {
     const queryParams = new URLSearchParams()
-    categories.forEach(cat => queryParams.append('category', cat))
+    categories.forEach((cat) => queryParams.append('category', cat))
     if (params?.cursor !== undefined) {
       queryParams.append('cursor', String(params.cursor))
     }
@@ -105,9 +111,6 @@ export class AppUrl {
 export type Clients = {
   pub: AxiosInstance
   auth: AxiosInstance
-  shopping: AxiosInstance
-  recipe: AxiosInstance
-  notification: AxiosInstance
 }
 function initClient(): Clients {
   axios.defaults.baseURL = AppUrl.BASE
@@ -120,10 +123,6 @@ function initClient(): Clients {
   const recipe = axios.create({
     url: AppUrl.RECIPE_BASE,
     baseURL: AppUrl.RECIPE_BASE
-  })
-  const notification = axios.create({
-    url: AppUrl.NOTIFICATION_BASE,
-    baseURL: AppUrl.NOTIFICATION_BASE
   })
 
   // Add token injection to auth client
@@ -218,16 +217,7 @@ function initClient(): Clients {
     return config
   })
 
-  // Add token injection to notification client
-  notification.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    const token = LocalStorage.inst.auth?.access_token
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  })
-
-  return { pub, auth, shopping, recipe, notification }
+  return { pub, auth }
 }
 export const httpClients = initClient()
 

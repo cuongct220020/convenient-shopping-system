@@ -46,10 +46,16 @@ const NotificationDeleteResponseSchema = z.object({
 })
 
 type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>
-type NotificationMarkReadResponse = z.infer<typeof NotificationMarkReadResponseSchema>
-type NotificationDeleteResponse = z.infer<typeof NotificationDeleteResponseSchema>
+type NotificationMarkReadResponse = z.infer<
+  typeof NotificationMarkReadResponseSchema
+>
+type NotificationDeleteResponse = z.infer<
+  typeof NotificationDeleteResponseSchema
+>
 
-type NotificationError = ResponseError<'not-found' | 'validation-error' | 'unauthorized' | 'conflict'>
+type NotificationError = ResponseError<
+  'not-found' | 'validation-error' | 'unauthorized' | 'conflict'
+>
 
 export class NotificationService {
   constructor(private clients: Clients) {}
@@ -57,8 +63,10 @@ export class NotificationService {
   /**
    * Get user's notifications
    */
-  public getUserNotifications(userId: string): ResultAsync<NotificationsResponse, NotificationError> {
-    return httpGet(this.clients.notification, AppUrl.NOTIFICATIONS(userId))
+  public getUserNotifications(
+    userId: string
+  ): ResultAsync<NotificationsResponse, NotificationError> {
+    return httpGet(this.clients.auth, AppUrl.NOTIFICATIONS(userId))
       .mapErr((e): NotificationError => {
         switch (e.type) {
           case 'unauthorized':
@@ -86,7 +94,11 @@ export class NotificationService {
     notificationId: number,
     userId: string
   ): ResultAsync<NotificationMarkReadResponse, NotificationError> {
-    return httpPatch(this.clients.notification, AppUrl.NOTIFICATION_MARK_READ(notificationId, userId), {})
+    return httpPatch(
+      this.clients.auth,
+      AppUrl.NOTIFICATION_MARK_READ(notificationId, userId),
+      {}
+    )
       .mapErr((e): NotificationError => {
         switch (e.type) {
           case 'unauthorized':
@@ -98,7 +110,10 @@ export class NotificationService {
         }
       })
       .andThen((response) =>
-        parseZodObject(NotificationMarkReadResponseSchema, response.body).mapErr(
+        parseZodObject(
+          NotificationMarkReadResponseSchema,
+          response.body
+        ).mapErr(
           (e): NotificationError => ({
             type: 'invalid-response-format',
             desc: e
@@ -114,7 +129,10 @@ export class NotificationService {
     notificationId: number,
     userId: string
   ): ResultAsync<NotificationDeleteResponse, NotificationError> {
-    return httpDelete(this.clients.notification, AppUrl.NOTIFICATION_DELETE(notificationId, userId))
+    return httpDelete(
+      this.clients.auth,
+      AppUrl.NOTIFICATION_DELETE(notificationId, userId)
+    )
       .mapErr((e): NotificationError => {
         switch (e.type) {
           case 'unauthorized':
