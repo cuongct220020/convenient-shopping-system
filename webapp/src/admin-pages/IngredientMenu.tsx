@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Search,
   Plus,
@@ -18,6 +18,7 @@ import { ingredientService } from '../services/ingredient'
 import { useIsMounted } from '../hooks/useIsMounted'
 import type { Ingredient } from '../services/schema/ingredientSchema'
 import { NotificationCard } from '../components/NotificationCard'
+import { INGREDIENT_CATEGORIES } from '../utils/constants'
 
 // Dữ liệu giả lập để hiển thị giống hình ảnh (no longer used, data now fetches from server)
 
@@ -109,15 +110,15 @@ const IngredientMenu = () => {
   )
 
   useEffect(() => {
-    // Reset pagination when filters change, then fetch page 1
+    // Reset pagination when search changes, then fetch page 1
     setPagesCursors([null])
     setCurrentPage(1)
-    // Call fetchIngredients to fetch page 1 with new filters
-    // Intentionally not in dependency array to avoid circular dependency
-    // with pagesCursors (which gets updated during fetch)
+    // Call fetchIngredients to fetch page 1 with new search
+    // Note: selectedCategories is not in dependency array because filter
+    // is applied via manual button click in handleApplyFilter
     fetchIngredients(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedCategories])
+  }, [searchQuery])
 
   const handleToggleFilter = () => {
     setShowFilter((prev) => !prev)
@@ -282,27 +283,8 @@ const IngredientMenu = () => {
     setViewMode(null)
   }
 
-  const uniqueCategories = useMemo(() => {
-    const categories = new Set(
-      ingredients
-        .map((item) => item.category)
-        .filter((cat): cat is string => cat !== null && cat !== undefined)
-    )
-    return Array.from(categories)
-  }, [ingredients])
-
-  const handleCategoryChange = (category: string) => {
-    // Clear search when filter is applied
-    setSearchQuery('')
-    setSearchInputValue('')
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    )
-    setPagesCursors([null])
-    setCurrentPage(1)
-  }
+  // Use predefined categories from constants instead of deriving from API response
+  const uniqueCategories = INGREDIENT_CATEGORIES
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchInputValue(e.target.value)
@@ -319,11 +301,56 @@ const IngredientMenu = () => {
   }
 
   const handleReload = () => {
-    // Clear search and reset to initial state
+    // Clear both search and filter, reset to initial state
     setSearchQuery('')
     setSearchInputValue('')
+    setSelectedCategories([])
+    setShowFilter(false)
     setPagesCursors([null])
     setCurrentPage(1)
+  }
+
+  const handleApplyFilter = async () => {
+    // Clear search when filter is applied
+    setSearchQuery('')
+    setSearchInputValue('')
+    setShowFilter(false)
+    // Reset pagination
+    setPagesCursors([null])
+    setCurrentPage(1)
+    // Directly fetch with selected categories
+    try {
+      const result = await ingredientService.getIngredients({
+        cursor: undefined,
+        limit: ITEMS_PER_PAGE,
+        categories:
+          selectedCategories.length > 0 ? selectedCategories : undefined
+      })
+
+      if (isMounted.current && result.isOk()) {
+        const response = result.value
+        setIngredients(response.data.map(mapIngredientToItem))
+        // Set pagination cursors - second page cursor is available if next_cursor exists
+        if (
+          response.next_cursor !== null &&
+          response.next_cursor !== undefined
+        ) {
+          setPagesCursors([null, response.next_cursor])
+        } else {
+          setPagesCursors([null])
+        }
+      } else if (isMounted.current) {
+        setError(
+          result.isErr()
+            ? result.error.desc || 'Failed to fetch ingredients'
+            : 'Failed to fetch ingredients'
+        )
+      }
+    } catch (err) {
+      if (isMounted.current) {
+        setError(String(err))
+      }
+    }
   }
 
   return (
@@ -358,10 +385,10 @@ const IngredientMenu = () => {
                   className="absolute right-0 top-full z-10 mt-2 w-[550px] rounded-md border border-gray-200 bg-white p-4 shadow-lg"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <h3 className="mb-2 font-semibold text-gray-700">
+                  <h3 className="mb-4 font-semibold text-gray-700">
                     Lọc theo danh mục
                   </h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-3 mb-4">
                     {uniqueCategories.map((category) => (
                       <label
                         key={category}
@@ -370,13 +397,26 @@ const IngredientMenu = () => {
                         <input
                           type="checkbox"
                           checked={selectedCategories.includes(category)}
-                          onChange={() => handleCategoryChange(category)}
+                          onChange={() =>
+                            setSelectedCategories((prev) =>
+                              prev.includes(category)
+                                ? prev.filter((c) => c !== category)
+                                : [...prev, category]
+                            )
+                          }
                           className="rounded border-gray-300 text-rose-500 focus:ring-rose-500"
                         />
                         <span>{category}</span>
                       </label>
                     ))}
                   </div>
+                  <Button
+                    variant="primary"
+                    size="full"
+                    onClick={handleApplyFilter}
+                  >
+                    Áp dụng lọc
+                  </Button>
                 </div>
               )}
             </button>
