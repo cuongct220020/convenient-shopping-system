@@ -44,7 +44,9 @@ export class IngredientService {
 
   /**
    * Get list of ingredients with cursor-based pagination
+   * Dynamically selects between search, filter, and regular endpoints
    * @param params - Query parameters (cursor, limit, search, categories)
+   * @throws Error if both search and categories are provided (mutually exclusive)
    */
   public getIngredients(params?: {
     cursor?: number
@@ -52,6 +54,49 @@ export class IngredientService {
     search?: string
     categories?: string[]
   }): ResultAsync<GetIngredientsResponse, IngredientError> {
+    const hasSearch = params?.search && params.search.trim()
+    const hasCategories = params?.categories && params.categories.length > 0
+
+    // Validate mutual exclusion: cannot have both search and filter
+    if (hasSearch && hasCategories) {
+      throw new Error('Cannot search and filter simultaneously')
+    }
+
+    // If search is provided, use search endpoint
+    if (hasSearch) {
+      const url = AppUrl.INGREDIENTS_SEARCH(params.search!, {
+        cursor: params?.cursor,
+        limit: params?.limit
+      })
+
+      return httpGet(this.clients.auth, url).andThen((response) =>
+        parseZodObject(GetIngredientsResponseSchema, response.body).mapErr(
+          (e): IngredientError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+    }
+
+    // If categories are provided, use filter endpoint
+    if (hasCategories) {
+      const url = AppUrl.INGREDIENTS_FILTER(params.categories!, {
+        cursor: params?.cursor,
+        limit: params?.limit
+      })
+
+      return httpGet(this.clients.auth, url).andThen((response) =>
+        parseZodObject(GetIngredientsResponseSchema, response.body).mapErr(
+          (e): IngredientError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+    }
+
+    // Otherwise use regular endpoint for listing
     const queryParams = new URLSearchParams()
 
     if (params?.cursor !== undefined) {
@@ -59,12 +104,6 @@ export class IngredientService {
     }
     if (params?.limit !== undefined) {
       queryParams.append('limit', String(params.limit))
-    }
-    if (params?.search) {
-      queryParams.append('search', params.search)
-    }
-    if (params?.categories && params.categories.length > 0) {
-      queryParams.append('categories', params.categories.join(','))
     }
 
     const url = `${AppUrl.INGREDIENTS}?${queryParams.toString()}`

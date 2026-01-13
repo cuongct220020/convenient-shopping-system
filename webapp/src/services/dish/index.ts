@@ -119,16 +119,39 @@ export class DishService {
 
   /**
    * Get list of dishes with cursor-based pagination
-   * @param params - Query parameters (cursor, limit)
+   * Dynamically selects between search and regular endpoints
+   * @param params - Query parameters (cursor, limit, search, level)
    */
   public getDishes(params?: {
     cursor?: number
     limit?: number
-    /** @note This is a place holder, search has different endpoints */
     search?: string
-    /** @note This is a place holder, filtering probably has different endpoints */
     level?: DishLevelType[]
   }): ResultAsync<GetDishesResponse, DishError> {
+    // If search is provided, use search endpoint
+    if (params?.search && params.search.trim()) {
+      const queryParams = new URLSearchParams()
+      queryParams.append('keyword', params.search)
+      if (params?.cursor !== undefined) {
+        queryParams.append('cursor', String(params.cursor))
+      }
+      if (params?.limit !== undefined) {
+        queryParams.append('limit', String(params.limit))
+      }
+
+      const url = `${AppUrl.RECIPES}search?${queryParams.toString()}`
+
+      return httpGet(this.clients.auth, url).andThen((response) =>
+        parseZodObject(GetDishesResponseSchema, response.body).mapErr(
+          (e): DishError => ({
+            type: 'invalid-response-format',
+            desc: e
+          })
+        )
+      )
+    }
+
+    // Otherwise use regular endpoint for listing
     const queryParams = new URLSearchParams()
 
     if (params?.cursor !== undefined) {

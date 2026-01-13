@@ -1,12 +1,12 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   Search,
   Plus,
-  Filter,
   LayoutGrid,
   Check,
   Edit,
-  Trash2
+  Trash2,
+  RotateCw
 } from 'lucide-react'
 import Item from '../components/Item'
 import { Button } from '../components/Button'
@@ -15,12 +15,7 @@ import { DishForm } from '../components/DishForm'
 import { dishService } from '../services/dish'
 import { useIsMounted } from '../hooks/useIsMounted'
 import hamburgerImg from '../assets/hamburger.png'
-import {
-  DishCreateSchema,
-  DishLevelTypeSchema,
-  type Dish,
-  type DishLevelType
-} from '../services/schema/dishSchema'
+import { DishCreateSchema, type Dish } from '../services/schema/dishSchema'
 import { parseZodObject } from '../utils/zod-result'
 import { NotificationCard } from '../components/NotificationCard'
 
@@ -29,11 +24,8 @@ const ITEMS_PER_PAGE = 20
 const DishMenu = () => {
   const isMounted = useIsMounted()
   const [currentPage, setCurrentPage] = useState(1)
-  const [showFilter, setShowFilter] = useState(false)
-  const [selectedCategories, setSelectedCategories] = useState<DishLevelType[]>(
-    []
-  )
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchInputValue, setSearchInputValue] = useState('')
   const [showAddDishForm, setShowAddDishForm] = useState(false)
   const [selectedItem, setSelectedItem] = useState<Dish | null>(null)
   const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
@@ -56,8 +48,7 @@ const DishMenu = () => {
         const result = await dishService.getDishes({
           cursor,
           limit: ITEMS_PER_PAGE,
-          search: searchQuery || undefined,
-          level: selectedCategories.length > 0 ? selectedCategories : undefined
+          search: searchQuery || undefined
         })
 
         if (!isMounted.current) return
@@ -88,23 +79,17 @@ const DishMenu = () => {
         }
       }
     },
-    [pagesCursors, searchQuery, selectedCategories, isMounted]
+    [pagesCursors, searchQuery, isMounted]
   )
 
   useEffect(() => {
-    // Reset pagination when filters change, then fetch page 1
+    // Reset pagination when search changes, then fetch page 1
     setPagesCursors([null])
     setCurrentPage(1)
-    // Call fetchDishes to fetch page 1 with new filters
-    // Intentionally not in dependency array to avoid circular dependency
-    // with pagesCursors (which gets updated during fetch)
+    // Call fetchDishes to fetch page 1 with new search
     fetchDishes(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedCategories])
-
-  const handleToggleFilter = () => {
-    setShowFilter((prev) => !prev)
-  }
+  }, [searchQuery])
 
   const handleAddDishClick = () => {
     setShowAddDishForm(true)
@@ -139,9 +124,7 @@ const DishMenu = () => {
           const freshResult = await dishService.getDishes({
             cursor: undefined,
             limit: ITEMS_PER_PAGE,
-            search: searchQuery || undefined,
-            level:
-              selectedCategories.length > 0 ? selectedCategories : undefined
+            search: searchQuery || undefined
           })
 
           if (isMounted.current && freshResult.isOk()) {
@@ -240,8 +223,7 @@ const DishMenu = () => {
         const freshResult = await dishService.getDishes({
           cursor: pagesCursors[currentPage - 1] ?? undefined,
           limit: ITEMS_PER_PAGE,
-          search: searchQuery || undefined,
-          level: selectedCategories.length > 0 ? selectedCategories : undefined
+          search: searchQuery || undefined
         })
 
         if (!isMounted.current) return
@@ -259,9 +241,7 @@ const DishMenu = () => {
             const prevPageResult = await dishService.getDishes({
               cursor: undefined,
               limit: ITEMS_PER_PAGE,
-              search: searchQuery || undefined,
-              level:
-                selectedCategories.length > 0 ? selectedCategories : undefined
+              search: searchQuery || undefined
             })
             if (isMounted.current && prevPageResult.isOk()) {
               const prevResponse = prevPageResult.value
@@ -317,32 +297,24 @@ const DishMenu = () => {
     setViewMode(null)
   }
 
-  const uniqueCategories = useMemo(() => {
-    const categories = new Set<string>()
-    dishes.forEach((item) => {
-      if (item.level) categories.add(item.level)
-    })
-    return Array.from(categories).sort()
-  }, [dishes])
-
-  const handleCategoryChange = (category: string) => {
-    if (DishLevelTypeSchema.safeParse(category).success === false) {
-      return
-    }
-    const typedCategory = category as DishLevelType
-    setSelectedCategories((prev) =>
-      prev.includes(typedCategory)
-        ? prev.filter((c) => c !== category)
-        : [...prev, typedCategory]
-    )
-    setPagesCursors([null])
-    setCurrentPage(1)
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchInputValue(e.target.value)
   }
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
+  const handleSearch = async () => {
+    setSearchQuery(searchInputValue)
+    // Reset pagination when search is triggered
     setPagesCursors([null])
     setCurrentPage(1)
+    // Note: useEffect will handle fetching with new searchQuery
+  }
+
+  const handleReload = () => {
+    setSearchQuery('')
+    setSearchInputValue('')
+    setPagesCursors([null])
+    setCurrentPage(1)
+    // Note: useEffect will handle fetching with cleared searchQuery
   }
 
   return (
@@ -362,56 +334,36 @@ const DishMenu = () => {
               Thêm món ăn
             </Button>
 
-            <button
-              className="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100"
-              onClick={handleToggleFilter}
-            >
-              <Filter size={20} />
-              {selectedCategories.length > 0 && (
-                <span className="absolute bottom-2 right-2 block size-2 rounded-full bg-red-500 ring-2 ring-white" />
-              )}
-              {showFilter && (
-                <div
-                  className="absolute right-0 top-full z-10 mt-2 w-[550px] rounded-md border border-gray-200 bg-white p-4 shadow-lg"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <h3 className="mb-2 font-semibold text-gray-700">
-                    Lọc theo độ khó
-                  </h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {uniqueCategories.map((category) => (
-                      <label
-                        key={category}
-                        className="flex items-center space-x-2 text-sm text-gray-600"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(
-                            category as DishLevelType
-                          )}
-                          onChange={() => handleCategoryChange(category)}
-                          className="rounded border-gray-300 text-rose-500 focus:ring-rose-500"
-                        />
-                        <span>{category}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </button>
-
-            <div className="relative">
+            <div className="flex items-center space-x-2">
               <input
                 type="text"
                 placeholder="Tìm kiếm..."
-                value={searchQuery}
+                value={searchInputValue}
                 onChange={handleSearchChange}
-                className="w-64 rounded-lg border border-gray-300 py-2 pl-4 pr-10 text-sm focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchInputValue.trim()) {
+                    handleSearch()
+                  }
+                }}
+                className="w-48 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
               />
-              <Search
-                className="absolute right-3 top-2.5 text-gray-400"
-                size={18}
-              />
+              {searchInputValue.trim() ? (
+                <Button
+                  variant="icon"
+                  icon={Search}
+                  size="fit"
+                  onClick={handleSearch}
+                >
+                  Tìm kiếm
+                </Button>
+              ) : (
+                <Button
+                  variant="icon"
+                  icon={RotateCw}
+                  size="fit"
+                  onClick={handleReload}
+                />
+              )}
             </div>
           </div>
         </div>

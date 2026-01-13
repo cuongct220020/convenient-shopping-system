@@ -81,6 +81,21 @@ export class AppUrl {
       queryParams.toString() ? '&' + queryParams.toString() : ''
     }`
   }
+  public static INGREDIENTS_FILTER(
+    categories: string[],
+    params?: { cursor?: number; limit?: number }
+  ) {
+    const queryParams = new URLSearchParams()
+    queryParams.append('categories', categories.join(','))
+    if (params?.cursor !== undefined) {
+      queryParams.append('cursor', String(params.cursor))
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append('limit', String(params.limit))
+    }
+
+    return `v2/ingredients/filter?${queryParams.toString()}`
+  }
   static readonly RECIPES = 'v2/recipes/'
 }
 
