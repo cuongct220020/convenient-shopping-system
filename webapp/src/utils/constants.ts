@@ -26,24 +26,21 @@ export function mealTypeStr(e: MealType): i18nKeys {
 }
 
 export const FoodStorageCategories = [
+  'fridge',
   'freezer',
-  'non-freezer',
-  'bulk',
-  'fridge'
+  'pantry'
 ] as const
 
 export type FoodStorageCategory = (typeof FoodStorageCategories)[number]
 
 export function foodStorageCategoryStr(e: FoodStorageCategory): i18nKeys {
   switch (e) {
-    case 'bulk':
-      return 'storage_bulk'
-    case 'freezer':
-      return 'storage_freezer'
-    case 'non-freezer':
-      return 'storage_nonfreezer'
     case 'fridge':
       return 'storage_fridge'
+    case 'freezer':
+      return 'storage_freezer'
+    case 'pantry':
+      return 'storage_pantry'
     default:
       throw new Error('Unimplemented')
   }

@@ -31,7 +31,6 @@ export default function ImplementPlan() {
   const navigate = useNavigate();
   const { id, planId } = useParams<{ id: string; planId: string }>();
   const [items, setItems] = useState<IngredientItemData[]>([]);
-  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [planData, setPlanData] = useState<PlanResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +39,13 @@ export default function ImplementPlan() {
   const [isUnassigning, setIsUnassigning] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserUsername, setCurrentUserUsername] = useState<string | null>(null);
+  const [missingItemsModal, setMissingItemsModal] = useState<{
+    isOpen: boolean;
+    missingItems: Array<{ component_id: number; component_name: string; missing_quantity: number }>;
+  }>({
+    isOpen: false,
+    missingItems: []
+  });
 
   // Fetch current user on mount
   useEffect(() => {
@@ -90,7 +96,7 @@ export default function ImplementPlan() {
   useEffect(() => {
     const bottomNav = document.querySelector('nav.fixed.bottom-0');
     if (bottomNav) {
-      if (isCompleteModalOpen || isCancelModalOpen) {
+      if (isCancelModalOpen || missingItemsModal.isOpen) {
         bottomNav.classList.add('blur-sm', 'pointer-events-none');
       } else {
         bottomNav.classList.remove('blur-sm', 'pointer-events-none');
@@ -102,7 +108,7 @@ export default function ImplementPlan() {
         nav.classList.remove('blur-sm', 'pointer-events-none');
       }
     };
-  }, [isCompleteModalOpen, isCancelModalOpen]);
+  }, [isCancelModalOpen, missingItemsModal.isOpen]);
 
   // Calculate summary data
   const totalItems = items.length;
@@ -136,7 +142,8 @@ export default function ImplementPlan() {
 
   // Handle quantity input change
   const handleQuantityChange = (id: number, newQuantityStr: string) => {
-    const numericValue = parseFloat(newQuantityStr) || 0;
+    // Only accept integer values
+    const numericValue = Math.max(1, Math.floor(parseFloat(newQuantityStr) || 1));
     setItems(prevItems =>
       prevItems.map(item => {
         if (item.id === id) {
@@ -156,7 +163,7 @@ export default function ImplementPlan() {
     return plan.others?.name as string || 'Kế hoạch mua sắm';
   };
 
-  const handleCompletePlan = () => {
+  const handleCompletePlan = (withConfirm: boolean = false) => {
     if (!planId || !planData || !currentUserId || !currentUserUsername) return;
 
     setIsCompleting(true);
@@ -183,14 +190,24 @@ export default function ImplementPlan() {
         }
       })
       .andThen(() => {
-        // Then, report the plan as completed
-        return shoppingPlanService.reportPlan(parseInt(planId), currentUserId, currentUserUsername, true);
+        // Report the plan - first time with confirm=false, retry with confirm=true if needed
+        return shoppingPlanService.reportPlan(parseInt(planId), currentUserId, currentUserUsername, withConfirm);
       })
       .match(
-        () => {
-          setIsCompleting(false);
-          setIsCompleteModalOpen(false);
-          navigate(`/main/family-group/${id}/plan/${planId}`);
+        (response) => {
+          // Check if response has missing_items
+          if (response.missing_items && response.missing_items.length > 0) {
+            // Show missing items modal
+            setMissingItemsModal({
+              isOpen: true,
+              missingItems: response.missing_items
+            });
+            setIsCompleting(false);
+          } else {
+            // Success - no missing items
+            setIsCompleting(false);
+            navigate(`/main/family-group/${id}/plan/${planId}`);
+          }
         },
         (err) => {
           console.error('Failed to complete plan:', err);
@@ -198,6 +215,12 @@ export default function ImplementPlan() {
           setIsCompleting(false);
         }
       );
+  };
+
+  const handleConfirmWithMissingItems = () => {
+    setMissingItemsModal({ isOpen: false, missingItems: [] });
+    // Retry with confirm=true
+    handleCompletePlan(true);
   };
 
   const handleCancelPlan = () => {
@@ -315,13 +338,13 @@ export default function ImplementPlan() {
             {/* Bottom Action Buttons */}
             <div className="flex gap-4 mt-6">
               <Button
-                variant="primary"
-                icon={Check}
+                variant={isCompleting ? 'disabled' : 'primary'}
+                icon={isCompleting ? Loader2 : Check}
                 size="fit"
                 className="rounded-2xl"
-                onClick={() => setIsCompleteModalOpen(true)}
+                onClick={isCompleting ? undefined : () => handleCompletePlan(false)}
               >
-                Hoàn thành
+                {isCompleting ? 'Đang báo cáo...' : 'Báo cáo'}
               </Button>
               <Button
                 variant="secondary"
@@ -336,39 +359,6 @@ export default function ImplementPlan() {
           </>
         )}
       </div>
-
-      {/* COMPLETE PLAN CONFIRMATION MODAL */}
-      {isCompleteModalOpen && planData && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-[320px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 mb-5 text-center">Hoàn Thành Kế Hoạch?</h3>
-            <div className="flex justify-center mb-5"><div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center"><Check size={36} className="text-white" strokeWidth={3} /></div></div>
-            <p className="text-sm text-center text-gray-600 mb-6 leading-relaxed">Bạn có chắc muốn hoàn thành kế hoạch <span className="text-[#C3485C] font-semibold">{getPlanTitle(planData)}</span>?</p>
-            <div className="flex gap-3 justify-center">
-              <div className="w-1/2">
-                <Button
-                  variant={isCompleting ? 'disabled' : 'primary'}
-                  onClick={isCompleting ? undefined : handleCompletePlan}
-                  icon={isCompleting ? Loader2 : Check}
-                  className={isCompleting ? '' : 'bg-[#C3485C] hover:bg-[#a83648]'}
-                >
-                  {isCompleting ? 'Đang hoàn thành...' : 'Xác nhận'}
-                </Button>
-              </div>
-              <div className="w-1/2">
-                <Button
-                  variant={isCompleting ? 'disabled' : 'secondary'}
-                  onClick={isCompleting ? undefined : () => setIsCompleteModalOpen(false)}
-                  icon={X}
-                  className={isCompleting ? '' : 'bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]'}
-                >
-                  Hủy
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* CANCEL PLAN CONFIRMATION MODAL */}
       {isCancelModalOpen && planData && (
@@ -396,6 +386,57 @@ export default function ImplementPlan() {
                   className={isUnassigning ? '' : 'bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]'}
                 >
                   Hủy
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MISSING ITEMS CONFIRMATION MODAL */}
+      {missingItemsModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-[400px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">Báo cáo chưa đầy đủ</h3>
+            <div className="flex justify-center mb-4">
+              <AlertTriangle size={48} className="text-[#C3485C]" strokeWidth={2} />
+            </div>
+            <p className="text-sm text-center text-gray-600 mb-4">
+              Báo cáo của bạn còn thiếu:
+            </p>
+            <div className="bg-gray-50 rounded-lg p-3 mb-4 max-h-48 overflow-y-auto">
+              <ul className="space-y-2">
+                {missingItemsModal.missingItems.map((item, index) => (
+                  <li key={index} className="text-sm text-gray-700">
+                    <span className="font-semibold">{item.component_name}</span>
+                    {':  '}còn thiếu{'  '}
+                    <span className="font-semibold text-[#C3485C]">{item.missing_quantity}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <p className="text-sm text-center text-gray-600 mb-6">
+              Bạn có chắc muốn báo cáo không?
+            </p>
+            <div className="flex gap-3 justify-center">
+              <div className="w-1/2">
+                <Button
+                  variant={isCompleting ? 'disabled' : 'primary'}
+                  onClick={isCompleting ? undefined : handleConfirmWithMissingItems}
+                  icon={isCompleting ? Loader2 : Check}
+                  className={isCompleting ? '' : 'bg-[#C3485C] hover:bg-[#a83648]'}
+                >
+                  {isCompleting ? 'Đang xử lý...' : 'Có'}
+                </Button>
+              </div>
+              <div className="w-1/2">
+                <Button
+                  variant={isCompleting ? 'disabled' : 'secondary'}
+                  onClick={isCompleting ? undefined : () => setMissingItemsModal({ isOpen: false, missingItems: [] })}
+                  icon={X}
+                  className={isCompleting ? '' : 'bg-[#FFD7C1] text-[#C3485C] hover:bg-[#ffc5a3]'}
+                >
+                  Không
                 </Button>
               </div>
             </div>
