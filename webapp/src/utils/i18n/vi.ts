@@ -36,9 +36,8 @@ export const vi: Record<i18nKeys, string> = {
   reset_password_success_title: 'Đổi mật khẩu thành công',
   reset_password_login_to_continue:
     'Mật khẩu của bạn đã được cập nhật, vui lòng đăng nhập bằng mật khẩu mới để tiếp tục.',
-  storage_bulk: 'Kho chứa khác',
   storage_freezer: 'Tủ đông',
-  storage_nonfreezer: 'Tủ thường',
+  storage_pantry: 'Tủ đồ khô',
   storage_fridge: 'Tủ lạnh',
   empty_storage_name: 'Tên kho chứa không được để trống',
   invalid_storage_name:
