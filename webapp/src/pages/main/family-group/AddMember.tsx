@@ -133,7 +133,6 @@ const AddMember = ({ groupId, onMemberAdded, onCancel }: AddMemberProps) => {
           <Button
             variant={isLoading ? 'disabled' : 'primary'}
             onClick={handleAddMember}
-            icon={isLoading ? Loader2 : undefined}
             size="fit"
             className="bg-[#C3485C] hover:bg-[#a83648]"
           >
