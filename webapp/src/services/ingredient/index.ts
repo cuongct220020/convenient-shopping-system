@@ -25,6 +25,24 @@ export class IngredientService {
   constructor(private clients: Clients) {}
 
   /**
+   * Get a single ingredient by ID
+   */
+  public getIngredientById(
+    id: number
+  ): ResultAsync<Ingredient, IngredientError> {
+    const url = AppUrl.INGREDIENTS_BY_ID(String(id))
+
+    return httpGet(this.clients.auth, url).andThen((response) =>
+      parseZodObject(IngredientSchema, response.body).mapErr(
+        (e): IngredientError => ({
+          type: 'invalid-response-format',
+          desc: e
+        })
+      )
+    )
+  }
+
+  /**
    * Get list of ingredients with cursor-based pagination
    * @param params - Query parameters (cursor, limit, search, categories)
    */
@@ -72,10 +90,14 @@ export class IngredientService {
   }
 
   /**
-   * Search ingredients by keyword
+   * Search ingredients by keyword with pagination
    */
   public searchIngredients(
-    keyword: string
+    keyword: string,
+    params: {
+      cursor?: number
+      limit?: number
+    }
   ): ResultAsync<IngredientSearchResponse, IngredientError> {
     if (!keyword.trim())
       return okAsync({
@@ -85,28 +107,21 @@ export class IngredientService {
         size: 0
       })
 
-    const url = AppUrl.INGREDIENTS_SEARCH(keyword)
+    const url = AppUrl.INGREDIENTS_SEARCH(keyword, params)
 
-    console.log('Searching ingredients with URL:', url)
-
-    return httpGet(this.clients.recipe, url)
+    return httpGet(this.clients.auth, url)
       .mapErr((e) => {
         console.error('HTTP error for ingredient search:', e)
         return e
       })
-      .andThen((response) => {
-        console.log('Raw response body:', response.body)
-        return parseZodObject(
-          IngredientSearchResponseSchema,
-          response.body
-        ).mapErr((e) => {
-          console.error('Schema validation error:', e)
-          return {
+      .andThen((response) =>
+        parseZodObject(IngredientSearchResponseSchema, response.body).mapErr(
+          (e) => ({
             type: 'invalid-response-format' as const,
             desc: e
-          }
-        })
-      })
+          })
+        )
+      )
   }
 
   /**
