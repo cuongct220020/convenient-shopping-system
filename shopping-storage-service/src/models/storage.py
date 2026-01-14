@@ -44,7 +44,7 @@ class StorableUnit(Base):
     content_type: Mapped[Optional[str]] = mapped_column(String)
     content_quantity: Mapped[Optional[float]] = mapped_column(Float)
     content_unit: Mapped[Optional[UCMeasurementUnit]] = mapped_column(Enum(UCMeasurementUnit))
-    added_date: Mapped[date] = mapped_column(Date, server_default=func.current_date(), nullable=False)
+    added_date: Mapped[date] = mapped_column(Date, default=func.current_date(), nullable=False)
     expiration_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     storage: Mapped["Storage"] = relationship(

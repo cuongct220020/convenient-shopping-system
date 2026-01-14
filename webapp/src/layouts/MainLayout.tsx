@@ -1,9 +1,9 @@
 import React from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Bell, User, Archive, ShoppingCart } from 'lucide-react'
+import { Bell, User, ShoppingCart, UtensilsCrossed } from 'lucide-react'
 
 // Define the available tab names
-const TabNames = ['notification', 'food', 'family-group', 'profile'] as const
+const TabNames = ['nutrition', 'notification', 'family-group', 'profile'] as const
 type TabName = (typeof TabNames)[number]
 
 export default function MainLayout() {
@@ -28,8 +28,24 @@ export default function MainLayout() {
       </main>
 
       {/* Bottom Navigation Bar - Fixed at bottom */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-16 w-full items-center justify-around bg-gray-100 p-2.5">
-        {/* Tab 1: Notification (Bell) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-16 w-full max-w-sm items-center justify-around bg-gray-100 p-2.5">
+        {/* Tab 1: Nutrition (UtensilsCrossed) - Left */}
+        <TabItem
+          isActive={currentActiveTab === 'nutrition'}
+          onPress={() => handlePress('nutrition')}
+        >
+          <UtensilsCrossed
+            size={24}
+            strokeWidth={2.5}
+            className={
+              currentActiveTab === 'nutrition'
+                ? 'text-[#C3485C]'
+                : 'text-gray-400'
+            }
+          />
+        </TabItem>
+
+        {/* Tab 2: Notification (Bell) - Center */}
         <TabItem
           isActive={currentActiveTab === 'notification'}
           onPress={() => handlePress('notification')}
@@ -41,20 +57,6 @@ export default function MainLayout() {
               currentActiveTab === 'notification'
                 ? 'fill-[#C3485C] text-[#C3485C]'
                 : 'text-gray-400'
-            }
-          />
-        </TabItem>
-
-        {/* Tab 2: Food Storage (Bowl) */}
-        <TabItem
-          isActive={currentActiveTab === 'food'}
-          onPress={() => handlePress('food')}
-        >
-          <Archive
-            size={24}
-            strokeWidth={2.5}
-            className={
-              currentActiveTab === 'food' ? 'text-[#C3485C]' : 'text-gray-400'
             }
           />
         </TabItem>

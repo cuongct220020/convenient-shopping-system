@@ -38,18 +38,18 @@ The system follows a **microservices architecture** with **event-driven communic
 
 ## Usage Guide
 
-### Prerequisites
+### Simulate Production Environment Locally
+
+#### Prerequisites
 
 - Pull latest update on remote repository and navigate to the root directory. 
 - Docker Desktop (Docker Engine) installed and running on your machine. 
 - Set up local .venv directories for each service and load the packages specified in the `requirements.txt` file.
-- Configure Environment Variables if the `.env.example` exists.
+- Configure Environment Variables if the `.env.example` exists. Please reading carefully comment lines in `.env.example`. 
+  > **Note for Local Simulation:** In your `.env` file, you should **comment out** `SSL_CERT_FILE` and `SSL_KEY_FILE` variables to let Docker use the default local paths (`./certs/fullchain.pem`).
   ```bash
   cp .env.example .env
   cp user-service/.env.example user-service/.env
-  cp meal-service/.env.example meal-service/.env
-  cp recipe-service/.env.example recipe-service/.env
-  cp shopping-storage-service/.env.example shopping-storage-service/.env
   cp notification-service/.env.example notification-service/.env
   ```
 - Generate asymmetric RSA Key pair, private key for signing jwt token, public key for verifying token signature at Kong Gateway:
@@ -64,7 +64,7 @@ The system follows a **microservices architecture** with **event-driven communic
   python3 scripts/verify_rsa_keys_pair.py
   ```
 
-### Simulate Production Environment Locally
+#### Running Backend Server
 
 To test the production setup (with SSL, Kong Gateway, and Domain routing) on your local machine (Mac/Linux), follow these steps:
 
@@ -133,3 +133,13 @@ Open your browser and visit: `https://dichotienloi.com`
 - If you see the API response or Kong welcome page, SSL Termination is working correctly!
 
 > **Note:** The `certbot` service will fail in logs because it cannot connect to Let's Encrypt from localhost. This is expected and can be ignored during local testing.
+
+### AWS EC2 Deployment
+
+For a complete, step-by-step guide on deploying this system to production on AWS EC2, please refer to the [AWS EC2 Deployment Guide](docs/aws_ec2_deployment.md).
+
+The guide covers:
+- Infrastructure Setup (RDS, EC2, Elastic IP).
+- Server Configuration (Docker, Swap, Firewall).
+- **Zero-Downtime SSL** setup with Let's Encrypt and Kong Gateway.
+- Continuous Deployment workflows.

@@ -116,7 +116,7 @@ export default function Login() {
         // Connect to WebSocket for real-time notifications
         connectWebSocketAfterLogin()
         setIsLoading(false)
-        navigate('/main/profile')
+        navigate('/main/nutrition')
       })
       .mapErr(async (e) => {
         setIsLoading(false)

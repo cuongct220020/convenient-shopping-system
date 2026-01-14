@@ -1,8 +1,9 @@
-import { Check } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { BackButton } from '../../../components/BackButton'
 import { Button } from '../../../components/Button'
 import { InputField } from '../../../components/InputField'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   FoodStorageCategories,
   FoodStorageCategory,
@@ -12,20 +13,24 @@ import { DropdownInputField } from '../../../components/DropDownInputField'
 import { i18n } from '../../../utils/i18n/i18n'
 import { err, ok, Result } from 'neverthrow'
 import { i18nKeys } from '../../../utils/i18n/keys'
+import { storageService } from '../../../services/storage'
 
 function validateName(name: string): Result<void, i18nKeys> {
   if (!name.trim()) return err('empty_storage_name')
-  if (name.trim().length < 3 || !/^[a-zA-Z0-9_\- ]+$/.test(name)) {
+  if (name.trim().length < 3) {
     return err('invalid_storage_name')
   }
   return ok()
 }
 
 export function AddStorage() {
+  const navigate = useNavigate()
+  const { id: groupId } = useParams<{ id: string }>()
   const [nameTouched, setNameTouched] = useState(false)
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState<Result<void, i18nKeys>>(ok())
-  const [category, setCategory] = useState<FoodStorageCategory>('freezer')
+  const [category, setCategory] = useState<FoodStorageCategory>('fridge')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const onNameBlur = () => {
     setNameTouched(true)
@@ -44,7 +49,7 @@ export function AddStorage() {
     setCategory(e as FoodStorageCategory)
   }
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
     const nameErr = validateName(name)
@@ -52,13 +57,48 @@ export function AddStorage() {
     setNameError(nameErr)
     if (nameErr.isErr()) return
 
-    console.log(`API will be called with`, { name, category })
+    if (!groupId) {
+      console.error('No group ID available')
+      // TODO: Show error message to user
+      return
+    }
+
+    setIsSubmitting(true)
+
+    storageService
+      .createStorage(name.trim(), category, groupId)
+      .match(
+        () => {
+          setIsSubmitting(false)
+          // Navigate back to storage page with group_id and refresh flag
+          navigate(`/main/family-group/${groupId}/storage`, {
+            state: { refreshStorages: true }
+          })
+        },
+        (err) => {
+          console.error('Failed to create storage:', err)
+          setIsSubmitting(false)
+          // TODO: Show error message to user
+        }
+      )
+  }
+
+  const handleBack = () => {
+    if (groupId) {
+      navigate(`/main/family-group/${groupId}/storage`)
+    } else {
+      navigate('../')
+    }
   }
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-white p-4 pb-24">
       <div className="flex w-full flex-row">
-        <BackButton to="../" text="Quay lại"></BackButton>
+        <BackButton 
+          to={groupId ? `/main/family-group/${groupId}/storage` : '../'} 
+          text="Quay lại"
+          onClick={handleBack}
+        ></BackButton>
       </div>
       <p className="pb-4 text-center text-xl font-bold text-red-600">
         Thêm kho thực phẩm mới
@@ -81,8 +121,13 @@ export function AddStorage() {
           value={category}
           onChange={onCategoryChanged}
         />
-        <Button icon={Check} size="fit" variant="primary" type="submit">
-          Thêm
+        <Button
+          icon={isSubmitting ? Loader2 : Check}
+          size="fit"
+          variant={isSubmitting ? 'disabled' : 'primary'}
+          type="submit"
+        >
+          {isSubmitting ? 'Đang thêm...' : 'Thêm'}
         </Button>
       </form>
     </div>

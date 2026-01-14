@@ -117,22 +117,20 @@ services:
       TZ: Asia/Ho_Chi_Minh
     command: >
       /bin/bash -c "
-      export JWT_RSA_PUBLIC_KEY_ESCAPED=\$(echo \"\$JWT_RSA_PUBLIC_KEY\" | awk '{printf \"%s\\\\n\", \$0}' | head -c -2) &&
+      export JWT_RSA_PUBLIC_KEY_ESCAPED=$$(echo \"$$JWT_RSA_PUBLIC_KEY\" | awk '{printf \"%s\\\\n\", $$0}' | head -c -2) &&
       envsubst < /usr/local/kong/declarative/kong.yml.template > /tmp/kong.yml &&
       /docker-entrypoint.sh kong docker-start
       "
     ports:
-      - "80:8000"                   # HTTP Public
-      - "443:8443"                  # HTTPS Public
+      - "${HTTP_PORT:-80}:8000"                   # HTTP Public
+      - "${HTTPS_PORT:-443}:8443"                 # HTTPS Public
       - "127.0.0.1:8000:8000"       # Kong Proxy (HTTP Debug) - Localhost only
       - "127.0.0.1:8001:8001"       # Admin API cho decK (Debug) - Localhost only
     volumes:
       - ${KONG_CONFIG_FILE}:/usr/local/kong/declarative/kong.yml.template
-      # Mount SSL Certs from Host
-      # For Local Testing: Use local './certs' folder to avoid permission issues
-      # For Production: You can either copy certs here or change this back to /etc/letsencrypt/...
-      - ./certs/fullchain.pem:/etc/secrets/cert/fullchain.pem:ro
-      - ./certs/privkey.pem:/etc/secrets/cert/privkey.pem:ro
+      # Mount SSL Certs from Host via Environment Variables
+      - ${SSL_CERT_FILE:-./certs/fullchain.pem}:/etc/secrets/cert/fullchain.pem:ro
+      - ${SSL_KEY_FILE:-./certs/privkey.pem}:/etc/secrets/cert/privkey.pem:ro
     networks:
       - shopping-network
     restart: unless-stopped
@@ -396,7 +394,7 @@ services:
     container_name: kafka-ui
     hostname: kafka-ui
     profiles:
-      - ui
+      - kafka-ui
     ports:
       - "8080:8080"
     depends_on:

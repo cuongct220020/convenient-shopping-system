@@ -188,6 +188,60 @@ export class ShoppingPlanService {
   }
 
   /**
+   * Cancel a shopping plan by ID
+   */
+  public cancelPlan(
+    planId: number,
+    assignerId: string
+  ): ResultAsync<PlanResponse, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/cancel?assigner_id=${assignerId}`
+
+    return httpPost(this.clients.auth, url, {})
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(PlanResponseSchema, response.body).mapErr((e) =>
+          createShoppingPlanError('validation-error', e)
+        )
+      )
+  }
+
+  /**
+   * Reopen a cancelled shopping plan by ID
+   */
+  public reopenPlan(
+    planId: number,
+    assignerId: string
+  ): ResultAsync<PlanResponse, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/reopen?assigner_id=${assignerId}`
+
+    return httpPost(this.clients.auth, url, {})
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(PlanResponseSchema, response.body).mapErr((e) =>
+          createShoppingPlanError('validation-error', e)
+        )
+      )
+  }
+
+  /**
    * Delete a shopping plan by ID
    */
   public deletePlan(
@@ -237,21 +291,35 @@ export class ShoppingPlanService {
 
   /**
    * Report a shopping plan as completed (confirm implementation)
+   * Returns response with message and optional missing_items if report is incomplete
    */
   public reportPlan(
     planId: number,
     assigneeId: string,
     assigneeUsername: string,
-    confirm: boolean = true
-  ): ResultAsync<{ message: string }, ShoppingPlanError> {
+    report: {
+      plan_id: number
+      report_content: Array<{
+        storage_id: number
+        package_quantity: number
+        unit_name: string
+        component_id?: number | null
+        content_type?: 'countable_ingredient' | 'uncountable_ingredient' | null
+        content_quantity?: number | null
+        content_unit?: string | null
+        expiration_date?: string | null
+      }>
+      spent_amount: number
+    },
+    confirm: boolean = false
+  ): ResultAsync<
+    | { message: string; missing_items?: undefined }
+    | { message: string; missing_items: Array<{ component_id: number; component_name: string; missing_quantity: number }> },
+    ShoppingPlanError
+  > {
     const url = `${AppUrl.SHOPPING_PLANS}${planId}/report?assignee_id=${assigneeId}&assignee_username=${assigneeUsername}&confirm=${confirm}`
 
-    const body = {
-      plan_id: planId,
-      report_content: []
-    }
-
-    return httpPost(this.clients.auth, url, body)
+    return httpPost(this.clients.auth, url, report)
       .mapErr((e) => {
         switch (e.type) {
           case 'path-not-found':
@@ -262,7 +330,18 @@ export class ShoppingPlanService {
             return createShoppingPlanError(e.type, e.desc)
         }
       })
-      .map((response) => response.body as { message: string })
+      .map((response) => {
+        const body = response.body as { message: string; data?: { missing_items?: Array<{ component_id: number; component_name: string; missing_quantity: number }> } }
+        if (body.data?.missing_items) {
+          return {
+            message: body.message,
+            missing_items: body.data.missing_items
+          }
+        }
+        return {
+          message: body.message
+        }
+      })
   }
 
   /**
