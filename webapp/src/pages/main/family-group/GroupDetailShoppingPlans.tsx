@@ -134,26 +134,24 @@ const GroupDetailShoppingPlans: React.FC<GroupDetailShoppingPlansProps> = ({
   const handleRestorePlan = async (planId: number, e: React.MouseEvent) => {
     e.stopPropagation() // Prevent navigation to plan detail
     
+    if (!currentUserId) {
+      console.error('Cannot reopen plan: currentUserId is missing')
+      return
+    }
+
     setRestoringPlanId(planId)
-    
-    // TODO: Implement restore API call when backend API is available
-    // For now, just show an alert
-    alert('Chức năng mở lại kế hoạch đang được phát triển')
-    setRestoringPlanId(null)
-    
-    // When API is available, uncomment below:
-    // const result = await shoppingPlanService.restorePlan(planId)
-    // result.match(
-    //   () => {
-    //     refreshPlans()
-    //     setRestoringPlanId(null)
-    //   },
-    //   (error) => {
-    //     console.error('Failed to restore plan:', error)
-    //     setRestoringPlanId(null)
-    //     alert('Không thể mở lại kế hoạch')
-    //   }
-    // )
+
+    const result = await shoppingPlanService.reopenPlan(planId, currentUserId)
+    result.match(
+      () => {
+        refreshPlans()
+        setRestoringPlanId(null)
+      },
+      (error) => {
+        console.error('Failed to reopen plan:', error)
+        setRestoringPlanId(null)
+      }
+    )
   }
 
   // Helper to render plan status badge

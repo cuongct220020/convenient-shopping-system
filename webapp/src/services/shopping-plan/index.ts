@@ -215,6 +215,33 @@ export class ShoppingPlanService {
   }
 
   /**
+   * Reopen a cancelled shopping plan by ID
+   */
+  public reopenPlan(
+    planId: number,
+    assignerId: string
+  ): ResultAsync<PlanResponse, ShoppingPlanError> {
+    const url = `${AppUrl.SHOPPING_PLANS}${planId}/reopen?assigner_id=${assignerId}`
+
+    return httpPost(this.clients.auth, url, {})
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createShoppingPlanError('not-found', e.desc)
+          case 'unauthorized':
+            return createShoppingPlanError('unauthorized', e.desc)
+          default:
+            return createShoppingPlanError(e.type, e.desc)
+        }
+      })
+      .andThen((response) =>
+        parseZodObject(PlanResponseSchema, response.body).mapErr((e) =>
+          createShoppingPlanError('validation-error', e)
+        )
+      )
+  }
+
+  /**
    * Delete a shopping plan by ID
    */
   public deletePlan(
