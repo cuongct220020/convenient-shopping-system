@@ -22,6 +22,6 @@ class StorageResponse(BaseModel):
     storage_name: str
     storage_type: StorageType
     group_id: UUID
-    storable_units: list[StorableUnitResponse] = Field(default_factory=list)
+    storage_unit_list: list[StorableUnitResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

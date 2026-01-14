@@ -410,7 +410,17 @@ const GroupDetail = () => {
           <button
             className="flex-1 py-3 text-center text-sm font-bold text-gray-500 hover:text-gray-900"
             onClick={() => {
-              // TODO: Navigate to food storage management
+              navigate(`/main/family-group/${groupData.id}/storage`, {
+                state: {
+                  groupData: {
+                    id: groupData.id,
+                    name: groupData.name,
+                    avatarUrl: groupData.avatarUrl,
+                    memberCount: groupData.memberCount,
+                    adminName: groupData.adminName
+                  }
+                }
+              })
             }}
           >
             Quản lý kho thực phẩm

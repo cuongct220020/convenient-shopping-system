@@ -1,10 +1,7 @@
-import { Check, Pencil, Trash } from 'lucide-react'
 import { BackButton } from '../../../components/BackButton'
-import { Button } from '../../../components/Button'
-import { useState } from 'react'
-import { InputField } from '../../../components/InputField'
+import { useParams, useLocation } from 'react-router-dom'
 import { Time } from '../../../utils/time'
-import { DropdownInputField } from '../../../components/DropDownInputField'
+import { storageService, type StorableUnit } from '../../../services/storage'
 
 function ReadonlyTextField({ title, value }: { title: string; value: string }) {
   return (
@@ -15,144 +12,79 @@ function ReadonlyTextField({ title, value }: { title: string; value: string }) {
   )
 }
 
-type MaybeEditingTextFieldProps = {
-  isEditing: boolean
-  title: string
-  placeholder: string
-  value: string
-}
-function MaybeEditingTextField({
-  isEditing,
-  title,
-  value,
-  placeholder
-}: MaybeEditingTextFieldProps) {
-  if (isEditing) {
-    return <InputField label={title} placeholder={placeholder} value={value} />
+function formatAmount(item: StorableUnit): string {
+  if (item.content_quantity && item.content_unit) {
+    return `${item.package_quantity} x ${item.content_quantity}${item.content_unit}`
   }
-  return <ReadonlyTextField title={title} value={value} />
-}
-
-type MaybeEditingDropdownProps = {
-  categories: {
-    value: string
-    label: string
-  }[]
-  title: string
-  value: string
-  isEditing: boolean
-}
-function MaybeEditingDropdown({
-  categories,
-  isEditing,
-  title,
-  value
-}: MaybeEditingDropdownProps) {
-  if (isEditing) {
-    return (
-      <DropdownInputField label={title} value={value} options={categories} />
-    )
-  }
-  const searchedValue =
-    categories.find((e) => e.value === value)?.label ?? value
-  return <ReadonlyTextField title={title} value={searchedValue} />
+  return String(item.package_quantity)
 }
 
 export function StorageItemDetail() {
-  const [editing, setEditing] = useState(false)
+  const { id: groupId } = useParams<{ id: string }>()
+  const location = useLocation()
+  
+  // Get storageId, storage, and item from location state
+  const storageId = location.state?.storageId
+  const storage = location.state?.storage
+  const item = location.state?.item as StorableUnit | undefined
+  
+  const formatAmountText = item ? formatAmount(item) : ''
 
-  const exampleInfo = {
-    name: 'Sữa tươi',
-    amount: '100ml',
-    expirationDate: new Date(2040, 4, 13),
-    category: 'butter',
-    conservationMethod:
-      'Bảo quản tốt nhất với muối tinh. Bỏ vào một chai muốn và cất trong tủ lạnh 5 tiếng mỗi ngày để đạt chất lượng tốt nhất.'
+  if (!item) {
+    return (
+      <div className="flex flex-col p-4">
+        <BackButton
+          to={groupId ? `/main/family-group/${groupId}/storage/items` : '../'}
+          text="Quay lại"
+          className="mb-4"
+          state={{
+            storageId,
+            storage
+          }}
+        />
+        <div className="flex items-center justify-center p-8 text-red-600">
+          Không tìm thấy thông tin thực phẩm
+        </div>
+      </div>
+    )
   }
-
-  const onEditingDone = () => {
-    setEditing(false)
-    console.log('Editing done')
-  }
-
-  const exampleItemCategories = [
-    {
-      value: 'ingredients',
-      label: 'Gia vị'
-    },
-    {
-      value: 'vegetables',
-      label: 'Rau củ'
-    },
-    {
-      value: 'butter',
-      label: 'Bơ'
-    }
-  ]
 
   return (
     <div className="flex flex-col p-4">
       <BackButton
-        to="/main/food/storage/items"
+        to={groupId ? `/main/family-group/${groupId}/storage/items` : '../'}
         text="Quay lại"
         className="mb-4"
-      />{' '}
-      <div className="flex items-center justify-center pb-8">
-        {editing ? (
-          <div className="mr-2 flex-1">
-            <InputField
-              placeholder="Nhập tên thực phẩm"
-              value={exampleInfo.name}
-            />
-          </div>
-        ) : (
-          <h1 className="flex-1 text-2xl font-bold">{exampleInfo.name}</h1>
-        )}
-        <div className="flex gap-2">
-          {editing ? (
-            <Button
-              icon={Check}
-              type="button"
-              variant="primary"
-              onClick={onEditingDone}
-            />
-          ) : (
-            <>
-              <Button icon={Trash} type="button" variant="secondary" />
-              <Button
-                icon={Pencil}
-                type="button"
-                variant="primary"
-                onClick={() => setEditing(true)}
-              />
-            </>
-          )}
-        </div>
+        state={{
+          storageId,
+          storage
+        }}
+      />
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">{item.unit_name}</h1>
       </div>
       <div className="flex flex-1 flex-col gap-3">
-        <MaybeEditingTextField
-          isEditing={editing}
+        <ReadonlyTextField
           title="Số lượng"
-          placeholder="100g"
-          value={exampleInfo.amount}
+          value={formatAmountText}
         />
-        <MaybeEditingTextField
-          isEditing={editing}
-          title="Ngày hết hạn"
-          placeholder="20/15/2025"
-          value={Time.DD_MM_YYYY(exampleInfo.expirationDate)}
+        <ReadonlyTextField
+          title="Tổng số lượng"
+          value={String(item.package_quantity)}
         />
-        <MaybeEditingDropdown
-          isEditing={editing}
-          title="Phân loại"
-          categories={exampleItemCategories}
-          value={exampleInfo.category}
+        {item.content_quantity && item.content_unit && (
+          <ReadonlyTextField
+            title="Định lượng bao bì"
+            value={`${item.content_quantity}${item.content_unit}`}
+          />
+        )}
+        <ReadonlyTextField
+          title="Ngày thêm"
+          value={Time.DD_MM_YYYY(new Date(item.added_date))}
         />
-        <MaybeEditingTextField
-          isEditing={editing}
-          title="Cách bảo quản đề xuất"
-          placeholder="Hướng dẫn cách bảo quản thực phẩm ở đây"
-          value={exampleInfo.conservationMethod}
+        <ReadonlyTextField
+          title="Hạn sử dụng"
+          value={item.expiration_date ? Time.DD_MM_YYYY(new Date(item.expiration_date)) : 'Không có'}
         />
       </div>
     </div>

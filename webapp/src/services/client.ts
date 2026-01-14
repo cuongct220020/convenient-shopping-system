@@ -111,6 +111,8 @@ export class AppUrl {
 export type Clients = {
   pub: AxiosInstance
   auth: AxiosInstance
+  shopping: AxiosInstance
+  recipe: AxiosInstance
 }
 function initClient(): Clients {
   axios.defaults.baseURL = AppUrl.BASE
@@ -217,7 +219,7 @@ function initClient(): Clients {
     return config
   })
 
-  return { pub, auth }
+  return { pub, auth, shopping, recipe }
 }
 export const httpClients = initClient()
 
