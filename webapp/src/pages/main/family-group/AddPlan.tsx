@@ -38,7 +38,8 @@ const AddPlan = () => {
   const [groupAvatar, setGroupAvatar] = useState<string>(DEFAULT_GROUP_AVATAR);
 
   // Search states
-  const [searchResult, setSearchResult] = useState<IngredientSearchResult | null>(null);
+  const [searchResults, setSearchResults] = useState<IngredientSearchResult[]>([]);
+  const [selectedSearchResult, setSelectedSearchResult] = useState<IngredientSearchResult | null>(null);
   const [showNotFound, setShowNotFound] = useState(false);
   const [showQuantityInput, setShowQuantityInput] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -75,24 +76,11 @@ const AddPlan = () => {
     // 300ms delay to avoid flickering
     const delayDebounceFn = setTimeout(async () => {
       if (!ingredientSearch.trim()) {
-        setSearchResult(null);
+        setSearchResults([]);
+        setSelectedSearchResult(null);
         setShowNotFound(false);
         setShowQuantityInput(false);
         setIsSearching(false);
-        return;
-      }
-
-      // Check if this ingredient is already added to the list
-      const isAlreadyAdded = ingredients.some(
-        (ing) => ing.name.toLowerCase() === ingredientSearch.toLowerCase()
-      );
-
-      if (isAlreadyAdded) {
-        setSearchResult(null);
-        setShowNotFound(true); // Treat already added as "not found" for adding purposes
-        setShowQuantityInput(false);
-        setIsSearching(false);
-        console.log('Ingredient already added:', ingredientSearch);
         return;
       }
 
@@ -100,20 +88,32 @@ const AddPlan = () => {
       setShowNotFound(false); // Reset not found when starting a new search
 
       // Search ingredients from API
-      const result = await ingredientService.searchIngredients(ingredientSearch);
+      const result = await ingredientService.searchIngredients(ingredientSearch, { limit: 10 });
 
       result.match(
         (response) => {
           console.log('Search response for:', ingredientSearch, response);
           if (response.data && response.data.length > 0) {
-            // Use the first result
-            console.log('Found ingredient:', response.data[0]);
-            setSearchResult(response.data[0]);
-            setShowNotFound(false);
-            setShowQuantityInput(true);
+            // Filter out already added ingredients
+            const filteredResults = response.data.filter(
+              (ing) => !ingredients.some(
+                (addedIng) => addedIng.name.toLowerCase() === ing.component_name.toLowerCase()
+              )
+            );
+            
+            if (filteredResults.length > 0) {
+              setSearchResults(filteredResults);
+              setShowNotFound(false);
+            } else {
+              setSearchResults([]);
+              setShowNotFound(true);
+            }
+            setSelectedSearchResult(null);
+            setShowQuantityInput(false);
           } else {
             console.log('No ingredients found for:', ingredientSearch);
-            setSearchResult(null);
+            setSearchResults([]);
+            setSelectedSearchResult(null);
             setShowNotFound(true);
             setShowQuantityInput(false);
           }
@@ -121,7 +121,8 @@ const AddPlan = () => {
         },
         (error) => {
           console.error('Failed to search ingredients:', error);
-          setSearchResult(null);
+          setSearchResults([]);
+          setSelectedSearchResult(null);
           setShowNotFound(true);
           setShowQuantityInput(false);
           setIsSearching(false);
@@ -132,29 +133,35 @@ const AddPlan = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [ingredientSearch, ingredients]);
 
+  const handleSelectIngredient = (ingredient: IngredientSearchResult) => {
+    setSelectedSearchResult(ingredient);
+    setShowQuantityInput(true);
+  };
+
   const handleAddIngredient = () => {
-    if (searchResult && ingredientQuantity) {
+    if (selectedSearchResult && ingredientQuantity) {
       // Parse numeric value from user input
       const numericValue = parseFloat(ingredientQuantity.trim()) || 0;
       // Get the measurement unit from API (e.g., "g", "ml", "củ")
-      const unit = searchResult.measurementUnit || '';
+      const unit = selectedSearchResult.measurementUnit || '';
       // For display, combine them (e.g., "100g")
       const displayQuantity = numericValue > 0 ? `${numericValue} ${unit}` : unit;
 
       const newIngredient: ExtendedIngredient = {
         id: Date.now(),
-        name: searchResult.component_name,
-        category: searchResult.category || 'Khác',
+        name: selectedSearchResult.component_name,
+        category: selectedSearchResult.category || 'Khác',
         quantity: displayQuantity,
         numericQuantity: numericValue,
         measurementUnit: unit,
         image: DEFAULT_INGREDIENT_IMAGE,
-        originalItem: searchResult,
+        originalItem: selectedSearchResult,
       };
       setIngredients([...ingredients, newIngredient]);
       setIngredientSearch('');
       setIngredientQuantity('');
-      setSearchResult(null);
+      setSelectedSearchResult(null);
+      setSearchResults([]);
       setShowQuantityInput(false);
     }
   };
@@ -168,6 +175,13 @@ const AddPlan = () => {
 
     setIsCreating(true);
     setCreateError(null);
+
+    // Validate shopping list is not empty
+    if (!ingredients || ingredients.length === 0) {
+      setCreateError('Vui lòng thêm ít nhất một nguyên liệu vào danh sách mua sắm');
+      setIsCreating(false);
+      return;
+    }
 
     // Fetch current user to get assigner_id
     const userResult = await userService.getCurrentUser();
@@ -251,7 +265,12 @@ const AddPlan = () => {
 
   return (
     <div className="p-4 max-w-sm mx-auto pb-20">
-      <BackButton text="Quay lại" to={`/main/family-group/${id}`} state={{ activeTab: 'shopping-plan' }} className="mb-2" />
+      <BackButton 
+        text="Quay lại" 
+        to={`/main/family-group/${id}`} 
+        state={{ activeTab: 'shopping-plan' }} 
+        className="mb-2" 
+      />
 
       {/* Group Avatar Display */}
       <div className="flex flex-col items-center mb-4">
@@ -310,24 +329,61 @@ const AddPlan = () => {
             </div>
           )}
 
+          {/* --- UI State: Search Results Dropdown --- */}
+          {searchResults.length > 0 && !selectedSearchResult && (
+            <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-300 bg-white shadow-lg max-h-60 overflow-auto">
+              {searchResults.map((ingredient, index) => {
+                const unit = ingredient.measurementUnit || ingredient.uc_measurement_unit || ingredient.c_measurement_unit || ''
+                return (
+                  <button
+                    key={ingredient.component_id || index}
+                    type="button"
+                    onClick={() => handleSelectIngredient(ingredient)}
+                    className="w-full px-3 py-2 text-left hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg flex items-center justify-between"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium">{ingredient.component_name}</div>
+                      {ingredient.category && (
+                        <div className="text-sm text-gray-500">{ingredient.category}</div>
+                      )}
+                    </div>
+                    {unit && (
+                      <div className="ml-2 text-sm font-medium text-gray-600">
+                        {unit}
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
           {/* --- UI State: Found Result (Show Quantity Input + Add Button) --- */}
-          {searchResult && showQuantityInput && (
-            <div className="mt-4 flex items-end space-x-2 animate-in fade-in slide-in-from-top-2">
-              <InputField
-                label="Số lượng"
-                placeholder="Ví dụ: 100"
-                containerClassName="flex-1"
-                value={ingredientQuantity}
-                onChange={(e) => setIngredientQuantity(e.target.value)}
-                rightLabel={searchResult.measurementUnit || undefined}
-              />
-              <Button
-                variant="secondary"
-                size="fit"
-                className="h-[42px] w-[42px] px-0 border-none"
-                onClick={handleAddIngredient}
-                icon={Plus}
-              />
+          {selectedSearchResult && showQuantityInput && (
+            <div className="mt-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="font-medium">{selectedSearchResult.component_name}</div>
+                {selectedSearchResult.category && (
+                  <div className="text-sm text-gray-500">{selectedSearchResult.category}</div>
+                )}
+              </div>
+              <div className="flex items-end space-x-2">
+                <InputField
+                  label="Số lượng"
+                  placeholder="Ví dụ: 100"
+                  containerClassName="flex-1"
+                  value={ingredientQuantity}
+                  onChange={(e) => setIngredientQuantity(e.target.value)}
+                  rightLabel={selectedSearchResult.measurementUnit || undefined}
+                />
+                <Button
+                  variant="secondary"
+                  size="fit"
+                  className="h-[42px] w-[42px] px-0 border-none"
+                  onClick={handleAddIngredient}
+                  icon={Plus}
+                />
+              </div>
             </div>
           )}
         </div>

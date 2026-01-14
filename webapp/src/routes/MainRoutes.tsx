@@ -12,7 +12,6 @@ import Notification from '../pages/main/notification/Notification'
 import { Storage } from '../pages/main/food-storage/Storage'
 import { AddStorage } from '../pages/main/food-storage/AddStorage'
 import { StorageDetails } from '../pages/main/food-storage/StorageDetails'
-import { StorageItemDetail } from '../pages/main/food-storage/StorageItemDetail'
 import { AddStorageItem } from '../pages/main/food-storage/AddStorageItem'
 import { Meal } from '../pages/main/meal/Meal'
 import { AddMeal } from '../pages/main/meal/AddMeal'
@@ -65,9 +64,21 @@ const ProfileRoutes: RouteObject = {
   ]
 }
 
+import { Recipes } from '../pages/main/nutrition/Recipes'
+import { RecipeDetail } from '../pages/main/nutrition/RecipeDetail'
+
 const NutritionRoutes: RouteObject = {
   path: 'nutrition',
-  element: <div>Nutrition Screen</div>
+  children: [
+    {
+      index: true,
+      element: <Recipes />
+    },
+    {
+      path: 'recipe/:id',
+      element: <RecipeDetail />
+    }
+  ]
 }
 
 const FoodRoutes: RouteObject = {
@@ -84,10 +95,6 @@ const FoodRoutes: RouteObject = {
     {
       path: 'storage/items',
       element: <StorageDetails />
-    },
-    {
-      path: 'storage/items/detail',
-      element: <StorageItemDetail />
     },
     { path: 'storage/items/add', element: <AddStorageItem /> }
   ]
@@ -145,6 +152,22 @@ export const MainRoutes: RouteObject = {
     {
       path: 'family-group/:id/meal/detail',
       element: <MealDetail />
+    },
+    {
+      path: 'family-group/:id/storage',
+      element: <Storage />
+    },
+    {
+      path: 'family-group/:id/storage/add',
+      element: <AddStorage />
+    },
+    {
+      path: 'family-group/:id/storage/items',
+      element: <StorageDetails />
+    },
+    {
+      path: 'family-group/:id/storage/items/add',
+      element: <AddStorageItem />
     },
     {
       path: 'family-group/:id/add-plan',

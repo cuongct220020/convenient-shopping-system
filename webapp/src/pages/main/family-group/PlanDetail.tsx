@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FileText, Check, Clock, User, Calendar, AlertTriangle, X, Settings, Edit2, Trash2, ArrowRight, Loader2, DollarSign } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
@@ -146,7 +146,7 @@ export const PlanDetail = () => {
   };
 
   const handleContinueImplement = () => {
-    navigate(`/main/family-group/${id}/plan/${planId}/implement`);
+    navigate(`/main/family-group/${id}/plan/${planId}/implement`, { state: { groupData } });
   };
 
   const handleEdit = () => {
@@ -318,7 +318,11 @@ export const PlanDetail = () => {
           <>
             {/* Header Nav */}
             <div className="flex items-center justify-between mb-2">
-              <BackButton text="Quay lại" to={`/main/family-group/${id}`} state={{ activeTab: 'shopping-plan' }} />
+              <BackButton 
+                text="Quay lại" 
+                to={`/main/family-group/${id}`} 
+                state={{ activeTab: 'shopping-plan' }} 
+              />
               {/* Only show settings icon to the creator */}
               {currentUserId === planData.assigner_id && (
                 <div className="relative">

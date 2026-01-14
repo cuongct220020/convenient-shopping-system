@@ -302,7 +302,19 @@ export function Meal() {
                 : 'text-gray-500 hover:text-gray-900'
             }`}
             onClick={() => {
-              // TODO: Navigate to food storage management
+              if (activeTab !== 'storage') {
+                navigate(`/main/family-group/${groupId}/storage`, {
+                  state: {
+                    groupData: groupData ? {
+                      id: groupData.id,
+                      name: groupData.name,
+                      avatarUrl: groupData.avatarUrl,
+                      memberCount: groupData.memberCount,
+                      adminName: groupData.adminName
+                    } : undefined
+                  }
+                })
+              }
             }}
           >
             Quản lý kho thực phẩm

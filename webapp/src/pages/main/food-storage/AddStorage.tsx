@@ -3,7 +3,7 @@ import { BackButton } from '../../../components/BackButton'
 import { Button } from '../../../components/Button'
 import { InputField } from '../../../components/InputField'
 import { FormEvent, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   FoodStorageCategories,
   FoodStorageCategory,
@@ -14,7 +14,6 @@ import { i18n } from '../../../utils/i18n/i18n'
 import { err, ok, Result } from 'neverthrow'
 import { i18nKeys } from '../../../utils/i18n/keys'
 import { storageService } from '../../../services/storage'
-import { groupService } from '../../../services/group'
 
 function validateName(name: string): Result<void, i18nKeys> {
   if (!name.trim()) return err('empty_storage_name')
@@ -26,27 +25,12 @@ function validateName(name: string): Result<void, i18nKeys> {
 
 export function AddStorage() {
   const navigate = useNavigate()
+  const { id: groupId } = useParams<{ id: string }>()
   const [nameTouched, setNameTouched] = useState(false)
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState<Result<void, i18nKeys>>(ok())
   const [category, setCategory] = useState<FoodStorageCategory>('fridge')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [groupId, setGroupId] = useState<string | null>(null)
-
-  // Get current user's default group on mount
-  useEffect(() => {
-    groupService.getGroups().match(
-      (response) => {
-        // Get the first group from user's groups
-        if (response.data.groups && response.data.groups.length > 0) {
-          setGroupId(response.data.groups[0].id)
-        }
-      },
-      (err) => {
-        console.error('Failed to get groups:', err)
-      }
-    )
-  }, [])
 
   const onNameBlur = () => {
     setNameTouched(true)
@@ -75,6 +59,7 @@ export function AddStorage() {
 
     if (!groupId) {
       console.error('No group ID available')
+      // TODO: Show error message to user
       return
     }
 
@@ -85,7 +70,10 @@ export function AddStorage() {
       .match(
         () => {
           setIsSubmitting(false)
-          navigate('../')
+          // Navigate back to storage page with group_id and refresh flag
+          navigate(`/main/family-group/${groupId}/storage`, {
+            state: { refreshStorages: true }
+          })
         },
         (err) => {
           console.error('Failed to create storage:', err)
@@ -95,10 +83,22 @@ export function AddStorage() {
       )
   }
 
+  const handleBack = () => {
+    if (groupId) {
+      navigate(`/main/family-group/${groupId}/storage`)
+    } else {
+      navigate('../')
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-white p-4 pb-24">
       <div className="flex w-full flex-row">
-        <BackButton to="../" text="Quay lại"></BackButton>
+        <BackButton 
+          to={groupId ? `/main/family-group/${groupId}/storage` : '../'} 
+          text="Quay lại"
+          onClick={handleBack}
+        ></BackButton>
       </div>
       <p className="pb-4 text-center text-xl font-bold text-red-600">
         Thêm kho thực phẩm mới

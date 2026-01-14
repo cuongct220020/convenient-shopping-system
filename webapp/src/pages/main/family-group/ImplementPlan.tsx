@@ -7,23 +7,41 @@ import {
   X,
   AlertTriangle,
   Loader2,
-  ChevronLeft
+  ChevronLeft,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { Button } from '../../../components/Button';
-import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
 import { shoppingPlanService } from '../../../services/shopping-plan';
 import { userService } from '../../../services/user';
+import { storageService, type StorageListItem } from '../../../services/storage';
 import type { PlanResponse } from '../../../services/schema/shoppingPlanSchema';
 
 // Default ingredient image
 const DEFAULT_INGREDIENT_IMAGE = new URL('../../../assets/ingredient.png', import.meta.url).href;
 
+type ReportUnitDraft = {
+  id: string
+  storageId: number | null
+  quantity: number // package_quantity (int)
+  expirationDate: string // YYYY-MM-DD or ''
+  packageMeasurement?: number // content_quantity for uncountable
+}
+
 // Define interface for an ingredient item data structure
-interface IngredientItemData extends Ingredient {
+interface IngredientItemData {
+  id: number;
+  name: string;
+  category: string;
+  quantity: string;
+  image: string;
   isChecked: boolean;
   price: number;
   numericQuantity: number;
   unit: string;
+  componentId: number;
+  contentType: 'countable_ingredient' | 'uncountable_ingredient';
+  reportUnits: ReportUnitDraft[];
   originalIndex: number;
 }
 
@@ -39,6 +57,8 @@ export default function ImplementPlan() {
   const [isUnassigning, setIsUnassigning] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserUsername, setCurrentUserUsername] = useState<string | null>(null);
+  const [storages, setStorages] = useState<StorageListItem[]>([]);
+  const [storagesError, setStoragesError] = useState<string | null>(null);
   const [missingItemsModal, setMissingItemsModal] = useState<{
     isOpen: boolean;
     missingItems: Array<{ component_id: number; component_name: string; missing_quantity: number }>;
@@ -80,6 +100,9 @@ export default function ImplementPlan() {
             price: 0,
             numericQuantity: item.quantity,
             unit: item.unit,
+            componentId: item.component_id,
+            contentType: item.type,
+            reportUnits: [],
             originalIndex: index
           }));
           setItems(initialItems);
@@ -92,6 +115,22 @@ export default function ImplementPlan() {
         }
       );
   }, [planId]);
+
+  // Fetch storages for reporting (each reported unit must belong to a storage)
+  useEffect(() => {
+    if (!planData?.group_id) return;
+    storageService.getStorages(String(planData.group_id)).match(
+      (list) => {
+        setStorages(list);
+        setStoragesError(null);
+      },
+      (e) => {
+        console.error('Failed to fetch storages:', e);
+        setStorages([]);
+        setStoragesError('Không thể tải danh sách kho thực phẩm');
+      }
+    );
+  }, [planData?.group_id]);
 
   useEffect(() => {
     const bottomNav = document.querySelector('nav.fixed.bottom-0');
@@ -124,7 +163,26 @@ export default function ImplementPlan() {
   const handleToggle = (id: number) => {
     setItems(prevItems =>
       prevItems.map(item =>
-        item.id === id ? { ...item, isChecked: !item.isChecked } : item
+        item.id === id
+          ? (() => {
+              const nextChecked = !item.isChecked;
+              if (nextChecked && item.reportUnits.length === 0) {
+                const defaultStorageId =
+                  storages.length > 0 ? storages[0].storage_id : null;
+                const newUnit: ReportUnitDraft = {
+                  id: `${Date.now()}-${Math.random()}`,
+                  storageId: defaultStorageId,
+                  quantity: 1,
+                  expirationDate: '',
+                  ...(item.contentType === 'uncountable_ingredient'
+                    ? { packageMeasurement: 1 }
+                    : {})
+                };
+                return { ...item, isChecked: nextChecked, reportUnits: [newUnit] };
+              }
+              return { ...item, isChecked: nextChecked };
+            })()
+          : item
       )
     );
   };
@@ -158,6 +216,50 @@ export default function ImplementPlan() {
     );
   };
 
+  const addReportUnit = (itemId: number) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        const defaultStorageId = storages.length > 0 ? storages[0].storage_id : null;
+        const newUnit: ReportUnitDraft = {
+          id: `${Date.now()}-${Math.random()}`,
+          storageId: defaultStorageId,
+          quantity: 1,
+          expirationDate: '',
+          ...(item.contentType === 'uncountable_ingredient'
+            ? { packageMeasurement: 1 }
+            : {})
+        };
+        return { ...item, reportUnits: [...item.reportUnits, newUnit] };
+      })
+    );
+  };
+
+  const removeReportUnit = (itemId: number, unitId: string) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        return { ...item, reportUnits: item.reportUnits.filter((u) => u.id !== unitId) };
+      })
+    );
+  };
+
+  const updateReportUnit = (
+    itemId: number,
+    unitId: string,
+    patch: Partial<ReportUnitDraft>
+  ) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        return {
+          ...item,
+          reportUnits: item.reportUnits.map((u) => (u.id === unitId ? { ...u, ...patch } : u))
+        };
+      })
+    );
+  };
+
   const getPlanTitle = (plan: PlanResponse | null) => {
     if (!plan) return 'Kế hoạch';
     return plan.others?.name as string || 'Kế hoạch mua sắm';
@@ -169,30 +271,77 @@ export default function ImplementPlan() {
     setIsCompleting(true);
     setError(null);
 
-    // Prepare bought ingredients data for update
-    const boughtIngredients = items
-      .filter(item => item.isChecked)
-      .map((item) => {
-        return {
-          ...planData.shopping_list[item.originalIndex],
-          quantity: item.numericQuantity
-        };
-      });
+    if (storages.length === 0) {
+      setError(storagesError || 'Vui lòng tạo ít nhất một kho thực phẩm trước khi báo cáo');
+      setIsCompleting(false);
+      return;
+    }
 
-    // First, update the plan with only bought ingredients
-    shoppingPlanService
-      .updatePlan(parseInt(planId), {
-        deadline: planData.deadline,
-        shoppingList: boughtIngredients,
-        others: {
-          ...(planData.others ?? {}),
-          total_money_spent: totalSpent
+    const report_content: Array<{
+      storage_id: number
+      package_quantity: number
+      unit_name: string
+      component_id: number
+      content_type: 'countable_ingredient' | 'uncountable_ingredient'
+      content_quantity?: number
+      content_unit?: string
+      expiration_date?: string | null
+    }> = [];
+
+    for (const item of items) {
+      if (!item.isChecked) continue;
+      for (const u of item.reportUnits) {
+        if (!u.storageId) {
+          setError('Vui lòng chọn kho cho tất cả các unit đã mua');
+          setIsCompleting(false);
+          return;
         }
-      })
-      .andThen(() => {
-        // Report the plan - first time with confirm=false, retry with confirm=true if needed
-        return shoppingPlanService.reportPlan(parseInt(planId), currentUserId, currentUserUsername, withConfirm);
-      })
+        const packageQty = Math.max(1, Math.floor(Number(u.quantity)) || 1);
+        const expiration = u.expirationDate ? u.expirationDate : null;
+
+        if (item.contentType === 'uncountable_ingredient') {
+          const contentQty = Math.max(
+            1,
+            Math.floor(Number(u.packageMeasurement)) || 1
+          );
+          report_content.push({
+            storage_id: u.storageId,
+            package_quantity: packageQty,
+            unit_name: item.name,
+            component_id: item.componentId,
+            content_type: 'uncountable_ingredient',
+            content_quantity: contentQty,
+            content_unit: item.unit,
+            expiration_date: expiration
+          });
+        } else {
+          report_content.push({
+            storage_id: u.storageId,
+            package_quantity: packageQty,
+            unit_name: item.name,
+            component_id: item.componentId,
+            content_type: 'countable_ingredient',
+            expiration_date: expiration
+          });
+        }
+      }
+    }
+
+    if (report_content.length === 0) {
+      setError('Vui lòng báo cáo ít nhất một unit nguyên liệu đã mua');
+      setIsCompleting(false);
+      return;
+    }
+
+    const reportPayload = {
+      plan_id: parseInt(planId),
+      report_content,
+      spent_amount: Math.max(0, Math.floor(Number(totalSpent)) || 0)
+    };
+
+    shoppingPlanService
+      // Report the plan - first time with confirm=false, retry with confirm=true if needed
+      .reportPlan(parseInt(planId), currentUserId, currentUserUsername, reportPayload, withConfirm)
       .match(
         (response) => {
           // Check if response has missing_items
@@ -323,16 +472,198 @@ export default function ImplementPlan() {
 
             {/* Ingredient List */}
             <div className="space-y-3">
-              {items.map((item) => (
-                <IngredientCard
-                  key={item.id}
-                  ingredient={item}
-                  onToggle={() => handleToggle(item.id)}
-                  onPriceChange={(val) => handlePriceChange(item.id, val)}
-                  onQuantityChange={(val) => handleQuantityChange(item.id, val)}
-                  formatCurrency={formatCurrency}
-                />
-              ))}
+              {storagesError && (
+                <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                  {storagesError}
+                </div>
+              )}
+
+              {items.map((item) => {
+                const isUncountable = item.contentType === 'uncountable_ingredient';
+
+                // helpful preview for user
+                const reportedPreview = item.reportUnits.reduce((sum, u) => {
+                  const pkgQty = Math.max(1, Math.floor(Number(u.quantity)) || 1);
+                  if (isUncountable) {
+                    const contentQty = Math.max(
+                      1,
+                      Math.floor(Number(u.packageMeasurement)) || 1
+                    );
+                    return sum + pkgQty * contentQty;
+                  }
+                  return sum + pkgQty;
+                }, 0);
+
+                return (
+                  <div key={item.id} className="bg-gray-100 rounded-2xl overflow-hidden">
+                    {/* Top: info */}
+                    <div className="flex p-3 relative">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-24 h-16 object-cover rounded-xl mr-3 flex-shrink-0"
+                      />
+                      <div className="flex flex-col justify-center gap-1">
+                        <h3 className="font-bold text-base">{item.name}</h3>
+                        <p className="text-xs text-gray-600">
+                          Cần mua: <span className="font-semibold">{item.quantity}</span>
+                          {item.isChecked && item.reportUnits.length > 0 && (
+                            <>
+                              {'  '}• Đã báo cáo:{' '}
+                              <span className="font-semibold text-[#C3485C]">
+                                {reportedPreview} {isUncountable ? item.unit : item.unit}
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <div className="absolute top-3 right-3">
+                        <label className="relative flex items-center p-1 rounded-full cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="peer hidden"
+                            checked={item.isChecked}
+                            onChange={() => handleToggle(item.id)}
+                          />
+                          <span className="w-6 h-6 border-2 border-gray-700 rounded-md peer-checked:bg-black peer-checked:border-black flex items-center justify-center transition-colors">
+                            {item.isChecked && <Check size={16} color="white" strokeWidth={3} />}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-px bg-gray-200 mx-3"></div>
+
+                    {/* Bottom: price + report units */}
+                    <div className="p-3 bg-gray-50">
+                      {/* Price */}
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <span className="text-gray-700 font-medium">Chi:</span>
+                        <div className="flex items-center bg-white rounded-lg px-3 py-1.5 border border-gray-200 w-40 justify-end">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={item.isChecked ? formatCurrency(item.price || 0) : '0'}
+                            onChange={(e) => item.isChecked && handlePriceChange(item.id, e.target.value)}
+                            className="w-full text-right font-medium outline-none bg-transparent"
+                            readOnly={!item.isChecked}
+                          />
+                          <span className="text-gray-500 ml-1 text-sm">VND</span>
+                        </div>
+                      </div>
+
+                      {/* Units */}
+                      {item.isChecked && (
+                        <div className="space-y-3">
+                          {item.reportUnits.map((u, idx) => (
+                            <div key={u.id} className="rounded-xl bg-white border border-gray-200 p-3">
+                              <div className="mb-2 flex items-center justify-between">
+                                <p className="text-sm font-bold text-gray-800">
+                                  Unit {idx + 1}
+                                </p>
+                                <button
+                                  type="button"
+                                  className="text-gray-500 hover:text-[#C3485C]"
+                                  onClick={() => removeReportUnit(item.id, u.id)}
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                {/* Storage */}
+                                <div className="col-span-2">
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Kho</label>
+                                  <select
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#C3485C] focus:outline-none"
+                                    value={u.storageId ?? ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value ? Number(e.target.value) : null;
+                                      updateReportUnit(item.id, u.id, { storageId: val });
+                                    }}
+                                  >
+                                    <option value="">Chọn kho</option>
+                                    {storages.map((s) => (
+                                      <option key={s.storage_id} value={s.storage_id}>
+                                        {s.storage_name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                {/* Quantity */}
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Số lượng</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    inputMode="numeric"
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#C3485C] focus:outline-none"
+                                    value={u.quantity}
+                                    onChange={(e) => {
+                                      const v = Math.max(1, Math.floor(Number(e.target.value)) || 1);
+                                      updateReportUnit(item.id, u.id, { quantity: v });
+                                    }}
+                                  />
+                                </div>
+
+                                {/* Expiration */}
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Ngày hết hạn</label>
+                                  <input
+                                    type="date"
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#C3485C] focus:outline-none"
+                                    value={u.expirationDate}
+                                    onChange={(e) =>
+                                      updateReportUnit(item.id, u.id, { expirationDate: e.target.value })
+                                    }
+                                  />
+                                </div>
+
+                                {/* Uncountable extra */}
+                                {isUncountable && (
+                                  <div className="col-span-2">
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                      Định lượng bao bì <span className="text-gray-500">({item.unit})</span>
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      step="1"
+                                      inputMode="numeric"
+                                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#C3485C] focus:outline-none"
+                                      value={u.packageMeasurement ?? 1}
+                                      onChange={(e) => {
+                                        const v = Math.max(1, Math.floor(Number(e.target.value)) || 1);
+                                        updateReportUnit(item.id, u.id, { packageMeasurement: v });
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+
+                          <div className="flex justify-center">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="fit"
+                              icon={Plus}
+                              onClick={() => addReportUnit(item.id)}
+                              className="rounded-xl"
+                            >
+                              Thêm unit
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Bottom Action Buttons */}
