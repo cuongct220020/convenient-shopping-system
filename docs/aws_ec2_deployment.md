@@ -20,8 +20,6 @@ User (HTTP)  --> [ AWS EC2 (Elastic IP) ] --> [ Kong Gateway (Port 80) ]
 - **ACME Challenge**: A lightweight Nginx service dedicated to solving Let's Encrypt HTTP-01 challenges.
 - **Microservices**: Running in Docker containers, accessible only via the Gateway.
 
----
-
 ## 📋 Phase 1: AWS Infrastructure Preparation
 
 ### 1.1. Database (AWS RDS) - **Required**
