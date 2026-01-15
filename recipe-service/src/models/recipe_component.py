@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Float, Enum, ForeignKey, UniqueConstraint
+from sqlalchemy import Integer, String, Float, Enum, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from enums.c_measurement_unit import CMeasurementUnit
@@ -23,7 +23,7 @@ class Ingredient(RecipeComponent):
     __tablename__ = "ingredients"
 
     component_id: Mapped[int] = mapped_column(ForeignKey("recipe_components.component_id"), primary_key=True)
-    category: Mapped[Category] = mapped_column(Enum(Category), default=Category.others)
+    category: Mapped[Category] = mapped_column(Enum(Category), default=Category.others, index=True)
     estimated_shelf_life: Mapped[int] = mapped_column(Integer, nullable=True)
     protein: Mapped[float] = mapped_column(Float, nullable=True)
     fat: Mapped[float] = mapped_column(Float, nullable=True)
@@ -43,8 +43,12 @@ class CountableIngredient(Ingredient):
     __tablename__ = "countable_ingredients"
 
     component_id: Mapped[int] = mapped_column(ForeignKey("ingredients.component_id"), primary_key=True)
-    component_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    component_name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     c_measurement_unit: Mapped[CMeasurementUnit] = mapped_column(Enum(CMeasurementUnit), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("component_name", "c_measurement_unit", name="unique_countable_ingredient"),
+    )
 
     __mapper_args__ = {
         "polymorphic_identity": "countable_ingredient"
@@ -55,7 +59,7 @@ class UncountableIngredient(Ingredient):
     __tablename__ = "uncountable_ingredients"
 
     component_id: Mapped[int] = mapped_column(ForeignKey("ingredients.component_id"), primary_key=True)
-    component_name: Mapped[str] = mapped_column(String, nullable=False)
+    component_name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     uc_measurement_unit: Mapped[UCMeasurementUnit] = mapped_column(Enum(UCMeasurementUnit), nullable=False)
 
     __table_args__ = (
@@ -70,8 +74,8 @@ class UncountableIngredient(Ingredient):
 class ComponentList(Base):
     __tablename__ = "component_lists"
 
-    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.component_id"),primary_key=True)
-    component_id: Mapped[int] = mapped_column(ForeignKey("recipe_components.component_id"),primary_key=True)
+    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.component_id"),primary_key=True, index=True)
+    component_id: Mapped[int] = mapped_column(ForeignKey("recipe_components.component_id"),primary_key=True, index=True)
     quantity: Mapped[float] = mapped_column(Float, nullable=False)
 
     recipe: Mapped["Recipe"] = relationship(
@@ -98,6 +102,15 @@ class Recipe(RecipeComponent):
     component_list: Mapped[list["ComponentList"]] = relationship(
         back_populates="recipe",
         cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_recipes_keywords",
+            "keywords",
+            postgresql_using="gin",
+            postgresql_ops={"keywords": "jsonb_path_ops"}
+        ),
     )
 
     __mapper_args__ = {

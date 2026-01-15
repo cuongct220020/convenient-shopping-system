@@ -108,11 +108,10 @@ class NotificationReadView(BaseAPIView):
             notification_service = NotificationService(request.ctx.db_session)
             
             # Mark as read
-            notification = await notification_service.mark_notification_as_read(notification_id, user_id)
+            success = await notification_service.mark_notification_as_read(notification_id, user_id)
             
-            if notification:
+            if success:
                 return self.success_response(
-                    data=notification,
                     message="Notification marked as read successfully",
                     status_code=200
                 )

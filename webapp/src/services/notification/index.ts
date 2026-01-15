@@ -33,11 +33,7 @@ const NotificationsResponseSchema = z.object({
 
 const NotificationMarkReadResponseSchema = z.object({
   status: z.string(),
-  message: z.string(),
-  data: z.object({
-    id: z.number(),
-    is_read: z.boolean()
-  })
+  message: z.string()
 })
 
 const NotificationDeleteResponseSchema = z.object({

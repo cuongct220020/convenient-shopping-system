@@ -67,7 +67,7 @@ class NotificationService:
         
         return await self.repository.delete(notification_id)
 
-    async def mark_notification_as_read(self, notification_id: int, user_id: UUID) -> Optional[NotificationResponseSchema]:
+    async def mark_notification_as_read(self, notification_id: int, user_id: UUID) -> bool:
         """
         Mark a notification as read. Only allows marking notifications owned by the user.
         
@@ -76,10 +76,7 @@ class NotificationService:
             user_id: UUID of the user (receiver) - for authorization check
         
         Returns:
-            NotificationResponseSchema if successful, None if not found or not authorized
+            True if successful, False if not found or not authorized
         """
-        notification = await self.repository.mark_as_read(notification_id, user_id)
-        if notification:
-            return NotificationResponseSchema.model_validate(notification)
-        return None
+        return await self.repository.mark_as_read(notification_id, user_id)
 

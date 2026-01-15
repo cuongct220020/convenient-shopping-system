@@ -25,11 +25,7 @@ export type NotificationsResponse = z.infer<typeof NotificationsResponseSchema>
 
 export const NotificationMarkReadResponseSchema = z.object({
   status: z.string(),
-  message: z.string(),
-  data: z.object({
-    id: z.number(),
-    is_read: z.boolean()
-  })
+  message: z.string()
 })
 
 export type NotificationMarkReadResponse = z.infer<typeof NotificationMarkReadResponseSchema>

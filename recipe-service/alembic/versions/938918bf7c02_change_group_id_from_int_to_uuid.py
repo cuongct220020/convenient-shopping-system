@@ -19,8 +19,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
-    # Change group_id from Integer to UUID in component_existence table
+    op.execute("""
+        ALTER TABLE component_existence
+        ALTER COLUMN group_id DROP DEFAULT
+    """)
+
     op.alter_column(
         'component_existence',
         'group_id',
@@ -30,7 +33,11 @@ def upgrade() -> None:
         postgresql_using='gen_random_uuid()'
     )
 
-    # Change group_id from Integer to UUID in group_preferences table
+    op.execute("""
+        ALTER TABLE group_preferences
+        ALTER COLUMN group_id DROP DEFAULT
+    """)
+
     op.alter_column(
         'group_preferences',
         'group_id',
@@ -42,23 +49,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade schema."""
-    # Change group_id from UUID back to Integer in component_existence table
-    op.alter_column(
-        'component_existence',
-        'group_id',
-        existing_type=sa.UUID(),
-        type_=sa.INTEGER(),
-        existing_nullable=False,
-        postgresql_using='1'
+    raise RuntimeError(
+        "Downgrade from UUID to INTEGER is not supported"
     )
 
-    # Change group_id from UUID back to Integer in group_preferences table
-    op.alter_column(
-        'group_preferences',
-        'group_id',
-        existing_type=sa.UUID(),
-        type_=sa.INTEGER(),
-        existing_nullable=False,
-        postgresql_using='1'
-    )
