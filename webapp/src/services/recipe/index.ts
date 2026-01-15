@@ -1,5 +1,5 @@
 import { ResultAsync } from 'neverthrow'
-import { httpGet, type Clients, httpClients } from '../client'
+import { AppUrl, httpGet, httpPost, type Clients, httpClients } from '../client'
 
 export interface Recipe {
   component_id: number
@@ -45,6 +45,23 @@ export interface RecipesSearchResponse {
   size: number
 }
 
+export type FlattenedIngredient = {
+  quantity: number
+  ingredient: {
+    type: 'countable_ingredient' | 'uncountable_ingredient'
+    component_id: number
+    component_name: string
+    c_measurement_unit?: string
+    uc_measurement_unit?: string
+    [key: string]: unknown
+  }
+  available?: boolean | null
+}
+
+export type FlattenedIngredientsResponse = {
+  ingredients: FlattenedIngredient[]
+}
+
 type RecipeErrorType = 'network-error' | 'not-found' | 'unauthorized'
 
 function createRecipeError(type: string, desc: string | null = null) {
@@ -57,20 +74,19 @@ export class RecipeService {
   constructor(private clients: Clients) {}
 
   /**
-   * Search recipes by keyword with cursor-based pagination
+   * Get list of recipes with cursor-based pagination
    */
-  public searchRecipes(
-    keyword: string,
+  public getRecipes(
     cursor?: number,
     limit: number = 10
   ): ResultAsync<RecipesSearchResponse, RecipeError> {
     const queryParams = new URLSearchParams()
-    queryParams.append('keyword', keyword)
     if (cursor !== undefined) {
       queryParams.append('cursor', String(cursor))
     }
     queryParams.append('limit', String(limit))
-    const url = `/v2/recipes/search?${queryParams.toString()}`
+
+    const url = `${AppUrl.RECIPES}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
 
     return httpGet(this.clients.recipe, url)
       .mapErr((e) => {
@@ -86,9 +102,51 @@ export class RecipeService {
       .map((response) => {
         const body = response.body as any
         return {
-          data: body.data || [],
-          next_cursor: body.next_cursor || null,
-          size: body.size || 0
+          data: body?.data ?? body?.results ?? [],
+          next_cursor: body?.next_cursor ?? null,
+          size: body?.size ?? 0
+        } as RecipesSearchResponse
+      })
+  }
+
+  /**
+   * Search recipes by keyword with cursor-based pagination
+   */
+  public searchRecipes(
+    keyword: string,
+    cursor?: number,
+    limit: number = 10
+  ): ResultAsync<RecipesSearchResponse, RecipeError> {
+    // If there is no search keyword, fall back to regular listing.
+    if (!keyword?.trim()) {
+      return this.getRecipes(cursor, limit)
+    }
+
+    const queryParams = new URLSearchParams()
+    queryParams.append('keyword', keyword)
+    if (cursor !== undefined) {
+      queryParams.append('cursor', String(cursor))
+    }
+    queryParams.append('limit', String(limit))
+    const url = `${AppUrl.RECIPES}search?${queryParams.toString()}`
+
+    return httpGet(this.clients.recipe, url)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createRecipeError('not-found', e.desc)
+          case 'unauthorized':
+            return createRecipeError('unauthorized', e.desc)
+          default:
+            return createRecipeError('network-error', e.desc)
+        }
+      })
+      .map((response) => {
+        const body = response.body as any
+        return {
+          data: body?.data ?? body?.results ?? [],
+          next_cursor: body?.next_cursor ?? null,
+          size: body?.size ?? 0
         } as RecipesSearchResponse
       })
   }
@@ -131,6 +189,32 @@ export class RecipeService {
         }
       })
       .map((response) => response.body as RecipeDetailedResponse)
+  }
+
+  /**
+   * Get flattened ingredient list for one or more recipes
+   */
+  public getFlattened(
+    recipesWithQuantity: Array<{ recipe_id: number; quantity: number }>,
+    opts?: { checkExistence?: boolean; groupId?: string }
+  ): ResultAsync<FlattenedIngredientsResponse, RecipeError> {
+    const params = new URLSearchParams()
+    params.append('check_existence', String(Boolean(opts?.checkExistence)))
+    if (opts?.groupId) params.append('group_id', opts.groupId)
+    const url = `/v2/recipes/flattened?${params.toString()}`
+
+    return httpPost(this.clients.recipe, url, recipesWithQuantity)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createRecipeError('not-found', e.desc)
+          case 'unauthorized':
+            return createRecipeError('unauthorized', e.desc)
+          default:
+            return createRecipeError('network-error', e.desc)
+        }
+      })
+      .map((response) => response.body as FlattenedIngredientsResponse)
   }
 }
 

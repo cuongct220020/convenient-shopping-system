@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Bell, User, ShoppingCart, UtensilsCrossed } from 'lucide-react'
 
 // Define the available tab names
-const TabNames = ['nutrition', 'notification', 'family-group', 'profile'] as const
+const TabNames = ['recipe-view', 'notification', 'family-group', 'profile'] as const
 type TabName = (typeof TabNames)[number]
 
 export default function MainLayout() {
@@ -29,16 +29,16 @@ export default function MainLayout() {
 
       {/* Bottom Navigation Bar - Fixed at bottom */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-16 w-full max-w-sm items-center justify-around bg-gray-100 p-2.5">
-        {/* Tab 1: Nutrition (UtensilsCrossed) - Left */}
+      {/* Tab 1: Recipe View (UtensilsCrossed) - Left */}
         <TabItem
-          isActive={currentActiveTab === 'nutrition'}
-          onPress={() => handlePress('nutrition')}
+          isActive={currentActiveTab === 'recipe-view'}
+          onPress={() => handlePress('recipe-view')}
         >
           <UtensilsCrossed
             size={24}
             strokeWidth={2.5}
             className={
-              currentActiveTab === 'nutrition'
+              currentActiveTab === 'recipe-view'
                 ? 'text-[#C3485C]'
                 : 'text-gray-400'
             }

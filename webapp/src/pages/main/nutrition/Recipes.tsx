@@ -49,7 +49,10 @@ export function Recipes() {
     setIsLoading(true)
     setError(null)
 
-    const result = await recipeService.searchRecipes(keyword || ' ', cursor, 10)
+    const trimmed = keyword.trim()
+    const result = trimmed
+      ? await recipeService.searchRecipes(trimmed, cursor, 10)
+      : await recipeService.getRecipes(cursor, 10)
 
     result.match(
       (response) => {
@@ -93,12 +96,12 @@ export function Recipes() {
 
   const handleLoadMore = () => {
     if (nextCursor && !isLoading) {
-      fetchRecipes(searchQuery.trim() || ' ', nextCursor)
+      fetchRecipes(searchQuery, nextCursor)
     }
   }
 
   const handleRecipeClick = (recipeId: number) => {
-    navigate(`/main/nutrition/recipe/${recipeId}`)
+    navigate(`/main/recipe-view/recipe/${recipeId}`)
   }
 
   return (
