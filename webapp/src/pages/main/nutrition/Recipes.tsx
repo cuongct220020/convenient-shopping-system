@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Loader2 } from 'lucide-react'
+import { LoadingSpinner } from '../../../components/LoadingSpinner'
 import { recipeService, type Recipe } from '../../../services/recipe'
 
 // Default recipe image
@@ -29,7 +30,7 @@ function RecipeCard({ recipe, onClick }: RecipeCardProps) {
           {recipe.component_name}
         </h3>
         <p className="mt-1 text-xs text-gray-500">
-          {recipe.default_servings} phần
+          Khẩu phần: {recipe.default_servings}
         </p>
       </div>
     </div>
@@ -165,7 +166,7 @@ export function Recipes() {
 
       {isLoading && recipes.length === 0 && (
         <div className="flex flex-1 items-center justify-center py-8">
-          <Loader2 className="size-8 animate-spin text-[#C3485C]" />
+          <LoadingSpinner size="lg" showText text="Đang tải..." />
         </div>
       )}
     </div>

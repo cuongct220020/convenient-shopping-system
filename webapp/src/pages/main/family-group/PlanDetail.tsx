@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FileText, Check, Clock, User, Calendar, AlertTriangle, X, Settings, Edit2, Trash2, ArrowRight, Loader2, DollarSign } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { shoppingPlanService } from '../../../services/shopping-plan';
 import { groupService } from '../../../services/group';
 import { userService } from '../../../services/user';
@@ -294,7 +295,7 @@ export const PlanDetail = () => {
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C3485C]"></div>
+            <LoadingSpinner size="lg" showText text="Đang tải..." />
           </div>
         )}
 

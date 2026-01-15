@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Clock, Users, ChefHat, Loader2 } from 'lucide-react'
+import { Clock, Users, ChefHat } from 'lucide-react'
 import { BackButton } from '../../../components/BackButton'
+import { LoadingSpinner } from '../../../components/LoadingSpinner'
 import { recipeService, type RecipeDetailedResponse } from '../../../services/recipe'
 
 // Default recipe image
@@ -53,7 +54,7 @@ export function RecipeDetail() {
       <div className="flex min-h-screen flex-col p-4">
         <BackButton to="/main/recipe-view" text="Quay lại" className="mb-4" />
         <div className="flex flex-1 items-center justify-center py-16">
-          <Loader2 className="size-8 animate-spin text-[#C3485C]" />
+          <LoadingSpinner size="lg" showText text="Đang tải..." />
         </div>
       </div>
     )
@@ -107,7 +108,7 @@ export function RecipeDetail() {
           )}
           <div className="flex flex-col items-center rounded-xl bg-white p-3 shadow-sm">
             <Users className="mb-1 size-5 text-[#C3485C]" />
-            <span className="text-xs text-gray-500">Phần</span>
+            <span className="text-xs text-gray-500">Khẩu phần</span>
             <span className="text-sm font-semibold text-gray-900">{recipe.default_servings}</span>
           </div>
         </div>

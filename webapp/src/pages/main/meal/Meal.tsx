@@ -1,7 +1,7 @@
 import { Button } from '../../../components/Button'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { NotificationList } from '../../../components/NotificationList'
-import { Calendar, Trash, Settings, ChevronDown, ChevronUp, X, Loader2, Search, Save, RotateCcw } from 'lucide-react'
+import { Calendar, Trash, Settings, ChevronDown, ChevronUp, X, Loader2, Search, Save, RotateCcw, Check } from 'lucide-react'
 import { DayPicker, getDefaultClassNames } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { Time } from '../../../utils/time'
@@ -147,6 +147,51 @@ function toISODateLocal(d: Date): string {
   return `${yyyy}-${mm}-${dd}`
 }
 
+// LocalStorage utilities for draft payload
+type DraftMealPayload = {
+  date: string
+  groupId: string
+  meals: {
+    breakfast?: { action: 'delete' | 'upsert'; recipes?: MealRecipe[] }
+    lunch?: { action: 'delete' | 'upsert'; recipes?: MealRecipe[] }
+    dinner?: { action: 'delete' | 'upsert'; recipes?: MealRecipe[] }
+  }
+}
+
+function getDraftKey(groupId: string, date: string): string {
+  return `meal_draft_${groupId}_${date}`
+}
+
+function saveDraftPayload(groupId: string, date: string, payload: DraftMealPayload): void {
+  try {
+    const key = getDraftKey(groupId, date)
+    localStorage.setItem(key, JSON.stringify(payload))
+  } catch (err) {
+    console.error('Failed to save draft payload:', err)
+  }
+}
+
+function loadDraftPayload(groupId: string, date: string): DraftMealPayload | null {
+  try {
+    const key = getDraftKey(groupId, date)
+    const data = localStorage.getItem(key)
+    if (!data) return null
+    return JSON.parse(data) as DraftMealPayload
+  } catch (err) {
+    console.error('Failed to load draft payload:', err)
+    return null
+  }
+}
+
+function clearDraftPayload(groupId: string, date: string): void {
+  try {
+    const key = getDraftKey(groupId, date)
+    localStorage.removeItem(key)
+  } catch (err) {
+    console.error('Failed to clear draft payload:', err)
+  }
+}
+
 function isMealResponse(x: MealResponse | MealMissingResponse): x is MealResponse {
   return (x as MealResponse).meal_id !== undefined
 }
@@ -200,17 +245,22 @@ function normalizeDailyMeals(items: Array<MealResponse | MealMissingResponse>): 
 export function Meal() {
   const { id: groupId } = useParams<{ id: string }>()
   const location = useLocation()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [showNoti, setShowNoti] = useState(false)
   const [date, setDate] = useState(new Date(Date.now()))
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [activeTab, setActiveTab] = useState<MealTabType>('meal')
+  const prevDateRef = useRef<Date>(new Date(Date.now()))
+  const prevActiveTabRef = useRef<MealTabType>('meal')
 
   const [dailyMeals, setDailyMeals] = useState<Record<MealType3, MealSlot>>({
     breakfast: emptyMealSlot('breakfast'),
     lunch: emptyMealSlot('lunch'),
     dinner: emptyMealSlot('dinner')
   })
+
+  // Store original state for undo functionality
+  const [originalDailyMeals, setOriginalDailyMeals] = useState<Record<MealType3, MealSlot> | null>(null)
 
   const setMealSlot = useCallback(
     (mealType: MealType3, updater: (prev: MealSlot) => MealSlot) => {
@@ -264,16 +314,23 @@ export function Meal() {
   // Initialize date from query param (?date=YYYY-MM-DD) if provided
   useEffect(() => {
     const d = searchParams.get('date')
-    if (!d) return
+    if (!d) {
+      // If no date in URL, set current date in URL
+      const currentDate = toISODateLocal(new Date())
+      setSearchParams({ date: currentDate }, { replace: true })
+      return
+    }
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d)
     if (!m) return
     const yyyy = Number(m[1])
     const mm = Number(m[2])
     const dd = Number(m[3])
     const dt = new Date(yyyy, mm - 1, dd)
-    if (!isNaN(dt.getTime())) setDate(dt)
+    if (!isNaN(dt.getTime()) && !Time.isSameDay(dt, date)) {
+      setDate(dt)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [searchParams])
 
   // Fetch group data - use state from navigation if available
   useEffect(() => {
@@ -330,7 +387,45 @@ export function Meal() {
       }>
     }
 
-    setPendingAdd(payload)
+    // If date matches current date and meals are already loaded, apply immediately
+    const mealDate = toISODateLocal(date)
+    if (mealDate === payload.date && !mealsLoading) {
+      setMealSlot(payload.mealType, (prev) => {
+        const byId = new Map<number, MealRecipe>(prev.recipes.map((r) => [r.recipe_id, r]))
+
+        for (const it of payload.items) {
+          const safeServings = Math.max(1, Math.floor(it.servings || it.recipe.default_servings || 1))
+          const existing = byId.get(it.recipe.id)
+          if (existing) {
+            byId.set(it.recipe.id, { ...existing, servings: safeServings })
+          } else {
+            byId.set(it.recipe.id, {
+              recipe_id: it.recipe.id,
+              recipe_name: it.recipe.name,
+              servings: safeServings
+            })
+          }
+        }
+
+        const nextRecipes = Array.from(byId.values())
+
+        return {
+          ...prev,
+          recipes: nextRecipes,
+          action: 'upsert',
+          dirty: true
+        }
+      })
+      setExpandedMealType(payload.mealType)
+    } else {
+      // Otherwise, set as pending to apply after meals load
+      setPendingAdd(payload)
+      // If date is different, change date first
+      if (mealDate !== payload.date) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(payload.date)
+        if (m) setDate(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+      }
+    }
 
     // Clear one-time state to prevent re-applying when navigating back/forward
     navigate(location.pathname + location.search, {
@@ -338,7 +433,45 @@ export function Meal() {
       state: st?.groupData ? { groupData: st.groupData } : null
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state])
+  }, [location.state, date, mealsLoading, setMealSlot])
+
+  // Apply draft payload when returning from SelectRecipe (without addToMeal)
+  useEffect(() => {
+    if (!groupId || activeTab !== 'meal' || mealsLoading) return
+    const st = location.state as any
+    // Only apply if returning from SelectRecipe (has groupData but no addToMeal)
+    if (st?.groupData && !st?.addToMeal) {
+      const mealDate = toISODateLocal(date)
+      const draft = loadDraftPayload(groupId, mealDate)
+      if (draft) {
+        setDailyMeals((prev) => {
+          const updated: Record<MealType3, MealSlot> = { ...prev }
+          for (const mealType of MEAL_TYPES_3) {
+            const draftMeal = draft.meals[mealType]
+            if (!draftMeal) continue
+
+            if (draftMeal.action === 'delete') {
+              updated[mealType] = {
+                ...prev[mealType],
+                recipes: [],
+                action: 'delete',
+                dirty: true
+              }
+            } else if (draftMeal.action === 'upsert' && draftMeal.recipes) {
+              updated[mealType] = {
+                ...prev[mealType],
+                recipes: draftMeal.recipes,
+                action: 'upsert',
+                dirty: true
+              }
+            }
+          }
+          return updated
+        })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, groupId, date, activeTab, mealsLoading])
 
   // Fetch daily meals for selected date (breakfast/lunch/dinner)
   useEffect(() => {
@@ -352,7 +485,38 @@ export function Meal() {
       const result = await mealService.getDailyMeals({ mealDate, groupId })
       result.match(
         (items) => {
-          setDailyMeals(normalizeDailyMeals(items))
+          const normalized = normalizeDailyMeals(items)
+          setOriginalDailyMeals(normalized) // Store original state
+
+          // Apply draft payload if exists
+          const draft = loadDraftPayload(groupId, mealDate)
+          if (draft) {
+            const updated: Record<MealType3, MealSlot> = { ...normalized }
+            for (const mealType of MEAL_TYPES_3) {
+              const draftMeal = draft.meals[mealType]
+              if (!draftMeal) continue
+
+              if (draftMeal.action === 'delete') {
+                updated[mealType] = {
+                  ...normalized[mealType],
+                  recipes: [],
+                  action: 'delete',
+                  dirty: true
+                }
+              } else if (draftMeal.action === 'upsert' && draftMeal.recipes) {
+                updated[mealType] = {
+                  ...normalized[mealType],
+                  recipes: draftMeal.recipes,
+                  action: 'upsert',
+                  dirty: true
+                }
+              }
+            }
+            setDailyMeals(updated)
+          } else {
+            setDailyMeals(normalized)
+          }
+
           setMealsLoading(false)
         },
         (err) => {
@@ -438,12 +602,54 @@ export function Meal() {
     []
   )
 
+  // Check if there are actual unsaved changes (draft payload exists and is not empty)
+  // Build draft payload from current dailyMeals state
+  const buildDraftPayload = useCallback(
+    (meals: Record<MealType3, MealSlot>, groupId: string, date: string): DraftMealPayload | null => {
+      const hasChanges = MEAL_TYPES_3.some((t) => meals[t].dirty)
+      if (!hasChanges) return null
+
+      const draft: DraftMealPayload = {
+        date,
+        groupId,
+        meals: {}
+      }
+
+      for (const mealType of MEAL_TYPES_3) {
+        const slot = meals[mealType]
+        if (!slot.dirty) continue
+
+        if (slot.action === 'delete' || slot.recipes.length === 0) {
+          // If meal doesn't exist on server (no mealId), skip adding to draft payload
+          // because there's nothing to delete on the server - treat as no change needed
+          if (!slot.mealId) {
+            // Don't add to draft payload - meal doesn't exist, so no change needed
+            continue
+          } else {
+            draft.meals[mealType] = { action: 'delete' }
+          }
+        } else {
+          draft.meals[mealType] = { action: 'upsert', recipes: slot.recipes }
+        }
+      }
+
+      return Object.keys(draft.meals).length > 0 ? draft : null
+    },
+    []
+  )
+
+  // Check if there are actual unsaved changes (draft payload exists and is not empty)
   const hasUnsavedChanges = useMemo(() => {
-    return MEAL_TYPES_3.some((t) => dailyMeals[t].dirty)
-  }, [dailyMeals])
+    if (!groupId || activeTab !== 'meal') return false
+    const mealDate = toISODateLocal(date)
+    const draft = buildDraftPayload(dailyMeals, groupId, mealDate)
+    return draft !== null && Object.keys(draft.meals).length > 0
+  }, [dailyMeals, groupId, date, activeTab, buildDraftPayload])
 
   const onDeleteMeal = useCallback(
     (mealType: MealType3) => {
+      const slot = dailyMeals[mealType]
+      if (slot.mealStatus === 'expired' || slot.mealStatus === 'done') return
       setMealSlot(mealType, (prev) => ({
         ...prev,
         recipes: [],
@@ -451,11 +657,13 @@ export function Meal() {
         dirty: true
       }))
     },
-    [setMealSlot]
+    [dailyMeals, setMealSlot]
   )
 
   const onRemoveRecipe = useCallback(
     (mealType: MealType3, recipeId: number) => {
+      const slot = dailyMeals[mealType]
+      if (slot.mealStatus === 'expired' || slot.mealStatus === 'done') return
       setMealSlot(mealType, (prev) => {
         const nextRecipes = prev.recipes.filter((r) => r.recipe_id !== recipeId)
         return {
@@ -466,11 +674,13 @@ export function Meal() {
         }
       })
     },
-    [setMealSlot]
+    [dailyMeals, setMealSlot]
   )
 
   const onUpdateServings = useCallback(
     (mealType: MealType3, recipeId: number, servings: number) => {
+      const slot = dailyMeals[mealType]
+      if (slot.mealStatus === 'expired' || slot.mealStatus === 'done') return
       const safe = Number.isFinite(servings) ? Math.max(1, Math.floor(servings)) : 1
       setMealSlot(mealType, (prev) => ({
         ...prev,
@@ -479,7 +689,38 @@ export function Meal() {
         dirty: true
       }))
     },
-    [setMealSlot]
+    [dailyMeals, setMealSlot]
+  )
+
+  const onFinishMeal = useCallback(
+    async (mealType: MealType3) => {
+      if (!groupId) return
+      const slot = dailyMeals[mealType]
+      if (!slot.mealId) return
+      if (slot.dirty) return
+      if (slot.mealStatus === 'done' || slot.mealStatus === 'expired') return
+
+      setTransitioningMealType(mealType)
+      const result = await mealService.finishMeal({ mealId: slot.mealId, groupId })
+
+      result.match(
+        (resp) => {
+          setMealSlot(mealType, (prev) => ({
+            ...prev,
+            mealId: resp.meal_id,
+            mealStatus: resp.meal_status,
+            dirty: false
+          }))
+          setTransitioningMealType(null)
+        },
+        (err) => {
+          console.error('Failed to finish meal:', err)
+          setMealsError('Không thể hoàn thành bữa ăn')
+          setTransitioningMealType(null)
+        }
+      )
+    },
+    [groupId, dailyMeals, setMealSlot]
   )
 
   const onCancelOrReopen = useCallback(
@@ -516,6 +757,13 @@ export function Meal() {
     [groupId, dailyMeals, setMealSlot]
   )
 
+  const onUndoChanges = useCallback(() => {
+    if (!originalDailyMeals || !groupId) return
+    const mealDate = toISODateLocal(date)
+    clearDraftPayload(groupId, mealDate)
+    setDailyMeals(originalDailyMeals)
+  }, [originalDailyMeals, groupId, date])
+
   const openFlattened = useCallback(
     async (recipe: MealRecipe) => {
       if (!groupId) return
@@ -545,10 +793,83 @@ export function Meal() {
     [groupId]
   )
 
+  // Save draft payload to localStorage whenever dailyMeals change
+  useEffect(() => {
+    if (!groupId || activeTab !== 'meal') return
+    const mealDate = toISODateLocal(date)
+    const draft = buildDraftPayload(dailyMeals, groupId, mealDate)
+    if (draft) {
+      saveDraftPayload(groupId, mealDate, draft)
+    } else {
+      clearDraftPayload(groupId, mealDate)
+    }
+  }, [dailyMeals, groupId, date, activeTab, buildDraftPayload])
+
+  // Clear draft payload and reset meals when date changes
+  useEffect(() => {
+    if (!groupId || activeTab !== 'meal') {
+      prevDateRef.current = date
+      return
+    }
+    
+    // If date changed, clear draft payload of the previous date and reset meals
+    const prevDateStr = toISODateLocal(prevDateRef.current)
+    const currentDateStr = toISODateLocal(date)
+    
+    if (prevDateStr !== currentDateStr) {
+      // Clear draft payload of the previous date
+      clearDraftPayload(groupId, prevDateStr)
+      
+      // Reset dailyMeals to empty state immediately when date changes
+      // This ensures old data is cleared before new data is fetched
+      setDailyMeals({
+        breakfast: emptyMealSlot('breakfast'),
+        lunch: emptyMealSlot('lunch'),
+        dinner: emptyMealSlot('dinner')
+      })
+      setOriginalDailyMeals(null)
+    }
+    
+    prevDateRef.current = date
+  }, [date, groupId, activeTab])
+
+  // Clear draft payload when switching to a different tab
+  useEffect(() => {
+    if (!groupId) {
+      prevActiveTabRef.current = activeTab
+      return
+    }
+    
+    // If switching away from meal tab, clear draft payload
+    if (prevActiveTabRef.current === 'meal' && activeTab !== 'meal') {
+      const mealDate = toISODateLocal(date)
+      clearDraftPayload(groupId, mealDate)
+    }
+    
+    prevActiveTabRef.current = activeTab
+  }, [activeTab, groupId, date])
+
+  // Clear draft payload when navigating away (component unmount or route change)
+  useEffect(() => {
+    return () => {
+      // Cleanup: clear draft payload when component unmounts
+      if (groupId && activeTab === 'meal') {
+        const mealDate = toISODateLocal(date)
+        clearDraftPayload(groupId, mealDate)
+      }
+    }
+  }, [groupId, activeTab, date])
+
+
   const buildMealCommand = useCallback((slot: MealSlot) => {
-    if (slot.action === 'delete') return { action: 'delete' as const }
     if (slot.dirty) {
-      if (slot.recipes.length === 0) return { action: 'delete' as const }
+      if (slot.action === 'delete' || slot.recipes.length === 0) {
+        // If meal doesn't exist on server (no mealId), skip instead of delete
+        if (!slot.mealId) {
+          return { action: 'skip' as const }
+        }
+        return { action: 'delete' as const }
+      }
       return { action: 'upsert' as const, recipe_list: slot.recipes }
     }
     return { action: 'skip' as const }
@@ -570,7 +891,11 @@ export function Meal() {
     const result = await mealService.commandDailyMeals({ groupId, command: cmd })
     result.match(
       (items) => {
-        setDailyMeals(normalizeDailyMeals(items))
+        const normalized = normalizeDailyMeals(items)
+        setDailyMeals(normalized)
+        setOriginalDailyMeals(normalized) // Update original state after save
+        const mealDate = toISODateLocal(date)
+        clearDraftPayload(groupId, mealDate) // Clear draft after successful save
         setIsSaving(false)
       },
       (err) => {
@@ -712,7 +1037,21 @@ export function Meal() {
                     animate
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={(selectedDate) => {
+                      if (!selectedDate) return
+                      const newDateStr = toISODateLocal(selectedDate)
+                      navigate(`${location.pathname}?date=${encodeURIComponent(newDateStr)}`, {
+                        state: groupData ? {
+                          groupData: {
+                            id: groupData.id,
+                            name: groupData.name,
+                            avatarUrl: groupData.avatarUrl,
+                            memberCount: groupData.memberCount,
+                            adminName: groupData.adminName
+                          }
+                        } : null
+                      })
+                    }}
                     required
                     classNames={{
                       root: `${calendarClassNames.root} shadow-lg p-2`
@@ -730,48 +1069,106 @@ export function Meal() {
                     date={d.getDate()}
                     isSelected={Time.isSameDay(d, date)}
                     isToday={Time.isSameDay(d, new Date())}
-                    onClick={() => setDate(d)}
+                    onClick={() => {
+                      const newDateStr = toISODateLocal(d)
+                      navigate(`${location.pathname}?date=${encodeURIComponent(newDateStr)}`, {
+                        state: groupData ? {
+                          groupData: {
+                            id: groupData.id,
+                            name: groupData.name,
+                            avatarUrl: groupData.avatarUrl,
+                            memberCount: groupData.memberCount,
+                            adminName: groupData.adminName
+                          }
+                        } : null
+                      })
+                    }}
                   />
                 )
               })}
             </div>
 
-            {/* Save bar */}
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-4 py-3">
-              <div className="text-sm text-gray-700">
-                {mealsLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="size-4 animate-spin" />
-                    Đang tải bữa ăn...
-                  </span>
-                ) : mealsError ? (
-                  <span className="text-red-500">{mealsError}</span>
-                ) : hasUnsavedChanges ? (
-                  <span>Có thay đổi chưa lưu</span>
-                ) : (
-                  <span>Đã đồng bộ</span>
-                )}
-              </div>
-              <Button
-                icon={Save}
-                size="fit"
-                variant={hasUnsavedChanges && !isSaving ? 'primary' : 'disabled'}
-                onClick={() => void onSaveDay()}
-              >
-                {isSaving ? 'Đang lưu...' : 'Lưu ngày'}
-              </Button>
+            {/* Status and action buttons */}
+            <div className="mt-3 flex flex-col gap-3">
+              {mealsLoading && (
+                <div className="flex items-center justify-center gap-3 rounded-xl bg-gray-50 px-4 py-3">
+                  <div className="text-sm text-gray-700">
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="size-4 animate-spin" />
+                      Đang tải bữa ăn...
+                    </span>
+                  </div>
+                </div>
+              )}
+              {mealsError && (
+                <div className="flex items-center justify-center gap-3 rounded-xl bg-gray-50 px-4 py-3">
+                  <div className="text-sm text-red-500">{mealsError}</div>
+                </div>
+              )}
+              {hasUnsavedChanges && (
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    icon={Save}
+                    size="fit"
+                    variant={!isSaving ? 'primary' : 'disabled'}
+                    onClick={() => void onSaveDay()}
+                  >
+                    {isSaving ? 'Đang lưu...' : 'Lưu ngay'}
+                  </Button>
+                  <Button
+                    icon={RotateCcw}
+                    size="fit"
+                    variant={!isSaving ? 'secondary' : 'disabled'}
+                    onClick={onUndoChanges}
+                  >
+                    Hoàn tác
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Meals list (fixed 3 meals/day) */}
-            <div className="flex flex-col items-center gap-3 py-4">
-              {MEAL_TYPES_3.map((mealType) => {
-                const slot = dailyMeals[mealType]
-                const isExpanded = expandedMealType === mealType
-                const isEmpty = slot.recipes.length === 0 && slot.action !== 'upsert'
-                const bg = slot.action === 'delete' || isEmpty ? 'bg-gray-200' : 'bg-yellow-100'
+            <div className="flex flex-col items-center gap-3 py-2">
+              {(() => {
+                // Build draft payload from current state to check for actual changes
+                const mealDate = toISODateLocal(date)
+                const draft = groupId ? buildDraftPayload(dailyMeals, groupId, mealDate) : null
+                
+                return MEAL_TYPES_3.map((mealType) => {
+                  const slot = dailyMeals[mealType]
+                  const isExpanded = expandedMealType === mealType
+                  const isEmpty = slot.recipes.length === 0 && slot.action !== 'upsert'
+                  const isLocked = slot.mealStatus === 'expired' || slot.mealStatus === 'done'
+                  
+                  // Check if this meal has actual unsaved changes in draft payload
+                  // Only show "Chưa lưu" if meal is dirty AND has actual changes to save
+                  const hasActualChanges = draft?.meals[mealType] !== undefined
+                
+                // Determine meal card color based on status
+                let bg = 'bg-gray-200' // Default: no meal (gray)
+                let borderColor = 'border-gray-300'
+                
+                if (slot.mealId) {
+                  if (slot.mealStatus === 'done') {
+                    bg = 'bg-green-100' // Completed (green)
+                    borderColor = 'border-green-400'
+                  } else if (slot.mealStatus === 'expired') {
+                    bg = 'bg-red-100' // Expired (red)
+                    borderColor = 'border-red-400'
+                  } else if (slot.mealStatus === 'created' || slot.mealStatus === 'cancelled') {
+                    bg = 'bg-yellow-100' // Has meal but not completed (yellow)
+                    borderColor = 'border-yellow-400'
+                  }
+                } else if (slot.action === 'upsert' && slot.recipes.length > 0) {
+                  bg = 'bg-yellow-100' // New meal being added (yellow)
+                  borderColor = 'border-yellow-400'
+                }
+                
+                // Special border for meals with actual unsaved changes
+                const borderStyle = hasActualChanges ? `border-2 ${borderColor}` : 'border border-gray-200'
 
                 return (
-                  <div key={mealType} className="mx-auto w-full max-w-sm">
+                  <div key={mealType} className={`mx-auto w-full max-w-sm rounded-xl ${borderStyle} ${hasActualChanges ? 'shadow-md' : ''}`}>
                     <button
                       className={`flex w-full items-stretch gap-3 rounded-xl ${bg} px-4 py-3 text-left`}
                       onClick={() => setExpandedMealType((p) => (p === mealType ? null : mealType))}
@@ -780,9 +1177,9 @@ export function Meal() {
 
                       <div className="flex min-w-0 flex-1 flex-col justify-between">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="truncate font-bold text-gray-800">{i18n.t(mealTypeStr(mealType as any))}</p>
+                          <p className="line-clamp-2 font-bold text-gray-800">{i18n.t(mealTypeStr(mealType as any))}</p>
                           <div className="flex items-center gap-1">
-                            {slot.dirty && (
+                            {hasActualChanges && (
                               <span className="rounded-full bg-white/60 px-2 py-0.5 text-xs font-semibold text-gray-700">
                                 Chưa lưu
                               </span>
@@ -795,39 +1192,49 @@ export function Meal() {
                           {isEmpty ? (
                             <p className="text-gray-600">Chưa có món ăn</p>
                           ) : (
-                            <p className="truncate">
+                            <p className="line-clamp-2">
                               {slot.recipes.map((r) => r.recipe_name).join(', ')}
                             </p>
                           )}
                         </div>
-
-                        {slot.mealStatus && (
-                          <p className="mt-1 text-xs text-gray-600">Trạng thái: {slot.mealStatus}</p>
-                        )}
                       </div>
 
                       <div className="flex flex-col items-end justify-center gap-2">
                         <Button
-                          icon={slot.mealStatus === 'cancelled' ? RotateCcw : X}
+                          icon={Check}
                           variant={
-                            !slot.mealId || slot.dirty || transitioningMealType === mealType
+                            !slot.mealId ||
+                            slot.dirty ||
+                            transitioningMealType === mealType ||
+                            slot.mealStatus === 'done' ||
+                            slot.mealStatus === 'expired'
                               ? 'disabled'
-                              : 'secondary'
+                              : 'primary'
                           }
                           size="fit"
-                          className={slot.mealStatus === 'cancelled' ? '' : 'text-red-600'}
+                          className={
+                            !slot.mealId ||
+                            slot.dirty ||
+                            transitioningMealType === mealType ||
+                            slot.mealStatus === 'done' ||
+                            slot.mealStatus === 'expired'
+                              ? ''
+                              : '!bg-green-500 !text-white hover:!bg-green-600 !shadow-md !shadow-green-200'
+                          }
                           onClick={(e) => {
                             e.stopPropagation()
-                            void onCancelOrReopen(mealType)
+                            void onFinishMeal(mealType)
                           }}
                         />
                         <Button
                           icon={Trash}
-                          variant="danger"
+                          variant={isLocked || (isEmpty && !slot.mealId) ? 'disabled' : 'danger'}
                           size="fit"
                           onClick={(e) => {
                             e.stopPropagation()
-                            onDeleteMeal(mealType)
+                            if (!isLocked) {
+                              onDeleteMeal(mealType)
+                            }
                           }}
                         />
                       </div>
@@ -845,7 +1252,7 @@ export function Meal() {
                                 className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2"
                               >
                                 <button
-                                  className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-gray-900 underline decoration-[#C3485C] decoration-2 underline-offset-2"
+                                  className="min-w-0 flex-1 line-clamp-2 text-left text-sm font-semibold text-gray-900 underline decoration-[#C3485C] decoration-2 underline-offset-2"
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     void openFlattened(r)
@@ -856,22 +1263,25 @@ export function Meal() {
                                 </button>
 
                                 <div className="flex items-center gap-2">
-                                  <label className="text-xs text-gray-600">Servings</label>
+                                  <label className="text-xs text-gray-600">Số khẩu phần</label>
                                   <input
                                     type="number"
                                     min={1}
                                     value={r.servings}
                                     onChange={(e) => onUpdateServings(mealType, r.recipe_id, Number(e.target.value))}
-                                    className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm"
+                                    disabled={isLocked}
+                                    className={`w-20 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm ${isLocked ? 'cursor-not-allowed opacity-60' : ''}`}
                                     onClick={(e) => e.stopPropagation()}
                                   />
                                   <Button
                                     icon={X}
                                     size="fit"
-                                    variant="icon"
+                                    variant={isLocked ? 'disabled' : 'icon'}
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      onRemoveRecipe(mealType, r.recipe_id)
+                                      if (!isLocked) {
+                                        onRemoveRecipe(mealType, r.recipe_id)
+                                      }
                                     }}
                                   />
                                 </div>
@@ -884,12 +1294,30 @@ export function Meal() {
                           <Button
                             icon={Search}
                             size="fit"
-                            variant="primary"
+                            variant={isLocked ? 'disabled' : 'primary'}
                             onClick={() => {
+                              if (isLocked) return
                               if (!groupId) return
                               const mealDate = toISODateLocal(date)
+                              const slot = dailyMeals[mealType]
                               navigate(
-                                `/main/family-group/${groupId}/meal/select-recipe?meal_type=${mealType}&date=${encodeURIComponent(mealDate)}`
+                                `/main/family-group/${groupId}/meal/select-recipe?meal_type=${mealType}&date=${encodeURIComponent(mealDate)}`,
+                                {
+                                  state: {
+                                    existingRecipes: slot.recipes.map((r) => ({
+                                      recipe_id: r.recipe_id,
+                                      recipe_name: r.recipe_name,
+                                      servings: r.servings
+                                    })),
+                                    groupData: groupData ? {
+                                      id: groupData.id,
+                                      name: groupData.name,
+                                      avatarUrl: groupData.avatarUrl,
+                                      memberCount: groupData.memberCount,
+                                      adminName: groupData.adminName
+                                    } : undefined
+                                  }
+                                }
                               )
                             }}
                           >
@@ -900,7 +1328,8 @@ export function Meal() {
                     )}
                   </div>
                 )
-              })}
+              })
+              })()}
             </div>
           </div>
         )}

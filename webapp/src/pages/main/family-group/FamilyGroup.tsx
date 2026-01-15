@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/Button';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import GroupCard from '../../../components/GroupCard';
 import { groupService } from '../../../services/group';
 
@@ -87,8 +88,7 @@ const FamilyGroup: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-6 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C3485C]"></div>
-        <p className="text-gray-600 mt-4">Đang tải...</p>
+        <LoadingSpinner size="lg" showText text="Đang tải..." />
       </div>
     );
   }

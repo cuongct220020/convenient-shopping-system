@@ -1,10 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, ChefHat, Clock, Loader2, Search, Users } from 'lucide-react'
 import { recipeService, type Recipe } from '../../../services/recipe'
 import type { MealType3 } from '../../../services/meal'
 import { i18n } from '../../../utils/i18n/i18n'
 import { mealTypeStr } from '../../../utils/constants'
+import { groupService } from '../../../services/group'
+
+// Helper function to get display name from user
+function getDisplayName(user: { first_name?: string | null; last_name?: string | null; username?: string } | null): string {
+  if (!user) return 'Người dùng'
+  if (user.first_name && user.last_name) {
+    return `${user.last_name} ${user.first_name}`
+  }
+  if (user.first_name) return user.first_name
+  if (user.last_name) return user.last_name
+  return user.username || 'Người dùng'
+}
 
 const DEFAULT_RECIPE_IMAGE = new URL('../../../assets/ingredient.png', import.meta.url).href
 
@@ -17,6 +29,7 @@ export function SelectRecipe() {
   const { id: groupId } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const mealType = useMemo(() => safeMealType3(searchParams.get('meal_type')), [searchParams])
   const date = useMemo(() => searchParams.get('date') ?? '', [searchParams])
@@ -28,6 +41,17 @@ export function SelectRecipe() {
   const [nextCursor, setNextCursor] = useState<number | null>(null)
   const [hasMore, setHasMore] = useState(false)
 
+  // Group data state
+  const [groupData, setGroupData] = useState<{
+    id: string
+    name: string
+    avatarUrl: string | null
+    memberCount: number
+    adminName: string
+  } | null>(null)
+  const [isLoadingGroup, setIsLoadingGroup] = useState(true)
+
+  // Initialize selectedMap with existing recipes from meal
   const [selectedMap, setSelectedMap] = useState<
     Record<
       number,
@@ -36,7 +60,27 @@ export function SelectRecipe() {
         servings: number
       }
     >
-  >({})
+  >(() => {
+    const state = location.state as { existingRecipes?: Array<{ recipe_id: number; recipe_name: string; servings: number }> } | null
+    if (!state?.existingRecipes) return {}
+    
+    // Create initial map from existing recipes
+    // We'll populate the recipe object when recipes are loaded
+    const initialMap: Record<number, { recipe: Recipe; servings: number }> = {}
+    for (const existing of state.existingRecipes) {
+      // We'll need to find the recipe object later when recipes are loaded
+      // For now, store the servings
+      initialMap[existing.recipe_id] = {
+        recipe: {
+          component_id: existing.recipe_id,
+          component_name: existing.recipe_name,
+          default_servings: existing.servings
+        } as Recipe,
+        servings: existing.servings
+      }
+    }
+    return initialMap
+  })
 
   const selectedCount = Object.keys(selectedMap).length
   const canSubmit = Boolean(groupId && mealType && date && selectedCount > 0)
@@ -65,10 +109,90 @@ export function SelectRecipe() {
     )
   }
 
+  // Load group data
+  useEffect(() => {
+    if (!groupId) {
+      setIsLoadingGroup(false)
+      return
+    }
+
+    const loadGroupData = async () => {
+      setIsLoadingGroup(true)
+      
+      // Check if groupData was passed via navigation state
+      const stateGroupData = (location.state as { groupData?: typeof groupData })?.groupData
+      if (stateGroupData) {
+        setGroupData(stateGroupData)
+        setIsLoadingGroup(false)
+        return
+      }
+
+      // Otherwise, fetch from API
+      const membersResult = await groupService.getGroupMembers(groupId)
+
+      membersResult.match(
+        (response) => {
+          const group = response.data
+          const memberships = group.members || group.group_memberships || []
+
+          setGroupData({
+            id: group.id,
+            name: group.group_name,
+            avatarUrl: group.group_avatar_url,
+            memberCount: memberships.length,
+            adminName: getDisplayName(group.creator)
+          })
+          setIsLoadingGroup(false)
+        },
+        (err) => {
+          console.error('Failed to load group data:', err)
+          setIsLoadingGroup(false)
+        }
+      )
+    }
+
+    void loadGroupData()
+  }, [groupId, location.state])
+
   useEffect(() => {
     fetchRecipes('')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Update selectedMap with full recipe objects when recipes are loaded
+  useEffect(() => {
+    const state = location.state as { existingRecipes?: Array<{ recipe_id: number; recipe_name: string; servings: number }> } | null
+    if (!state?.existingRecipes || recipes.length === 0) return
+
+    setSelectedMap((prev) => {
+      const updated = { ...prev }
+      let hasChanges = false
+
+      for (const existing of state.existingRecipes || []) {
+        const recipe = recipes.find((r) => r.component_id === existing.recipe_id)
+        if (recipe) {
+          // Update with full recipe object if not already updated or if recipe data changed
+          const current = updated[existing.recipe_id]
+          if (!current || current.recipe.component_id !== recipe.component_id || !current.recipe.image_url) {
+            updated[existing.recipe_id] = {
+              recipe,
+              servings: existing.servings
+            }
+            hasChanges = true
+          } else if (current.servings !== existing.servings) {
+            // Update servings if changed
+            updated[existing.recipe_id] = {
+              ...current,
+              servings: existing.servings
+            }
+            hasChanges = true
+          }
+        }
+      }
+
+      return hasChanges ? updated : prev
+    })
+  }, [recipes, location.state])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -99,8 +223,30 @@ export function SelectRecipe() {
             },
             servings: it.servings
           }))
-        }
+        },
+        groupData: groupData ? {
+          id: groupData.id,
+          name: groupData.name,
+          avatarUrl: groupData.avatarUrl,
+          memberCount: groupData.memberCount,
+          adminName: groupData.adminName
+        } : undefined
       }
+    })
+  }
+
+  const handleBack = () => {
+    if (!groupId || !date) return
+    navigate(`/main/family-group/${groupId}/meal?date=${encodeURIComponent(date)}`, {
+      state: groupData ? {
+        groupData: {
+          id: groupData.id,
+          name: groupData.name,
+          avatarUrl: groupData.avatarUrl,
+          memberCount: groupData.memberCount,
+          adminName: groupData.adminName
+        }
+      } : null
     })
   }
 
@@ -124,7 +270,7 @@ export function SelectRecipe() {
       <div className="mb-3 flex items-center justify-between">
         <button
           className="flex items-center gap-2 text-sm font-bold text-[#C3485C]"
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
         >
           <ArrowLeft size={18} />
           Quay lại
@@ -206,7 +352,7 @@ export function SelectRecipe() {
                         {r.component_name}
                       </Link>
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                        {r.default_servings} phần
+                        Khẩu phần: {r.default_servings}
                       </span>
                     </div>
 

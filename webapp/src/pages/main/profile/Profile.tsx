@@ -3,19 +3,27 @@ import { useNavigate } from 'react-router-dom'
 import { User, Info, HeartPulse, Heart, LogOut } from 'lucide-react'
 import { userService } from '../../../services/user'
 import { LocalStorage } from '../../../services/storage/local'
+import { LoadingSpinner } from '../../../components/LoadingSpinner'
 import { NotificationCard } from '../../../components/NotificationCard'
 import userAvatar from '../../../assets/user.png'
 
 const Profile = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState<{ username: string; email: string; first_name: string | null; last_name: string | null } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   useEffect(() => {
     userService.getCurrentUser().match(
-      (response) => setUser(response.data),
-      (error) => console.error('Failed to fetch user:', error)
+      (response) => {
+        setUser(response.data)
+        setIsLoading(false)
+      },
+      (error) => {
+        console.error('Failed to fetch user:', error)
+        setIsLoading(false)
+      }
     )
   }, [])
 
@@ -40,10 +48,19 @@ const Profile = () => {
     )
     setIsLoggingOut(false)
   }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center py-16">
+        <LoadingSpinner size="lg" showText text="Đang tải..." />
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto w-full max-w-sm flex-1 overflow-y-auto bg-white p-5 pb-24">
       {/* Header */}
-      <h2 className="mb-6 text-2xl font-bold text-red-600">Tài khoản</h2>
+      <h2 className="mb-6 text-2xl font-bold text-[#C3485C]">Tài khoản</h2>
 
       {/* User Profile Info */}
       <div className="mb-8 flex items-center">

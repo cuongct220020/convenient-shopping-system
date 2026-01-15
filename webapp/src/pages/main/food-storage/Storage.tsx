@@ -425,7 +425,10 @@ export function Storage() {
             }`}
             onClick={() => {
               if (activeTab !== 'meal') {
-                navigate(`/main/family-group/${groupId}/meal`, {
+                // Get today's date in YYYY-MM-DD format
+                const today = new Date()
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+                navigate(`/main/family-group/${groupId}/meal?date=${encodeURIComponent(todayStr)}`, {
                   state: {
                     groupData: groupData ? {
                       id: groupData.id,

@@ -148,6 +148,31 @@ export class MealService {
       })
       .map((response) => response.body as MealResponse)
   }
+
+  /**
+   * Finish a meal (status transition CREATED -> DONE)
+   */
+  public finishMeal(params: {
+    mealId: number
+    groupId: string
+  }): ResultAsync<MealResponse, MealError> {
+    const query = new URLSearchParams()
+    query.append('group_id', params.groupId)
+    const url = `/v1/meals/${params.mealId}/finish?${query.toString()}`
+
+    return httpPost(httpClients.auth, url, {})
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'unauthorized':
+            return createMealError('unauthorized', e.desc)
+          case 'path-not-found':
+            return createMealError('not-found', e.desc)
+          default:
+            return createMealError('network-error', e.desc)
+        }
+      })
+      .map((response) => response.body as MealResponse)
+  }
 }
 
 export const mealService = new MealService()

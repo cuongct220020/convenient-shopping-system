@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { Plus, FileText, Check, Search, X, Loader2 } from 'lucide-react';
 import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
 import { shoppingPlanService } from '../../../services/shopping-plan';
@@ -287,7 +288,7 @@ const EditPlan: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="animate-spin text-[#C3485C]" size={48} />
+        <LoadingSpinner size="lg" showText text="Đang tải..." />
       </div>
     );
   }
