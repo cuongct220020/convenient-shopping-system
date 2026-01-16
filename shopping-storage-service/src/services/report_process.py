@@ -5,7 +5,7 @@ from sqlalchemy import select
 from schemas.plan_schemas import PlanReport
 from enums.uc_measurement_unit import UCMeasurementUnit
 from models.storage import StorableUnit, Storage
-from core.database import get_db
+from core.database import SessionLocal
 from core.messaging import kafka_manager
 from shopping_shared.messaging.topics import COMPONENT_EXISTENCE_TOPIC
 from shopping_shared.utils.logger_utils import get_logger
@@ -13,7 +13,7 @@ from shopping_shared.utils.logger_utils import get_logger
 logger = get_logger("ReportProcess")
 
 async def report_process(report: PlanReport):
-    db = next(get_db())
+    db = SessionLocal()
     try:
         logger.info(f"Processing report with {len(report.report_content)} items")
 

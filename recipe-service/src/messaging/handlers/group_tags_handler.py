@@ -3,7 +3,7 @@ import json
 import ast
 from typing import Dict, Any, List
 from sqlalchemy import select, delete
-from core.database import get_db
+from core.database import SessionLocal
 from models.group_preference import GroupPreference
 from shopping_shared.utils.logger_utils import get_logger
 
@@ -11,7 +11,7 @@ logger = get_logger("GroupTagsHandler")
 
 
 def handle_group_tags_update(event: Dict[str, Any]):
-    db = next(get_db())
+    db = SessionLocal()
     try:
         user_id = uuid.UUID(event.get("user_id")) if isinstance(event.get("user_id"), str) else event.get("user_id")
         tags = event.get("tags", [])

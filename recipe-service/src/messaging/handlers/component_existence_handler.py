@@ -1,13 +1,13 @@
 import uuid
 from typing import Dict, Any
-from core.database import get_db
+from core.database import SessionLocal
 from models.component_existence import ComponentExistence
 from shopping_shared.utils.logger_utils import get_logger
 
 logger = get_logger("ComponentExistenceHandler")
 
 def handle_component_existence_update(data: Dict[str, Any]):
-    db = next(get_db())
+    db = SessionLocal()
     try:
         group_id_raw = data.get("group_id")
         group_id = uuid.UUID(group_id_raw) if isinstance(group_id_raw, str) else group_id_raw
