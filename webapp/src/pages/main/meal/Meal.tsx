@@ -5,7 +5,9 @@ import { Calendar, Trash, Settings, ChevronDown, ChevronUp, X, Loader2, Search, 
 import { DayPicker, getDefaultClassNames } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import { Time } from '../../../utils/time'
-import MealImage from '../../../assets/meal.png'
+import BreakfastImage from '../../../assets/breakfast.png'
+import LunchImage from '../../../assets/lunch.png'
+import DinnerImage from '../../../assets/dinner.png'
 import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom'
 import { groupService } from '../../../services/group'
 import { GroupHeader } from '../../../components/GroupHeader'
@@ -139,6 +141,11 @@ function getWeekDates(d: Date) {
 type MealTabType = 'members' | 'shopping-plan' | 'storage' | 'meal'
 
 const MEAL_TYPES_3: MealType3[] = ['breakfast', 'lunch', 'dinner']
+const MEAL_IMAGES: Record<MealType3, string> = {
+  breakfast: BreakfastImage,
+  lunch: LunchImage,
+  dinner: DinnerImage
+}
 
 function toISODateLocal(d: Date): string {
   const yyyy = d.getFullYear()
@@ -1173,7 +1180,7 @@ export function Meal() {
                       className={`flex w-full items-stretch gap-3 rounded-xl ${bg} px-4 py-3 text-left`}
                       onClick={() => setExpandedMealType((p) => (p === mealType ? null : mealType))}
                     >
-                      <img src={MealImage} alt="Meal" className="size-16 shrink-0" />
+                      <img src={MEAL_IMAGES[mealType]} alt="Meal" className="size-16 shrink-0" />
 
                       <div className="flex min-w-0 flex-1 flex-col justify-between">
                         <div className="flex items-center justify-between gap-2">
@@ -1367,14 +1374,12 @@ export function Meal() {
                           ? String(it.ingredient.c_measurement_unit ?? '')
                           : String(it.ingredient.uc_measurement_unit ?? '')
                       const unitStr = unit ? ` ${unit}` : ''
-                      const availability =
-                        it.available === true
-                          ? 'Đủ'
-                          : it.available === false
-                            ? 'Thiếu'
-                            : ''
-                      const availabilityClass =
-                        it.available === true ? 'text-green-600' : it.available === false ? 'text-red-600' : 'text-gray-500'
+                      const availabilityIcon =
+                        it.available === true ? (
+                          <Check className="size-5 text-green-600" />
+                        ) : it.available === false ? (
+                          <X className="size-5 text-red-600" />
+                        ) : null
 
                       return (
                         <div
@@ -1388,7 +1393,7 @@ export function Meal() {
                               {unitStr}
                             </p>
                           </div>
-                          <p className={`text-xs font-semibold ${availabilityClass}`}>{availability}</p>
+                          {availabilityIcon}
                         </div>
                       )
                     })}

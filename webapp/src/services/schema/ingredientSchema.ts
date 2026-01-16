@@ -19,7 +19,7 @@ export const IngredientSchema = z
     calories: z.number().nonnegative().nullable().optional(),
     estimated_price: z.number().nonnegative().nullable().optional(),
     ingredient_tag_list: z
-      .array(z.number().int().nonnegative())
+      .array(z.string().regex(/^\d{4}$/))  // 4-digit tag numbers like "1103", "1301"
       .nullable()
       .optional(),
     component_id: z.number().int().positive(),
@@ -68,11 +68,11 @@ export const IngredientCreateSchema = z.object({
   fiber: z.number().nonnegative().nullable().optional(),
   calories: z.number().nonnegative().nullable().optional(),
   estimated_price: z.number().nonnegative().nullable().optional(),
-  ingredient_tag_list: z
-    .array(z.number().int().nonnegative())
-    .nullable()
-    .optional(),
-  component_name: z.string(),
+    ingredient_tag_list: z
+      .array(z.string().regex(/^\d{4}$/))  // 4-digit tag numbers like "1103", "1301"
+      .nullable()
+      .optional(),
+    component_name: z.string(),
   category: z.string().nullable().optional(),
   c_measurement_unit: z.string().nullable().optional(),
   uc_measurement_unit: z.string().nullable().optional()

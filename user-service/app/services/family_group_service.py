@@ -9,6 +9,7 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.family_group_schema import FamilyGroupCreateSchema, FamilyGroupUpdateSchema
 from app.repositories.family_group_repository import FamilyGroupRepository
 from app.repositories.group_membership_repository import GroupMembershipRepository
+from app.repositories.user_tag_repository import UserTagRepository
 from app.services.kafka_service import kafka_service
 from app.services.redis_service import redis_service
 from shopping_shared.caching.redis_keys import RedisKeys
@@ -25,11 +26,13 @@ class FamilyGroupService:
         self,
         repo: FamilyGroupRepository,
         member_repo: GroupMembershipRepository,
-        user_repo: UserRepository
+        user_repo: UserRepository,
+        user_tag_repo: UserTagRepository
     ):
         self.repository = repo
         self.member_repo = member_repo
         self.user_repo = user_repo
+        self.user_tag_repo = user_tag_repo
 
 
     async def get_group_with_members(self, group_id: UUID) -> FamilyGroup:
@@ -80,6 +83,25 @@ class FamilyGroupService:
 
         # 4. Invalidate user's group list cache
         await redis_service.delete_pattern(RedisKeys.user_groups_list_key(user_id=str(user_id)))
+
+        # 5. Publish user tag updated message (user joined new group)
+        try:
+            user = await self.user_repo.get_by_id(user_id)
+            if user:
+                # Get current tags and groups
+                tags = await self.user_tag_repo.get_user_tag_values(user_id)
+                groups = await self.member_repo.get_user_groups(user_id)
+                group_ids = [str(membership.group_id) for membership, _ in groups]
+                
+                await kafka_service.publish_user_update_tag_message(
+                    user_id=str(user_id),
+                    username=user.username or user.email,
+                    email=user.email,
+                    tags=tags,
+                    list_group_ids=group_ids
+                )
+        except Exception as e:
+            logger.error(f"Failed to publish tag update after creating group for user {user_id}: {e}")
 
         return full_group
 
@@ -168,6 +190,23 @@ class FamilyGroupService:
         await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
         await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
 
+        # 6. Publish user tag updated message (user joined new group)
+        try:
+            # Get current tags and groups
+            tags = await self.user_tag_repo.get_user_tag_values(target_user.id)
+            groups = await self.member_repo.get_user_groups(target_user.id)
+            group_ids = [str(membership.group_id) for membership, _ in groups]
+            
+            await kafka_service.publish_user_update_tag_message(
+                user_id=str(target_user.id),
+                username=target_user.username or target_user.email,
+                email=target_user.email,
+                tags=tags,
+                list_group_ids=group_ids
+            )
+        except Exception as e:
+            logger.error(f"Failed to publish tag update after adding user {target_user.id} to group: {e}")
+
         return membership
 
 
@@ -205,6 +244,25 @@ class FamilyGroupService:
             group_id=str(group_id),
             user_to_remove_id=str(target_user_id),
         )
+
+        # Publish user tag updated message (user left group)
+        try:
+            target_user = await self.user_repo.get_by_id(target_user_id)
+            if target_user:
+                # Get current tags and groups
+                tags = await self.user_tag_repo.get_user_tag_values(target_user_id)
+                groups = await self.member_repo.get_user_groups(target_user_id)
+                group_ids = [str(membership.group_id) for membership, _ in groups]
+                
+                await kafka_service.publish_user_update_tag_message(
+                    user_id=str(target_user_id),
+                    username=target_user.username or target_user.email,
+                    email=target_user.email,
+                    tags=tags,
+                    list_group_ids=group_ids
+                )
+        except Exception as e:
+            logger.error(f"Failed to publish tag update after removing user {target_user_id} from group: {e}")
 
 
     async def update_member_role(
@@ -298,27 +356,37 @@ class FamilyGroupService:
         if len(all_members) <= 1:
             await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
             logger.info(f"User {user_id} left group {group_id} (last member, group effectively deleted)")
+        else:
+            await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
+            logger.info(f"User {user_id} left group {group_id}")
 
-            # Publish user leave group events
-            await kafka_service.publish_user_leave_group_message(
-                user_id=user_id,
-                group_id=group_id,
-            )
-            return
-
-        await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
-        logger.info(f"User {user_id} left group {group_id}")
-
-        # Invalidate cache
-        await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(user_id)))
-        await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
-        await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
+            # Invalidate cache
+            await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(user_id)))
+            await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
+            await redis_service.delete_key(RedisKeys.group_members_list_key(str(group_id)))
 
         # Publish user leave group events
         await kafka_service.publish_user_leave_group_message(
             user_id=user_id,
             group_id=group_id,
         )
+
+        # Publish user tag updated message (user left group)
+        try:
+            # Get current tags and groups
+            tags = await self.user_tag_repo.get_user_tag_values(user_id)
+            groups = await self.member_repo.get_user_groups(user_id)
+            group_ids = [str(membership.group_id) for membership, _ in groups]
+            
+            await kafka_service.publish_user_update_tag_message(
+                user_id=str(user_id),
+                username=user_name,
+                email=user_email,
+                tags=tags,
+                list_group_ids=group_ids
+            )
+        except Exception as e:
+            logger.error(f"Failed to publish tag update after user {user_id} left group: {e}")
 
     async def check_group_access(
         self,

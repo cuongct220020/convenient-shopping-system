@@ -20,7 +20,7 @@ function RecipeCard({ recipe, onClick }: RecipeCardProps) {
     >
       <div className="aspect-square overflow-hidden rounded-t-xl">
         <img
-          src={recipe.image_url || DEFAULT_RECIPE_IMAGE}
+          src={recipe.image_url?.trim() || DEFAULT_RECIPE_IMAGE}
           alt={recipe.component_name}
           className="h-full w-full object-cover"
         />

@@ -114,7 +114,7 @@ class PlanReportedNotificationTemplate(BaseNotificationTemplate):
 class PlanExpiredNotificationTemplate(BaseNotificationTemplate):
     template_code = "PLAN_EXPIRED"
     title = "Kế hoạch mua sắm đã quá hạn!"
-    content = "Kế hoạch mua sắm #{plan_id} của nhóm {group_name} đã quá hạn vào ngày {deadline} mà chưa được hoàn thành."
+    content = "Kế hoạch mua sắm #{plan_id} của nhóm {group_name} đã quá hạn vào {deadline} mà chưa được hoàn thành."
     data_fields = {
         "plan_id": int,
         "group_name": str,

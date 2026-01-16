@@ -41,6 +41,11 @@ export function SelectRecipe() {
   const [nextCursor, setNextCursor] = useState<number | null>(null)
   const [hasMore, setHasMore] = useState(false)
 
+  // Recommended recipes
+  const [recommendedRecipeIds, setRecommendedRecipeIds] = useState<Set<number>>(new Set())
+  const [recommendedRecipes, setRecommendedRecipes] = useState<Recipe[]>([])
+  const [isLoadingRecommended, setIsLoadingRecommended] = useState(false)
+
   // Group data state
   const [groupData, setGroupData] = useState<{
     id: string
@@ -95,8 +100,10 @@ export function SelectRecipe() {
       : await recipeService.getRecipes(cursor, 10)
     result.match(
       (response) => {
-        if (cursor) setRecipes((prev) => [...prev, ...response.data])
-        else setRecipes(response.data)
+        // Filter out recommended recipes to avoid duplication
+        const filtered = response.data.filter((r) => !recommendedRecipeIds.has(r.component_id))
+        if (cursor) setRecipes((prev) => [...prev, ...filtered])
+        else setRecipes(filtered)
         setNextCursor(response.next_cursor)
         setHasMore(response.next_cursor !== null)
         setIsLoading(false)
@@ -105,6 +112,32 @@ export function SelectRecipe() {
         console.error('Failed to fetch recipes:', err)
         setError('Không thể tải công thức')
         setIsLoading(false)
+      }
+    )
+  }
+
+  // Fetch recommended recipes
+  const fetchRecommendedRecipes = async () => {
+    if (!groupId) return
+
+    setIsLoadingRecommended(true)
+    const result = await recipeService.getRecommendedRecipes(groupId)
+
+    result.match(
+      (recipes) => {
+        if (recipes.length === 0) {
+          setIsLoadingRecommended(false)
+          return
+        }
+
+        const recipeIds = recipes.map((r) => r.component_id)
+        setRecommendedRecipeIds(new Set(recipeIds))
+        setRecommendedRecipes(recipes)
+        setIsLoadingRecommended(false)
+      },
+      (err) => {
+        console.error('Failed to fetch recommended recipes:', err)
+        setIsLoadingRecommended(false)
       }
     )
   }
@@ -154,10 +187,19 @@ export function SelectRecipe() {
     void loadGroupData()
   }, [groupId, location.state])
 
+  // Fetch recommended recipes first
   useEffect(() => {
-    fetchRecipes('')
+    void fetchRecommendedRecipes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [groupId])
+
+  // Fetch regular recipes after recommended recipes are loaded
+  useEffect(() => {
+    if (!isLoadingRecommended && searchQuery.trim() === '') {
+      fetchRecipes('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoadingRecommended])
 
   // Update selectedMap with full recipe objects when recipes are loaded
   useEffect(() => {
@@ -196,12 +238,16 @@ export function SelectRecipe() {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchQuery.trim()) fetchRecipes(searchQuery.trim())
-      else fetchRecipes('')
+      if (searchQuery.trim()) {
+        fetchRecipes(searchQuery.trim())
+      } else if (!isLoadingRecommended) {
+        // Only fetch regular recipes if recommended recipes are already loaded
+        fetchRecipes('')
+      }
     }, 500)
     return () => clearTimeout(timeoutId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery])
+  }, [searchQuery, isLoadingRecommended])
 
   const handleLoadMore = () => {
     if (nextCursor && !isLoading) fetchRecipes(searchQuery, nextCursor)
@@ -293,6 +339,122 @@ export function SelectRecipe() {
           className="w-full rounded-xl border border-gray-300 py-2 pl-10 pr-4 focus:border-[#C3485C] focus:outline-none"
         />
       </div>
+
+      {/* Recommended Recipes Section */}
+      {!searchQuery.trim() && recommendedRecipes.length > 0 && (
+        <div className="mb-4 rounded-2xl border-2 border-[#C3485C] bg-gradient-to-br from-[#FFF6F0] to-[#FFE8D6] p-2 shadow-md">
+          <h2 className="mb-2 text-base font-bold text-[#C3485C]">🍽️ Đề xuất cho nhóm bạn</h2>
+          <div className="flex flex-col gap-2">
+            {recommendedRecipes.map((r) => {
+              const isSelected = selectedMap[r.component_id] !== undefined
+              const prep = r.prep_time ? `${r.prep_time}p` : null
+              const cook = r.cook_time ? `${r.cook_time}p` : null
+              const level = r.level ? String(r.level) : null
+
+              return (
+                <div
+                  key={r.component_id}
+                  className={[
+                    'rounded-xl border bg-white p-3 shadow-sm transition',
+                    isSelected ? 'border-[#C3485C] ring-2 ring-[#C3485C]' : 'border-gray-200'
+                  ].join(' ')}
+                  onClick={() =>
+                    setSelectedMap((prev) => {
+                      if (prev[r.component_id]) {
+                        const next = { ...prev }
+                        delete next[r.component_id]
+                        return next
+                      }
+                      return {
+                        ...prev,
+                        [r.component_id]: {
+                          recipe: r,
+                          servings: Math.max(1, r.default_servings || 1)
+                        }
+                      }
+                    })
+                  }
+                >
+                  <div className="flex gap-3">
+                    <img
+                      src={r.image_url || DEFAULT_RECIPE_IMAGE}
+                      alt={r.component_name}
+                      className="size-14 shrink-0 rounded-xl object-cover"
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          to={`/main/recipe-view/recipe/${r.component_id}`}
+                          className="line-clamp-2 text-sm font-bold text-gray-900 underline decoration-[#C3485C] decoration-2 underline-offset-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {r.component_name}
+                        </Link>
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+                          Khẩu phần: {r.default_servings}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-700">
+                        {prep && (
+                          <span className="flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1">
+                            <Clock className="size-3" />
+                            Prep {prep}
+                          </span>
+                        )}
+                        {cook && (
+                          <span className="flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1">
+                            <ChefHat className="size-3" />
+                            Cook {cook}
+                          </span>
+                        )}
+                        {level && (
+                          <span className="rounded-full bg-gray-50 px-2 py-1">
+                            Level {level}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {isSelected && (
+                    <div className="mt-3 rounded-xl bg-[#FFF6F0] p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-gray-900">Đã chọn</p>
+                        <div className="flex items-center gap-2">
+                          <Users className="size-4 text-[#C3485C]" />
+                          <input
+                            type="number"
+                            min={1}
+                            value={selectedMap[r.component_id]?.servings ?? 1}
+                            onChange={(e) =>
+                              setSelectedMap((prev) => {
+                                const cur = prev[r.component_id]
+                                if (!cur) return prev
+                                return {
+                                  ...prev,
+                                  [r.component_id]: {
+                                    ...cur,
+                                    servings: Math.max(1, Math.floor(Number(e.target.value) || 1))
+                                  }
+                                }
+                              })
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-24 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+                          />
+                          <span className="text-sm text-gray-700">servings</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {error ? (
         <div className="flex flex-1 items-center justify-center py-8">

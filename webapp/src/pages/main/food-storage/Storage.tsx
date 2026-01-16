@@ -237,7 +237,7 @@ export function Storage() {
     if (!groupId) return
 
     setIsLoadingStorages(true)
-    storageService.getStorages(groupId).match(
+    storageService.filterStorages(groupId).match(
       (storagesList) => {
         console.log('Fetched storages:', storagesList)
         // Check if storagesList is an array or wrapped in an object

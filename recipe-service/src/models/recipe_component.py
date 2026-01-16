@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Float, Enum, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Integer, String, Float, Enum, ForeignKey, UniqueConstraint, Index, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from enums.c_measurement_unit import CMeasurementUnit
@@ -31,7 +31,7 @@ class Ingredient(RecipeComponent):
     fiber: Mapped[float] = mapped_column(Float, nullable=True)
     calories: Mapped[float] = mapped_column(Float, nullable=True)
     estimated_price: Mapped[int] = mapped_column(Integer, nullable=True)
-    ingredient_tag_list: Mapped[list[str]] = mapped_column(JSONB, nullable=True)
+    ingredient_tag_list: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
 
     __mapper_args__ = {
         "polymorphic_identity": "ingredient",
@@ -116,3 +116,19 @@ class Recipe(RecipeComponent):
     __mapper_args__ = {
         "polymorphic_identity": "recipe"
     }
+
+
+class RecipesFlattened(Base):
+    __tablename__ = "recipes_flattened"
+
+    component_id: Mapped[int] = mapped_column(
+        ForeignKey("recipes.component_id", ondelete="CASCADE"),
+        primary_key=True
+    )
+    component_name: Mapped[str] = mapped_column(String, nullable=False)
+    all_ingredients: Mapped[list[dict]] = mapped_column(JSONB, nullable=False)
+
+    recipe: Mapped["Recipe"] = relationship(
+        foreign_keys=[component_id],
+        uselist=False
+    )

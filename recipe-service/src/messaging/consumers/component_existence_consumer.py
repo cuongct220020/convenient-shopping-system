@@ -1,4 +1,4 @@
-from shopping_shared.messaging.kafka_manager import kafka_manager
+from core.messaging import kafka_manager
 from shopping_shared.messaging.topics import COMPONENT_EXISTENCE_TOPIC
 from messaging.handlers.component_existence_handler import handle_component_existence_update
 from shopping_shared.utils.logger_utils import get_logger
@@ -20,8 +20,11 @@ async def consume_component_existence_events():
             try:
                 event = msg.value
                 event_type = event.get("event_type")
+                logger.info(f"Received message: event_type={event_type}, partition={msg.partition}, offset={msg.offset}")
+                
                 if event_type == "update_component_existence":
                     handle_component_existence_update(event.get("data"))
+                    logger.info(f"Successfully handled message: event_type={event_type}, partition={msg.partition}, offset={msg.offset}")
                 else:
                     logger.warning(f"Unknown event_type: {event_type}, partition={msg.partition}, offset={msg.offset}")
             except Exception as e:

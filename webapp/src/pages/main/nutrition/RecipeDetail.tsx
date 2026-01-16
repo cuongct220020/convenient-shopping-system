@@ -79,7 +79,7 @@ export function RecipeDetail() {
       <div className="px-4 pb-4">
         <div className="overflow-hidden rounded-2xl shadow-lg">
           <img
-            src={recipe.image_url || DEFAULT_RECIPE_IMAGE}
+            src={recipe.image_url?.trim() || DEFAULT_RECIPE_IMAGE}
             alt={recipe.component_name}
             className="h-64 w-full object-cover"
           />

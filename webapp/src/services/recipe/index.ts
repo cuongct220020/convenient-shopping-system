@@ -216,6 +216,30 @@ export class RecipeService {
       })
       .map((response) => response.body as FlattenedIngredientsResponse)
   }
+
+  /**
+   * Get recommended recipes for a group
+   */
+  public getRecommendedRecipes(groupId: string): ResultAsync<Recipe[], RecipeError> {
+    const url = `/v2/recipes/recommend?group_id=${encodeURIComponent(groupId)}`
+
+    return httpGet(this.clients.recipe, url)
+      .mapErr((e) => {
+        switch (e.type) {
+          case 'path-not-found':
+            return createRecipeError('not-found', e.desc)
+          case 'unauthorized':
+            return createRecipeError('unauthorized', e.desc)
+          default:
+            return createRecipeError('network-error', e.desc)
+        }
+      })
+      .map((response) => {
+        const body = response.body as any
+        // API returns List[RecipeResponse] which is already the full recipe data
+        return Array.isArray(body) ? body as Recipe[] : []
+      })
+  }
 }
 
 export const recipeService = new RecipeService(httpClients)

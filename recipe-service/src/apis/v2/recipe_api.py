@@ -1,7 +1,7 @@
 import uuid
 from fastapi import APIRouter, status, Depends, Query, HTTPException, Body, Path
 from sqlalchemy.orm import Session
-from sqlalchemy import inspect
+from sqlalchemy import inspect, select
 from typing import List, Optional
 from services.recipe_crud import RecipeCRUD
 from services.recommender import Recommender
@@ -20,23 +20,29 @@ recipe_router = APIRouter(
     tags=["recipes"]
 )
 
+def get_recommender(db: Session = Depends(get_db)) -> Recommender:
+    return Recommender(db)
+
+
 @recipe_router.get(
     "/recommend",
     response_model=List[RecipeResponse],
     status_code=status.HTTP_200_OK,
     description="Get recommended recipes for a group based on ingredient availability and tag preferences. Returns top 10 recipes."
 )
-def recommend_recipes(
+async def recommend_recipes(
     group_id: uuid.UUID = Query(..., description="Group ID to get recommendations for"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    recommender: Recommender = Depends(get_recommender)
 ):
-    recommender = Recommender(db)
-    recipe_ids = recommender.recommend(db, group_id)
+    recipe_ids = await recommender.recommend(db, group_id)
     
     if not recipe_ids:
         return []
     
-    recipes = recipe_crud.get_detail(db, recipe_ids)
+    recipes = db.execute(
+        select(Recipe).where(Recipe.component_id.in_(recipe_ids))
+    ).scalars().all()
     recipe_map = {r.component_id: r for r in recipes}
     sorted_recipes = [recipe_map[rid] for rid in recipe_ids if rid in recipe_map]
     

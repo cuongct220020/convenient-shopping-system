@@ -120,7 +120,7 @@ export default function ImplementPlan() {
   // Fetch storages for reporting (each reported unit must belong to a storage)
   useEffect(() => {
     if (!planData?.group_id) return;
-    storageService.getStorages(String(planData.group_id)).match(
+    storageService.filterStorages(String(planData.group_id)).match(
       (list) => {
         setStorages(list);
         setStoragesError(null);

@@ -116,16 +116,24 @@ export const ComponentList: React.FC<ComponentListProps> = ({
             cursor,
             limit: 20
           })
-          if (result.isOk()) {
-            const data = result.value.data.map((item) => ({
-              ...item,
-              component_type: 'ingredient' as const
-            }))
-            setResults((prevResults) =>
-              cursor ? [...prevResults, ...data] : data
-            )
-            setIngredientCursor(result.value.next_cursor)
-          }
+          result.match(
+            (response) => {
+              const data = response.data.map((item) => ({
+                ...item,
+                component_type: 'ingredient' as const
+              }))
+              setResults((prevResults) =>
+                cursor ? [...prevResults, ...data] : data
+              )
+              setIngredientCursor(response.next_cursor)
+            },
+            (error) => {
+              console.error('Failed to search ingredients:', error)
+              if (error.type === 'invalid-response-format') {
+                console.error('Schema validation error:', error.desc)
+              }
+            }
+          )
         } else {
           const result = await dishService.searchDishes({
             keyword: query,

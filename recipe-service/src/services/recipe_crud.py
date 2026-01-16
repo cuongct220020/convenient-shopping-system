@@ -1,10 +1,11 @@
 import uuid
+import json
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select, or_
 from typing import Sequence, Optional
 from shopping_shared.crud.crud_base import CRUDBase
-from models.recipe_component import Recipe, ComponentList
+from models.recipe_component import Recipe, ComponentList, RecipesFlattened
 from models.component_existence import ComponentExistence
 from schemas.recipe_schemas import RecipeCreate, RecipeUpdate
 from schemas.recipe_flattened_schemas import RecipeQuantityInput
@@ -19,6 +20,38 @@ logger = get_logger("RecipeCRUD")
 """
 
 class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
+    def _update_recipes_flattened(self, db: Session, recipe: Recipe) -> None:
+        try:
+            aggregated = recipes_flattened_aggregated_mapping([(recipe.default_servings, recipe)])
+
+            all_ingredients_list = []
+            for component_id, (quantity, ingredient) in aggregated.all_ingredients.items():
+                ingredient_dict = ingredient.model_dump(mode='json')
+                all_ingredients_list.append({
+                    'component_id': component_id,
+                    'quantity': quantity,
+                    'ingredient': ingredient_dict
+                })
+
+            recipes_flattened = db.query(RecipesFlattened).filter(
+                RecipesFlattened.component_id == recipe.component_id
+            ).first()
+            
+            if recipes_flattened:
+                recipes_flattened.component_name = recipe.component_name
+                recipes_flattened.all_ingredients = all_ingredients_list
+            else:
+                recipes_flattened = RecipesFlattened(
+                    component_id=recipe.component_id,
+                    component_name=recipe.component_name,
+                    all_ingredients=all_ingredients_list
+                )
+                db.add(recipes_flattened)
+            
+            db.flush()
+        except Exception as e:
+            logger.error(f"Error updating recipes_flattened for recipe {recipe.component_id}: {str(e)}", exc_info=True)
+
     def create(self, db: Session, obj_in: RecipeCreate) -> Recipe:
         try:
             db_obj = super().create(db, obj_in)
@@ -28,6 +61,9 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
                     db.refresh(cl)
                     if cl.component:
                         db.refresh(cl.component)
+
+            self._update_recipes_flattened(db, db_obj)
+            
             return db_obj
         except Exception as e:
             db.rollback()
@@ -43,6 +79,9 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
                     db.refresh(cl)
                     if cl.component:
                         db.refresh(cl.component)
+
+            self._update_recipes_flattened(db, result)
+            
             return result
         except Exception as e:
             db.rollback()
@@ -70,10 +109,14 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
 
     def search(self, db: Session, keyword: str, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Recipe]:
         keyword_lower = keyword.lower()
-        stmt = select(Recipe).where(
-            or_(
-                Recipe.component_name.ilike(f"%{keyword}%"),
-                Recipe.keywords.contains([keyword_lower])
+        stmt = (
+            select(Recipe)
+            .options(selectinload(Recipe.component_list))
+            .where(
+                or_(
+                    Recipe.component_name.ilike(f"%{keyword}%"),
+                    Recipe.keywords.contains([keyword_lower])
+                )
             )
         )
         if cursor is not None:
@@ -90,26 +133,60 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
     ) -> list[tuple[float, IngredientResponse, Optional[bool]]]:
         try:
             recipe_ids = [r.recipe_id for r in recipes_with_quantity]
-            db_recipes = self.get_detail(db, recipe_ids)
 
-            if len(db_recipes) != len(recipe_ids):
-                missing_ids = set(recipe_ids) - {r.component_id for r in db_recipes}
-                raise HTTPException(status_code=404, detail=f"Recipes with ids={missing_ids} not found")
+            recipes_flattened_records = db.query(RecipesFlattened).filter(
+                RecipesFlattened.component_id.in_(recipe_ids)
+            ).all()
+            recipes_map = {r.component_id: r for r in db.query(Recipe).filter(Recipe.component_id.in_(recipe_ids)).all()}
 
-            recipe_map = {r.component_id: r for r in db_recipes}
-            db_recipes_with_quantity = [(r.quantity, recipe_map[r.recipe_id]) for r in recipes_with_quantity]
-            aggregated_ingredients = recipes_flattened_aggregated_mapping(db_recipes_with_quantity)
+            if len(recipes_flattened_records) != len(recipe_ids):
+                found_ids = {rf.component_id for rf in recipes_flattened_records}
+                missing_ids = set(recipe_ids) - found_ids
+                raise HTTPException(status_code=404, detail=f"Recipes with ids={missing_ids} not found in recipes_flattened")
+
+            aggregated: dict[int, tuple[float, IngredientResponse]] = {}
+            
+            for recipe_input in recipes_with_quantity:
+                recipe_id = recipe_input.recipe_id
+                requested_quantity = recipe_input.quantity
+                
+                recipes_flattened = next((rf for rf in recipes_flattened_records if rf.component_id == recipe_id), None)
+                recipe = recipes_map.get(recipe_id)
+                
+                if not recipes_flattened:
+                    logger.warning(f"recipes_flattened not found for recipe_id={recipe_id}, skipping")
+                    continue
+                if not recipe:
+                    logger.warning(f"Recipe not found for recipe_id={recipe_id}, skipping")
+                    continue
+
+                default_servings = recipe.default_servings
+                scale_factor = requested_quantity / default_servings if default_servings > 0 else 1.0
+
+                for ingredient_data in recipes_flattened.all_ingredients:
+                    component_id = ingredient_data['component_id']
+                    base_quantity = ingredient_data['quantity']
+                    scaled_quantity = base_quantity * scale_factor
+                    ingredient_dict = ingredient_data['ingredient']
+
+                    ingredient = IngredientResponse.model_validate(ingredient_dict)
+                    
+                    if component_id in aggregated:
+                        existing_quantity, _ = aggregated[component_id]
+                        aggregated[component_id] = (existing_quantity + scaled_quantity, ingredient)
+                    else:
+                        aggregated[component_id] = (scaled_quantity, ingredient)
 
             result: list[tuple[float, IngredientResponse, Optional[bool]]] = []
             if check_existence:
                 component_existence = db.query(ComponentExistence).filter(ComponentExistence.group_id == group_id).first()
                 component_name_list = component_existence.component_name_list if component_existence else []
 
-                for quantity, ingredient in aggregated_ingredients.all_ingredients.values():
+                for quantity, ingredient in aggregated.values():
                     available = ingredient.component_name in component_name_list
                     result.append((quantity, ingredient, available))
             else:
-                for quantity, ingredient in aggregated_ingredients.all_ingredients.values():
+                for quantity, ingredient in aggregated.values():
                     result.append((quantity, ingredient, None))
 
             return result

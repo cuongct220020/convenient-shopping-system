@@ -2,6 +2,8 @@ from typing import Generic, TypeVar, Optional, Sequence, Dict, Any
 from sqlalchemy.orm import Session, DeclarativeBase
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import Select
 from sqlalchemy.inspection import inspect
 from pydantic import BaseModel
 from fastapi import HTTPException
@@ -19,14 +21,23 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
         self._relationships = {name: rel for name, rel in inspect(self.model).relationships.items()}
 
+    def _load_with_relationships(self, stmt: Select) -> Select:
+        for rel in self._relationships.keys():
+            stmt = stmt.options(selectinload(getattr(self.model, rel)))
+        return stmt
+
     def get(self, db: Session, id: int) -> Optional[ModelType]:
-        return db.get(self.model, id)
+        pk = inspect(self.model).primary_key[0]
+        stmt = select(self.model).where(pk == id)                                               # type: ignore
+        stmt = self._load_with_relationships(stmt)
+        return db.execute(stmt).scalars().first()
 
     def get_many(self, db: Session, cursor: Optional[int] = None, limit: int = 100) -> Sequence[ModelType]:
         pk = inspect(self.model).primary_key[0]
         stmt = select(self.model).order_by(pk.desc()).limit(limit)
         if cursor is not None:
             stmt = stmt.where(pk < cursor)
+        stmt = self._load_with_relationships(stmt)
         return db.execute(stmt).scalars().all()
 
     def delete(self, db: Session, id: int) -> ModelType:

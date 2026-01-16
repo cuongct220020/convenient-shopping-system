@@ -112,12 +112,18 @@ export class StorageService {
   }
 
   /**
-   * Get list of storages for a group
+   * Filter storages by group_id and optionally storage_type
    */
-  public getStorages(
-    groupId: string
+  public filterStorages(
+    groupId: string,
+    storageType?: 'fridge' | 'freezer' | 'pantry'
   ): ResultAsync<StorageListItem[], StorageError> {
-    const url = `/v1/storages/?group_id=${groupId}`
+    const queryParams = new URLSearchParams()
+    queryParams.append('group_id', groupId)
+    if (storageType) {
+      queryParams.append('storage_type', storageType)
+    }
+    const url = `/v1/storages/filter?${queryParams.toString()}`
 
     return httpGet(this.clients.shopping, url)
       .mapErr((e) => {
@@ -145,6 +151,16 @@ export class StorageService {
         }
         return []
       })
+  }
+
+  /**
+   * Get list of storages for a group (deprecated - use filterStorages instead)
+   * @deprecated Use filterStorages instead
+   */
+  public getStorages(
+    groupId: string
+  ): ResultAsync<StorageListItem[], StorageError> {
+    return this.filterStorages(groupId)
   }
 
   /**
