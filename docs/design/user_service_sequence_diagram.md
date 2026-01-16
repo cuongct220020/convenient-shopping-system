@@ -365,7 +365,7 @@ sequenceDiagram
 ## 6. Luồng Quản lý Nhóm Gia đình (Family Group)
 
 ### 6.1. Tạo Nhóm (Create Group)
-Người dùng tạo nhóm sẽ tự động trở thành `HEAD_CHEF`.
+Người dùng tạo nhóm sẽ tự động trở thành `HEAD_CHEF`. Hệ thống cập nhật tags của user vì đã tham gia nhóm mới.
 
 ```mermaid
 sequenceDiagram
@@ -377,6 +377,7 @@ sequenceDiagram
     participant RepoMember as GroupMembershipRepo
     participant DB as Database
     participant Redis as Redis
+    participant Kafka as Kafka Broker
 
     Client->>View: POST /groups (group_name, avatar)
     activate View
@@ -384,20 +385,24 @@ sequenceDiagram
     View->>Service: create_group_by_user(user_id, group_data)
     activate Service
     
-    %% Tạo nhóm trong DB
+    %% Create Group
     Service->>RepoGroup: create(group_data)
     RepoGroup->>DB: INSERT INTO family_groups (created_by=user_id)
     DB-->>RepoGroup: Group Object
     
-    %% Thêm người tạo làm Head Chef
+    %% Add Creator as Head Chef
     Service->>RepoMember: add_membership(user_id, group_id, role="HEAD_CHEF")
     RepoMember->>DB: INSERT INTO group_memberships
     
-    %% Xóa Cache danh sách nhóm
-    Service->>Redis: delete_pattern(USER_GROUPS_LIST_WILDCARD)
-    
+    %% Fetch Full Details
     Service->>RepoGroup: get_with_details(group_id)
     RepoGroup-->>Service: Full Group Data
+    
+    %% Invalidate Cache
+    Service->>Redis: delete_pattern(USER_GROUPS_LIST:user_id)
+    
+    %% Publish User Tag Update (User joined new group)
+    Service->>Kafka: Publish USER_UPDATE_TAG_EVENTS_TOPIC
     
     Service-->>View: Group Data
     deactivate Service
@@ -417,7 +422,8 @@ sequenceDiagram
     participant Service as FamilyGroupService
     participant RepoMember as GroupMembershipRepo
     participant DB as Database
-    participant Kafka as Kafka
+    participant Redis as Redis
+    participant Kafka as Kafka Broker
     participant NotiService as Notification Service
     participant WS as WebSocket Clients
 
@@ -427,14 +433,24 @@ sequenceDiagram
     View->>Service: add_member_by_identifier()
     activate Service
     
-    %% ... (Logic tìm user, check quyền, check exist) ...
+    %% Check Permissions & Existence
+    Service->>Service: check_is_head_chef()
+    Service->>RepoMember: get_membership(target_id) (Check duplicate)
     
-    %% Thông báo Kafka (Sự kiện thêm thành viên)
-    Service->>Kafka: Publish ADD_USERS_GROUP_EVENTS_TOPIC
+    %% Publish Notification Event (Prior to DB insert to notify early/async)
+    Service->>Kafka: Publish NOTIFICATION_TOPIC (group_user_added)
     
-    %% Thêm vào DB
-    Service->>RepoMember: add_membership(target_id, group_id, "MEMBER")
+    %% Add Membership
+    Service->>RepoMember: add_membership(target_id, "MEMBER")
     RepoMember->>DB: INSERT INTO group_memberships
+    
+    %% Invalidate Caches
+    Service->>Redis: delete_key(USER_GROUPS_LIST:target_id)
+    Service->>Redis: delete_key(GROUP_DETAIL:group_id)
+    Service->>Redis: delete_key(GROUP_MEMBERS_LIST:group_id)
+    
+    %% Publish User Tag Update (Target user joined group)
+    Service->>Kafka: Publish USER_UPDATE_TAG_EVENTS_TOPIC
     
     Service-->>View: Membership Data
     deactivate Service
@@ -451,9 +467,6 @@ sequenceDiagram
     
     %% 2. Thông báo cho cả nhóm (Group Channel)
     NotiService->>WS: broadcast_to_group(group_id, "New member added")
-    
-    %% 3. Đăng ký WS của user mới vào Group Channel
-    NotiService->>NotiService: websocket_manager.add_user_to_group()
     deactivate NotiService
 ```
 
@@ -468,7 +481,8 @@ sequenceDiagram
     participant Service as FamilyGroupService
     participant RepoMember as GroupMembershipRepo
     participant DB as Database
-    participant Kafka as Kafka
+    participant Redis as Redis
+    participant Kafka as Kafka Broker
     participant NotiService as Notification Service
     participant WS as WebSocket Clients
 
@@ -478,12 +492,20 @@ sequenceDiagram
     View->>Service: update_member_role()
     activate Service
     
-    %% ... (Logic check quyền, update DB) ...
-    Service->>RepoMember: update_role(...)
+    %% Check Permission
+    Service->>Service: check_is_head_chef()
+    
+    %% Update DB
+    Service->>RepoMember: update_role(target_id, role)
     RepoMember->>DB: UPDATE group_memberships
     
-    %% Publish Event
-    Service->>Kafka: Publish UPDATE_HEADCHEF_ROLE_EVENTS_TOPIC
+    %% Invalidate Caches
+    Service->>Redis: delete_key(GROUP_DETAIL:group_id)
+    Service->>Redis: delete_key(USER_GROUPS_LIST:target_id)
+    Service->>Redis: delete_key(GROUP_MEMBERS_LIST:group_id)
+    
+    %% Publish Notification Event
+    Service->>Kafka: Publish NOTIFICATION_TOPIC (group_head_chef_updated)
     
     Service-->>View: Updated Membership
     deactivate Service
@@ -509,7 +531,8 @@ sequenceDiagram
     participant Service as FamilyGroupService
     participant RepoMember as GroupMembershipRepo
     participant DB as Database
-    participant Kafka as Kafka
+    participant Redis as Redis
+    participant Kafka as Kafka Broker
     participant NotiService as Notification Service
     participant WS as WebSocket Clients
 
@@ -519,14 +542,23 @@ sequenceDiagram
     View->>Service: remove_member_by_head_chef()
     activate Service
     
-    %% ... (Logic check quyền) ...
+    %% Check Permissions
+    Service->>Service: check_is_head_chef()
     
-    %% Xóa khỏi DB
+    %% Remove from DB
     Service->>RepoMember: remove_membership(target_id, group_id)
     RepoMember->>DB: DELETE FROM group_memberships
     
-    %% Thông báo
-    Service->>Kafka: Publish REMOVE_USERS_GROUP_EVENTS_TOPIC
+    %% Invalidate Caches
+    Service->>Redis: delete_key(USER_GROUPS_LIST:target_id)
+    Service->>Redis: delete_key(GROUP_DETAIL:group_id)
+    Service->>Redis: delete_key(GROUP_MEMBERS_LIST:group_id)
+    
+    %% Publish Notification Event
+    Service->>Kafka: Publish NOTIFICATION_TOPIC (group_user_removed)
+    
+    %% Publish User Tag Update (Target user left group)
+    Service->>Kafka: Publish USER_UPDATE_TAG_EVENTS_TOPIC
     
     Service-->>View: Void
     deactivate Service
@@ -543,9 +575,63 @@ sequenceDiagram
     
     %% 2. Thông báo riêng cho người bị xóa
     NotiService->>WS: send_to_user(target_id, "You were removed from group X")
+    deactivate NotiService
+```
+
+### 6.5. Rời Nhóm (Leave Group)
+Thành viên tự rời khỏi nhóm. Nếu là Head Chef và còn thành viên khác, quyền Head Chef sẽ được chuyển trước.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client
+    participant View as GroupMemberMeView
+    participant Service as FamilyGroupService
+    participant RepoMember as GroupMembershipRepo
+    participant DB as Database
+    participant Redis as Redis
+    participant Kafka as Kafka Broker
+    participant NotiService as Notification Service
+    participant WS as WebSocket Clients
+
+    Client->>View: DELETE /groups/{gid}/members/me
+    activate View
     
-    %% 3. Hủy đăng ký WS của user khỏi Group Channel
-    NotiService->>NotiService: websocket_manager.remove_user_from_group()
+    View->>Service: leave_group(user_id)
+    activate Service
+    
+    %% Logic kiểm tra & Chuyển quyền nếu là Head Chef
+    alt User is Head Chef & Group has other members
+        Service->>RepoMember: update_role(next_member, "HEAD_CHEF")
+        RepoMember->>DB: UPDATE
+        Service->>Kafka: Publish NOTIFICATION_TOPIC (group_head_chef_updated)
+    end
+    
+    %% Remove Membership
+    Service->>RepoMember: remove_membership(user_id, group_id)
+    RepoMember->>DB: DELETE FROM group_memberships
+    
+    %% Invalidate Caches
+    Service->>Redis: delete_key(USER_GROUPS_LIST:user_id)
+    Service->>Redis: delete_key(GROUP_DETAIL:group_id)
+    Service->>Redis: delete_key(GROUP_MEMBERS_LIST:group_id)
+    
+    %% Publish Notification Event
+    Service->>Kafka: Publish NOTIFICATION_TOPIC (group_user_left)
+    
+    %% Publish User Tag Update
+    Service->>Kafka: Publish USER_UPDATE_TAG_EVENTS_TOPIC
+    
+    Service-->>View: Success
+    deactivate Service
+    View-->>Client: 200 OK
+    deactivate View
+
+    %% --- ASYNC NOTIFICATIONS ---
+    note over Kafka, WS: REALTIME NOTIFICATIONS
+    Kafka->>NotiService: Consume (UserLeaveGroupHandler)
+    activate NotiService
+    NotiService->>WS: broadcast_to_group(group_id, "User left group")
     deactivate NotiService
 ```
 

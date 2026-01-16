@@ -269,7 +269,6 @@ class FamilyGroupService:
         self,
         requester_id: UUID,
         requester_username: str,
-        requester_email: str,
         group_id: UUID,
         target_user_id: UUID,
         new_role: GroupRole
