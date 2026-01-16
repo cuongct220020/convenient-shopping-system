@@ -104,3 +104,4 @@ created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), nulla
 - Không có kế hoạch query theo date range
 
 
+

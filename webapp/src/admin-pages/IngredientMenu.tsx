@@ -13,7 +13,29 @@ import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
 import { DishForm } from '../components/DishForm'
 import { IngredientForm } from '../components/IngredientForm'
-import garlicImg from '../assets/garlic.png'
+// Import all category images
+import alcoholicBeveragesImg from '../assets/alcoholic_beverages.png'
+import beveragesImg from '../assets/beverages.png'
+import cakesImg from '../assets/cakes.png'
+import candiesImg from '../assets/candies.png'
+import cerealsGrainsImg from '../assets/cereals_grains.png'
+import coldCutsImg from '../assets/cold_cuts.png'
+import driedFruitImg from '../assets/dried_fruit.png'
+import freshFruitsImg from '../assets/fresh_fruits.png'
+import freshMeatImg from '../assets/fresh_meat.png'
+import fruitJamsImg from '../assets/fruit_jams.png'
+import grainsStaplesImg from '../assets/grains_staples.png'
+import icecreamCheeseImg from '../assets/icecream_cheese.png'
+import instantFoodsImg from '../assets/instant_foods.png'
+import milkImg from '../assets/milk.png'
+import othersImg from '../assets/others.png'
+import seafoodFishballsImg from '../assets/seafood_fishballs.png'
+import seasoningsImg from '../assets/seasonings.png'
+import snacksImg from '../assets/snacks.png'
+import vegetablesImg from '../assets/vegetables.png'
+import yogurtImg from '../assets/yogurt.png'
+import garlicImg from '../assets/garlic.png' // Fallback image
+
 import { ingredientService } from '../services/ingredient'
 import { useIsMounted } from '../hooks/useIsMounted'
 import type { Ingredient } from '../services/schema/ingredientSchema'
@@ -33,11 +55,41 @@ type ItemData = Omit<
   image: string
 }
 
+// Mapping from category (Vietnamese) to image
+const categoryToImageMap: Record<string, string> = {
+  'Đồ uống có cồn': alcoholicBeveragesImg,
+  'Đồ uống': beveragesImg,
+  'Bánh ngọt': cakesImg,
+  'Kẹo': candiesImg,
+  'Ngũ cốc và hạt': cerealsGrainsImg,
+  'Thịt nguội, xúc xích và giăm bông': coldCutsImg,
+  'Trái cây sấy khô': driedFruitImg,
+  'Trái cây tươi': freshFruitsImg,
+  'Thịt tươi': freshMeatImg,
+  'Mứt trái cây': fruitJamsImg,
+  'Lương thực': grainsStaplesImg,
+  'Kem và phô mai': icecreamCheeseImg,
+  'Thực phẩm ăn liền': instantFoodsImg,
+  'Sữa': milkImg,
+  'Khác': othersImg,
+  'Hải sản và cá viên': seafoodFishballsImg,
+  'Gia vị': seasoningsImg,
+  'Đồ ăn vặt': snacksImg,
+  'Rau củ': vegetablesImg,
+  'Sữa chua': yogurtImg
+}
+
+// Get image for category, fallback to garlic image if category not found
+const getImageForCategory = (category: string | null | undefined): string => {
+  if (!category) return garlicImg
+  return categoryToImageMap[category] || garlicImg
+}
+
 // Map server ingredient to UI item format
 const mapIngredientToItem = (ingredient: Ingredient): ItemData => ({
   id: ingredient.component_id,
   name: ingredient.component_name,
-  image: garlicImg,
+  image: getImageForCategory(ingredient.category),
   ...ingredient
 })
 
@@ -488,7 +540,7 @@ const IngredientMenu = () => {
               <Item
                 key={item.id}
                 name={item.name}
-                category={item.category}
+                category={item.category || 'Khác'}
                 image={item.image}
                 onClick={() => handleItemClick(item)}
               />

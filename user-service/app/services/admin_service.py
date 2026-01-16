@@ -38,8 +38,9 @@ class AdminUserService:
     async def get_all_users_paginated(self, page: int = 1, page_size: int = 20) -> Tuple[list, int]:
         """Fetch all users with pagination."""
         from sqlalchemy.orm import selectinload
+        from app.models.user_profile import UserIdentityProfile
         load_options = [
-            selectinload(User.identity_profile),
+            selectinload(User.identity_profile).selectinload(UserIdentityProfile.address),
             selectinload(User.health_profile)
         ]
         paginated_result = await self.user_repo.get_paginated(
