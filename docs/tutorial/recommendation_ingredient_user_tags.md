@@ -1,3 +1,48 @@
+
+#### Ingredient Tags
+1100: high_fat
+1101: high_cholesterol
+1102: high_fiber
+1103: high_protein
+1104: high_sugar
+1105: high_carb
+1106: high_calorie
+1107: high_omega3
+1108: high_omega6
+1109: high_omega9
+1110: high_sodium
+1111: high_potassium
+1112: high_phosphorus
+1113: high_calcium
+1114: high_magnesium
+1115: high_iron
+1116: high_zinc
+1120: high_vitaminA
+1121: high_vitaminC
+1122: high_vitaminD
+1123: high_vitaminK
+1124: high_vitaminB7
+1125: high_vitaminB9
+1126: high_vitaminB12
+1130: high_acidity
+1131: high_alkaline
+1132: high_capsaicin
+1133: high_alcohol
+1134: high_caffeine
+1135: high_oxalate
+1200: salty
+1201: sweet
+1202: umami
+1203: sour
+1204: bitter
+1205: spicy
+1206: light
+1207: rich
+1300: vegan
+1301: vegetarian
+
+
+#### User Tags
 0100: children
 0101: teenager
 0102: adult
