@@ -35,6 +35,16 @@ The system follows a **microservices architecture** with **event-driven communic
 
 ## Video Demo
 
+### User View Demo
+[![User View Demo](./docs/assets/images/demo/user-view.png)](https://www.youtube.com/watch?v=Tj3XXujmkCw)
+
+**Video Link:** [YouTube - User Demo](https://www.youtube.com/watch?v=Tj3XXujmkCw)
+
+### Admin View Demo
+[![Admin View Demo](./docs/assets/images/demo/admin-view.png)](https://www.youtube.com/watch?v=NK9THlE9h_4)
+
+**Video Link:** [YouTube - Admin Demo](https://www.youtube.com/watch?v=NK9THlE9h_4)
+
 
 ## Usage Guide
 
