@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Loader2 } from 'lucide-react'
+import { LoadingSpinner } from '../../../components/LoadingSpinner'
 import { recipeService, type Recipe } from '../../../services/recipe'
 
 // Default recipe image
@@ -19,7 +20,7 @@ function RecipeCard({ recipe, onClick }: RecipeCardProps) {
     >
       <div className="aspect-square overflow-hidden rounded-t-xl">
         <img
-          src={recipe.image_url || DEFAULT_RECIPE_IMAGE}
+          src={recipe.image_url?.trim() || DEFAULT_RECIPE_IMAGE}
           alt={recipe.component_name}
           className="h-full w-full object-cover"
         />
@@ -29,7 +30,7 @@ function RecipeCard({ recipe, onClick }: RecipeCardProps) {
           {recipe.component_name}
         </h3>
         <p className="mt-1 text-xs text-gray-500">
-          {recipe.default_servings} phần
+          Khẩu phần: {recipe.default_servings}
         </p>
       </div>
     </div>
@@ -49,7 +50,10 @@ export function Recipes() {
     setIsLoading(true)
     setError(null)
 
-    const result = await recipeService.searchRecipes(keyword || ' ', cursor, 10)
+    const trimmed = keyword.trim()
+    const result = trimmed
+      ? await recipeService.searchRecipes(trimmed, cursor, 10)
+      : await recipeService.getRecipes(cursor, 10)
 
     result.match(
       (response) => {
@@ -93,12 +97,12 @@ export function Recipes() {
 
   const handleLoadMore = () => {
     if (nextCursor && !isLoading) {
-      fetchRecipes(searchQuery.trim() || ' ', nextCursor)
+      fetchRecipes(searchQuery, nextCursor)
     }
   }
 
   const handleRecipeClick = (recipeId: number) => {
-    navigate(`/main/nutrition/recipe/${recipeId}`)
+    navigate(`/main/recipe-view/recipe/${recipeId}`)
   }
 
   return (
@@ -162,7 +166,7 @@ export function Recipes() {
 
       {isLoading && recipes.length === 0 && (
         <div className="flex flex-1 items-center justify-center py-8">
-          <Loader2 className="size-8 animate-spin text-[#C3485C]" />
+          <LoadingSpinner size="lg" showText text="Đang tải..." />
         </div>
       )}
     </div>

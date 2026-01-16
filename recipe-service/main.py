@@ -10,7 +10,7 @@ from apis.v2.recipe_api import recipe_router
 from core.messaging import kafka_manager
 from messaging.consumers.component_existence_consumer import consume_component_existence_events
 from messaging.consumers.group_tags_consumer import consume_group_tags_events
-from shopping_shared.caching.redis_manager import redis_manager
+from core.caching import redis_manager
 from shopping_shared.utils.logger_utils import get_logger
 import asyncio
 

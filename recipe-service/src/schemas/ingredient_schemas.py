@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, Literal, Annotated
 from typing_extensions import TypeAlias
 from enums.c_measurement_unit import CMeasurementUnit
@@ -14,7 +14,7 @@ class IngredientBase(BaseModel):
     fiber: Optional[float] = Field(None, ge=0)
     calories: Optional[float] = Field(None, ge=0)
     estimated_price: Optional[int] = Field(None, ge=0)
-    ingredient_tag_list: Optional[list[int]] = None
+    ingredient_tag_list: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(
         from_attributes=True,

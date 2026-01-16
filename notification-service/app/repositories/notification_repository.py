@@ -1,7 +1,7 @@
 # notification-service/app/repositories/notification_repository.py
 from typing import List, Optional
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notifications import Notification
@@ -26,12 +26,16 @@ class NotificationRepository(BaseRepository[Notification, NotificationCreateSche
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def mark_as_read(self, notification_id: int, receiver_id: UUID) -> Optional[Notification]:
+    async def mark_as_read(self, notification_id: int, receiver_id: UUID) -> bool:
         """Mark a notification as read. Only allows marking notifications owned by the receiver."""
-        notification = await self.get_by_id(notification_id)
-        if notification and notification.receiver == receiver_id:
-            notification.is_read = True
-            await self.session.flush()
-            await self.session.refresh(notification)
-            return notification
-        return None
+        stmt = (
+            update(Notification)
+            .where(
+                Notification.id == notification_id,
+                Notification.receiver == receiver_id
+            )
+            .values(is_read=True)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.flush()
+        return result.rowcount == 1

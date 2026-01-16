@@ -3,7 +3,7 @@ from datetime import date
 from typing import Dict, List
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from core.database import get_db
+from core.database import SessionLocal
 from enums.meal_status import MealStatus
 from enums.meal_type import MealType
 from core.messaging import kafka_manager
@@ -16,7 +16,7 @@ logger = get_logger("Daily Meal Task")
 
 
 def fetch_today_meals_grouped() -> Dict[str, Dict[str, List[str]]]:
-    db = next(get_db())
+    db = SessionLocal()
     today = date.today()
     try:
         meals = db.execute(

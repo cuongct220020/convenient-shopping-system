@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, CheckCircle2, Clock, Circle, X, RotateCcw, AlertCircle } from 'lucide-react'
 import { Button } from '../../../components/Button'
+import { LoadingSpinner } from '../../../components/LoadingSpinner'
 import { NotificationCard } from '../../../components/NotificationCard'
 import { shoppingPlanService } from '../../../services/shopping-plan'
 import { userService } from '../../../services/user'
@@ -229,7 +230,7 @@ const GroupDetailShoppingPlans: React.FC<GroupDetailShoppingPlansProps> = ({
       <div className="w-full">
         {isPlansLoading ? (
           <div className="flex justify-center py-8">
-            <div className="size-8 animate-spin rounded-full border-b-2 border-[#C3485C]"></div>
+            <LoadingSpinner size="md" showText text="Đang tải..." />
           </div>
         ) : plansError ? (
           <div className="px-6 py-8 text-center">

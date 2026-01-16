@@ -12,6 +12,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Button } from '../../../components/Button';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { shoppingPlanService } from '../../../services/shopping-plan';
 import { userService } from '../../../services/user';
 import { storageService, type StorageListItem } from '../../../services/storage';
@@ -119,7 +120,7 @@ export default function ImplementPlan() {
   // Fetch storages for reporting (each reported unit must belong to a storage)
   useEffect(() => {
     if (!planData?.group_id) return;
-    storageService.getStorages(String(planData.group_id)).match(
+    storageService.filterStorages(String(planData.group_id)).match(
       (list) => {
         setStorages(list);
         setStoragesError(null);
@@ -419,7 +420,7 @@ export default function ImplementPlan() {
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C3485C]"></div>
+            <LoadingSpinner size="lg" showText text="Đang tải..." />
           </div>
         )}
 

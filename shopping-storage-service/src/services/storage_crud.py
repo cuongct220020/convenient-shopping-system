@@ -1,27 +1,33 @@
 from typing import Optional, Sequence
+from uuid import UUID
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select
 from sqlalchemy.inspection import inspect
 from shopping_shared.crud.crud_base import CRUDBase
 from models.storage import Storage
 from schemas.storage_schemas import StorageCreate, StorageUpdate
+from enums.storage_type import StorageType
 
 class StorageCRUD(CRUDBase[Storage, StorageCreate, StorageUpdate]):
-    def get(self, db: Session, id: int) -> Optional[Storage]:
-        return db.execute(
-            select(Storage)
-            .options(selectinload(Storage.storage_unit_list))
-            .where(Storage.storage_id == id)
-        ).scalars().first()
+    def filter(
+        self,
+        db: Session,
+        group_id: Optional[UUID] = None,
+        storage_type: Optional[StorageType] = None,
+        cursor: Optional[int] = None,
+        limit: int = 100
+    ) -> Sequence[Storage]:
+        stmt = select(Storage).options(selectinload(Storage.storage_unit_list))
 
-    def get_many(self, db: Session, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Storage]:
+        if group_id is not None:
+            stmt = stmt.where(Storage.group_id == group_id)
+
+        if storage_type is not None:
+            stmt = stmt.where(Storage.storage_type == storage_type)
+
         pk = inspect(Storage).primary_key[0]
-        stmt = (
-            select(Storage)
-            .options(selectinload(Storage.storage_unit_list))
-            .order_by(pk.desc())
-            .limit(limit)
-        )
+        stmt = stmt.order_by(pk.desc())
         if cursor is not None:
             stmt = stmt.where(pk < cursor)
+        stmt = stmt.limit(limit)
         return db.execute(stmt).scalars().all()

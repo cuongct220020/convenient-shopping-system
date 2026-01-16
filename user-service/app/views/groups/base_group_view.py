@@ -4,6 +4,7 @@ from sanic import Request
 from app.repositories.family_group_repository import FamilyGroupRepository
 from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.repositories.user_repository import UserRepository
+from app.repositories.user_tag_repository import UserTagRepository
 from app.services.family_group_service import FamilyGroupService
 from app.views.base_view import BaseAPIView
 
@@ -16,4 +17,5 @@ class BaseGroupView(BaseAPIView):
         group_repo = FamilyGroupRepository(session=session)
         member_repo = GroupMembershipRepository(session=session)
         user_repo = UserRepository(session=session)
-        return FamilyGroupService(group_repo, member_repo, user_repo)
+        user_tag_repo = UserTagRepository(session=session)
+        return FamilyGroupService(group_repo, member_repo, user_repo, user_tag_repo)

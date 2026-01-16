@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Clock, Users, ChefHat, Loader2 } from 'lucide-react'
+import { Clock, Users, ChefHat } from 'lucide-react'
 import { BackButton } from '../../../components/BackButton'
+import { LoadingSpinner } from '../../../components/LoadingSpinner'
 import { recipeService, type RecipeDetailedResponse } from '../../../services/recipe'
 
 // Default recipe image
@@ -51,9 +52,9 @@ export function RecipeDetail() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col p-4">
-        <BackButton to="/main/nutrition" text="Quay lại" className="mb-4" />
+        <BackButton to="/main/recipe-view" text="Quay lại" className="mb-4" />
         <div className="flex flex-1 items-center justify-center py-16">
-          <Loader2 className="size-8 animate-spin text-[#C3485C]" />
+          <LoadingSpinner size="lg" showText text="Đang tải..." />
         </div>
       </div>
     )
@@ -62,7 +63,7 @@ export function RecipeDetail() {
   if (error || !recipe) {
     return (
       <div className="flex min-h-screen flex-col p-4">
-        <BackButton to="/main/nutrition" text="Quay lại" className="mb-4" />
+        <BackButton to="/main/recipe-view" text="Quay lại" className="mb-4" />
         <div className="flex flex-1 items-center justify-center py-16">
           <p className="text-red-500">{error || 'Không tìm thấy công thức'}</p>
         </div>
@@ -72,13 +73,13 @@ export function RecipeDetail() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-4">
-      <BackButton to="/main/nutrition" text="Quay lại" className="sticky top-0 z-10 bg-gray-50 p-4 pb-2" />
+      <BackButton to="/main/recipe-view" text="Quay lại" className="sticky top-0 z-10 bg-gray-50 p-4 pb-2" />
       
       {/* Recipe Image */}
       <div className="px-4 pb-4">
         <div className="overflow-hidden rounded-2xl shadow-lg">
           <img
-            src={recipe.image_url || DEFAULT_RECIPE_IMAGE}
+            src={recipe.image_url?.trim() || DEFAULT_RECIPE_IMAGE}
             alt={recipe.component_name}
             className="h-64 w-full object-cover"
           />
@@ -107,7 +108,7 @@ export function RecipeDetail() {
           )}
           <div className="flex flex-col items-center rounded-xl bg-white p-3 shadow-sm">
             <Users className="mb-1 size-5 text-[#C3485C]" />
-            <span className="text-xs text-gray-500">Phần</span>
+            <span className="text-xs text-gray-500">Khẩu phần</span>
             <span className="text-sm font-semibold text-gray-900">{recipe.default_servings}</span>
           </div>
         </div>
@@ -135,7 +136,7 @@ export function RecipeDetail() {
                     <div className="flex-1 text-sm text-gray-800">
                       {isRecipe ? (
                         <Link
-                          to={`/main/nutrition/recipe/${item.component.component_id}`}
+                          to={`/main/recipe-view/recipe/${item.component.component_id}`}
                           className="font-semibold text-gray-900 underline decoration-[#C3485C] decoration-2 underline-offset-2 transition-colors hover:text-[#C3485C]"
                           onClick={(e) => e.stopPropagation()}
                         >

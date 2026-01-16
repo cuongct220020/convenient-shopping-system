@@ -86,9 +86,7 @@ export class AppUrl {
       queryParams.append('limit', String(params.limit))
     }
 
-    return `v2/ingredients/search?keyword=${keyword}${
-      queryParams.toString() ? '&' + queryParams.toString() : ''
-    }`
+    return `v2/ingredients/search?${queryParams.toString()}`
   }
   public static INGREDIENTS_FILTER(
     categories: string[],

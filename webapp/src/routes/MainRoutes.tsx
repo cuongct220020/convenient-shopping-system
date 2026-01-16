@@ -16,6 +16,7 @@ import { AddStorageItem } from '../pages/main/food-storage/AddStorageItem'
 import { Meal } from '../pages/main/meal/Meal'
 import { AddMeal } from '../pages/main/meal/AddMeal'
 import { MealDetail } from '../pages/main/meal/MealDetail'
+import { SelectRecipe } from '../pages/main/meal/SelectRecipe'
 import FamilyGroup from '../pages/main/family-group/FamilyGroup'
 import AddGroup from '../pages/main/family-group/AddGroup'
 import GroupDetail from '../pages/main/family-group/GroupDetail'
@@ -67,8 +68,8 @@ const ProfileRoutes: RouteObject = {
 import { Recipes } from '../pages/main/nutrition/Recipes'
 import { RecipeDetail } from '../pages/main/nutrition/RecipeDetail'
 
-const NutritionRoutes: RouteObject = {
-  path: 'nutrition',
+const RecipeViewRoutes: RouteObject = {
+  path: 'recipe-view',
   children: [
     {
       index: true,
@@ -101,7 +102,7 @@ const FoodRoutes: RouteObject = {
 }
 
 const FavoriteRoutes: RouteObject = {
-  path: 'nutrition',
+  path: 'recipe-view',
   element: <div>Favorite Screen</div>
 }
 
@@ -118,7 +119,7 @@ export const MainRoutes: RouteObject = {
       element: <Profile />
     },
     ProfileRoutes,
-    NutritionRoutes,
+    RecipeViewRoutes,
     FoodRoutes,
     FavoriteRoutes,
     {
@@ -152,6 +153,10 @@ export const MainRoutes: RouteObject = {
     {
       path: 'family-group/:id/meal/detail',
       element: <MealDetail />
+    },
+    {
+      path: 'family-group/:id/meal/select-recipe',
+      element: <SelectRecipe />
     },
     {
       path: 'family-group/:id/storage',

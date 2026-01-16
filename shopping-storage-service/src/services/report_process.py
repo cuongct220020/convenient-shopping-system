@@ -1,11 +1,11 @@
-from typing import Dict, Set
+from typing import Dict, Optional
 import uuid
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from schemas.plan_schemas import PlanReport
 from enums.uc_measurement_unit import UCMeasurementUnit
 from models.storage import StorableUnit, Storage
-from core.database import get_db
+from core.database import SessionLocal
 from core.messaging import kafka_manager
 from shopping_shared.messaging.topics import COMPONENT_EXISTENCE_TOPIC
 from shopping_shared.utils.logger_utils import get_logger
@@ -13,12 +13,13 @@ from shopping_shared.utils.logger_utils import get_logger
 logger = get_logger("ReportProcess")
 
 async def report_process(report: PlanReport):
-    db = next(get_db())
+    db = SessionLocal()
     try:
         logger.info(f"Processing report with {len(report.report_content)} items")
 
-        group_ids_to_publish: Set[uuid.UUID] = set()
         storages_by_id: Dict[int, Storage] = {}
+        group_id: Optional[uuid.UUID] = None
+        has_component_units = False
 
         with db.begin():
             storage_ids = {item.storage_id for item in report.report_content}
@@ -35,6 +36,10 @@ async def report_process(report: PlanReport):
                         f"Skipping report item: storage_id={item.storage_id} not found (plan_id={report.plan_id})"
                     )
                     continue
+
+                # All units belong to the same group, so we just need to capture it once
+                if group_id is None:
+                    group_id = storage.group_id
 
                 content_unit = None
                 if item.content_unit is not None:
@@ -64,12 +69,12 @@ async def report_process(report: PlanReport):
                     )
                 )
 
-                # Only publish if this unit is tied to a component (ingredient).
+                # Track if any unit has component_id (ingredient)
                 if item.component_id is not None:
-                    group_ids_to_publish.add(storage.group_id)
+                    has_component_units = True
 
-        # Publish component existence updates once per affected group (after DB commit).
-        for group_id in group_ids_to_publish:
+        # Publish component existence update once for the group (after DB commit).
+        if group_id is not None and has_component_units:
             try:
                 stmt = (
                     select(StorableUnit.unit_name)
@@ -99,7 +104,6 @@ async def report_process(report: PlanReport):
                     f"Failed publishing component_existence update: group_id={str(group_id)}, err={str(e)}",
                     exc_info=True,
                 )
-                continue
 
         logger.info(f"Successfully processed report with {len(report.report_content)} items")
     except IntegrityError as e:

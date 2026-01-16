@@ -15,7 +15,7 @@ class Storage(Base):
     storage_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     storage_name: Mapped[str] = mapped_column(String, nullable=True)
     storage_type: Mapped[StorageType] = mapped_column(Enum(StorageType), nullable=False)
-    group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
 
     storage_unit_list: Mapped[list["StorableUnit"]] = relationship(
         back_populates="storage",
@@ -37,15 +37,15 @@ class StorableUnit(Base):
     __tablename__ = "storable_units"
 
     unit_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    storage_id: Mapped[int] = mapped_column(ForeignKey("storages.storage_id"), nullable=False)
+    storage_id: Mapped[int] = mapped_column(ForeignKey("storages.storage_id"), nullable=False, index=True)
     package_quantity: Mapped[int] = mapped_column(Integer, default=1)
-    unit_name: Mapped[str] = mapped_column(String, nullable=False)
-    component_id: Mapped[Optional[int]] = mapped_column(Integer)
+    unit_name: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    component_id: Mapped[Optional[int]] = mapped_column(Integer, index=True)
     content_type: Mapped[Optional[str]] = mapped_column(String)
     content_quantity: Mapped[Optional[float]] = mapped_column(Float)
     content_unit: Mapped[Optional[UCMeasurementUnit]] = mapped_column(Enum(UCMeasurementUnit))
     added_date: Mapped[date] = mapped_column(Date, default=func.current_date(), nullable=False)
-    expiration_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    expiration_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
 
     storage: Mapped["Storage"] = relationship(
         back_populates="storage_unit_list",

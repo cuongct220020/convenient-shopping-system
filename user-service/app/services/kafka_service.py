@@ -242,7 +242,7 @@ class KafkaService:
             username=str(username),
             email=str(email),
             tags=tags,
-            list_group_ids=str(list_group_ids),
+            list_group_ids=list_group_ids,
             timestamp=datetime.now(UTC)
         )
 

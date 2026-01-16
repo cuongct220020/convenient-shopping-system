@@ -5,13 +5,16 @@ import { MealType, mealTypeStr } from '../../../utils/constants'
 import { i18n } from '../../../utils/i18n/i18n'
 import { Time } from '../../../utils/time'
 import Food from '../../../assets/hamburger.png'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 
 export function MealDetail() {
   const { id: groupId } = useParams<{ id: string }>()
+  const location = useLocation()
   const date = new Date() // Real code should retrieve this some other way
   const mealType: MealType = 'breakfast'
   const navigate = useNavigate()
+
+  const stateGroupData = (location.state as { groupData?: any })?.groupData
 
   return (
     <div className="flex flex-col px-3 py-4">
@@ -19,6 +22,7 @@ export function MealDetail() {
         <BackButton
           to={`/main/family-group/${groupId}/meal`}
           text="Quay lại"
+          state={stateGroupData ? { groupData: stateGroupData } : undefined}
         ></BackButton>
       </div>
 
