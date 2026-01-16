@@ -175,14 +175,12 @@ class GroupMemberDetailView(BaseGroupView):
         validated_data = request.ctx.validated_data
         requester_id = request.ctx.auth_payload["sub"]
         requester_username = request.ctx.auth_payload["username"]
-        requester_email = request.ctx.auth_payload["email"]
         service = self._get_service(request)
 
         try:
             membership = await service.update_member_role(
                 requester_id=requester_id,
                 requester_username=requester_username,
-                requester_email=requester_email,
                 group_id=group_id,
                 target_user_id=user_id,
                 new_role=validated_data.role

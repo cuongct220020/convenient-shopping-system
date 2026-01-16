@@ -203,7 +203,7 @@ class KafkaService:
         payload = {
             "event_type": "group_head_chef_updated",
             "group_id": str(group_id),
-            "receivers": [],
+            # "receivers": [], # Commented out: Let notification service broadcast to group
             "data": {
                 "new_head_chef_username": str(new_head_chef_username),
                 "requester_username": str(requester_username),
@@ -218,7 +218,6 @@ class KafkaService:
             )
             logger.info(
                 f"Published notification to {NOTIFICATION_TOPIC}: event_type=group_head_chef_updated "
-                f"group_id={group_id} receivers=[]"
             )
 
         except Exception as e:
