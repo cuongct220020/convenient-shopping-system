@@ -92,7 +92,6 @@ const AddPlan = () => {
 
       result.match(
         (response) => {
-          console.log('Search response for:', ingredientSearch, response);
           if (response.data && response.data.length > 0) {
             // Filter out already added ingredients
             const filteredResults = response.data.filter(
@@ -111,7 +110,6 @@ const AddPlan = () => {
             setSelectedSearchResult(null);
             setShowQuantityInput(false);
           } else {
-            console.log('No ingredients found for:', ingredientSearch);
             setSearchResults([]);
             setSelectedSearchResult(null);
             setShowNotFound(true);
@@ -225,8 +223,6 @@ const AddPlan = () => {
         if (notes) others.notes = notes;
 
         // Debug logging
-        console.log('Creating plan with shopping list:', JSON.stringify(shoppingList, null, 2));
-        console.log('Others:', others);
 
         const result = await shoppingPlanService.createPlan({
           groupId: id,

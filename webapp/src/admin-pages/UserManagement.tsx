@@ -267,7 +267,6 @@ const UserManagement = () => {
       updateData.health_profile = healthProfile
     }
 
-    console.log('Update data:', JSON.stringify(updateData, null, 2))
 
     const result = await userService.updateUser(selectedUser.id, updateData)
 

@@ -137,7 +137,6 @@ export class StorageService {
         }
       })
       .map((response) => {
-        console.log('Raw response body:', response.body)
         // Handle different response structures
         const body = response.body as any
         if (Array.isArray(body)) {

@@ -130,7 +130,7 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
         group_id: Optional[uuid.UUID],
         check_existence: bool,
         db: Session
-    ) -> list[tuple[float, IngredientResponse, Optional[bool]]]:
+    ) -> list[tuple[float, dict, Optional[bool]]]:
         try:
             recipe_ids = [r.recipe_id for r in recipes_with_quantity]
 
@@ -144,7 +144,7 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
                 missing_ids = set(recipe_ids) - found_ids
                 raise HTTPException(status_code=404, detail=f"Recipes with ids={missing_ids} not found in recipes_flattened")
 
-            aggregated: dict[int, tuple[float, IngredientResponse]] = {}
+            aggregated: dict[int, tuple[float, dict]] = {}
             
             for recipe_input in recipes_with_quantity:
                 recipe_id = recipe_input.recipe_id
@@ -169,25 +169,23 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
                     scaled_quantity = base_quantity * scale_factor
                     ingredient_dict = ingredient_data['ingredient']
 
-                    ingredient = IngredientResponse.model_validate(ingredient_dict)
-                    
                     if component_id in aggregated:
                         existing_quantity, _ = aggregated[component_id]
-                        aggregated[component_id] = (existing_quantity + scaled_quantity, ingredient)
+                        aggregated[component_id] = (existing_quantity + scaled_quantity, ingredient_dict)
                     else:
-                        aggregated[component_id] = (scaled_quantity, ingredient)
+                        aggregated[component_id] = (scaled_quantity, ingredient_dict)
 
-            result: list[tuple[float, IngredientResponse, Optional[bool]]] = []
+            result: list[tuple[float, dict, Optional[bool]]] = []
             if check_existence:
                 component_existence = db.query(ComponentExistence).filter(ComponentExistence.group_id == group_id).first()
                 component_name_list = component_existence.component_name_list if component_existence else []
 
-                for quantity, ingredient in aggregated.values():
-                    available = ingredient.component_name in component_name_list
-                    result.append((quantity, ingredient, available))
+                for quantity, ingredient_dict in aggregated.values():
+                    available = ingredient_dict['component_name'] in component_name_list
+                    result.append((quantity, ingredient_dict, available))
             else:
-                for quantity, ingredient in aggregated.values():
-                    result.append((quantity, ingredient, None))
+                for quantity, ingredient_dict in aggregated.values():
+                    result.append((quantity, ingredient_dict, None))
 
             return result
         except HTTPException:

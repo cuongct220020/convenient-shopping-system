@@ -120,7 +120,6 @@ const OldPassword = () => {
 
     // If no errors, proceed with password reset
     if (!password1Error && !password2Error) {
-      console.log('Password reset confirmed')
       // Add actual password reset logic here
       setShowPopup(true)
     }

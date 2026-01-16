@@ -140,7 +140,6 @@ const EditPlan: React.FC = () => {
         setShowNotFound(true);
         setShowQuantityInput(false);
         setIsSearching(false);
-        console.log('Ingredient already added:', ingredientSearch);
         return;
       }
 
@@ -152,15 +151,12 @@ const EditPlan: React.FC = () => {
 
       result.match(
         (response) => {
-          console.log('Search response for:', ingredientSearch, response);
           if (response.data && response.data.length > 0) {
             // Use the first result
-            console.log('Found ingredient:', response.data[0]);
             setSearchResult(response.data[0]);
             setShowNotFound(false);
             setShowQuantityInput(true);
           } else {
-            console.log('No ingredients found for:', ingredientSearch);
             setSearchResult(null);
             setShowNotFound(true);
             setShowQuantityInput(false);
@@ -260,7 +256,6 @@ const EditPlan: React.FC = () => {
     if (notes) others.notes = notes;
 
     // Debug logging
-    console.log('Update plan shopping list:', JSON.stringify(shoppingList, null, 2));
 
     shoppingPlanService
       .updatePlan(parseInt(planId), {

@@ -26,9 +26,13 @@ export default function LoginAuthentication() {
   )
   const [isLoading, setIsLoading] = useState(false)
   const [isAskingNewOtp, setIsAskingNewOtp] = useState(false)
-  const [popup, setPopup] = useState({
+  const [popup, setPopup] = useState<{
+    show: boolean
+    type: 'error' | 'succeed' | 'incorrect'
+    message?: string
+  }>({
     show: false,
-    type: 'error' as 'error' | 'succeed' | 'incorrect'
+    type: 'error'
   })
   const isMounted = useIsMounted()
   useEffect(() => {
@@ -47,10 +51,21 @@ export default function LoginAuthentication() {
     e.preventDefault()
     if (!AuthService.validateOtpFormat(otpCode)) return
     if (!identification) {
-      console.error('We should not be in login auth page')
       navigate('/auth/login')
       return
     }
+    
+    // Kiểm tra email có phải là email hợp lệ không
+    const emailValidation = AuthService.validateEmail(identification)
+    if (emailValidation.isErr()) {
+      setPopup({ 
+        show: true, 
+        type: 'error',
+        message: 'Bạn cần đăng nhập lại bằng email đăng kí để xác thực tài khoản'
+      })
+      return
+    }
+    
     setIsLoading(true)
     const response = await authService.verifyOtp({
       identification,
@@ -62,14 +77,13 @@ export default function LoginAuthentication() {
     response.match(
       () => {
         LocalStorage.inst.emailRequestingOtp = null
-        setPopup({ show: true, type: 'succeed' })
+        setPopup({ show: true, type: 'succeed', message: undefined })
       },
       (e) => {
-        console.error(e)
         if (e.type === 'incorrect-otp') {
-          setPopup({ show: true, type: 'incorrect' })
+          setPopup({ show: true, type: 'incorrect', message: undefined })
         } else {
-          setPopup({ show: true, type: 'error' })
+          setPopup({ show: true, type: 'error', message: undefined })
         }
       }
     )
@@ -88,14 +102,18 @@ export default function LoginAuthentication() {
       () => {
         setTimeToRequestOtp(initializeOtpCountdown())
       },
-      () => setPopup({ show: true, type: 'error' })
+      () => setPopup({ show: true, type: 'error', message: undefined })
     )
   }
   const handlePopupClick = async () => {
     if (popup.type === 'succeed') {
       navigate('/auth/login')
     } else {
-      setPopup((prev) => ({ ...prev, show: false }))
+      setPopup({ show: false, type: 'error', message: undefined })
+      // Nếu là lỗi email không hợp lệ, navigate về login
+      if (popup.message?.includes('đăng nhập lại bằng email')) {
+        navigate('/auth/login')
+      }
     }
   }
 
@@ -114,9 +132,7 @@ export default function LoginAuthentication() {
           {/* Description Text */}
           <p className="mb-6 text-justify text-sm leading-relaxed text-gray-700">
             Xin chào{' '}
-            <span className="font-bold text-[#C3485C]">{username}</span>, bạn đã
-            đăng nhập thành công. Bạn cần xác nhận tài khoản để tiếp tục sử dụng
-            ứng dụng. Vui lòng nhập mã 6 chữ số được gửi đến email của bạn.
+            <span className="font-bold text-[#C3485C]">{username}</span>, tài khoản của bạn đã đăng kí thành công nhưng chưa được xác thực. Vui lòng đăng nhập lại bằng email, sau đó nhập mã OTP 6 chữ số được gửi đến email này.
           </p>
 
           {/* OTP Input Component */}
@@ -165,11 +181,12 @@ export default function LoginAuthentication() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
             <NotificationCard
               message={
-                popup.type === 'succeed'
+                popup.message ||
+                (popup.type === 'succeed'
                   ? i18n.t('otp_verified')
                   : popup.type === 'error'
                     ? i18n.t('internal_error')
-                    : i18n.t('otp_unverified')
+                    : i18n.t('otp_unverified'))
               }
               title={
                 popup.type === 'succeed'

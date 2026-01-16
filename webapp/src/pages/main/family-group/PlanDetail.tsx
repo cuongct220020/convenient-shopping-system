@@ -56,9 +56,8 @@ export const PlanDetail = () => {
             setCreatorInfo(creator.user);
           }
         },
-        (err) => {
+        () => {
           // Silently fail - we'll show the assigner_id instead of the name
-          console.log('Could not fetch creator info:', err);
         }
       );
   }, [planData, id]);
@@ -77,9 +76,8 @@ export const PlanDetail = () => {
             setAssigneeInfo(assignee.user);
           }
         },
-        (err) => {
+        () => {
           // Silently fail - we'll show the assignee_id instead of the name
-          console.log('Could not fetch assignee info:', err);
         }
       );
   }, [planData, id]);
@@ -147,7 +145,7 @@ export const PlanDetail = () => {
   };
 
   const handleContinueImplement = () => {
-    navigate(`/main/family-group/${id}/plan/${planId}/implement`, { state: { groupData } });
+    navigate(`/main/family-group/${id}/plan/${planId}/implement`);
   };
 
   const handleEdit = () => {

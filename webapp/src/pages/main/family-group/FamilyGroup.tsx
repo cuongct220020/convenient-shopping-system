@@ -80,7 +80,6 @@ const FamilyGroup: React.FC = () => {
   }, [location.state, location.pathname, navigate]);
 
   const handleCreateGroup = () => {
-    console.log('Create/Add group clicked');
     navigate('/main/family-group/add');
   };
 

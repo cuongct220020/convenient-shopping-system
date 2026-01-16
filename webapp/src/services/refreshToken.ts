@@ -19,7 +19,6 @@ class TokenRefreshManager {
       if (!this.refreshPromise) {
         throw new Error('Expect refresh promise to exist here')
       }
-      console.info('🔄 JWT refresh already in progress, waiting...')
       return this.refreshPromise
     }
 

@@ -27,7 +27,6 @@ export function AddMeal() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
-    console.log(`API will be called with`, { name, category: mealType })
   }
 
   return (

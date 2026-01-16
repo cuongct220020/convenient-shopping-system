@@ -135,7 +135,6 @@ export class ShoppingPlanService {
     }
 
     // Debug logging
-    console.log('Create plan request body:', JSON.stringify(body, null, 2))
 
     return httpPost(this.clients.auth, AppUrl.SHOPPING_PLANS, body)
       .mapErr((e) => {
@@ -171,7 +170,6 @@ export class ShoppingPlanService {
     }
 
     // Debug logging
-    console.log('Update plan request body:', JSON.stringify(body, null, 2))
 
     return httpPut(this.clients.auth, `${AppUrl.SHOPPING_PLANS}${planId}`, body)
       .mapErr((e) => {

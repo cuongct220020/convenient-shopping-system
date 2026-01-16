@@ -184,12 +184,6 @@ export function Storage() {
   const [storages, setStorages] = useState<StorageItem[]>([])
   const [isLoadingStorages, setIsLoadingStorages] = useState(true)
 
-  // Debug: Log storages state changes
-  useEffect(() => {
-    console.log('Storages state updated:', storages)
-    console.log('isLoadingStorages:', isLoadingStorages)
-    console.log('activeTab:', activeTab)
-  }, [storages, isLoadingStorages, activeTab])
 
   // Fetch group data - use state from navigation if available
   useEffect(() => {
@@ -239,13 +233,10 @@ export function Storage() {
     setIsLoadingStorages(true)
     storageService.filterStorages(groupId).match(
       (storagesList) => {
-        console.log('Fetched storages:', storagesList)
         // Check if storagesList is an array or wrapped in an object
         const storagesArray = Array.isArray(storagesList) 
           ? storagesList 
           : (storagesList as any)?.data || (storagesList as any)?.results || []
-        
-        console.log('Storages array:', storagesArray)
         setStorages(storagesArray.map((s: any) => ({
           storage_id: s.storage_id,
           storage_name: s.storage_name,
@@ -480,7 +471,6 @@ export function Storage() {
               ) : (
                 <div className="mx-auto grid max-w-6xl grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
                   {storages.map((storage) => {
-                    console.log('Rendering storage:', storage)
                     return (
                       <FridgeCard
                         key={storage.storage_id}
