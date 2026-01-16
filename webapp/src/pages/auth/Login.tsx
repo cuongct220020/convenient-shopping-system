@@ -101,13 +101,9 @@ export default function Login() {
     if (emailError.isErr() || passwordError.isErr()) {
       return
     }
-    console.info('Login attempt with:', email)
     setIsLoading(true)
     const response = await authService.logIn(email, password)
     if (!isMounted.current) {
-      console.info(
-        'Login component was unmounted before async request finishes'
-      )
       return
     }
     response
@@ -120,17 +116,26 @@ export default function Login() {
       })
       .mapErr(async (e) => {
         setIsLoading(false)
-        console.error('Login: ', e)
         switch (e.type) {
           case 'unverfified': {
-            // TODO: email must be a real email
-            const realEmail = AuthService.validateEmail(email).match(
-              () => email,
-              () => 'notAnEmail@gmail.com'
+            // Kiểm tra email có phải là email hợp lệ không
+            const emailValidation = AuthService.validateEmail(email)
+            emailValidation.match(
+              () => {
+                // Email hợp lệ, gửi OTP request
+                authService.sendOtpRequest('register', email)
+                LocalStorage.inst.emailRequestingOtp = email
+                navigate('/auth/login-authentication')
+              },
+              () => {
+                // Không phải email, hiển thị cảnh báo
+                setShowPopup({
+                  title: 'error_occured',
+                  message: 'Bạn cần đăng nhập lại bằng email đăng kí để xác thực tài khoản',
+                  yes: true
+                })
+              }
             )
-            authService.sendOtpRequest('register', realEmail)
-            LocalStorage.inst.emailRequestingOtp = realEmail
-            navigate('/auth/login-authentication')
             break
           }
           case 'network-error':

@@ -18,7 +18,7 @@ class Meal(Base):
     meal_status: Mapped[MealStatus] = mapped_column(Enum(MealStatus), nullable=False, default=MealStatus.CREATED, index=True)
 
     __table_args__ = (
-        UniqueConstraint("date", "meal_type", name="unique_meal_date_type"),
+        UniqueConstraint("date", "meal_type", "group_id", name="unique_meal_date_group_type"),
     )
 
     recipe_list: Mapped[list["RecipeList"]] = relationship(

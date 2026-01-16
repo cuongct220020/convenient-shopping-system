@@ -86,7 +86,9 @@ export class AppUrl {
       queryParams.append('limit', String(params.limit))
     }
 
-    return `v2/ingredients/search?${queryParams.toString()}`
+    return `v2/ingredients/search?keyword=${keyword}${
+      queryParams.toString() ? '&' + queryParams.toString() : ''
+    }`
   }
   public static INGREDIENTS_FILTER(
     categories: string[],
@@ -139,13 +141,11 @@ function initClient(): Clients {
     const savedToken = LocalStorage.inst.auth?.access_token
     if (tokenRefreshManager.shouldProactiveRefresh()) {
       try {
-        console.log('🔄 Token expiring soon, refreshing before request...')
         const newAuth = await tokenRefreshManager.refresh(true)
 
         // Use the fresh token for this request
         config.headers.Authorization = `Bearer ${newAuth.access_token}`
       } catch (error) {
-        console.log('❌ Proactive refresh failed in request interceptor')
         // Let the request proceed with old token
         // Response interceptor will handle the 401
         config.headers.Authorization = `Bearer ${savedToken}`
@@ -178,7 +178,6 @@ function initClient(): Clients {
 
       // CRITICAL: Check if we're within the ±5min refresh window
       if (!tokenRefreshManager.isWithinRefreshWindow()) {
-        console.log('❌ Token expired beyond grace period, logging out')
         // TODO: Logout
         // authController.logout()
         return Promise.reject(error)
@@ -187,13 +186,11 @@ function initClient(): Clients {
       originalRequest._retry = true
 
       try {
-        console.log('🔄 Within refresh window, attempting refresh...')
         const newAuth = await tokenRefreshManager.refresh(true)
 
         originalRequest.headers.Authorization = `Bearer ${newAuth.access_token}`
         return auth(originalRequest)
       } catch (refreshError) {
-        console.log('❌ Refresh failed, logging out')
         return Promise.reject(refreshError)
       }
     }

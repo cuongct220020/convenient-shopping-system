@@ -134,7 +134,6 @@ const UserDetail = () => {
           // User is the creator/leader but not in memberships (newly created group)
           user = creator;
         } else {
-          console.log('User not found in group. userId:', userId, 'Available members:', memberships.map(m => ({ id: m.user.id, user_id: m.user.user_id })), 'Creator:', creator?.id || creator?.user_id);
           const notFoundError = { type: 'not-found' } as const;
           throw notFoundError;
         }

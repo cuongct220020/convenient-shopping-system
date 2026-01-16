@@ -197,7 +197,6 @@ const IngredientMenu = () => {
   }
 
   const handleDishFormSubmit = (dishData: Record<string, unknown>) => {
-    console.log('Saving dish:', dishData)
     setShowAddDishForm(false)
   }
 

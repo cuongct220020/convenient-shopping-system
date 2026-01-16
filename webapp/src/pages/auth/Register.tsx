@@ -120,7 +120,6 @@ export default function Register() {
     if (errorOccured) {
       return
     }
-    console.log('Registration attempt with:', formData)
     setLoading(true)
     const registered = await authService.register({
       email: formData.email,
@@ -132,9 +131,6 @@ export default function Register() {
       })
     })
     if (!isMounted.current) {
-      console.info(
-        'Register component was unmounted before async request finishes'
-      )
       return
     }
     registered.match(
