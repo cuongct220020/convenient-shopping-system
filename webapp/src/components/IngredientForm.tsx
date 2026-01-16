@@ -63,7 +63,15 @@ export const IngredientForm = ({
   const TagSelector = () => {
     const [selectedTagForAdd, setSelectedTagForAdd] = useState('')
 
-    const availableTags = Object.entries(INGREDIENT_TAGS_MAP)
+    // Filter only ingredient tags: 4-digit tags starting with 1 (1000-1999)
+    const ingredientTags = Object.entries(INGREDIENT_TAGS_MAP).filter(
+      ([id]) => {
+        const tagId = Number(id)
+        return tagId >= 1000 && tagId < 2000
+      }
+    )
+
+    const availableTags = ingredientTags
       .filter(([id]) => !selectedTags.includes(Number(id)))
       .sort((a, b) => Number(a[0]) - Number(b[0]))
 
@@ -89,7 +97,7 @@ export const IngredientForm = ({
     return (
       <div>
         <label className="mb-2 block font-medium text-gray-700">
-          Thẻ nguyên liệu
+          Tag nguyên liệu
         </label>
         {selectedTags.length > 0 ? (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -126,12 +134,12 @@ export const IngredientForm = ({
                 options={tagOptions}
                 value={selectedTagForAdd}
                 onChange={handleAddTag}
-                placeholder="Chọn thẻ để thêm"
+                placeholder="Chọn tag để thêm"
                 disabled={readOnly}
               />
             ) : (
               <div className="rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-500">
-                Tất cả thẻ đã được chọn
+                Tất cả tag đã được chọn
               </div>
             )}
           </div>
@@ -531,23 +539,60 @@ export const IngredientForm = ({
                 size="fit"
                 icon={Check}
                 onClick={() => {
+                  // Validate required fields when creating
+                  if (initialData === undefined) {
+                    if (!selectedCategory) {
+                      alert('Vui lòng chọn phân loại nguyên liệu')
+                      return
+                    }
+                    if (!unit) {
+                      alert('Vui lòng chọn đơn vị tính')
+                      return
+                    }
+                    if (!name.trim()) {
+                      alert('Vui lòng nhập tên nguyên liệu')
+                      return
+                    }
+                  }
+
+                  // Convert selectedTags from number[] to string[]
+                  const tagList =
+                    selectedTags.length > 0
+                      ? selectedTags.map((tag) => String(tag))
+                      : []
+
+                  // Build form data, removing undefined/null fields
                   const formData: Partial<Ingredient> = {
-                    component_name: name,
-                    category: selectedCategory,
+                    component_name: name.trim(),
                     type: isCountable
                       ? 'countable_ingredient'
                       : 'uncountable_ingredient',
-                    // Only include unit fields when creating (no initialData)
-                    // Units are immutable after creation
-                    ...(initialData === undefined &&
-                      isCountable && { c_measurement_unit: unit }),
-                    ...(initialData === undefined &&
-                      !isCountable && { uc_measurement_unit: unit }),
-                    estimated_shelf_life: shelfLife,
-                    estimated_price: price,
-                    ingredient_tag_list:
-                      selectedTags.length > 0 ? selectedTags : null
+                    // Backend expects list[str], always include even if empty
+                    ingredient_tag_list: tagList
                   }
+
+                  // Add category (required when creating)
+                  if (selectedCategory) {
+                    formData.category = selectedCategory
+                  }
+
+                  // Add unit fields when creating (required)
+                  if (initialData === undefined) {
+                    if (isCountable && unit) {
+                      formData.c_measurement_unit = unit
+                    } else if (!isCountable && unit) {
+                      formData.uc_measurement_unit = unit
+                    }
+                  }
+
+                  // Add optional fields only if they have values
+                  if (shelfLife !== null && shelfLife !== undefined) {
+                    formData.estimated_shelf_life = shelfLife
+                  }
+                  if (price !== null && price !== undefined) {
+                    formData.estimated_price = price
+                  }
+
                   onSubmit?.(formData)
                 }}
                 className="!mx-0"
