@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FileText, Check, Clock, User, Calendar, AlertTriangle, X, Settings, Edit2, Trash2, ArrowRight, Loader2, DollarSign } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { shoppingPlanService } from '../../../services/shopping-plan';
 import { groupService } from '../../../services/group';
 import { userService } from '../../../services/user';
@@ -55,9 +56,8 @@ export const PlanDetail = () => {
             setCreatorInfo(creator.user);
           }
         },
-        (err) => {
+        () => {
           // Silently fail - we'll show the assigner_id instead of the name
-          console.log('Could not fetch creator info:', err);
         }
       );
   }, [planData, id]);
@@ -76,9 +76,8 @@ export const PlanDetail = () => {
             setAssigneeInfo(assignee.user);
           }
         },
-        (err) => {
+        () => {
           // Silently fail - we'll show the assignee_id instead of the name
-          console.log('Could not fetch assignee info:', err);
         }
       );
   }, [planData, id]);
@@ -146,7 +145,7 @@ export const PlanDetail = () => {
   };
 
   const handleContinueImplement = () => {
-    navigate(`/main/family-group/${id}/plan/${planId}/implement`, { state: { groupData } });
+    navigate(`/main/family-group/${id}/plan/${planId}/implement`);
   };
 
   const handleEdit = () => {
@@ -294,7 +293,7 @@ export const PlanDetail = () => {
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C3485C]"></div>
+            <LoadingSpinner size="lg" showText text="Đang tải..." />
           </div>
         )}
 

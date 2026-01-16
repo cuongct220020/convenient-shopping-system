@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from core.database import get_db
+from core.database import SessionLocal
 from core.messaging import kafka_manager
 from models.storage import Storage, StorableUnit
 from shopping_shared.messaging.kafka_topics import NOTIFICATION_TOPIC
@@ -18,7 +18,7 @@ logger = get_logger("Expiration Units Task")
 
 
 async def publish_expiration_notifications() -> None:
-    db: Session = next(get_db())
+    db: Session = SessionLocal()
     try:
         today = date.today()
         expiring_soon_day = today + timedelta(days=3)

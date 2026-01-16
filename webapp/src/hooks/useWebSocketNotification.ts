@@ -62,12 +62,13 @@ export function useWebSocketNotification() {
   }, [])
 
   const connect = useCallback(async () => {
-    // Don't reconnect if already connected or connecting
-    if (
-      websocketNotificationService.isConnected ||
-      isConnectingRef.current ||
-      userIdRef.current
-    ) {
+    // Don't reconnect if already connecting
+    if (isConnectingRef.current) {
+      return
+    }
+
+    // If already connected with same user, don't reconnect
+    if (websocketNotificationService.isConnected && userIdRef.current) {
       return
     }
 
@@ -82,9 +83,13 @@ export function useWebSocketNotification() {
         const userId = userData.user_id ?? userData.id
 
         if (userId) {
+          // If userId changed, disconnect old connection first
+          if (userIdRef.current && userIdRef.current !== userId) {
+            websocketNotificationService.disconnect()
+          }
+
           userIdRef.current = userId
           websocketNotificationService.connect(userId)
-          console.log('WebSocket connected for user:', userId)
 
           // Request notification permission
           if ('Notification' in window && Notification.permission === 'default') {

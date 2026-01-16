@@ -1,6 +1,6 @@
 import uuid
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from datetime import date
@@ -65,7 +65,7 @@ class MealCommandHandler:
         )
 
     def get(self, db: Session, date: date, group_id: uuid.UUID, meal_type: Optional[MealType] = None) -> Sequence[MealResponse | MealMissingResponse]:
-        stmt = select(Meal).where(Meal.date == date, Meal.group_id == group_id)
+        stmt = select(Meal).options(selectinload(Meal.recipe_list)).where(Meal.date == date, Meal.group_id == group_id)
 
         if meal_type is not None:
             stmt = stmt.where(Meal.meal_type == meal_type)

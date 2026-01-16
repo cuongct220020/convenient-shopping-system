@@ -16,6 +16,27 @@ export type WebSocketNotificationMessage = {
 
 type WebSocketMessageCallback = (notification: WebSocketNotificationMessage) => void
 
+/**
+ * Convert HTTP/HTTPS URL to WebSocket URL
+ * http://example.com -> ws://example.com
+ * https://example.com -> wss://example.com
+ */
+function getWebSocketUrl(baseUrl: string): string {
+  try {
+    const url = new URL(baseUrl)
+    if (url.protocol === 'https:') {
+      return baseUrl.replace('https://', 'wss://')
+    } else if (url.protocol === 'http:') {
+      return baseUrl.replace('http://', 'ws://')
+    }
+    // If already ws:// or wss://, return as is
+    return baseUrl
+  } catch {
+    // Fallback: assume https if URL parsing fails
+    return baseUrl.replace(/^https?:\/\//, 'wss://')
+  }
+}
+
 class WebSocketNotificationService {
   private ws: WebSocket | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -27,21 +48,29 @@ class WebSocketNotificationService {
   private isManualClose = false
   private currentMethodIndex = 0
 
+  private getBaseWebSocketUrl(): string {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://dichotienloi.com'
+    const wsBaseUrl = getWebSocketUrl(baseUrl)
+    return `${wsBaseUrl}/ws/v2/notification-service/notifications/users`
+  }
+
   private connectionMethods: Array<(userId: string) => WebSocket> = [
     // Method 1: JWT as query parameter (correct format)
     (userId) => {
       const token = LocalStorage.inst.auth?.access_token
+      const baseUrl = this.getBaseWebSocketUrl()
       const wsUrl = token
-        ? `wss://dichotienloi.com/ws/v2/notification-service/notifications/users/${userId}/?jwt=${encodeURIComponent(token)}`
-        : `wss://dichotienloi.com/ws/v2/notification-service/notifications/users/${userId}/`
+        ? `${baseUrl}/${userId}/?jwt=${encodeURIComponent(token)}`
+        : `${baseUrl}/${userId}/`
       return new WebSocket(wsUrl)
     },
     // Method 2: Fallback with token query param
     (userId) => {
       const token = LocalStorage.inst.auth?.access_token
+      const baseUrl = this.getBaseWebSocketUrl()
       const wsUrl = token
-        ? `wss://dichotienloi.com/ws/v2/notification-service/notifications/users/${userId}?token=${encodeURIComponent(token)}`
-        : `wss://dichotienloi.com/ws/v2/notification-service/notifications/users/${userId}`
+        ? `${baseUrl}/${userId}?token=${encodeURIComponent(token)}`
+        : `${baseUrl}/${userId}`
       return new WebSocket(wsUrl)
     }
   ]
@@ -51,7 +80,6 @@ class WebSocketNotificationService {
    */
   public connect(userId: string): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected')
       return
     }
 
@@ -61,10 +89,7 @@ class WebSocketNotificationService {
     const method = this.connectionMethods[this.currentMethodIndex]
     const ws = method(userId)
 
-    console.log(`Connecting to WebSocket (method ${this.currentMethodIndex + 1}/${this.connectionMethods.length})`)
-
     ws.onopen = () => {
-      console.log('WebSocket notification service connected')
       this.reconnectAttempts = 0
       this.currentMethodIndex = 0 // Reset to default method on success
     }
@@ -72,7 +97,6 @@ class WebSocketNotificationService {
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data)
-        console.log('WebSocket notification received:', message)
 
         // Handle wrapped message format: { event_type, data }
         const notificationData = message.data || message
@@ -88,8 +112,7 @@ class WebSocketNotificationService {
       }
     }
 
-    ws.onclose = (event) => {
-      console.log('WebSocket closed:', event.code, event.reason)
+    ws.onclose = () => {
       this.ws = null
 
       if (!this.isManualClose && this.userId) {
@@ -154,7 +177,6 @@ class WebSocketNotificationService {
 
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log('Max reconnect attempts reached')
       return
     }
 
@@ -163,7 +185,6 @@ class WebSocketNotificationService {
     }
 
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts)
-    console.log(`Scheduling reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1}, method ${this.currentMethodIndex + 1})`)
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectAttempts++

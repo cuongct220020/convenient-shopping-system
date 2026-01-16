@@ -136,7 +136,7 @@ Open your browser and visit: `https://dichotienloi.com`
 
 ### AWS EC2 Deployment
 
-For a complete, step-by-step guide on deploying this system to production on AWS EC2, please refer to the [AWS EC2 Deployment Guide](docs/aws_ec2_deployment.md).
+For a complete, step-by-step guide on deploying this system to production on AWS EC2, please refer to the [AWS EC2 Deployment Guide](docs/tutorial/aws_ec2_deployment.md).
 
 The guide covers:
 - Infrastructure Setup (RDS, EC2, Elastic IP).

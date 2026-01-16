@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Loader, Bell } from 'lucide-react'
+import { Bell } from 'lucide-react'
+import { LoadingSpinner } from '../../../components/LoadingSpinner'
 import { notificationService } from '../../../services/notification'
 import { userService } from '../../../services/user'
 
@@ -108,16 +109,15 @@ const Notification = () => {
     <div className="flex flex-col px-3 py-4">
       {/* Header */}
       <div className="flex items-center justify-between pb-3">
-        <p className="whitespace-nowrap text-xl font-bold text-[#C3485C]">
+        <p className="whitespace-nowrap text-2xl font-bold text-[#C3485C]">
           Thông báo
         </p>
-        {loading && <Loader className="animate-spin text-[#C3485C]" />}
       </div>
 
       {/* Notifications List */}
       {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="text-gray-400">Đang tải...</div>
+        <div className="flex justify-center items-center py-16">
+          <LoadingSpinner size="lg" showText text="Đang tải..." />
         </div>
       ) : notifications.length === 0 ? (
         <div className="flex h-full flex-col items-center justify-center px-4 py-16">

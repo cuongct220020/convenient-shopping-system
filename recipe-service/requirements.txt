@@ -7,7 +7,6 @@ annotated-types==0.7.0
 anyio==4.11.0
 async-timeout==5.0.1
 attrs==25.4.0
-cachetools==6.2.4
 certifi==2025.11.12
 click==8.3.0
 colorama==0.4.6

@@ -7,15 +7,18 @@ import { DropdownInputField } from '../../../components/DropDownInputField'
 import { i18n } from '../../../utils/i18n/i18n'
 import { DayPicker, getDefaultClassNames } from 'react-day-picker'
 import { Time } from '../../../utils/time'
-import { useParams } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 
 const calendarClassNames = getDefaultClassNames()
 
 export function AddMeal() {
   const { id: groupId } = useParams<{ id: string }>()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [date, setDate] = useState<Date>(new Date())
   const [mealType, setMealType] = useState<MealType>('breakfast')
   const [showDatePicker, setShowDatePicker] = useState(false)
+
 
   const onMealTypeChanged = (e: string) => {
     if (!(MealTypes as ReadonlyArray<string>).includes(e)) return
@@ -24,7 +27,6 @@ export function AddMeal() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
-    console.log(`API will be called with`, { name, category: mealType })
   }
 
   return (
@@ -33,6 +35,7 @@ export function AddMeal() {
         <BackButton
           to={`/main/family-group/${groupId}/meal`}
           text="Quay lại"
+          state={(location.state as { groupData?: any })?.groupData ? { groupData: (location.state as { groupData?: any }).groupData } : undefined}
         ></BackButton>
       </div>
       <p className="pb-4 text-center text-xl font-bold text-red-600">

@@ -12,13 +12,13 @@ class Meal(Base):
     __tablename__ = "meals"
 
     meal_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    date: Mapped[date] = mapped_column(Date, nullable=False)
-    group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    meal_type: Mapped[MealType] = mapped_column(Enum(MealType), nullable=False)
-    meal_status: Mapped[MealStatus] = mapped_column(Enum(MealStatus), nullable=False, default=MealStatus.CREATED)
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    meal_type: Mapped[MealType] = mapped_column(Enum(MealType), nullable=False, index=True)
+    meal_status: Mapped[MealStatus] = mapped_column(Enum(MealStatus), nullable=False, default=MealStatus.CREATED, index=True)
 
     __table_args__ = (
-        UniqueConstraint("date", "meal_type", name="unique_meal_date_type"),
+        UniqueConstraint("date", "meal_type", "group_id", name="unique_meal_date_group_type"),
     )
 
     recipe_list: Mapped[list["RecipeList"]] = relationship(
@@ -31,7 +31,7 @@ class RecipeList(Base):
     __tablename__ = "recipe_lists"
 
     recipe_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    meal_id: Mapped[int] = mapped_column(ForeignKey("meals.meal_id"), primary_key=True)
+    meal_id: Mapped[int] = mapped_column(ForeignKey("meals.meal_id"), primary_key=True, index=True)
     recipe_name: Mapped[str] = mapped_column(String, nullable=False)
     servings: Mapped[int] = mapped_column(Integer, nullable=False)
 

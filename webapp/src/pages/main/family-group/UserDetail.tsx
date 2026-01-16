@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { BackButton } from '../../../components/BackButton';
 import { Button } from '../../../components/Button';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { groupService } from '../../../services/group';
 import { userService } from '../../../services/user';
 import type { UserCoreInfo, UserIdentityProfile, UserHealthProfile } from '../../../services/schema/groupSchema';
@@ -133,7 +134,6 @@ const UserDetail = () => {
           // User is the creator/leader but not in memberships (newly created group)
           user = creator;
         } else {
-          console.log('User not found in group. userId:', userId, 'Available members:', memberships.map(m => ({ id: m.user.id, user_id: m.user.user_id })), 'Creator:', creator?.id || creator?.user_id);
           const notFoundError = { type: 'not-found' } as const;
           throw notFoundError;
         }
@@ -328,8 +328,7 @@ const UserDetail = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-6 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C3485C]"></div>
-        <p className="text-gray-600 mt-4">Đang tải...</p>
+        <LoadingSpinner size="lg" showText text="Đang tải..." />
       </div>
     );
   }

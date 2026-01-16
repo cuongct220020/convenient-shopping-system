@@ -8,6 +8,7 @@ import {
   ChevronLeft
 } from 'lucide-react'
 import { Button } from '../../../components/Button'
+import { LoadingSpinner } from '../../../components/LoadingSpinner'
 import { GroupHeader } from '../../../components/GroupHeader'
 import GroupDetailMembers from './GroupDetailMembers'
 import GroupDetailShoppingPlans from './GroupDetailShoppingPlans'
@@ -293,8 +294,7 @@ const GroupDetail = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center px-6 pt-20 text-center">
-        <div className="size-12 animate-spin rounded-full border-b-2 border-[#C3485C]"></div>
-        <p className="mt-4 text-gray-600">Đang tải...</p>
+        <LoadingSpinner size="lg" showText text="Đang tải..." />
       </div>
     )
   }
@@ -428,7 +428,10 @@ const GroupDetail = () => {
           <button
             className="flex-1 py-3 text-center text-sm font-bold text-gray-500 hover:text-gray-900"
             onClick={() => {
-              navigate(`/main/family-group/${groupData.id}/meal`, {
+              // Get today's date in YYYY-MM-DD format
+              const today = new Date()
+              const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+              navigate(`/main/family-group/${groupData.id}/meal?date=${encodeURIComponent(todayStr)}`, {
                 state: {
                   groupData: {
                     id: groupData.id,

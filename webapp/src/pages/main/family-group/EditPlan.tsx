@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { BackButton } from '../../../components/BackButton';
 import { InputField } from '../../../components/InputField';
 import { Button } from '../../../components/Button';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { Plus, FileText, Check, Search, X, Loader2 } from 'lucide-react';
 import { IngredientCard, Ingredient } from '../../../components/IngredientCard';
 import { shoppingPlanService } from '../../../services/shopping-plan';
@@ -139,7 +140,6 @@ const EditPlan: React.FC = () => {
         setShowNotFound(true);
         setShowQuantityInput(false);
         setIsSearching(false);
-        console.log('Ingredient already added:', ingredientSearch);
         return;
       }
 
@@ -151,15 +151,12 @@ const EditPlan: React.FC = () => {
 
       result.match(
         (response) => {
-          console.log('Search response for:', ingredientSearch, response);
           if (response.data && response.data.length > 0) {
             // Use the first result
-            console.log('Found ingredient:', response.data[0]);
             setSearchResult(response.data[0]);
             setShowNotFound(false);
             setShowQuantityInput(true);
           } else {
-            console.log('No ingredients found for:', ingredientSearch);
             setSearchResult(null);
             setShowNotFound(true);
             setShowQuantityInput(false);
@@ -259,7 +256,6 @@ const EditPlan: React.FC = () => {
     if (notes) others.notes = notes;
 
     // Debug logging
-    console.log('Update plan shopping list:', JSON.stringify(shoppingList, null, 2));
 
     shoppingPlanService
       .updatePlan(parseInt(planId), {
@@ -287,7 +283,7 @@ const EditPlan: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="animate-spin text-[#C3485C]" size={48} />
+        <LoadingSpinner size="lg" showText text="Đang tải..." />
       </div>
     );
   }
