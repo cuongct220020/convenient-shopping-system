@@ -22,10 +22,6 @@ from app.schemas.auth_schema import (
 )
 
 from shopping_shared.exceptions import Unauthorized, Forbidden, Conflict, NotFound, CacheError
-from shopping_shared.utils.logger_utils import get_logger
-
-
-logger = get_logger("Auth Service")
 
 
 class AuthService:
@@ -162,8 +158,6 @@ class AuthService:
             # 1. Xoá session khỏi allowlist để vô hiệu hoá refresh token
             await RedisService.remove_session_from_allowlist(user_id=user_id)
         except Exception as e:
-            # Log the error but continue with the next step to ensure best-effort logout
-            logger.error(f"Error removing session from allowlist for user {user_id}: {str(e)}")
             # Don't raise the exception to allow the logout to continue
 
         try:
@@ -174,9 +168,8 @@ class AuthService:
                     remaining_ttl_seconds=remaining_ttl_seconds
                 )
         except Exception as e:
-            # Log the error but continue
-            logger.error(f"Error adding token to blocklist for jti {access_token_jti}: {str(e)}")
             # Don't raise the exception to allow the logout to complete
+            pass
 
         await kafka_service.publish_user_logout_message(user_id=user_id, jti=access_token_jti)
 

@@ -3,10 +3,7 @@ import asyncio
 from sanic import Sanic, Request
 
 from shopping_shared.databases.database_manager import database_manager as postgres_db
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.databases.base_model import Base
-
-logger = get_logger("Database Middleware")
 
 async def setup_db(app: Sanic):
     """
@@ -21,8 +18,8 @@ async def setup_db(app: Sanic):
     try:
         await postgres_db.create_tables(Base)
     except Exception as ex:
-        logger.error("Failed to ensure DB tables exist: %s", ex)
         # Continue startup; explicit migrations may run separately
+        pass
 
 
 async def close_db(_app: Sanic):
@@ -33,14 +30,13 @@ async def close_db(_app: Sanic):
         # Close the database manager with timeout
         await asyncio.wait_for(postgres_db.dispose(), timeout=5.0)
     except asyncio.TimeoutError:
-        logger.warning("Database manager close operation timed out, forcing shutdown")
         # Force close without waiting
         try:
             postgres_db.dispose()
         except:
             pass  # Ignore errors during force close
     except Exception as e:
-        logger.error(f"Error during database manager shutdown: {e}")
+        pass
 
 
 async def open_db_session(request: Request):
@@ -91,10 +87,6 @@ async def close_db_session(
             # We catch and suppress it here because we are in the response middleware.
             # We want to return the original 'response' object (which might be a 400/409 error)
             # to the client, rather than letting an exception bubble up and cause a 500 Server Error.
-            if should_rollback:
-                logger.debug(f"Suppressed expected exception after rollback: {e}")
-            else:
-                logger.error(f"Unexpected error during DB commit/close: {e}")
             pass
 
     return response

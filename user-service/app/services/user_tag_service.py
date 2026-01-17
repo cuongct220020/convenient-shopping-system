@@ -17,9 +17,6 @@ from app.schemas.user_tag_schema import (
 from app.services.kafka_service import kafka_service
 
 from shopping_shared.caching.redis_keys import RedisKeys
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("User Tag Service")
 
 
 class UserTagService:
@@ -65,7 +62,6 @@ class UserTagService:
     ) -> Dict[str, int]:
         """Add multiple tags to user."""
         count = await self.user_tag_repo.add_tags_to_user(user_id, data.tag_values)
-        logger.info(f"Added {count} tags to user {user_id}")
 
         await self._publish_tag_update(user_id, username, email)
 
@@ -83,7 +79,6 @@ class UserTagService:
     ) -> Dict[str, int]:
         """Remove multiple tags from user."""
         count = await self.user_tag_repo.remove_tags_from_user(user_id, data.tag_values)
-        logger.info(f"Removed {count} tags from user {user_id}")
 
         await self._publish_tag_update(user_id, username, email)
 
@@ -102,7 +97,6 @@ class UserTagService:
     ) -> Dict[str, int]:
         """Update all tags in a specific category."""
         count = await self.user_tag_repo.replace_category_tags(user_id, category, tag_values)
-        logger.info(f"Updated {count} tags in category {category} for user {user_id}")
 
         await self._publish_tag_update(user_id, username, email)
 
@@ -127,12 +121,12 @@ class UserTagService:
                 username=username,
                 email=email,
                 tags=tags,
-                list_group_ids=group_ids
-            )
+                    list_group_ids=group_ids
+                )
         except Exception as e:
-            logger.error(f"Failed to publish tag update event for user {user_id}: {e}")
             # Non-blocking: We don't want to fail the API request if Kafka fails,
             # but we should log it. Ideally we might want a retry mechanism or transactional outbox.
+            pass
 
     @staticmethod
     def _tag_to_schema(tag: Tag, user_tag_updated_at: datetime = None) -> UserTagSchema:

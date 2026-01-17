@@ -2,10 +2,6 @@ import asyncio
 import json
 from typing import Dict, Set
 from sanic import Websocket
-from shopping_shared.utils.logger_utils import get_logger
-
-
-logger = get_logger("WebSocket Manager")
 
 
 class WebSocketManager:
@@ -26,7 +22,6 @@ class WebSocketManager:
             if user_id not in self.user_connections:
                 self.user_connections[user_id] = set()
             self.user_connections[user_id].add(websocket)
-            logger.info(f"WebSocket connected for user {user_id}. Total connections: {len(self.user_connections[user_id])}")
 
 
     async def disconnect_from_user(self, websocket: Websocket, user_id: str):
@@ -36,7 +31,6 @@ class WebSocketManager:
                 self.user_connections[user_id].discard(websocket)
                 if not self.user_connections[user_id]:  # Remove empty sets
                     del self.user_connections[user_id]
-                logger.info(f"WebSocket disconnected for user {user_id}. Remaining connections: {len(self.user_connections.get(user_id, set()))}")
 
 
     async def send_to_user(self, user_id: str, message: dict):
@@ -56,9 +50,7 @@ class WebSocketManager:
             try:
                 # Gửi thẳng, nếu kết nối đã đóng Sanic sẽ ném Exception
                 await ws.send(json_message)
-                logger.debug(f"Sent to {user_id}")
             except Exception as e:
-                logger.warning(f"Connection lost for {user_id}: {e}")
                 disconnected.add(ws)
 
         if disconnected:
@@ -91,12 +83,7 @@ class WebSocketManager:
             try:
                 await ws.close()
             except Exception as e:
-                logger.error(f"Error closing WebSocket connection for user {user_id}: {e}")
-
-        if websockets_to_close:
-            logger.info(f"Disconnected all {len(websockets_to_close)} WebSocket connections for user {user_id}")
-        else:
-            logger.info(f"User {user_id} has no active WebSocket connections to disconnect")
+                pass
 
     def get_total_connections(self) -> int:
         """Get the total number of active connections."""

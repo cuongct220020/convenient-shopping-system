@@ -11,9 +11,6 @@ from schemas.recipe_schemas import RecipeCreate, RecipeUpdate
 from schemas.recipe_flattened_schemas import RecipeQuantityInput
 from schemas.ingredient_schemas import IngredientResponse
 from utils.custom_mapping import recipes_flattened_aggregated_mapping
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("RecipeCRUD")
 
 """
     Method for RecipeDetailResponse
@@ -50,7 +47,7 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
             
             db.flush()
         except Exception as e:
-            logger.error(f"Error updating recipes_flattened for recipe {recipe.component_id}: {str(e)}", exc_info=True)
+            pass
 
     def create(self, db: Session, obj_in: RecipeCreate) -> Recipe:
         try:
@@ -67,7 +64,6 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
             return db_obj
         except Exception as e:
             db.rollback()
-            logger.error(f"Error creating recipe: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail="Error creating recipe")
 
     def update(self, db: Session, obj_in: RecipeUpdate, db_obj: Recipe) -> Recipe:
@@ -85,7 +81,6 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
             return result
         except Exception as e:
             db.rollback()
-            logger.error(f"Error updating recipe id={db_obj.component_id}: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail="Error updating recipe")
 
 
@@ -104,7 +99,6 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
                 .where(Recipe.component_id.in_(ids))
             ).scalars().all()
         except Exception as e:
-            logger.error(f"Error getting recipe details for ids={ids}: {str(e)}", exc_info=True)
             raise
 
     def search(self, db: Session, keyword: str, cursor: Optional[int] = None, limit: int = 100) -> Sequence[Recipe]:
@@ -154,10 +148,8 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
                 recipe = recipes_map.get(recipe_id)
                 
                 if not recipes_flattened:
-                    logger.warning(f"recipes_flattened not found for recipe_id={recipe_id}, skipping")
                     continue
                 if not recipe:
-                    logger.warning(f"Recipe not found for recipe_id={recipe_id}, skipping")
                     continue
 
                 default_servings = recipe.default_servings
@@ -191,5 +183,4 @@ class RecipeCRUD(CRUDBase[Recipe, RecipeCreate, RecipeUpdate]):
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error getting flattened recipes: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail="Error processing flattened recipes")

@@ -16,10 +16,7 @@ from app.services.redis_service import redis_service
 
 
 from shopping_shared.exceptions import Conflict, NotFound
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.caching.redis_keys import RedisKeys
-
-logger = get_logger("Admin Service")
 
 class AdminUserService:
     def __init__(self, user_repository: UserRepository):
@@ -84,11 +81,9 @@ class AdminUserService:
             # Invalidate list cache
             await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
         except IntegrityError as e:
-            logger.error(f"Integrity error creating user: {e}")
             # Fallback in case race condition passed the first check
             raise Conflict("User with provided unique fields already exists.")
 
-        logger.info(f"Admin created user: {user.username}")
         return user
 
 
@@ -178,8 +173,6 @@ class AdminUserService:
         await self.user_repo.session.flush()
         await self.user_repo.session.refresh(user)
 
-        logger.info(f"Admin updated user: {user_id}")
-
         # 6. Re-fetch with full relationship
         updated_user = await self.user_repo.get_user_with_profiles(user_id)
 
@@ -200,8 +193,6 @@ class AdminUserService:
              # No need for an extra SELECT query to confirm.
              raise NotFound(f"User with id {user_id} not found")
 
-        logger.info(f"Admin deleted user: {user_id}")
-
         # Invalidate caches (do this after successful deletion to avoid rollback on cache errors)
         try:
             await redis_service.delete_pattern(RedisKeys.ADMIN_USERS_LIST_WILDCARD)
@@ -209,7 +200,7 @@ class AdminUserService:
             await redis_service.delete_key(RedisKeys.admin_user_detail_key(str(user_id)))
         except Exception as e:
             # Log cache invalidation errors but don't let them affect the main operation
-            logger.error(f"Error invalidating cache after user deletion: {e}", exc_info=True)
+            pass
 
 
 
@@ -319,7 +310,6 @@ class AdminGroupService:
             # This happens if (user_id, group_id) already exists in the database
             raise Conflict("User is already a member of this group.")
         except Exception as e:
-            logger.error(f"Error adding member to group {group_id} for user {user_to_add.id}: {str(e)}", exc_info=True)
             raise
 
     async def remove_member_by_admin(
@@ -350,7 +340,6 @@ class AdminGroupService:
 
             return membership
         except Exception as e:
-            logger.error(f"Error updating member role for user {user_id} in group {group_id}: {str(e)}", exc_info=True)
             raise
 
 

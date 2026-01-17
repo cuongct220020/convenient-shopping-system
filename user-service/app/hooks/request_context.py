@@ -1,9 +1,6 @@
 # user-service/app/hooks/request_context.py
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Security Headers Middleware")
 
 class SecurityHeadersMiddleware:
     """

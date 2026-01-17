@@ -10,10 +10,7 @@ from app.schemas.auth_schema import ChangePasswordRequestSchema
 from app.services.user_service import UserService
 from shopping_shared.schemas.response_schema import GenericResponse
 
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
-
-logger = get_logger("Me Change Password View")
 
 class ChangePasswordView(BaseAPIView):
     """Handles changing the password for an authenticated user."""
@@ -54,7 +51,6 @@ class ChangePasswordView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
-            logger.error(f"Failed to change password: {str(e)}", exc_info=True)
             # Use helper method from base class
             return self.fail_response(
                 message="Failed to change password. Please try again.",

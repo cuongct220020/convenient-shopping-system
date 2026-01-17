@@ -8,15 +8,10 @@ from models.storage import StorableUnit, Storage
 from core.database import SessionLocal
 from core.messaging import kafka_manager
 from shopping_shared.messaging.topics import COMPONENT_EXISTENCE_TOPIC
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("ReportProcess")
 
 async def report_process(report: PlanReport):
     db = SessionLocal()
     try:
-        logger.info(f"Processing report with {len(report.report_content)} items")
-
         storages_by_id: Dict[int, Storage] = {}
         group_id: Optional[uuid.UUID] = None
         has_component_units = False
@@ -32,9 +27,6 @@ async def report_process(report: PlanReport):
             for item in report.report_content:
                 storage = storages_by_id.get(item.storage_id)
                 if storage is None:
-                    logger.warning(
-                        f"Skipping report item: storage_id={item.storage_id} not found (plan_id={report.plan_id})"
-                    )
                     continue
 
                 # All units belong to the same group, so we just need to capture it once
@@ -46,14 +38,6 @@ async def report_process(report: PlanReport):
                     try:
                         content_unit = UCMeasurementUnit(str(item.content_unit).upper())
                     except ValueError:
-                        logger.error(
-                            "Skipping report item: invalid content_unit=%s (plan_id=%s, storage_id=%s, unit_name=%s)",
-                            item.content_unit,
-                            report.plan_id,
-                            item.storage_id,
-                            item.unit_name,
-                            exc_info=True,
-                        )
                         continue
 
                 db.add(
@@ -98,21 +82,14 @@ async def report_process(report: PlanReport):
                     key=group_id_str,  # type: ignore[arg-type]
                     wait=True,
                 )
-                logger.info(f"Published component_existence update: group_id={group_id_str}")
             except Exception as e:
-                logger.error(
-                    f"Failed publishing component_existence update: group_id={str(group_id)}, err={str(e)}",
-                    exc_info=True,
-                )
+                pass
 
-        logger.info(f"Successfully processed report with {len(report.report_content)} items")
     except IntegrityError as e:
         db.rollback()
-        logger.error(f"Integrity error processing report: {str(e)}", exc_info=True)
         return
     except Exception as e:
         db.rollback()
-        logger.error(f"Error processing report: {str(e)}", exc_info=True)
         return
     finally:
         db.close()

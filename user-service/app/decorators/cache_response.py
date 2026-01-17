@@ -3,9 +3,6 @@ from functools import wraps
 from sanic.response import json as sanic_json
 from sanic.request import Request
 from app.services.redis_service import redis_service
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Cache Decorator")
 
 def cache_response(key_pattern: str, ttl: int, **defaults):
     """
@@ -35,7 +32,6 @@ def cache_response(key_pattern: str, ttl: int, **defaults):
                         break
 
             if not req:
-                logger.warning("Could not find Request object in args. Skipping cache.")
                 return await f(*args, **kwargs)
 
             # 2. Construct the Redis Key
@@ -63,16 +59,13 @@ def cache_response(key_pattern: str, ttl: int, **defaults):
                 key = key_pattern.format(**format_data)
             except KeyError as e:
                 # This happens if key_pattern expects a param that is missing (e.g. {id} but not in kwargs)
-                logger.debug(f"Missing parameter for cache key generation: {e}. Skipping cache.")
                 return await f(*args, **kwargs)
             except Exception as e:
-                 logger.error(f"Error generating cache key: {e}. Skipping cache.")
                  return await f(*args, **kwargs)
 
             # 3. Try to get from Cache
             cached_data = await redis_service.get_cache(key)
             if cached_data:
-                logger.debug(f"Cache HIT: {key}")
                 # We assume the cached data is the dict that goes into json response
                 return sanic_json(cached_data)
 
@@ -87,9 +80,8 @@ def cache_response(key_pattern: str, ttl: int, **defaults):
                     if response.body:
                         body_dict = json.loads(response.body)
                         await redis_service.set_cache(key, body_dict, ttl)
-                        # logger.debug(f"Cache SET: {key}")
                 except Exception as e:
-                    logger.error(f"Failed to cache response for {key}: {e}")
+                    pass
 
             return response
         

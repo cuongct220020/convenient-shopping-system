@@ -19,11 +19,8 @@ from app.services.admin_service import AdminUserService
 
 from shopping_shared.exceptions import Conflict, NotFound
 from shopping_shared.schemas.response_schema import GenericResponse
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
 from shopping_shared.caching.redis_keys import RedisKeys
-
-logger = get_logger("Admin User View")
 
 
 class BaseAdminUserView(BaseAPIView):
@@ -127,7 +124,6 @@ class AdminUsersView(BaseAdminUserView):
                 status_code=200
             )
         except Exception as e:
-            logger.error("Failed to list users", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to list users",
@@ -171,7 +167,6 @@ class AdminUsersView(BaseAdminUserView):
         except Conflict as e:
             return self.error_response(message=str(e), status_code=409)
         except Exception as e:
-            logger.error("Failed to create user", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to create user",
@@ -218,7 +213,6 @@ class AdminUserDetailView(BaseAdminUserView):
         except NotFound as e:
             return self.error_response(message=str(e), status_code=404)
         except Exception as e:
-            logger.error("Failed to get user", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve user",
@@ -265,7 +259,6 @@ class AdminUserDetailView(BaseAdminUserView):
         except Conflict as e:
             return self.error_response(message=str(e), status_code=409)
         except Exception as e:
-            logger.error("Failed to update user", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update user",
@@ -305,7 +298,6 @@ class AdminUserDetailView(BaseAdminUserView):
         except NotFound as e:
             return self.error_response(message=str(e), status_code=404)
         except Exception as e:
-            logger.error("Failed to delete user", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to delete user",

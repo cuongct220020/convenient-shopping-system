@@ -11,10 +11,6 @@ from core.database import SessionLocal
 from core.messaging import kafka_manager
 from models.storage import Storage, StorableUnit
 from shopping_shared.messaging.kafka_topics import NOTIFICATION_TOPIC
-from shopping_shared.utils.logger_utils import get_logger
-
-
-logger = get_logger("Expiration Units Task")
 
 
 async def publish_expiration_notifications() -> None:
@@ -68,10 +64,7 @@ async def publish_expiration_notifications() -> None:
                         wait=True,
                     )
                 except Exception as e:
-                    logger.error(
-                        f"Failed to publish food_expired for group={group_id}, unit={unit_name}: {e}",
-                        exc_info=True,
-                    )
+                    pass
 
         for group_id, items in expiring_soon.items():
             for storage_name, unit_name, exp_date in items:
@@ -92,10 +85,7 @@ async def publish_expiration_notifications() -> None:
                         wait=True,
                     )
                 except Exception as e:
-                    logger.error(
-                        f"Failed to publish food_expiring_soon for group={group_id}, unit={unit_name}: {e}",
-                        exc_info=True,
-                    )
+                    pass
 
     finally:
         db.close()

@@ -19,11 +19,8 @@ based on the relevance to individual users or family groups.
 from sanic import Blueprint
 from sanic import Websocket
 from app.websocket.websocket_manager import websocket_manager
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.middleware.auth_utils import extract_kong_headers, validate_token_state
 from shopping_shared.exceptions import Unauthorized
-
-logger = get_logger("Websocket Blueprint")
 
 # Tạo Blueprint cho WebSocket
 ws_bp = Blueprint("websocket", url_prefix="/v2/notification-service/notifications")
@@ -54,31 +51,23 @@ async def ws_user_notifications(request, ws: Websocket, user_id: str):
         requesting_user_id = auth_payload.get("sub")
 
         if requesting_user_id != user_id:
-            logger.warning(f"User {requesting_user_id} tried to access notifications for user {user_id}")
             await ws.close(code=1008, reason="Forbidden")
             return
 
-        logger.info(f"User {requesting_user_id} connected to personal channel {user_id}")
-
     except Unauthorized as e:
-        logger.warning(f"WebSocket auth denied: {e}")
         await ws.close(code=1008, reason="Unauthorized")
         return
     except Exception as e:
-        logger.error(f"FATAL: Error during WS setup for {user_id}: {type(e).__name__}: {e}", exc_info=True)
         await ws.close(code=1011, reason="Internal Error")
         return
 
     await websocket_manager.connect_to_user(ws, user_id)
 
     try:
-        logger.debug(f"Entering message loop for user {user_id}")
         async for message in ws:
-            logger.info(f"Received from {user_id}: {message}")
-        logger.debug(f"Loop ended normally for {user_id}")
+            pass
     except Exception as e:
-        logger.error(f"DEBUG: Loop exception for {user_id}: {e}")
+        pass
     finally:
-        logger.debug(f"DEBUG: Cleaning up connection for {user_id}")
         await websocket_manager.disconnect_from_user(ws, user_id)
 

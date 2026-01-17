@@ -8,7 +8,6 @@ from app.decorators.cache_response import cache_response
 from app.enums import GroupRole
 from shopping_shared.caching.redis_keys import RedisKeys
 from shopping_shared.schemas.response_schema import GenericResponse
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
 
 from app.decorators import validate_request, idempotent, require_group_role
@@ -21,8 +20,6 @@ from app.schemas.family_group_schema import (
     UserGroupListResponseSchema,
     FamilyGroupUpdateSchema,
 )
-
-logger = get_logger("Group Management View")
 
 
 class GroupView(BaseGroupView):
@@ -65,7 +62,6 @@ class GroupView(BaseGroupView):
             )
         except Exception as e:
             # Use helper method from base class
-            logger.error(f"Failed to create group: {str(e)}", exc_info=True)
             return self.error_response(
                 message="Failed to create group",
                 status_code=500
@@ -127,7 +123,6 @@ class GroupView(BaseGroupView):
             )
         except Exception as e:
             # Use helper method from base class
-            logger.error(f"Failed to list groups: {str(e)}", exc_info=True)
             return self.error_response(
                 message="Failed to list groups",
                 status_code=500
@@ -176,20 +171,17 @@ class GroupDetailView(BaseGroupView):
                 status_code=200
             )
         except NotFound as e:
-            logger.error(f"Group with id {group_id} not found", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=404
             )
         except Forbidden as e:
-            logger.error(f"Permission denied accessing group {group_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=403
             )
         except Exception as e:
             # Use helper method from base class
-            logger.error(f"Failed to retrieve group details: {str(e)}", exc_info=True)
             return self.error_response(
                 message="Failed to retrieve group details",
                 status_code=500
@@ -238,20 +230,17 @@ class GroupDetailView(BaseGroupView):
                 status_code=200
             )
         except NotFound as e:
-            logger.error(f"Group with id {group_id} not found", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=404
             )
         except Forbidden as e:
-            logger.error(f"Permission denied updating group {group_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=403
             )
         except Exception as e:
             # Use helper method from base class
-            logger.error(f"Failed to update group: {str(e)}", exc_info=True)
             return self.error_response(
                 message="Failed to update group",
                 status_code=500
@@ -286,20 +275,17 @@ class GroupDetailView(BaseGroupView):
                 status_code=200
             )
         except NotFound as e:
-            logger.error(f"Group with id {group_id} not found", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=404
             )
         except Forbidden as e:
-            logger.error(f"Permission denied deleting group {group_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=403
             )
         except Exception as e:
             # Use helper method from base class
-            logger.error(f"Failed to delete group: {str(e)}", exc_info=True)
             return self.error_response(
                 message="Failed to delete group",
                 status_code=500

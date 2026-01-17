@@ -2,9 +2,6 @@
 from typing import Optional, List, Dict, Tuple
 from uuid import UUID
 import aiohttp
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Group Info Utils")
 
 
 def get_user_service_url(config) -> str:
@@ -66,19 +63,14 @@ async def get_group_info(
                     
                     return group_name, members, head_chef
                 elif response.status == 404:
-                    logger.warning(f"Group {group_id} not found")
                     return None, [], None
                 elif response.status == 403:
-                    logger.warning(f"Permission denied accessing group {group_id}")
                     return None, [], None
                 else:
                     error_text = await response.text()
-                    logger.error(f"Failed to get group info for {group_id}: {response.status} - {error_text}")
                     return None, [], None
                     
     except aiohttp.ClientError as e:
-        logger.error(f"HTTP client error getting group info for {group_id}: {e}", exc_info=True)
         return None, [], None
     except Exception as e:
-        logger.error(f"Unexpected error getting group info for {group_id}: {e}", exc_info=True)
         return None, [], None

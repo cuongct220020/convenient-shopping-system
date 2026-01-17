@@ -10,12 +10,8 @@ from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
 from app.schemas.user_schema import UserInfoUpdateSchema, UserCoreInfoSchema
 
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
 from shopping_shared.caching.redis_keys import RedisKeys
-
-
-logger = get_logger("Me Core View")
 
 
 class MeView(BaseAPIView):
@@ -55,7 +51,6 @@ class MeView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
-            logger.error("Failed to retrieve user info", exc_info=e)
             # Use helper method from base class
             return self.fail_response(
                 message="Failed to retrieve user information",
@@ -100,7 +95,6 @@ class MeView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
-            logger.error("Failed to update user info", exc_info=e)
             # Use helper method from base class
             return self.fail_response(
                 message="Failed to update user information",

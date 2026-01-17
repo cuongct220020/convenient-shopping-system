@@ -18,11 +18,7 @@ from app.services.user_tag_service import UserTagService
 from app.repositories.user_tag_repository import UserTagRepository
 
 from shopping_shared.caching.redis_keys import RedisKeys
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
-
-
-logger = get_logger("Me Tag View")
 
 
 class BaseMeTagsView(BaseAPIView):
@@ -72,7 +68,6 @@ class MeTagsView(BaseMeTagsView):
                 status_code=200
             )
         except Exception as e:
-            logger.error("Failed to fetch user tags", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to fetch user tags",
@@ -119,7 +114,6 @@ class MeTagsView(BaseMeTagsView):
                 status_code=201
             )
         except Exception as e:
-            logger.error("Failed to add tags", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to add tags",
@@ -178,7 +172,6 @@ class MeTagsCategoryView(BaseMeTagsView):
                 status_code=200
             )
         except Exception as e:
-            logger.error(f"Failed to update category '{category}' tags", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message=f"Failed to update category '{category}' tags",
@@ -229,7 +222,6 @@ class MeTagsDeleteView(BaseMeTagsView):
                 status_code=200
             )
         except Exception as e:
-            logger.error("Failed to remove tags", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to delete tags",

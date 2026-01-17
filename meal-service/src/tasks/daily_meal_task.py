@@ -9,10 +9,6 @@ from enums.meal_type import MealType
 from core.messaging import kafka_manager
 from models.meal import Meal
 from shopping_shared.messaging.kafka_topics import NOTIFICATION_TOPIC
-from shopping_shared.utils.logger_utils import get_logger
-
-
-logger = get_logger("Daily Meal Task")
 
 
 def fetch_today_meals_grouped() -> Dict[str, Dict[str, List[str]]]:
@@ -47,7 +43,6 @@ def fetch_today_meals_grouped() -> Dict[str, Dict[str, List[str]]]:
 async def publish_daily_meals() -> None:
     grouped = fetch_today_meals_grouped()
     if not grouped:
-        logger.info("No meals found for today. Skipping daily_meal publish.")
         return
 
     for group_id, meals in grouped.items():
@@ -69,8 +64,7 @@ async def publish_daily_meals() -> None:
                 key=f"{group_id}-meal",
                 wait=True,
             )
-            logger.info(f"Published daily_meal event: group_id={group_id}")
         except Exception as e:
-            logger.error(f"Failed to publish daily_meal for group {group_id}: {e}", exc_info=True)
+            pass
 
 

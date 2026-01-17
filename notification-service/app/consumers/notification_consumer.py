@@ -3,7 +3,6 @@ import asyncio
 from typing import Dict
 
 from shopping_shared.messaging.kafka_manager import kafka_manager
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
@@ -26,9 +25,6 @@ from app.consumers.handlers.plan_assigned_handler import PlanAssignedHandler
 from app.consumers.handlers.plan_reported_handler import PlanReportedHandler
 from app.consumers.handlers.plan_expired_handler import PlanExpiredHandler
 from app.consumers.handlers.daily_meal_handler import DailyMealHandler
-
-
-logger = get_logger("Notification Consumer")
 
 # Global flag for graceful shutdown
 _shutdown_event = asyncio.Event()
@@ -91,7 +87,6 @@ async def consume_notifications(app=None):
     consumer = None
 
     if kafka_manager is None or kafka_manager.bootstrap_servers is None:
-        logger.warning("Kafka is not configured. Consumer will not start.")
         return
 
     # 2. Connect to Kafka
@@ -106,16 +101,12 @@ async def consume_notifications(app=None):
                 enable_auto_commit=False # Explicitly disable auto-commit
             )
             await consumer.start()
-            logger.info(f"Notification consumer started. Listening on: {topics}")
             break
         except asyncio.CancelledError:
-            logger.info("Consumer startup was cancelled.")
             return
         except Exception as e:
             retry_count += 1
-            logger.warning(f"Failed to start consumer (attempt {retry_count}/{max_retries}): {e}")
             if retry_count >= max_retries:
-                logger.error("Max retries reached. Consumer failed to start.")
                 return
             try:
                 await asyncio.wait_for(_shutdown_event.wait(), timeout=5.0)
@@ -135,35 +126,24 @@ async def consume_notifications(app=None):
             try:
                 message_topic = msg.topic
                 message_value = msg.value # Already deserialized by KafkaManager (orjson/json)
-                
-                logger.debug(f"Received message on {message_topic}: {message_value}")
 
                 # Dispatch to Handler
                 if message_topic in topic_handlers:
                     handler = topic_handlers.get(message_topic)
                     if handler:
                         await handler.handle(message_value, app)
-                    else:
-                        logger.warning(f"No handler found for topic: {message_topic}")
                 elif message_topic == NOTIFICATION_TOPIC:
                     # NOTIFICATION_TOPIC: route by event_type
                     event_type = message_value.get("event_type")
                     if not event_type:
-                        logger.error(f"Missing event_type in message from {NOTIFICATION_TOPIC}: {message_value}")
                         continue
                     
                     handler = event_type_handlers.get(event_type)
                     if handler:
                         await handler.handle(message_value, app)
-                    else:
-                        logger.warning(f"No handler found for event_type: {event_type}")
-                else:
-                    logger.warning(f"Unknown topic: {message_topic}")
 
             except Exception as e:
-                # Log error but don't crash the loop.
-                # In production, consider DLQ (Dead Letter Queue) logic here.
-                logger.error(f"Error processing message from {msg.topic}: {e}", exc_info=True)
+                pass
             
             # 4. Manual Commit (At-Least-Once delivery)
             # We commit even on error to avoid infinite loops (poison pill). 
@@ -171,14 +151,12 @@ async def consume_notifications(app=None):
             try:
                 await consumer.commit()
             except Exception as commit_error:
-                logger.error(f"Failed to commit offset: {commit_error}")
+                pass
 
     except asyncio.CancelledError:
-        logger.info("Consumer task cancelled.")
+        pass
     except Exception as e:
-        logger.critical(f"Critical consumer error: {e}", exc_info=True)
+        pass
     finally:
-        logger.info("Stopping notification consumer...")
         if consumer:
             await consumer.stop()
-            logger.info("Consumer stopped.")

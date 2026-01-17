@@ -13,11 +13,8 @@ from app.repositories.user_profile_repository import (
 )
 
 from shopping_shared.exceptions import NotFound
-from shopping_shared.utils.logger_utils import get_logger
 from app.services.redis_service import redis_service
 from shopping_shared.caching.redis_keys import RedisKeys
-
-logger = get_logger("User Profile Service")
 
 
 class UserIdentityProfileService:
@@ -95,11 +92,9 @@ class UserIdentityProfileService:
 
             group_members_list_key = RedisKeys.group_members_list_key(group_id_str)
             await redis_service.delete_key(group_members_list_key)
-            logger.info(f"Delete group membership key: {group_members_list_key}")
 
             group_detail_key = RedisKeys.group_detail_key(group_id_str)
             await redis_service.delete_key(group_detail_key)
-            logger.info(f"Delete group detail key: {group_detail_key}")
 
         # Invalidate personal cache keys
         user_id_str = str(user_id)
@@ -145,11 +140,9 @@ class UserHealthProfileService:
 
             group_members_list_key = RedisKeys.group_members_list_key(group_id_str)
             await redis_service.delete_key(group_members_list_key)
-            logger.info(f"Delete group membership key: {group_members_list_key}")
 
             group_detail_key = RedisKeys.group_detail_key(group_id_str)
             await redis_service.delete_key(group_detail_key)
-            logger.info(f"Delete group detail key: {group_detail_key}")
 
         # Invalidate caches
         user_id_str = str(user_id)

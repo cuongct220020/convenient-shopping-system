@@ -6,9 +6,6 @@ warnings.filterwarnings("ignore", category=PydanticDeprecatedSince20, module="sa
 
 from sanic import Sanic
 from sanic_ext import Extend
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Initialize User Service Application")
 
 
 def register_listeners(sanic_app: Sanic):
@@ -19,7 +16,6 @@ def register_listeners(sanic_app: Sanic):
 
     async def setup_jwt(app, loop):
         JWTHandler.initialize(app)
-        logger.info("JWT Handler initialized.")
 
     sanic_app.register_listener(setup_jwt, "before_server_start")
 
@@ -37,7 +33,7 @@ def register_listeners(sanic_app: Sanic):
 
     # Register final cleanup listener to ensure proper shutdown
     async def cleanup_before_shutdown(app, loop):
-        logger.info("Application shutdown initiated, all resources closed.")
+        pass
 
     sanic_app.register_listener(cleanup_before_shutdown, "before_server_stop")
 
@@ -84,8 +80,6 @@ def register_hooks(sanic_app: Sanic):
 
 
 def create_app(*config_cls) -> Sanic:
-    logger.info(f"Sanic application initialized with { ', '.join([config.__name__ for config in config_cls]) if config_cls else 'no config' }")
-
     sanic_app = Sanic(__name__)
 
     for config in config_cls:

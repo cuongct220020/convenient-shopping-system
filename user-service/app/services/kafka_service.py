@@ -3,7 +3,6 @@ from datetime import datetime, UTC
 from typing import List
 from app.enums import OtpAction
 from shopping_shared.messaging.kafka_manager import kafka_manager
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
@@ -12,9 +11,6 @@ from shopping_shared.messaging.kafka_topics import (
     LOGOUT_EVENTS_TOPIC,
     NOTIFICATION_TOPIC
 )
-
-
-logger = get_logger("Kafka Service")
 
 class KafkaService:
 
@@ -30,7 +26,6 @@ class KafkaService:
         elif action == OtpAction.CHANGE_EMAIL.value:
             topic = EMAIL_CHANGE_EVENTS_TOPIC
         else:
-            logger.error(f"Invalid action for publishing OTP: {action}")
             raise ValueError("Invalid action for publishing OTP.")
 
 
@@ -48,10 +43,8 @@ class KafkaService:
                 key=email, # Ensure ordering by email
                 wait=True
             )
-            logger.info("User registration otp published.")
 
         except Exception as e:
-            logger.error(f"Failed to publish user registration otp: {e}")
             raise e
 
     @staticmethod
@@ -89,7 +82,6 @@ class KafkaService:
                 wait=True
             )
         except Exception as e:
-            logger.error(f"Failed to publish message to topic {topic}: {e}")
             raise e
 
     @staticmethod
@@ -114,11 +106,6 @@ class KafkaService:
             key=f"{group_id}-group"
         )
 
-        logger.info(
-            f"Published notification to {topic}: event_type=group_user_added "
-            f"group_id={group_id} receivers={[str(user_to_add_id)]}"
-        )
-
 
     @staticmethod
     async def publish_remove_user_group_message(
@@ -141,12 +128,7 @@ class KafkaService:
                 payload=payload,
                 key=f"{group_id}-group"
             )
-            logger.info(
-                f"Published notification to {NOTIFICATION_TOPIC}: event_type=group_user_removed "
-                f"group_id={group_id} receivers={[str(user_to_remove_id)]}"
-            )
         except Exception as err:
-            logger.error(f"Failed to publish remove user group message: {err}")
             raise err
 
 
@@ -167,11 +149,6 @@ class KafkaService:
             topic=topic,
             payload=payload,
             key=f"{group_id}-group"
-        )
-
-        logger.info(
-            f"Published notification to {topic}: event_type=group_user_left "
-            f"group_id={group_id} receivers={[str(user_id)]}"
         )
 
 
@@ -216,12 +193,8 @@ class KafkaService:
                 payload=payload,
                 key=f"{group_id}-group"
             )
-            logger.info(
-                f"Published notification to {NOTIFICATION_TOPIC}: event_type=group_head_chef_updated "
-            )
 
         except Exception as e:
-            logger.error(f"Failed to publish update head chef role message: {e}")
             raise e
 
 
@@ -250,8 +223,6 @@ class KafkaService:
             payload=payload,
             key=str(user_id)
         )
-
-        logger.info(f"User update tag message published successfully to topic: {topic}")
 
 
 kafka_service = KafkaService()

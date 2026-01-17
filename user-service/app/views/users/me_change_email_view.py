@@ -12,10 +12,7 @@ from app.services.auth_service import AuthService
 from app.enums import OtpAction
 from shopping_shared.schemas.response_schema import GenericResponse
 
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
-
-logger = get_logger("Me Change Email View")
 
 
 class MeRequestChangeEmailView(BaseAPIView):
@@ -67,7 +64,6 @@ class MeRequestChangeEmailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
-            logger.error(f"Failed to send OTP to new email address: {e}")
             # Use helper method from base class
             return self.fail_response(
                 message="Failed to send OTP. Please try again.",
@@ -119,7 +115,6 @@ class MeConfirmChangeEmailView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
-            logger.error(f"Failed to send OTP to new email address: {e}")
             # Use helper method from base class
             return self.fail_response(
                 message="Failed to confirm email change. Please try again.",

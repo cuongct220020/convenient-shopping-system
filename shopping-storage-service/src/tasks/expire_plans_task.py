@@ -5,9 +5,6 @@ from models.shopping_plan import ShoppingPlan
 from core.database import SessionLocal
 from core.messaging import kafka_manager
 from shopping_shared.messaging.kafka_topics import NOTIFICATION_TOPIC
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Expire Plans Task")
 
 
 async def expire_plans():
@@ -48,6 +45,6 @@ async def expire_plans():
                     wait=True,
                 )
             except Exception as e:
-                logger.error(f"Failed to publish plan_expired for group_id={group_id}, plan_id={plan_id}: {e}", exc_info=True)
+                pass
     finally:
         db.close()

@@ -8,10 +8,7 @@ from sanic_ext.extensions.openapi.definitions import Response
 from app.views.base_view import BaseAPIView
 from app.services.notification_service import NotificationService
 from app.schemas.notification_schema import NotificationResponseSchema
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
-
-logger = get_logger("Notification View")
 
 
 class NotificationListView(BaseAPIView):
@@ -56,13 +53,11 @@ class NotificationListView(BaseAPIView):
                 status_code=200
             )
         except ValueError as e:
-            logger.error(f"Invalid user_id parameter: {e}")
             return self.fail_response(
                 message="Invalid user_id parameter",
                 status_code=400
             )
         except Exception as e:
-            logger.error(f"Failed to retrieve notifications for user {user_id}: {e}", exc_info=True)
             return self.error_response(
                 message="Failed to retrieve notifications",
                 status_code=500
@@ -121,13 +116,11 @@ class NotificationReadView(BaseAPIView):
                     status_code=404
                 )
         except ValueError as e:
-            logger.error(f"Invalid parameters: {e}")
             return self.fail_response(
                 message="Invalid parameters",
                 status_code=400
             )
         except Exception as e:
-            logger.error(f"Failed to mark notification {notification_id} as read: {e}", exc_info=True)
             return self.error_response(
                 message="Failed to mark notification as read",
                 status_code=500
@@ -186,13 +179,11 @@ class NotificationDeleteView(BaseAPIView):
                     status_code=404
                 )
         except ValueError as e:
-            logger.error(f"Invalid parameters: {e}")
             return self.fail_response(
                 message="Invalid parameters",
                 status_code=400
             )
         except Exception as e:
-            logger.error(f"Failed to delete notification {notification_id}: {e}", exc_info=True)
             return self.error_response(
                 message="Failed to delete notification",
                 status_code=500

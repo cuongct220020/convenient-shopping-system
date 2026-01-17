@@ -15,10 +15,6 @@ from app.services.redis_service import redis_service
 from shopping_shared.caching.redis_keys import RedisKeys
 
 from shopping_shared.exceptions import Forbidden, NotFound, Conflict
-from shopping_shared.utils.logger_utils import get_logger
-
-
-logger = get_logger("Family Group Service")
 
 
 class FamilyGroupService:
@@ -78,8 +74,6 @@ class FamilyGroupService:
         
         # 3. Fetch full group details for response
         full_group = await self.repository.get_with_details(group.id)
-        
-        logger.info(f"Created family group {group.id} with HEAD_CHEF {user_id}")
 
         # 4. Invalidate user's group list cache
         await redis_service.delete_pattern(RedisKeys.user_groups_list_key(user_id=str(user_id)))
@@ -101,7 +95,7 @@ class FamilyGroupService:
                     list_group_ids=group_ids
                 )
         except Exception as e:
-            logger.error(f"Failed to publish tag update after creating group for user {user_id}: {e}")
+            pass
 
         return full_group
 
@@ -141,8 +135,6 @@ class FamilyGroupService:
         # Invalidate cache
         await redis_service.delete_pattern(RedisKeys.group_detail_key(str(group_id)))
         await redis_service.delete_pattern(RedisKeys.user_groups_list_key(user_id=str(user_id)))
-        
-        logger.info(f"Deleted family group {group_id} by user {user_id}")
 
 
     async def add_member_by_identifier(
@@ -182,7 +174,6 @@ class FamilyGroupService:
         )
 
         # 5. Add Member (requester adds target user)
-        logger.info(f"Added user {target_user.id} to group {group_id}")
         membership = await self.member_repo.add_membership(target_user.id, group_id, GroupRole.MEMBER, requester_id)
 
         # Invalidate cache
@@ -202,10 +193,10 @@ class FamilyGroupService:
                 username=target_user.username or target_user.email,
                 email=target_user.email,
                 tags=tags,
-                list_group_ids=group_ids
-            )
+                    list_group_ids=group_ids
+                )
         except Exception as e:
-            logger.error(f"Failed to publish tag update after adding user {target_user.id} to group: {e}")
+            pass
 
         return membership
 
@@ -232,7 +223,6 @@ class FamilyGroupService:
             raise NotFound("Membership not found.")
 
         await self.member_repo.remove_membership(target_user_id, group_id)
-        logger.info(f"Removed user {target_user_id} from group {group_id}")
 
         # Invalidate cache
         await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(target_user_id)))
@@ -262,7 +252,7 @@ class FamilyGroupService:
                     list_group_ids=group_ids
                 )
         except Exception as e:
-            logger.error(f"Failed to publish tag update after removing user {target_user_id} from group: {e}")
+            pass
 
 
     async def update_member_role(
@@ -287,8 +277,6 @@ class FamilyGroupService:
         membership = await self.member_repo.update_role(target_user_id, group_id, new_role)
         if not membership:
             raise NotFound("Failed to update membership role.")
-
-        logger.info(f"Updated role for user {target_user_id} in group {group_id} to {new_role}")
 
         # Invalidate cache
         await redis_service.delete_key(RedisKeys.group_detail_key(str(group_id)))
@@ -344,8 +332,6 @@ class FamilyGroupService:
                 new_role=GroupRole.HEAD_CHEF
             )
 
-            logger.info(f"Transferred HEAD_CHEF from {user_id} to {new_head_chef.user_id}")
-
             await kafka_service.publish_update_headchef_group_message(
                 requester_username=str(user_name),
                 group_id=str(group_id),
@@ -354,10 +340,8 @@ class FamilyGroupService:
 
         if len(all_members) <= 1:
             await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
-            logger.info(f"User {user_id} left group {group_id} (last member, group effectively deleted)")
         else:
             await self.member_repo.remove_membership(user_id=user_id, group_id=group_id)
-            logger.info(f"User {user_id} left group {group_id}")
 
             # Invalidate cache
             await redis_service.delete_key(RedisKeys.user_groups_list_key(user_id=str(user_id)))
@@ -382,10 +366,10 @@ class FamilyGroupService:
                 username=user_name,
                 email=user_email,
                 tags=tags,
-                list_group_ids=group_ids
-            )
+                    list_group_ids=group_ids
+                )
         except Exception as e:
-            logger.error(f"Failed to publish tag update after user {user_id} left group: {e}")
+            pass
 
     async def check_group_access(
         self,

@@ -1,8 +1,5 @@
 # notification-service/app/consumers/handlers/otp_handler.py
-from shopping_shared.utils.logger_utils import get_logger
 from .base_handler import BaseMessageHandler
-
-logger = get_logger("OTP Handler")
 
 class OTPMessageHandler(BaseMessageHandler):
     """
@@ -23,16 +20,12 @@ class OTPMessageHandler(BaseMessageHandler):
 
         # Validate message structure
         if not email or not otp_code:
-            logger.warning(f"Invalid message format: {message_value}")
             return
 
         # Validate action matches handler responsibility (if specified)
         if self.expected_action and action != self.expected_action:
-             logger.warning(f"Action mismatch: Expected {self.expected_action}, got {action}. Skipping.")
              return
 
-        logger.info(f"Processing OTP action '{action}' for email {email}")
-        
         if app and hasattr(app.ctx, 'email_service'):
             try:
                 await app.ctx.email_service.send_otp(
@@ -40,10 +33,7 @@ class OTPMessageHandler(BaseMessageHandler):
                     otp_code=otp_code,
                     action=action
                 )
-                logger.info(f"OTP email sent successfully to {email}")
             except Exception as e:
-                logger.error(f"Failed to send OTP email: {e}")
                 raise e # Re-raise to trigger consumer error handling (retry or log)
         else:
-            logger.error("Email service not available in app context")
             raise RuntimeError("Email service dependency missing")

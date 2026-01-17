@@ -6,9 +6,6 @@ warnings.filterwarnings("ignore", category=PydanticDeprecatedSince20, module="sa
 from sanic import Sanic
 from sanic_ext import Extend
 from sanic.response import json as sanic_json
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Initialize Notification Service Application")
 
 
 def register_routes(sanic_app: Sanic):
@@ -73,7 +70,6 @@ def register_listeners(sanic_app: Sanic):
         """Initialize services that require app context."""
         # Attach email service to app context passing only config
         app.ctx.email_service = EmailService(app.config)
-        logger.info("Email Service attached to app.ctx")
 
     # Start Kafka Consumer
     sanic_app.register_listener(start_consumer, "after_server_start")
@@ -92,8 +88,6 @@ def register_listeners(sanic_app: Sanic):
 
 def create_app(*config_cls) -> Sanic:
     """Application factory for the Notification Service."""
-    logger.info(f"Sanic application initialized with {', '.join([config.__name__ for config in config_cls])}")
-
     sanic_app = Sanic(__name__)
 
     # Load configurations

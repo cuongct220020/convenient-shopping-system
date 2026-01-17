@@ -17,11 +17,8 @@ from app.schemas.family_group_schema import (
 
 from shopping_shared.exceptions import NotFound, Forbidden, Conflict
 from shopping_shared.schemas.response_schema import GenericResponse
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
 from shopping_shared.caching.redis_keys import RedisKeys
-
-logger = get_logger("Group Members View")
 
 
 class GroupMembersView(BaseGroupView):
@@ -65,13 +62,11 @@ class GroupMembersView(BaseGroupView):
                 status_code=200
             )
         except NotFound:
-            logger.error(f"Group with id {group_id} not found")
             return self.error_response(
                 message="Group not found.",
                 status_code=404
             )
         except Exception as e:
-            logger.error("Error listing group members.", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to list group members.",
@@ -125,25 +120,21 @@ class GroupMembersView(BaseGroupView):
                 status_code=201
             )
         except NotFound as e:
-            logger.error(f"User not found: {user_to_add_identifier}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=404
             )
         except Forbidden as e:
-            logger.error(f"Permission denied adding member: {user_to_add_identifier}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=403
             )
         except Conflict as e:
-            logger.warning(f"Conflict when adding member: {user_to_add_identifier}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=409
             )
         except Exception as e:
-            logger.error("Error adding membership", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to add member",
@@ -193,19 +184,16 @@ class GroupMemberDetailView(BaseGroupView):
                 status_code=200
             )
         except NotFound as e:
-            logger.error(f"Membership not found: group_id={group_id}, user_id={user_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=404
             )
         except Forbidden as e:
-            logger.error(f"Permission denied updating role: group_id={group_id}, user_id={user_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=403
             )
         except Exception as e:
-            logger.error("Error updating membership", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update member role",
@@ -247,19 +235,16 @@ class GroupMemberDetailView(BaseGroupView):
                 status_code=200
             )
         except NotFound as e:
-            logger.error(f"Membership not found: group_id={group_id}, user_id={user_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=404
             )
         except Forbidden as e:
-            logger.error(f"Permission denied removing member: group_id={group_id}, user_id={user_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=403
             )
         except Exception as e:
-            logger.error("Error removing membership", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to remove member",
@@ -305,19 +290,16 @@ class GroupMemberMeView(BaseGroupView):
                 status_code=200
             )
         except NotFound as e:
-            logger.error(f"User {user_id} is not a member of group {group_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=404
             )
         except Forbidden as e:
-            logger.error(f"User {user_id} cannot leave group {group_id}", exc_info=e)
             return self.error_response(
                 message=str(e),
                 status_code=403
             )
         except Exception as e:
-            logger.error("Error leaving group", exc_info=e)
             return self.error_response(
                 message="Failed to leave group",
                 status_code=500

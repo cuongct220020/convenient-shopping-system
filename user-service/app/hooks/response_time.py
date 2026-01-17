@@ -4,9 +4,6 @@ from typing import Optional
 
 from sanic import Request
 from sanic.response import BaseHTTPResponse
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Response Time Middleware")
 
 class ResponseTimeMiddleware:
     """
@@ -52,16 +49,6 @@ class ResponseTimeMiddleware:
                 'query': request.query_string or '',
             }
 
-            # Log based on status code and performance
-            if response.status >= 500:
-                logger.error("Server error occurred", extra=log_data)
-            elif response.status >= 400:
-                logger.warning("Client error", extra=log_data)
-            elif latency_ms > self.slow_threshold_ms:
-                logger.warning("Slow request detected", extra=log_data)
-            else:
-                logger.info("Request completed", extra=log_data)
-
         except Exception as ex:
             # Don't let logging failures interrupt response flow
-            logger.exception("Failed to compute response time: %s", ex)
+            pass

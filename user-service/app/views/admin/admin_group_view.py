@@ -18,11 +18,8 @@ from app.schemas.family_group_admin_schema import FamilyGroupAdminUpdateSchema
 
 from shopping_shared.exceptions import NotFound, Conflict
 from shopping_shared.schemas.response_schema import GenericResponse
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
 from shopping_shared.caching.redis_keys import RedisKeys
-
-logger = get_logger("Admin Group View")
 
 
 class BaseAdminGroupsView(BaseAPIView):
@@ -129,7 +126,6 @@ class AdminGroupsView(BaseAdminGroupsView):
                 status_code=200
             )
         except Exception as e:
-            logger.error("Failed to list family groups", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to list groups",
@@ -174,7 +170,6 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         except NotFound as e:
             return self.error_response(message=str(e), status_code=404)
         except Exception as e:
-            logger.error("Failed to get family group", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve group",
@@ -218,7 +213,6 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         except NotFound as e:
             return self.error_response(message=str(e), status_code=404)
         except Exception as e:
-            logger.error("Failed to update family group", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update group",
@@ -258,7 +252,6 @@ class AdminGroupDetailView(BaseAdminGroupsView):
         except NotFound as e:
             return self.error_response(message=str(e), status_code=404)
         except Exception as e:
-            logger.error("Failed to delete family group", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to delete group",
@@ -305,7 +298,6 @@ class AdminGroupMembersView(BaseAdminGroupsView):
                 status_code=200
             )
         except Exception as e:
-            logger.error("Failed to list group members", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to list group members",
@@ -347,7 +339,6 @@ class AdminGroupMembersView(BaseAdminGroupsView):
         except (NotFound, Conflict) as e:
             return self.error_response(message=str(e), status_code=409 if isinstance(e, Conflict) else 404)
         except Exception as e:
-            logger.error("Failed to add member", exc_info=e)
             return self.error_response(message="Failed to add member", status_code=500)
 
 
@@ -393,7 +384,6 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
         except NotFound as e:
             return self.error_response(message=str(e), status_code=404)
         except Exception as e:
-            logger.error("Failed to update member role", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to update member role",
@@ -431,5 +421,4 @@ class AdminGroupMembersManageView(BaseAdminGroupsView):
         except NotFound as e:
             return self.error_response(message=str(e), status_code=404)
         except Exception as e:
-            logger.error("Failed to remove member", exc_info=e)
             return self.error_response(message="Failed to remove member", status_code=500)

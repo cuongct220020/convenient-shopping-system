@@ -10,15 +10,10 @@ from apis.v1.meal_api import meal_router
 from tasks.scheduler import setup_scheduler
 from shopping_shared.caching.redis_manager import redis_manager
 from core.config import settings
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("MealService")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting Meal Service...")
-
     try:
         await redis_manager.setup(
             host=settings.REDIS_HOST,
@@ -29,22 +24,17 @@ async def lifespan(app: FastAPI):
         kafka_manager.setup(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
         scheduler = setup_scheduler()
         scheduler.start()
-        logger.info("Meal Service started successfully")
     except Exception as e:
-        logger.error(f"Failed to start Meal Service: {str(e)}", exc_info=True)
         raise
 
     yield
 
-    logger.info("Shutting down Meal Service...")
     try:
         scheduler.shutdown()
         await kafka_manager.close()
         await redis_manager.close()
     except Exception as e:
-        logger.error(f"Error during shutdown: {str(e)}", exc_info=True)
-
-    logger.info("Meal Service shutdown completed")
+        pass
 
 
 app = FastAPI(

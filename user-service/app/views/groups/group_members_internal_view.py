@@ -7,11 +7,7 @@ from app.views.groups.base_group_view import BaseGroupView
 from app.schemas.family_group_schema import FamilyGroupDetailedSchema
 from shopping_shared.schemas.response_schema import GenericResponse
 from shopping_shared.utils.openapi_utils import get_openapi_body
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.exceptions import NotFound
-
-
-logger = get_logger("Internal Group Members View")
 
 
 class InternalGroupMembersView(BaseGroupView):
@@ -55,7 +51,6 @@ class InternalGroupMembersView(BaseGroupView):
                 status_code=404
             )
         except Exception as e:
-            logger.error("Error retrieving internal group members.", exc_info=e)
             return self.error_response(
                 message="Failed to retrieve group members.",
                 status_code=500

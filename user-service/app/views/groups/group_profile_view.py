@@ -25,10 +25,7 @@ from shopping_shared.caching.redis_keys import RedisKeys
 
 from shopping_shared.exceptions import NotFound
 from shopping_shared.schemas.response_schema import GenericResponse
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
-
-logger = get_logger("Group Profile View")
 
 
 class MemberIdentityProfileView(BaseAPIView):
@@ -84,7 +81,6 @@ class MemberIdentityProfileView(BaseAPIView):
                 status_code=404
             )
         except Exception as e:
-            logger.error("Failed to retrieve identity profile", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve identity profile",
@@ -140,7 +136,6 @@ class MemberHealthProfileView(BaseAPIView):
                 status_code=404
             )
         except Exception as e:
-            logger.error("Failed to retrieve health profile", exc_info=e)
             # Use helper method from base class
             return self.error_response(
                 message="Failed to retrieve health profile",

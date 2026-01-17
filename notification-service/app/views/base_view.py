@@ -2,9 +2,6 @@ from sanic.views import HTTPMethodView
 from sanic.response import json
 
 from shopping_shared.schemas.response_schema import GenericResponse
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Base View")
 
 class BaseAPIView(HTTPMethodView):
     """Base class cho các API view với helper methods"""

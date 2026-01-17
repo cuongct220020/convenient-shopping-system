@@ -6,10 +6,7 @@ from fastapi import status
 import httpx
 from shopping_shared.middleware.fastapi_auth import get_current_user
 from shopping_shared.exceptions import Unauthorized
-from shopping_shared.utils.logger_utils import get_logger
 from core.config import settings
-
-logger = get_logger("HeadChefMiddleware")
 
 
 class HeadChefMiddleware(BaseHTTPMiddleware):
@@ -55,10 +52,6 @@ class HeadChefMiddleware(BaseHTTPMiddleware):
 
             is_head_chef = await self._check_head_chef(user_id, group_id)
             if not is_head_chef:
-                logger.warning(
-                    f"Non-head-chef user attempted meal operation. "
-                    f"Path: {path}, User ID: {user_id}, Group ID: {group_id}"
-                )
                 return JSONResponse(
                     status_code=status.HTTP_403_FORBIDDEN,
                     content={
@@ -67,20 +60,14 @@ class HeadChefMiddleware(BaseHTTPMiddleware):
                     }
                 )
             
-            logger.debug(
-                f"Head chef access granted. "
-                f"Path: {path}, User ID: {user_id}, Group ID: {group_id}"
-            )
             return await call_next(request)
             
         except Unauthorized as e:
-            logger.warning(f"Unauthorized request: {path} - {str(e)}")
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": str(e)}
             )
         except Exception as e:
-            logger.exception(f"Error in head chef middleware: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={"detail": "Internal server error during authorization check"}
@@ -112,22 +99,16 @@ class HeadChefMiddleware(BaseHTTPMiddleware):
                     # User is not a member or group not found
                     return False
                 else:
-                    logger.error(
-                        f"Unexpected response from user-service: {response.status_code} - {response.text}"
-                    )
                     # Fail closed for unexpected errors
                     return False
                     
         except httpx.TimeoutException:
-            logger.error(f"Timeout when calling user-service to check head chef: {url}")
             # Fail closed on timeout
             return False
         except httpx.RequestError as e:
-            logger.error(f"Error calling user-service to check head chef: {e}")
             # Fail closed on request errors
             return False
         except Exception as e:
-            logger.exception(f"Unexpected error checking head chef: {e}")
             # Fail closed on unexpected errors
             return False
 

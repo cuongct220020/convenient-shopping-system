@@ -5,9 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.notification_repository import NotificationRepository
 from app.schemas.notification_schema import NotificationResponseSchema, NotificationCreateSchema
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Notification Service")
 
 
 class NotificationService:
@@ -62,7 +59,6 @@ class NotificationService:
         
         # Check authorization: user can only delete their own notifications
         if notification.receiver != user_id:
-            logger.warning(f"User {user_id} attempted to delete notification {notification_id} owned by {notification.receiver}")
             return False
         
         return await self.repository.delete(notification_id)

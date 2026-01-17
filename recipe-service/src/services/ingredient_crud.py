@@ -8,9 +8,6 @@ from models.recipe_component import Ingredient, CountableIngredient, Uncountable
 from schemas.ingredient_schemas import IngredientCreate, IngredientUpdate
 from enums.category import Category
 from sqlalchemy import or_
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("IngredientCRUD")
 
 class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
     model_map = {
@@ -48,7 +45,6 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         return db_obj
 
     def delete(self, db: Session, id: int) -> Ingredient:
-        logger.info(f"Attempting to delete ingredient with id={id}")
         obj = db.get(self.model, id)
         if obj is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Ingredient with id={id} not found")
@@ -56,10 +52,8 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
         try:
             db.delete(obj)
             db.commit()
-            logger.info(f"Successfully deleted ingredient with id={id}")
         except IntegrityError:
             db.rollback()
-            logger.warning(f"Integrity error when deleting ingredient with id={id}, checking referenced recipes")
             recipe_names = db.execute(
                 select(Recipe.component_name).join(
                     ComponentList,
@@ -69,7 +63,6 @@ class IngredientCRUD(CRUDBase[Ingredient, IngredientCreate, IngredientUpdate]):
                 )
             ).scalars().all()
             recipe_names_list = list(recipe_names)
-            logger.error(f"Cannot delete ingredient with id={id} because it is referenced by recipes: {recipe_names_list}")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Cannot delete this ingredient because it is being referenced by the following recipes: {recipe_names_list}"

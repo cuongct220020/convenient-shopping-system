@@ -4,9 +4,6 @@ from datetime import datetime, UTC
 
 from shopping_shared.caching.redis_manager import redis_manager
 from shopping_shared.caching.redis_keys import RedisKeys
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("Redis Service")
 
 class RedisService:
 
@@ -160,9 +157,7 @@ class RedisService:
         try:
             key = RedisKeys.otp(email, action)
             await redis_manager.client.set(key, json.dumps(otp_data), ex=ttl_seconds)
-            logger.info(f"OTP stored successfully for {email} with key: {key}")
         except Exception as e:
-            logger.error(f"Failed to set OTP for {email} in Redis: {str(e)}")
             raise
 
     @classmethod
@@ -175,7 +170,6 @@ class RedisService:
                 return json.loads(data_str)
             return None
         except Exception as e:
-            logger.error(f"Failed to get OTP for {email} from Redis: {str(e)}")
             return None
 
     @classmethod
@@ -185,7 +179,7 @@ class RedisService:
             key = RedisKeys.otp(email, action)
             await redis_manager.client.delete(key)
         except Exception as e:
-            logger.error(f"Failed to delete OTP for {email} from Redis: {str(e)}")
+            pass
 
     # --- General Caching Methods ---
 
@@ -198,7 +192,6 @@ class RedisService:
                 return json.loads(data_str)
             return None
         except Exception as e:
-            logger.error(f"Cache miss or error for {key}: {e}")
             return None
 
 
@@ -208,7 +201,7 @@ class RedisService:
         try:
             await redis_manager.client.set(key, json.dumps(data), ex=ttl)
         except Exception as e:
-            logger.error(f"Failed to set cache for {key}: {e}")
+            pass
 
 
     @classmethod
@@ -216,12 +209,8 @@ class RedisService:
         """Deletes a specific key."""
         try:
             result = await redis_manager.client.delete(key)
-            if result > 0:
-                logger.info(f"Deleted key: {key}")
-            else:
-                logger.debug(f"Key not found for deletion: {key}")
         except Exception as e:
-            logger.error(f"Failed to delete key {key}: {e}")
+            pass
 
     @classmethod
     async def delete_pattern(cls, pattern: str):
@@ -234,9 +223,8 @@ class RedisService:
 
             if keys:
                 await redis_manager.client.delete(*keys)
-                logger.info(f"Deleted {len(keys)} keys matching {pattern}")
         except Exception as e:
-            logger.error(f"Failed to delete pattern {pattern}: {e}")
+            pass
 
 
 

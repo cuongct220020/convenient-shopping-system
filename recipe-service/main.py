@@ -11,16 +11,11 @@ from core.messaging import kafka_manager
 from messaging.consumers.component_existence_consumer import consume_component_existence_events
 from messaging.consumers.group_tags_consumer import consume_group_tags_events
 from core.caching import redis_manager
-from shopping_shared.utils.logger_utils import get_logger
 import asyncio
-
-logger = get_logger("RecipeService")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting Recipe Service...")
-    
     try:
         await redis_manager.setup(
             host=settings.REDIS_HOST,
@@ -29,9 +24,7 @@ async def lifespan(app: FastAPI):
             password=settings.REDIS_PASSWORD
         )
         kafka_manager.setup(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
-        logger.info("Recipe Service started successfully")
     except Exception as e:
-        logger.error(f"Failed to start Recipe Service: {str(e)}", exc_info=True)
         raise
 
     tasks = [
@@ -41,7 +34,6 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    logger.info("Shutting down Recipe Service...")
     for task in tasks:
         task.cancel()
     await asyncio.gather(*tasks, return_exceptions=True)
@@ -50,9 +42,7 @@ async def lifespan(app: FastAPI):
         await kafka_manager.close()
         await redis_manager.close()
     except Exception as e:
-        logger.error(f"Error during shutdown: {str(e)}", exc_info=True)
-    
-    logger.info("Recipe Service shutdown completed")
+        pass
 
 
 app = FastAPI(

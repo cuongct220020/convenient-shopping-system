@@ -2,9 +2,6 @@ import uuid
 from typing import Dict, Any
 from core.database import SessionLocal
 from models.component_existence import ComponentExistence
-from shopping_shared.utils.logger_utils import get_logger
-
-logger = get_logger("ComponentExistenceHandler")
 
 def handle_component_existence_update(data: Dict[str, Any]):
     db = SessionLocal()
@@ -27,9 +24,7 @@ def handle_component_existence_update(data: Dict[str, Any]):
                     )
                     db.add(db_obj)
         
-        logger.info(f"Successfully processed component existence update: group_id={group_id}")
     except Exception as e:
-        logger.error(f"Error processing component existence update: group_id={data.get('group_id')}, error={str(e)}", exc_info=True)
         raise
     finally:
         db.close()

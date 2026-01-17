@@ -24,10 +24,7 @@ from app.schemas.user_profile_schema import (
 from shopping_shared.caching.redis_keys import RedisKeys
 
 from shopping_shared.exceptions import NotFound
-from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
-
-logger = get_logger("Me Profile View")
 
 
 class MeIdentityProfileView(BaseAPIView):
@@ -76,7 +73,6 @@ class MeIdentityProfileView(BaseAPIView):
                 status_code=404
             )
         except Exception as e:
-            logger.error("Failed to retrieve identity profile", exc_info=e)
             # Use helper method from base class
             return self.fail_response(
                 message="Failed to retrieve identity profile",
@@ -133,7 +129,6 @@ class MeIdentityProfileView(BaseAPIView):
                 status_code=200
             )
         except Exception as e:
-            logger.error("Failed to update identity profile", exc_info=e)
             # Use helper method from base class
             return self.fail_response(
                 message="Failed to update identity profile",
@@ -186,7 +181,6 @@ class MeHealthProfileView(BaseAPIView):
                 status_code=404
             )
         except Exception as e:
-            logger.error("Failed to retrieve health profile", exc_info=e)
             # Use helper method from base class
             return self.fail_response(
                 message="Failed to retrieve health profile",

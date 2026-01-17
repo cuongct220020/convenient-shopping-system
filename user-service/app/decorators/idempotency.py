@@ -6,11 +6,8 @@ from sanic.response import json as sanic_json
 from sanic_ext import openapi
 
 from shopping_shared.exceptions import Conflict
-from shopping_shared.utils.logger_utils import get_logger
 from app.services.redis_service import RedisService
 from shopping_shared.schemas.response_schema import GenericResponse
-
-logger = get_logger("Idempotency")
 
 def idempotent(ttl_seconds: int = 60 * 60 * 24, auto_document: bool = True): # Default 24 hours
     """
@@ -66,12 +63,10 @@ def idempotent(ttl_seconds: int = 60 * 60 * 24, auto_document: bool = True): # D
 
                 if cached_data_str == "PROCESSING":
                     # Concurrent request detected
-                    logger.warning(f"Concurrent request blocked for key: {idem_key}, user: {user_id}")
                     raise Conflict("This operation is currently being processed. Please wait.")
 
                 if cached_data_str:
                     # Idempotency HIT: Return cached response
-                    logger.info(f"Idempotency hit for key: {idem_key}, user: {user_id}")
                     data = json.loads(cached_data_str)
                     return sanic_json(data["body"], status=data["status"])
 
@@ -94,11 +89,11 @@ def idempotent(ttl_seconds: int = 60 * 60 * 24, auto_document: bool = True): # D
                             "body": response_body
                         }
                         await RedisService.save_idempotency_result(
-                            user_id, idem_key, cache_payload, ttl_seconds
+                            user_id, idem_key, cache_payload,                             ttl_seconds
                         )
                     except Exception as e:
-                        logger.error(f"Failed to serialize response for idempotency: {e}")
                         # Even if saving cache fails, we return the real response
+                        pass
                 else:
                     # If server error, release lock to allow retry
                     await RedisService.release_idempotency_lock(user_id, idem_key)
@@ -107,7 +102,6 @@ def idempotent(ttl_seconds: int = 60 * 60 * 24, auto_document: bool = True): # D
 
             except Exception as e:
                 # On application exception (Crash), release lock
-                logger.error(f"Error during idempotent processing: {e}")
                 await RedisService.release_idempotency_lock(user_id, idem_key)
                 raise e # Re-raise for global error handler
 

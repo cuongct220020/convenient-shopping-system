@@ -2,11 +2,8 @@
 import aiosmtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from shopping_shared.utils.logger_utils import get_logger
 
 from jinja2 import Environment, PackageLoader, select_autoescape
-
-logger = get_logger("Email Service")
 
 class EmailService:
     def __init__(self, config=None):
@@ -15,12 +12,10 @@ class EmailService:
             loader=PackageLoader("app", "templates"),
             autoescape=select_autoescape()
         )
-        if config:
-            logger.info("EmailService initialized (Async).")
+        pass
 
     async def _send_email(self, to_email: str, subject: str, html_content: str):
         if not self.config:
-            logger.error("Email service not initialized.")
             return
 
         # Access config safely (Sanic config behaves like a dict or object depending on version)
@@ -65,9 +60,8 @@ class EmailService:
                     password=password,
                     use_tls=use_tls  # For other ports like 465
                 )
-            logger.info(f"Successfully sent email to {to_email}")
         except Exception as e:
-            logger.error(f"Failed to send email to {to_email}. Error: {e}")
+            pass
 
     async def send_otp(self, email: str, otp_code: str, action: str):
         """
@@ -90,7 +84,6 @@ class EmailService:
         }
 
         if action not in action_config:
-            logger.warning(f"Attempted to send OTP for unknown action: {action}")
             return
 
         config = action_config[action]

@@ -4,7 +4,6 @@ from uuid import UUID
 from app.models import User
 from app.schemas.user_admin_schema import UserAdminUpdateSchema
 from shopping_shared.exceptions import NotFound, Unauthorized
-from shopping_shared.utils.logger_utils import get_logger
 
 from app.repositories.user_repository import UserRepository
 from app.services.redis_service import redis_service
@@ -12,8 +11,6 @@ from shopping_shared.caching.redis_keys import RedisKeys
 
 from app.schemas.auth_schema import ChangePasswordRequestSchema
 from app.utils.password_utils import hash_password, verify_password
-
-logger = get_logger("User Service")
 
 
 class UserService:
@@ -66,5 +63,3 @@ class UserService:
         # Invalidate all sessions for the user
         await redis_service.remove_session_from_allowlist(str(user.id))
         await redis_service.revoke_all_tokens_for_user(str(user.id))
-
-        logger.info(f"Password changed for user {user_id}, all tokens revoked")
