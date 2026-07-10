@@ -62,7 +62,7 @@ export const Pagination = ({
           }`}
         >
           <ChevronLeft size={16} className="mr-1" />
-          Previous
+          Trước
         </button>
       )}
 
@@ -115,7 +115,7 @@ export const Pagination = ({
             currentPage === totalPages ? 'cursor-not-allowed opacity-50' : ''
           }`}
         >
-          Next
+          Sau
           <ChevronRight size={16} className="ml-1" />
         </button>
       )}

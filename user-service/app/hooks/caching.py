@@ -1,4 +1,4 @@
-# user-service/app/hooks/caching.py
+# user-service/app/hooks/cache_response.py
 import asyncio
 from sanic import Sanic, Request
 from shopping_shared.caching.redis_manager import redis_manager

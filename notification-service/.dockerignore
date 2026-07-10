@@ -87,3 +87,8 @@ venv/
 
 # VS Code
 .vscode/
+
+README.md
+openapi.yml
+
+tests/

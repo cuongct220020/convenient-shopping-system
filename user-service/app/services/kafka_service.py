@@ -1,4 +1,6 @@
 # user-service/app/services/kafka_service.py
+from datetime import datetime, UTC
+from typing import List
 from app.enums import OtpAction
 from shopping_shared.messaging.kafka_manager import kafka_manager
 from shopping_shared.utils.logger_utils import get_logger
@@ -6,8 +8,9 @@ from shopping_shared.messaging.kafka_topics import (
     REGISTRATION_EVENTS_TOPIC,
     RESET_PASSWORD_EVENTS_TOPIC,
     EMAIL_CHANGE_EVENTS_TOPIC,
-    GROUP_USER_ADDED_EVENTS_TOPIC,
-    USER_UPDATE_TAG_EVENTS_TOPIC
+    USER_UPDATE_TAG_EVENTS_TOPIC,
+    LOGOUT_EVENTS_TOPIC,
+    NOTIFICATION_TOPIC
 )
 
 
@@ -52,41 +55,203 @@ class KafkaService:
             raise e
 
     @staticmethod
-    async def publish_group_user_added_message(
-        requester_id: str,
-        group_id: str,
-        user_to_add_id: str,
-        user_to_add_identifier: str,
-        topic: str = GROUP_USER_ADDED_EVENTS_TOPIC
-    ):
-        payload = {
-            "requester_id": str(requester_id),  # Convert UUID to string
-            "group_id": str(group_id),          # Convert UUID to string
-            "user_to_add_id": str(user_to_add_id),  # Convert UUID to string
-            "user_to_add_identifier": user_to_add_identifier
-        }
+    def _build_payload(**kwargs) -> dict:
+        """Private helper to build payload dictionary with timestamp."""
+        from uuid import UUID
 
-        logger.info(f"Attempting to publish group user added message to topic: {topic}")
-        logger.info(f"Payload: {payload}")
+        def convert_uuids(obj):
+            """Convert UUID objects to strings recursively."""
+            if isinstance(obj, UUID):
+                return str(obj)
+            elif isinstance(obj, dict):
+                return {key: convert_uuids(value) for key, value in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_uuids(item) for item in obj]
+            elif isinstance(obj, tuple):
+                return tuple(convert_uuids(item) for item in obj)
+            else:
+                return obj
 
+        timestamp = datetime.now(UTC)
+        payload = {"timestamp": timestamp}
+        payload.update(kwargs)
+
+        return convert_uuids(payload)
+
+    @staticmethod
+    async def _publish_message(topic: str, payload: dict, key: str):
+        """Private helper to publish message to Kafka."""
         try:
             await kafka_manager.send_message(
                 topic=topic,
                 value=payload,
-                key=str(group_id),  # Convert UUID to string
+                key=key,
                 wait=True
             )
-            logger.info(f"Group user added message published successfully to topic: {topic}")
         except Exception as e:
-            logger.error(f"Failed to publish group user added message to topic {topic}: {e}")
+            logger.error(f"Failed to publish message to topic {topic}: {e}")
+            raise e
+
+    @staticmethod
+    async def publish_add_user_group_message(
+        requester_username: str,
+        group_id: str,
+        user_to_add_id: str,
+        topic: str = NOTIFICATION_TOPIC
+    ):
+        payload = {
+            "event_type": "group_user_added",
+            "group_id": str(group_id),
+            "receivers": [str(user_to_add_id)],
+            "data": {
+                "requester_username": str(requester_username),
+            },
+        }
+
+        await kafka_service._publish_message(
+            topic=topic,
+            payload=payload,
+            key=f"{group_id}-group"
+        )
+
+        logger.info(
+            f"Published notification to {topic}: event_type=group_user_added "
+            f"group_id={group_id} receivers={[str(user_to_add_id)]}"
+        )
+
+
+    @staticmethod
+    async def publish_remove_user_group_message(
+        requester_username: str,
+        user_to_remove_id: str,
+        group_id: str,
+    ):
+        payload = {
+            "event_type": "group_user_removed",
+            "group_id": str(group_id),
+            "receivers": [str(user_to_remove_id)],
+            "data": {
+                "requester_username": str(requester_username),
+            },
+        }
+
+        try:
+            await kafka_service._publish_message(
+                topic=NOTIFICATION_TOPIC,
+                payload=payload,
+                key=f"{group_id}-group"
+            )
+            logger.info(
+                f"Published notification to {NOTIFICATION_TOPIC}: event_type=group_user_removed "
+                f"group_id={group_id} receivers={[str(user_to_remove_id)]}"
+            )
+        except Exception as err:
+            logger.error(f"Failed to publish remove user group message: {err}")
+            raise err
+
+
+    @staticmethod
+    async def publish_user_leave_group_message(
+        user_id: str,
+        group_id: str,
+        topic: str = NOTIFICATION_TOPIC
+    ):
+        payload = {
+            "event_type": "group_user_left",
+            "group_id": str(group_id),
+            "receivers": [str(user_id)],
+            "data": {},
+        }
+
+        await kafka_service._publish_message(
+            topic=topic,
+            payload=payload,
+            key=f"{group_id}-group"
+        )
+
+        logger.info(
+            f"Published notification to {topic}: event_type=group_user_left "
+            f"group_id={group_id} receivers={[str(user_id)]}"
+        )
+
+
+    @staticmethod
+    async def  publish_user_logout_message(
+        user_id: str,
+        jti: str,
+        topic: str = LOGOUT_EVENTS_TOPIC
+    ):
+        payload = kafka_service._build_payload(
+            event_type="account_logged_out",
+            user_id=str(user_id),
+            access_token_id=str(jti),
+            timestamp=str(datetime.now(UTC)),
+        )
+
+        await kafka_service._publish_message(
+            topic=topic,
+            payload=payload,
+            key=str(user_id)
+        )
+
+    @staticmethod
+    async def publish_update_headchef_group_message(
+        requester_username: str,
+        group_id: str,
+        new_head_chef_username: str,
+    ):
+        payload = {
+            "event_type": "group_head_chef_updated",
+            "group_id": str(group_id),
+            # "receivers": [], # Commented out: Let notification service broadcast to group
+            "data": {
+                "new_head_chef_username": str(new_head_chef_username),
+                "requester_username": str(requester_username),
+            },
+        }
+
+        try:
+            await kafka_service._publish_message(
+                topic=NOTIFICATION_TOPIC,
+                payload=payload,
+                key=f"{group_id}-group"
+            )
+            logger.info(
+                f"Published notification to {NOTIFICATION_TOPIC}: event_type=group_head_chef_updated "
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to publish update head chef role message: {e}")
             raise e
 
 
     @staticmethod
     async def publish_user_update_tag_message(
+        user_id: str,
+        username: str,
+        email: str,
+        tags: List[str],
+        list_group_ids: List[str],
         topic: str = USER_UPDATE_TAG_EVENTS_TOPIC
     ):
-        pass
+
+        payload = kafka_service._build_payload(
+            event_type="user_tags_updated",
+            user_id=str(user_id),
+            username=str(username),
+            email=str(email),
+            tags=tags,
+            list_group_ids=list_group_ids,
+            timestamp=datetime.now(UTC)
+        )
+
+        await kafka_service._publish_message(
+            topic=topic,
+            payload=payload,
+            key=str(user_id)
+        )
+
+        logger.info(f"User update tag message published successfully to topic: {topic}")
 
 
 kafka_service = KafkaService()

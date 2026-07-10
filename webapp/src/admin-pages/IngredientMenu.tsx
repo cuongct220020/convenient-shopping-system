@@ -1,77 +1,176 @@
-import React, { useState, useMemo } from 'react'
-import { Search, Plus, Filter, LayoutGrid, Check, Edit, Trash2 } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  Search,
+  Plus,
+  Filter,
+  Check,
+  Edit,
+  Trash2,
+  RotateCw
+} from 'lucide-react'
 import Item from '../components/Item'
 import { Button } from '../components/Button'
 import { Pagination } from '../components/Pagination'
 import { DishForm } from '../components/DishForm'
 import { IngredientForm } from '../components/IngredientForm'
-import garlicImg from '../assets/garlic.png'
+// Import all category images
+import alcoholicBeveragesImg from '../assets/alcoholic_beverages.png'
+import beveragesImg from '../assets/beverages.png'
+import cakesImg from '../assets/cakes.png'
+import candiesImg from '../assets/candies.png'
+import cerealsGrainsImg from '../assets/cereals_grains.png'
+import coldCutsImg from '../assets/cold_cuts.png'
+import driedFruitImg from '../assets/dried_fruit.png'
+import freshFruitsImg from '../assets/fresh_fruits.png'
+import freshMeatImg from '../assets/fresh_meat.png'
+import fruitJamsImg from '../assets/fruit_jams.png'
+import grainsStaplesImg from '../assets/grains_staples.png'
+import icecreamCheeseImg from '../assets/icecream_cheese.png'
+import instantFoodsImg from '../assets/instant_foods.png'
+import milkImg from '../assets/milk.png'
+import othersImg from '../assets/others.png'
+import seafoodFishballsImg from '../assets/seafood_fishballs.png'
+import seasoningsImg from '../assets/seasonings.png'
+import snacksImg from '../assets/snacks.png'
+import vegetablesImg from '../assets/vegetables.png'
+import yogurtImg from '../assets/yogurt.png'
+import garlicImg from '../assets/garlic.png' // Fallback image
 
-// Dữ liệu giả lập để hiển thị giống hình ảnh
-const possibleNames = [
-  'Tỏi',
-  'Gừng',
-  'Hành lá',
-  'Ớt',
-  'Chanh',
-  'Cà chua',
-  'Khoai tây',
-  'Cà rốt',
-  'Bí đỏ',
-  'Thịt heo',
-  'Thịt bò',
-  'Thịt gà',
-  'Cá hồi',
-  'Tôm',
-  'Trứng vịt',
-  'Sữa tươi',
-  'Dầu ăn',
-  'Nước mắm',
-  'Đường',
-  'Muối',
-  'Nấm hương',
-  'Đậu phụ',
-  'Hạt tiêu',
-  'Mì gói',
-  'Gạo tẻ'
-]
-const possibleCategories = [
-  'Gia vị',
-  'Rau củ',
-  'Thịt',
-  'Hải sản',
-  'Trứng & Sữa',
-  'Đồ khô',
-  'Thực phẩm đóng gói',
-  'Ngũ cốc'
-]
+import { ingredientService } from '../services/ingredient'
+import { useIsMounted } from '../hooks/useIsMounted'
+import type { Ingredient } from '../services/schema/ingredientSchema'
+import { NotificationCard } from '../components/NotificationCard'
+import { INGREDIENT_CATEGORIES } from '../utils/constants'
 
-const allIngredientsData = Array(200)
-  .fill(null)
-  .map((_, index) => {
-    const randomNameIndex = Math.floor(Math.random() * possibleNames.length)
-    const randomCategoryIndex = Math.floor(
-      Math.random() * possibleCategories.length
-    )
-    return {
-      id: index,
-      name: possibleNames[randomNameIndex],
-      category: possibleCategories[randomCategoryIndex],
-      image: garlicImg
-    }
-  })
+// Dữ liệu giả lập để hiển thị giống hình ảnh (no longer used, data now fetches from server)
 
 const ITEMS_PER_PAGE = 20
 
+type ItemData = Omit<
+  Ingredient,
+  'component_id' | 'component_name' | 'c_measurement_unit'
+> & {
+  id: number
+  name: string
+  image: string
+}
+
+// Mapping from category (Vietnamese) to image
+const categoryToImageMap: Record<string, string> = {
+  'Đồ uống có cồn': alcoholicBeveragesImg,
+  'Đồ uống': beveragesImg,
+  'Bánh ngọt': cakesImg,
+  'Kẹo': candiesImg,
+  'Ngũ cốc và hạt': cerealsGrainsImg,
+  'Thịt nguội, xúc xích và giăm bông': coldCutsImg,
+  'Trái cây sấy khô': driedFruitImg,
+  'Trái cây tươi': freshFruitsImg,
+  'Thịt tươi': freshMeatImg,
+  'Mứt trái cây': fruitJamsImg,
+  'Lương thực': grainsStaplesImg,
+  'Kem và phô mai': icecreamCheeseImg,
+  'Thực phẩm ăn liền': instantFoodsImg,
+  'Sữa': milkImg,
+  'Khác': othersImg,
+  'Hải sản và cá viên': seafoodFishballsImg,
+  'Gia vị': seasoningsImg,
+  'Đồ ăn vặt': snacksImg,
+  'Rau củ': vegetablesImg,
+  'Sữa chua': yogurtImg
+}
+
+// Get image for category, fallback to garlic image if category not found
+const getImageForCategory = (category: string | null | undefined): string => {
+  if (!category) return garlicImg
+  return categoryToImageMap[category] || garlicImg
+}
+
+// Map server ingredient to UI item format
+const mapIngredientToItem = (ingredient: Ingredient): ItemData => ({
+  id: ingredient.component_id,
+  name: ingredient.component_name,
+  image: getImageForCategory(ingredient.category),
+  ...ingredient
+})
+
 const IngredientMenu = () => {
+  const isMounted = useIsMounted()
+  const [ingredients, setIngredients] = useState<
+    ReturnType<typeof mapIngredientToItem>[]
+  >([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pagesCursors, setPagesCursors] = useState<(number | null)[]>([null])
   const [currentPage, setCurrentPage] = useState(1)
   const [showFilter, setShowFilter] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchInputValue, setSearchInputValue] = useState('')
   const [showAddDishForm, setShowAddDishForm] = useState(false)
   const [showAddIngredientForm, setShowAddIngredientForm] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [selectedItem, setSelectedItem] = useState<ItemData | null>(null)
   const [viewMode, setViewMode] = useState<'view' | 'edit' | null>(null)
+  const [reportModal, setReportModal] = useState<{
+    type: 'success' | 'error'
+    title: string
+    message: string
+  } | null>(null)
+
+  const fetchIngredients = useCallback(
+    async (pageNumber: number = 1) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const cursor = pagesCursors[pageNumber - 1] ?? undefined
+        const result = await ingredientService.getIngredients({
+          cursor,
+          limit: ITEMS_PER_PAGE,
+          search: searchQuery || undefined,
+          categories:
+            selectedCategories.length > 0 ? selectedCategories : undefined
+        })
+
+        if (!isMounted.current) return
+
+        if (result.isOk()) {
+          const response = result.value
+          setIngredients(response.data.map(mapIngredientToItem))
+          setCurrentPage(pageNumber)
+
+          // Add next page cursor if it doesn't exist yet
+          if (response.next_cursor !== null && !pagesCursors[pageNumber]) {
+            setPagesCursors((prev) => {
+              const updated = [...prev]
+              updated[pageNumber] = response.next_cursor
+              return updated
+            })
+          }
+        } else {
+          setError(result.error.desc || 'Failed to fetch ingredients')
+        }
+      } catch (err) {
+        if (isMounted.current) {
+          setError(String(err))
+        }
+      } finally {
+        if (isMounted.current) {
+          setLoading(false)
+        }
+      }
+    },
+    [pagesCursors, searchQuery, selectedCategories, isMounted]
+  )
+
+  useEffect(() => {
+    // Reset pagination when search changes, then fetch page 1
+    setPagesCursors([null])
+    setCurrentPage(1)
+    // Call fetchIngredients to fetch page 1 with new search
+    // Note: selectedCategories is not in dependency array because filter
+    // is applied via manual button click in handleApplyFilter
+    fetchIngredients(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery])
 
   const handleToggleFilter = () => {
     setShowFilter((prev) => !prev)
@@ -81,18 +180,75 @@ const IngredientMenu = () => {
     setShowAddIngredientForm(true)
   }
 
-  const handleIngredientFormSubmit = () => {
-    // In a real app, you would collect form data and save it
-    console.log('Saving ingredient')
-    setShowAddIngredientForm(false)
+  const handleIngredientFormSubmit = async (formData: Partial<Ingredient>) => {
+    setLoading(true)
+    try {
+      const result = await ingredientService.createIngredient(formData)
+
+      if (result.isOk()) {
+        setShowAddIngredientForm(false)
+        setReportModal({
+          type: 'success',
+          title: 'Tạo nguyên liệu thành công',
+          message: `Nguyên liệu "${formData.component_name}" đã được tạo.`
+        })
+        // Reset pagination state and refetch page 1
+        setPagesCursors([null])
+        setCurrentPage(1)
+        // Fetch with fresh state - pass cursor explicitly as undefined for page 1
+        try {
+          const freshResult = await ingredientService.getIngredients({
+            cursor: undefined,
+            limit: ITEMS_PER_PAGE,
+            search: searchQuery || undefined,
+            categories:
+              selectedCategories.length > 0 ? selectedCategories : undefined
+          })
+
+          if (isMounted.current && freshResult.isOk()) {
+            const response = freshResult.value
+            setIngredients(response.data.map(mapIngredientToItem))
+            // Set pagination cursors - second page cursor is available if next_cursor exists
+            if (
+              response.next_cursor !== null &&
+              response.next_cursor !== undefined
+            ) {
+              setPagesCursors([null, response.next_cursor])
+            } else {
+              // No next page available, keep pagination at length 1 (single page)
+              setPagesCursors([null])
+            }
+          }
+        } catch (err) {
+          if (isMounted.current) {
+            setError(String(err))
+          }
+        }
+      } else {
+        setReportModal({
+          type: 'error',
+          title: 'Tạo thất bại',
+          message:
+            result.error.desc ||
+            'Không thể tạo nguyên liệu. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      setReportModal({
+        type: 'error',
+        title: 'Lỗi',
+        message: String(err)
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleIngredientFormCancel = () => {
     setShowAddIngredientForm(false)
   }
 
-  const handleDishFormSubmit = (dishData: any) => {
-    console.log('Saving dish:', dishData)
+  const handleDishFormSubmit = (dishData: Record<string, unknown>) => {
     setShowAddDishForm(false)
   }
 
@@ -100,7 +256,7 @@ const IngredientMenu = () => {
     setShowAddDishForm(false)
   }
 
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: ItemData) => {
     setSelectedItem(item)
     setViewMode('view')
   }
@@ -109,14 +265,71 @@ const IngredientMenu = () => {
     setViewMode('edit')
   }
 
-  const handleSaveClick = () => {
-    // Here you would typically save the changes
-    closeModal()
+  const handleSaveClick = async (formData: Partial<Ingredient>) => {
+    if (!selectedItem) return
+    setLoading(true)
+    try {
+      const result = await ingredientService.updateIngredient(
+        `${selectedItem.id}`,
+        formData
+      )
+
+      if (result.isOk()) {
+        setReportModal({
+          type: 'success',
+          title: 'Cập nhật nguyên liệu thành công',
+          message: `Nguyên liệu "${
+            formData.component_name || selectedItem.name
+          }" đã được cập nhật.`
+        })
+        setViewMode(null)
+        setSelectedItem(null)
+        // Refresh current page
+        await fetchIngredients(currentPage)
+      } else {
+        setReportModal({
+          type: 'error',
+          title: 'Cập nhật thất bại',
+          message:
+            result.error.desc ||
+            'Không thể cập nhật nguyên liệu. Vui lòng thử lại sau.'
+        })
+      }
+    } catch (err) {
+      setReportModal({
+        type: 'error',
+        title: 'Lỗi',
+        message: String(err)
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDeleteClick = () => {
-    // Here you would typically delete the item
-    closeModal()
+  const handleDeleteClick = async () => {
+    if (!selectedItem) return
+    const result = await ingredientService.deleteIngredient(
+      `${selectedItem.id}`
+    )
+    if (result.isOk()) {
+      setIngredients((prev) => prev.filter((i) => i.id !== selectedItem.id))
+      setReportModal({
+        type: 'success',
+        title: 'Xóa nguyên liệu thành công',
+        message: `Nguyên liệu ${selectedItem.name} đã được xóa.`
+      })
+      setSelectedItem(null)
+      setViewMode(null)
+    } else {
+      setReportModal({
+        type: 'error',
+        title: 'Xóa thất bại',
+        message:
+          result.error.type === 'ingredient-still-used'
+            ? 'Nguyên liệu đang được sử dụng trong công thức nấu ăn.'
+            : 'Không thể xóa nguyên liệu này. Vui lòng thử lại sau.'
+      })
+    }
   }
 
   const closeModal = () => {
@@ -124,56 +337,75 @@ const IngredientMenu = () => {
     setViewMode(null)
   }
 
-  const uniqueCategories = useMemo(() => {
-    const categories = new Set(allIngredientsData.map((item) => item.category))
-    return Array.from(categories)
-  }, [])
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    )
-    setCurrentPage(1)
-  }
+  // Use predefined categories from constants instead of deriving from API response
+  const uniqueCategories = INGREDIENT_CATEGORIES
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
+    setSearchInputValue(e.target.value)
+  }
+
+  const handleSearch = () => {
+    // Clear filters when searching
+    setSelectedCategories([])
+    setShowFilter(false)
+    // Set search query and reset pagination
+    setSearchQuery(searchInputValue)
+    setPagesCursors([null])
     setCurrentPage(1)
   }
 
-  const { totalPages, currentItems, startIndex, endIndex, totalItems } =
-    useMemo(() => {
-      let filteredData = allIngredientsData
+  const handleReload = () => {
+    // Clear both search and filter, reset to initial state
+    setSearchQuery('')
+    setSearchInputValue('')
+    setSelectedCategories([])
+    setShowFilter(false)
+    setPagesCursors([null])
+    setCurrentPage(1)
+  }
 
-      if (selectedCategories.length > 0) {
-        filteredData = filteredData.filter((item) =>
-          selectedCategories.includes(item.category)
+  const handleApplyFilter = async () => {
+    // Clear search when filter is applied
+    setSearchQuery('')
+    setSearchInputValue('')
+    setShowFilter(false)
+    // Reset pagination
+    setPagesCursors([null])
+    setCurrentPage(1)
+    // Directly fetch with selected categories
+    try {
+      const result = await ingredientService.getIngredients({
+        cursor: undefined,
+        limit: ITEMS_PER_PAGE,
+        categories:
+          selectedCategories.length > 0 ? selectedCategories : undefined
+      })
+
+      if (isMounted.current && result.isOk()) {
+        const response = result.value
+        setIngredients(response.data.map(mapIngredientToItem))
+        // Set pagination cursors - second page cursor is available if next_cursor exists
+        if (
+          response.next_cursor !== null &&
+          response.next_cursor !== undefined
+        ) {
+          setPagesCursors([null, response.next_cursor])
+        } else {
+          setPagesCursors([null])
+        }
+      } else if (isMounted.current) {
+        setError(
+          result.isErr()
+            ? result.error.desc || 'Failed to fetch ingredients'
+            : 'Failed to fetch ingredients'
         )
       }
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        filteredData = filteredData.filter((item) =>
-          item.name.toLowerCase().includes(query)
-        )
+    } catch (err) {
+      if (isMounted.current) {
+        setError(String(err))
       }
-
-      const totalItems = filteredData.length
-      const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-      const endIndex = startIndex + ITEMS_PER_PAGE
-      const currentItems = filteredData.slice(startIndex, endIndex)
-
-      return {
-        totalPages,
-        currentItems,
-        startIndex: totalItems === 0 ? 0 : startIndex + 1,
-        endIndex: Math.min(endIndex, totalItems),
-        totalItems
-      }
-    }, [currentPage, selectedCategories, searchQuery])
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-1 flex-col pt-6">
@@ -185,7 +417,12 @@ const IngredientMenu = () => {
           </h2>
 
           <div className="flex items-center space-x-4">
-            <Button variant="primary" icon={Plus} size="fit" onClick={handleAddIngredientClick}>
+            <Button
+              variant="primary"
+              icon={Plus}
+              size="fit"
+              onClick={handleAddIngredientClick}
+            >
               Thêm nguyên liệu
             </Button>
 
@@ -202,10 +439,10 @@ const IngredientMenu = () => {
                   className="absolute right-0 top-full z-10 mt-2 w-[550px] rounded-md border border-gray-200 bg-white p-4 shadow-lg"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <h3 className="mb-2 font-semibold text-gray-700">
+                  <h3 className="mb-4 font-semibold text-gray-700">
                     Lọc theo danh mục
                   </h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-3 mb-4">
                     {uniqueCategories.map((category) => (
                       <label
                         key={category}
@@ -214,61 +451,104 @@ const IngredientMenu = () => {
                         <input
                           type="checkbox"
                           checked={selectedCategories.includes(category)}
-                          onChange={() => handleCategoryChange(category)}
+                          onChange={() =>
+                            setSelectedCategories((prev) =>
+                              prev.includes(category)
+                                ? prev.filter((c) => c !== category)
+                                : [...prev, category]
+                            )
+                          }
                           className="rounded border-gray-300 text-rose-500 focus:ring-rose-500"
                         />
                         <span>{category}</span>
                       </label>
                     ))}
                   </div>
+                  <Button
+                    variant="primary"
+                    size="full"
+                    onClick={handleApplyFilter}
+                  >
+                    Áp dụng lọc
+                  </Button>
                 </div>
               )}
             </button>
 
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Tìm kiếm..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="w-64 rounded-lg border border-gray-300 py-2 pl-4 pr-10 text-sm focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
-              />
-              <Search
-                className="absolute right-3 top-2.5 text-gray-400"
-                size={18}
-              />
+            <div className="flex items-center space-x-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm..."
+                  value={searchInputValue}
+                  onChange={handleSearchChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchInputValue.trim()) {
+                      handleSearch()
+                    }
+                  }}
+                  className="w-64 rounded-lg border border-gray-300 py-2 pl-4 pr-4 text-sm focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
+                />
+              </div>
+              {searchInputValue.trim() ? (
+                <Button
+                  variant="icon"
+                  size="fit"
+                  icon={Search}
+                  onClick={handleSearch}
+                />
+              ) : (
+                <Button
+                  variant="icon"
+                  size="fit"
+                  icon={RotateCw}
+                  onClick={handleReload}
+                />
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-end text-sm text-gray-600">
-          <LayoutGrid size={16} className="mr-2" />
           <span>
             Đang hiển thị{' '}
-            <span className="font-bold">
-              {startIndex} - {endIndex}
-            </span>{' '}
-            / {totalItems} nguyên liệu
+            <span className="font-bold">{ingredients.length} nguyên liệu</span>
+            {' (trang '}
+            <span className="font-bold">{currentPage}</span>
+            {' trên '}
+            <span className="font-bold">{pagesCursors.length}</span>
+            {')'}
           </span>
         </div>
       </div>
 
       {/* Grid Container - Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        {currentItems.length > 0 ? (
-          <div className="px-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {currentItems.map((item) => (
+        {loading && (
+          <div className="flex h-64 items-center justify-center px-6 text-gray-500">
+            <p>Đang tải...</p>
+          </div>
+        )}
+        {error && (
+          <div className="flex h-64 items-center justify-center px-6 text-red-500">
+            <p>Lỗi: {error}</p>
+          </div>
+        )}
+        {!loading && !error && ingredients.length > 0 && (
+          <div className="grid grid-cols-2 gap-4 px-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {ingredients.map((item) => (
               <Item
                 key={item.id}
                 name={item.name}
-                category={item.category}
+                category={item.category || 'Khác'}
                 image={item.image}
                 onClick={() => handleItemClick(item)}
               />
             ))}
           </div>
-        ) : (
-          <div className="px-6 flex h-64 items-center justify-center text-gray-500">
+        )}
+        {!loading && !error && ingredients.length === 0 && (
+          <div className="flex h-64 items-center justify-center px-6 text-gray-500">
             Không tìm thấy nguyên liệu nào.
           </div>
         )}
@@ -276,12 +556,13 @@ const IngredientMenu = () => {
 
       {/* Pagination - Always at Bottom */}
       <div className="sticky bottom-0 bg-white px-6 py-4">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          className=""
-        />
+        <div className="flex items-center justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={pagesCursors.length}
+            onPageChange={(page) => fetchIngredients(page)}
+          />
+        </div>
       </div>
 
       {/* Add Dish Form Modal */}
@@ -379,6 +660,24 @@ const IngredientMenu = () => {
               />
             )}
           </div>
+        </div>
+      )}
+
+      {/* Action Report Modal */}
+      {reportModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <NotificationCard
+            title={reportModal.title}
+            message={reportModal.message}
+            iconBgColor={
+              reportModal.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }
+            buttonText="Đóng"
+            onButtonClick={() => {
+              setReportModal(null)
+              closeModal()
+            }}
+          />
         </div>
       )}
     </div>

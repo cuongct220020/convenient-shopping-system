@@ -5,6 +5,7 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import require_group_role
+from app.decorators.cache_response import cache_response
 from app.enums import GroupRole
 from app.views.base_view import BaseAPIView
 from app.repositories.user_profile_repository import (
@@ -20,6 +21,7 @@ from app.schemas.user_profile_schema import (
     UserIdentityProfileSchema,
     UserHealthProfileSchema
 )
+from shopping_shared.caching.redis_keys import RedisKeys
 
 from shopping_shared.exceptions import NotFound
 from shopping_shared.schemas.response_schema import GenericResponse
@@ -51,11 +53,12 @@ class MemberIdentityProfileView(BaseAPIView):
         ]
     )
     @require_group_role(GroupRole.MEMBER, GroupRole.HEAD_CHEF)
+    @cache_response(key_pattern=RedisKeys.USER_PROFILE_IDENTITY, ttl=900)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get identity profile of a specific group member."""
         profile_repo = UserIdentityProfileRepository(session=request.ctx.db_session)
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
-        profile_service = UserIdentityProfileService(profile_repo)
+        profile_service = UserIdentityProfileService(profile_repo, membership_repo)
 
         try:
             # Verify that user_id is a member of group_id
@@ -66,7 +69,7 @@ class MemberIdentityProfileView(BaseAPIView):
                     status_code=404
                 )
 
-            profile = await profile_service.get(user_id)
+            profile = await profile_service.get_identity_profile(user_id)
 
             # Use helper method from base class
             return self.success_response(
@@ -106,11 +109,12 @@ class MemberHealthProfileView(BaseAPIView):
         ]
     )
     @require_group_role(GroupRole.HEAD_CHEF, GroupRole.MEMBER)
+    @cache_response(key_pattern=RedisKeys.USER_PROFILE_HEALTH, ttl=900)
     async def get(self, request: Request, group_id: UUID, user_id: UUID):
         """Get health profile of a specific group member."""
         profile_repo = UserHealthProfileRepository(session=request.ctx.db_session)
         membership_repo = GroupMembershipRepository(session=request.ctx.db_session)
-        profile_service = UserHealthProfileService(profile_repo)
+        profile_service = UserHealthProfileService(profile_repo, membership_repo)
 
         try:
             # Verify that user_id is a member of group_id
@@ -121,7 +125,7 @@ class MemberHealthProfileView(BaseAPIView):
                     status_code=404
                 )
 
-            profile = await profile_service.get(user_id)
+            profile = await profile_service.get_health_profile(user_id)
 
             # Use helper method from base class
             return self.success_response(

@@ -4,6 +4,8 @@ from sanic_ext import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import validate_request
+from app.decorators.cache_response import cache_response
+from app.repositories.group_membership_repository import GroupMembershipRepository
 from app.views.base_view import BaseAPIView
 
 from app.schemas.user_tag_schema import (
@@ -15,13 +17,25 @@ from app.schemas.user_tag_schema import (
 from app.services.user_tag_service import UserTagService
 from app.repositories.user_tag_repository import UserTagRepository
 
+from shopping_shared.caching.redis_keys import RedisKeys
 from shopping_shared.utils.logger_utils import get_logger
 from shopping_shared.utils.openapi_utils import get_openapi_body
+
 
 logger = get_logger("Me Tag View")
 
 
-class MeTagsView(BaseAPIView):
+class BaseMeTagsView(BaseAPIView):
+
+    @staticmethod
+    def _get_service(request):
+        session = request.ctx.db_session
+        group_membership_repo = GroupMembershipRepository(session)
+        user_tag_repo = UserTagRepository(session)
+        return UserTagService(user_tag_repo, group_membership_repo)
+
+
+class MeTagsView(BaseMeTagsView):
 
     @openapi.definition(
         summary="Retrieve authenticated user's tags",
@@ -36,6 +50,7 @@ class MeTagsView(BaseAPIView):
             )
         ]
     )
+    @cache_response(key_pattern=RedisKeys.USER_TAGS, ttl=900)
     async def get(self, request: Request):
         """
         Get all tags for current user, grouped by category.
@@ -44,8 +59,7 @@ class MeTagsView(BaseAPIView):
         user_id = request.ctx.auth_payload["sub"]
 
         # Initialize dependencies
-        user_tag_repo = UserTagRepository(session=request.ctx.db_session)
-        user_tag_service = UserTagService(user_tag_repo)
+        user_tag_service = self._get_service(request)
 
         try:
             # Get tags
@@ -65,13 +79,11 @@ class MeTagsView(BaseAPIView):
                 status_code=500
             )
 
-    # @openapi.summary("Add tags to user")
-    # @openapi.description("Adds one or more tags to the authenticated user's profile.")
-    # @openapi.tag("Profile - Tags")
 
     @openapi.definition(
         summary="Add tags to authenticated user's profile",
         description="Adds one or more tags to the authenticated user's profile. This endpoint allows users to enhance their profile with custom tags for better categorization and personalization.",
+        body=get_openapi_body(UserTagBulkAddSchema),
         tag=["User Profile Tags"],
         secured={"bearerAuth": []},
         response=[
@@ -86,15 +98,16 @@ class MeTagsView(BaseAPIView):
     async def post(self, request: Request):
         """Add tags to current user."""
         user_id = request.ctx.auth_payload["sub"]
+        username = request.ctx.auth_payload["username"]
+        email = request.ctx.auth_payload["email"]
         data = request.ctx.validated_data
 
         # Initialize dependencies
-        user_tag_repo = UserTagRepository(session=request.ctx.db_session)
-        user_tag_service = UserTagService(user_tag_repo)
+        user_tag_service = self._get_service(request)
 
         try:
             # Add tags
-            await user_tag_service.add_tags(user_id, data)
+            await user_tag_service.add_tags(user_id, username, email, data)
 
             # Get updated user tags to return complete information
             updated_tags = await user_tag_service.get_user_tags_grouped(user_id)
@@ -114,10 +127,12 @@ class MeTagsView(BaseAPIView):
             )
 
 
-class MeTagsCategoryView(BaseAPIView):
+class MeTagsCategoryView(BaseMeTagsView):
+
     @openapi.definition(
         summary="Update tags in a specific category",
         description="Replaces all existing tags in a specific category with new ones for the authenticated user. This operation completely overwrites the tags in the specified category.",
+        body=get_openapi_body(UserTagUpdateByCategorySchema),
         tag=["User Profile Tags"],
         secured={"bearerAuth": []},
         response=[
@@ -136,16 +151,19 @@ class MeTagsCategoryView(BaseAPIView):
         PUT /users/me/tags/category/{category} - Update tags in specific category
         """
         user_id = request.ctx.auth_payload["sub"]
+        username = request.ctx.auth_payload["username"]
+        email = request.ctx.auth_payload["email"]
         data = request.ctx.validated_data
 
         # Initialize dependencies
-        user_tag_repo = UserTagRepository(session=request.ctx.db_session)
-        user_tag_service = UserTagService(user_tag_repo)
+        user_tag_service = self._get_service(request)
 
         try:
             # Update category tags
             await user_tag_service.update_category_tags(
                 user_id,
+                username,
+                email,
                 category,
                 data.tag_values
             )
@@ -168,11 +186,12 @@ class MeTagsCategoryView(BaseAPIView):
             )
 
 
-class MeTagsDeleteView(BaseAPIView):
+class MeTagsDeleteView(BaseMeTagsView):
 
     @openapi.definition(
         summary="Remove tags from authenticated user's profile",
         description="Deletes one or more specified tags from the authenticated user's profile. This operation removes the selected tags and returns the updated tag list.",
+        body=get_openapi_body(UserTagDeleteSchema),
         tag=["User Profile Tags"],
         secured={"bearerAuth": []},
         response=[
@@ -186,18 +205,19 @@ class MeTagsDeleteView(BaseAPIView):
     @validate_request(UserTagDeleteSchema)
     async def post(self, request: Request):
         """
-        Remove tags from current user. Using POST instead of DELETE to accept request body)
+        Remove tags from current user. Using POST instead of DELETE to accept request body
         POST /api/v1/user-service/users/me/tags/delete
         """
         user_id = request.ctx.auth_payload["sub"]
+        username = request.ctx.auth_payload["username"]
+        email = request.ctx.auth_payload["email"]
         validated_data = request.ctx.validated_data
 
-        user_tag_repo = UserTagRepository(session=request.ctx.db_session)
-        user_tag_service = UserTagService(user_tag_repo)
+        user_tag_service = self._get_service(request)
 
         try:
             # Remove tags
-            await user_tag_service.remove_tags(user_id, validated_data)
+            await user_tag_service.remove_tags(user_id, username, email, validated_data)
 
             # Get updated user tags to return complete information
             updated_tags = await user_tag_service.get_user_tags_grouped(user_id)

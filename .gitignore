@@ -229,3 +229,8 @@ shopping_shared.egg-info
 .env/
 
 user-service/secrets/jwt-private.pem
+
+certs/
+certbot/
+
+#test_*

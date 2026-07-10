@@ -1,100 +1,163 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  User,
-  Info,
-  HeartPulse,
-  Heart,
-  LogOut
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { User, Info, HeartPulse, Heart, LogOut } from 'lucide-react'
+import { userService } from '../../../services/user'
+import { LocalStorage } from '../../../services/storage/local'
+import { LoadingSpinner } from '../../../components/LoadingSpinner'
+import { NotificationCard } from '../../../components/NotificationCard'
+import userAvatar from '../../../assets/user.png'
 
 const Profile = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const [user, setUser] = useState<{ username: string; email: string; first_name: string | null; last_name: string | null } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+  useEffect(() => {
+    userService.getCurrentUser().match(
+      (response) => {
+        setUser(response.data)
+        setIsLoading(false)
+      },
+      (error) => {
+        console.error('Failed to fetch user:', error)
+        setIsLoading(false)
+      }
+    )
+  }, [])
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    const result = await userService.logout()
+    result.match(
+      () => {
+        // Clear local auth token
+        LocalStorage.inst.auth = null
+        // Close modal and navigate to login page
+        setShowLogoutModal(false)
+        navigate('/auth/login')
+      },
+      (error) => {
+        console.error('Logout failed:', error)
+        // Even if API call fails, clear local auth, close modal and navigate to login
+        LocalStorage.inst.auth = null
+        setShowLogoutModal(false)
+        navigate('/auth/login')
+      }
+    )
+    setIsLoggingOut(false)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center py-16">
+        <LoadingSpinner size="lg" showText text="Đang tải..." />
+      </div>
+    )
+  }
+
   return (
-    <div className="flex-1 p-5 pb-24 bg-white overflow-y-auto max-w-sm mx-auto w-full">
+    <div className="mx-auto w-full max-w-sm flex-1 overflow-y-auto bg-white p-5 pb-24">
       {/* Header */}
-      <h2 className="text-2xl font-bold text-red-600 mb-6">
-        Tài khoản
-      </h2>
+      <h2 className="mb-6 text-2xl font-bold text-[#C3485C]">Tài khoản</h2>
 
       {/* User Profile Info */}
-      <div className="flex items-center mb-8">
-        <div className="w-16 h-16 rounded-full bg-purple-300 flex justify-center items-center shrink-0">
-          <span className="text-white font-bold text-2xl">UN</span>
-        </div>
+      <div className="mb-8 flex items-center">
+        <img src={userAvatar} alt="User Avatar" className="size-16 shrink-0 rounded-full object-cover" />
         <div className="ml-4">
-          <h3 className="font-bold text-lg text-gray-900">username1234</h3>
-          <p className="text-sm text-gray-500">user-email@gmail.com</p>
+          <h3 className="text-lg font-bold text-gray-900">
+            {user?.first_name || user?.last_name
+              ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+              : user?.username || 'Name'}
+          </h3>
+          <p className="text-sm text-gray-500">{user?.email || 'user-email@gmail.com'}</p>
         </div>
       </div>
 
       {/* Menu List */}
       <div className="flex flex-col">
-        
         {/* Item 1: Login Info */}
-        <MenuItem 
-          icon={<User size={20} className="text-black fill-black" />} 
+        <MenuItem
+          icon={<User size={20} className="fill-black text-black" />}
           text="Thông tin đăng nhập"
-          onClick={() => navigate('/main/profile/login-information')} 
+          onClick={() => navigate('/main/profile/login-information')}
         />
 
         {/* Item 2: Personal Profile */}
-        <MenuItem 
-          icon={<Info size={20} className="text-black fill-black" />} 
-          text="Hồ sơ cá nhân" 
-          onClick={() => navigate('/main/profile/personal-profile')} 
+        <MenuItem
+          icon={<Info size={20} className="fill-black text-black" />}
+          text="Hồ sơ cá nhân"
+          onClick={() => navigate('/main/profile/personal-profile')}
         />
 
         {/* Item 3: Health Profile */}
-        <MenuItem 
-          icon={<HeartPulse size={20} className="text-black" />} 
-          text="Hồ sơ sức khỏe" 
-          onClick={() => navigate('/main/profile/health-profile')} 
+        <MenuItem
+          icon={<HeartPulse size={20} className="text-black" />}
+          text="Hồ sơ sức khỏe"
+          onClick={() => navigate('/main/profile/health-profile')}
         />
 
         {/* Item 4: Favorites */}
-        <MenuItem 
-          icon={<Heart size={20} className="text-black fill-black" />} 
-          text="Danh mục yêu thích" 
-          onClick={() => navigate('/main/profile/favorites')} 
-        />
+        {/* <MenuItem
+          icon={<Heart size={20} className="fill-black text-black" />}
+          text="Danh mục yêu thích"
+          onClick={() => navigate('/main/profile/favorites')}
+        /> */}
 
         {/* Logout Button */}
-        <button className="flex items-center py-4 w-full mt-2 group">
-          <div className="w-8 flex justify-center">
+        <button
+          className="group mt-2 flex w-full items-center py-4"
+          onClick={() => setShowLogoutModal(true)}
+        >
+          <div className="flex w-8 justify-center">
             <LogOut size={20} className="text-red-600" />
           </div>
-          <span className="ml-4 text-red-600 font-bold text-base group-hover:text-red-700">
+          <span className="ml-4 text-base font-bold text-red-600 group-hover:text-red-700">
             Đăng xuất
           </span>
         </button>
-
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <NotificationCard
+            title="Xác nhận đăng xuất"
+            message="Bạn có chắc chắn muốn đăng xuất không?"
+            iconBgColor="bg-yellow-500"
+            buttonText={isLoggingOut ? 'Đang đăng xuất...' : 'Xác nhận'}
+            buttonIcon={LogOut}
+            onButtonClick={handleLogout}
+            isButtonDisabled={isLoggingOut}
+            button2Text="Hủy"
+            onButton2Click={() => setShowLogoutModal(false)}
+          />
+        </div>
+      )}
     </div>
-  );
-};
+  )
+}
 
 // Helper component for list items
 interface MenuItemProps {
-  icon: React.ReactNode;
-  text: string;
-  onClick?: () => void;
+  icon: React.ReactNode
+  text: string
+  onClick?: () => void
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({ icon, text, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className="flex items-center py-4 border-b border-gray-100 w-full hover:bg-gray-50 transition-colors"
+      className="flex w-full items-center border-b border-gray-100 py-4 transition-colors hover:bg-gray-50"
     >
-      <div className="w-8 flex justify-center">
-        {icon}
-      </div>
-      <span className="ml-4 text-gray-800 font-medium text-base text-left flex-1">
+      <div className="flex w-8 justify-center">{icon}</div>
+      <span className="ml-4 flex-1 text-left text-base font-medium text-gray-800">
         {text}
       </span>
     </button>
-  );
-};
+  )
+}
 
-export default Profile;
+export default Profile

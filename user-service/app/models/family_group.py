@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import String, DateTime, ForeignKey, func
+from sqlalchemy import String, DateTime, ForeignKey, func, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 
@@ -15,15 +15,15 @@ class FamilyGroup(Base):
     __tablename__ = "family_groups"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    group_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    group_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     group_avatar_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     created_by_user_id: Mapped[Optional[UUID]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), onupdate=func.now(), nullable=True
@@ -62,13 +62,13 @@ class GroupMembership(Base):
     __tablename__ = "group_memberships"
 
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
     )
     group_id: Mapped[UUID] = mapped_column(
-        ForeignKey("family_groups.id", ondelete="CASCADE"), primary_key=True
+        ForeignKey("family_groups.id", ondelete="CASCADE"), primary_key=True, index=True
     )
     role: Mapped[GroupRole] = mapped_column(
-        SQLEnum(GroupRole), nullable=False, default=GroupRole.MEMBER
+        SQLEnum(GroupRole), nullable=False, default=GroupRole.MEMBER, index=True
     )
 
     added_by_user_id: Mapped[Optional[UUID]] = mapped_column(
@@ -95,4 +95,12 @@ class GroupMembership(Base):
         "User",
         foreign_keys="GroupMembership.added_by_user_id",
         back_populates="added_group_memberships"
+    )
+
+    # Add composite indexes for common queries
+    __table_args__ = (
+        # Composite index for checking membership: WHERE user_id = ? AND group_id = ?
+        # This is more efficient than individual indexes when querying both fields
+        Index('ix_group_memberships_user_id_group_id', 'user_id', 'group_id'),
+        Index('ix_group_memberships_group_id_user_id', 'group_id', 'user_id'),
     )

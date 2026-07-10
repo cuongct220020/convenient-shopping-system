@@ -30,7 +30,7 @@ class UserIdentityProfile(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
     )
 
     gender: Mapped[UserGender] = mapped_column(
@@ -60,7 +60,7 @@ class UserHealthProfile(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
     )
 
     height_cm: Mapped[Optional[int]] = mapped_column(SmallInteger, nullable=True)

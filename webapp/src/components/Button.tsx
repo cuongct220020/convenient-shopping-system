@@ -1,8 +1,8 @@
-import { ReactNode } from 'react'
+import { MouseEvent, ReactNode } from 'react'
 
 interface ButtonProps {
   children?: ReactNode
-  onClick?: () => void
+  onClick?: (e: MouseEvent) => void
   variant?: 'primary' | 'secondary' | 'text' | 'icon' | 'danger' | 'disabled'
   icon?: React.ComponentType<{ size?: number | string; className?: string }>
   className?: string
@@ -45,6 +45,7 @@ export const Button = ({
       'bg-[#FFD7C1] text-[#C3485C] border border-[#C3485C] hover:bg-[#fbd9d6]',
     text: 'bg-transparent text-[#C3485C] hover:underline text-xs font-semibold w-auto ml-auto block mb-6',
     icon: 'bg-gray-200 text-gray-600 hover:bg-gray-300',
+    danger: 'bg-red-500 text-white hover:bg-red-600 shadow-md shadow-red-200',
     disabled: 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
   }
 

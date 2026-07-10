@@ -98,12 +98,13 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if hasattr(self.model, "is_deleted") and not include_deleted:
             query = query.where(self.model.is_deleted.is_(False))
 
-        # Apply eager loading options <-- MỚI
+        # Apply eager loading options
         if load_options:
             query = query.options(*load_options)
 
         result = await self.session.execute(query)
         return result.scalars().first()
+
 
     async def get_by_field_case_insensitive(
         self,
@@ -129,6 +130,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         result = await self.session.execute(stmt.limit(1))
         return result.scalars().first()
 
+
     async def get_many(
         self,
         *,
@@ -150,6 +152,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         stmt = stmt.offset(skip).limit(limit)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
 
     async def get_paginated(
         self,
@@ -201,9 +204,14 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await self.session.refresh(instance)  # Refresh to load all columns
         return instance
 
-    async def update(self, record_id: Any, data: UpdateSchemaType) -> Optional[ModelType]:
-        """Updates an existing record from a Pydantic schema."""
-        instance = await self.get_by_id(record_id)
+    async def update(
+        self, 
+        record_id: Any, 
+        data: UpdateSchemaType,
+        load_options: Optional[List[Any]] = None
+    ) -> Optional[ModelType]:
+        """Updates an existing record from a Pydantic schema with optional eager loading."""
+        instance = await self.get_by_id(record_id, load_options=load_options)
         if instance:
             # Use exclude_unset to only update fields that were provided in the request
             update_data = data.model_dump(exclude_unset=True)
@@ -214,6 +222,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             await self.session.refresh(instance)
         return instance
 
+
     async def update_field(self, record_id: Any, field_name: str, field_value: Any) -> Optional[ModelType]:
         """Updates a single field in the record."""
         instance = await self.get_by_id(record_id)
@@ -222,6 +231,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             await self.session.flush()
             await self.session.refresh(instance)
         return instance
+
 
     async def update_fields(self, record_id: Any, field_updates: Dict[str, Any]) -> Optional[ModelType]:
         """Updates multiple fields in the record."""
@@ -233,6 +243,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             await self.session.refresh(instance)
         return instance
 
+
     async def delete(self, record_id: Any) -> bool:
         """Performs a hard delete of a record."""
         instance = await self.get_by_id(record_id)
@@ -241,6 +252,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             await self.session.flush()
             return True
         return False
+
 
     async def soft_delete(self, record_id: Any) -> bool:
         """

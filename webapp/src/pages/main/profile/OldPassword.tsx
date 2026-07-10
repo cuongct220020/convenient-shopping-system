@@ -31,7 +31,6 @@ const OldPassword = () => {
 
     if (validateForm()) {
       // Handle password confirmation logic here
-      console.log('Confirming password:', currentPassword);
       nagivate('/main/profile/authentication')
     }
   };
@@ -90,7 +89,7 @@ const OldPassword = () => {
         <div className="flex justify-end">
           <button
             type="button"
-            onClick={() => console.log('Navigate to forgot password flow')}
+            onClick={() => {}}
             className="text-red-600 font-bold text-sm hover:underline"
           >
             Quên mật khẩu?

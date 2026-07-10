@@ -1,82 +1,159 @@
-# IT4990 - Convenient Shopping System
-> Outline a brief description of your project.
-> Live demo [_here_](https://www.example.com). <!-- If you have the project hosted somewhere, include the link here. -->
+# Convenient Shopping System
 
-## Table of Contents
-* [General Info](#general-information)
-* [Technologies Used](#technologies-used)
-* [Features](#features)
-* [Screenshots](#screenshots)
-* [Setup](#setup)
-* [Usage](#usage)
-* [Project Status](#project-status)
-* [Room for Improvement](#room-for-improvement)
-* [Acknowledgements](#acknowledgements)
-* [Contact](#contact)
-<!-- * [License](#license) -->
-
+> IT4990 - Software Design & Development – Hanoi University of Science and Technology
 
 ## General Information
-- Provide general information about your project here.
-- What problem does it (intend to) solve?
-- What is the purpose of your project?
-- Why did you undertake it?
-<!-- You don't have to answer all the questions - just the ones relevant to your project. -->
+
+The **Convenient Shopping System** is designed to address common household challenges in meal planning, grocery shopping, and food management. Many families struggle with inefficient shopping habits, food waste due to expired items, and difficulty coordinating household tasks among family members.
+
+This system provides a comprehensive solution by helping users:
+- Plan shopping trips more efficiently
+- Track food inventory and expiration dates
+- Reduce food waste through timely reminders
+- Coordinate shopping responsibilities among family members
+- Generate meal plans based on available ingredients
+
+The project aims to promote sustainable consumption habits while ensuring proper nutrition and minimizing unnecessary expenses.
 
 
-## Technologies Used
-- Tech 1 - version 1.0
-- Tech 2 - version 2.0
-- Tech 3 - version 3.0
+## System Architecture Overview
+
+### Component Diagram
+![Component Diagram](./docs/design/component-diagram.png)
 
 
-## Features
-List the ready features here:
-- Awesome feature 1
-- Awesome feature 2
-- Awesome feature 3
+### Deployment Diagram
+![Deployment Diagram](docs/design/deployment-diagram.png)
+
+The system follows a **microservices architecture** with **event-driven communication** patterns:
+
+- **Kong Gateway**: Serves as the API Gateway and entry point for all backend services, handling routing, authentication, and rate limiting.
+- **Redis**: Implements caching layer using the cache-aside pattern to improve response times and reduce database load.
+- **Kafka Broker**: Acts as the message broker enabling asynchronous communication between microservices.
+- **Certbot**: Manages automatic SSL certificate renewal from Let's Encrypt, ensuring secure HTTPS connections.
+- **Microservices**: Independent services (User, Recipe, Meal, Shopping Storage, Notification) that handle specific business domains.
+
+## Video Demo
+
+### User View Demo
+<a href="https://www.youtube.com/watch?v=Tj3XXujmkCw">
+  <img src="./docs/assets/images/demo/user-view.png" width="25%">
+</a>
+
+**Video Link:** [YouTube - User Demo](https://www.youtube.com/watch?v=Tj3XXujmkCw)
+
+### Admin View Demo
+<a href="https://www.youtube.com/watch?v=NK9THlE9h_4">
+  <img src="./docs/assets/images/demo/admin-view.png">
+</a>
+
+**Video Link:** [YouTube - Admin Demo](https://www.youtube.com/watch?v=NK9THlE9h_4)
 
 
-## Screenshots
-![Example screenshot](./img/screenshot.png)
-<!-- If you have screenshots you'd like to share, include them here. -->
+## Usage Guide
 
+### Simulate Production Environment Locally
 
-## Usage
-How does one go about using it?
-Provide various use cases and code examples here.
+#### Prerequisites
 
-`write-your-code-here`
+- Pull latest update on remote repository and navigate to the root directory. 
+- Docker Desktop (Docker Engine) installed and running on your machine. 
+- Set up local .venv directories for each service and load the packages specified in the `requirements.txt` file.
+- Configure Environment Variables if the `.env.example` exists. Please reading carefully comment lines in `.env.example`. 
+  > **Note for Local Simulation:** In your `.env` file, you should **comment out** `SSL_CERT_FILE` and `SSL_KEY_FILE` variables to let Docker use the default local paths (`./certs/fullchain.pem`).
+  ```bash
+  cp .env.example .env
+  cp user-service/.env.example user-service/.env
+  cp notification-service/.env.example notification-service/.env
+  ```
+- Generate asymmetric RSA Key pair, private key for signing jwt token, public key for verifying token signature at Kong Gateway:
+  ```bash
+  cd user-service
+  source .venv/bin/activate
+  
+  # Generate RSA keys pair
+  python3 scripts/generate_rsa_keys.py
+  
+  # Verify RSA keys pair
+  python3 scripts/verify_rsa_keys_pair.py
+  ```
 
+#### Running Backend Server
 
-## Project Status
-Project is: _in progress_ / _complete_ / _no longer being worked on_. If you are no longer working on it, provide reasons why.
+To test the production setup (with SSL, Kong Gateway, and Domain routing) on your local machine (Mac/Linux), follow these steps:
 
+**1. Create Dummy SSL Certificates**
 
-## Room for Improvement
-Include areas you believe need improvement / could be improved. Also add TODOs for future development.
+Create the system directory structure and generate self-signed certificates.
 
-Room for improvement:
-- Improvement to be done 1
-- Improvement to be done 2
+```bash
+# Create directory (requires sudo)
+sudo mkdir -p /etc/letsencrypt/live/dichotienloi.com/
 
-To do:
-- Feature to be added 1
-- Feature to be added 2
+# Generate self-signed certificate
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/letsencrypt/live/dichotienloi.com/privkey.pem \
+  -out /etc/letsencrypt/live/dichotienloi.com/fullchain.pem \
+  -subj "/CN=dichotienloi.com"
 
+# Check after create certificate
+sudo ls -l /etc/letsencrypt/live/dichotienloi.com/
+```
 
-## Acknowledgements
-Give credit here.
-- This project was inspired by...
-- This project was based on [this tutorial](https://www.example.com).
-- Many thanks to...
+**2. Copy Certificates to Project Folder (Fix Permission Issues)**
 
+Docker on MacOS has trouble mounting system folders like `/etc`. We copy certs to a local `./certs` folder.
 
-## Contact
-Created by [@flynerdpl](https://www.flynerd.pl/) - feel free to contact me!
+```bash
+# Create local certs folder
+mkdir -p certs
 
-<!-- Optional -->
-<!-- ## License -->
-<!-- This project is open source and available under the [... License](). -->
+# Copy certs and change ownership to current user
+sudo cp /etc/letsencrypt/live/dichotienloi.com/fullchain.pem ./certs/
+sudo cp /etc/letsencrypt/live/dichotienloi.com/privkey.pem ./certs/
+sudo chown $USER ./certs/*.pem
+```
 
-<!-- You don't have to include all sections - just the one's relevant to your project -->
+**3. Mock Domain Name**
+
+Trick your computer into thinking `dichotienloi.com` is your localhost.
+
+```bash
+# Open hosts file
+sudo nano /etc/hosts
+
+# Add this line at the end:
+127.0.0.1 dichotienloi.com
+
+# Check after mock domain name
+# Option 1: Check file hosts content
+cat /etc/hosts | grep dichotienloi.com
+
+# Option 2: Check by ping command
+ping -c 3 dichotienloi.com
+```
+
+**4. Run Production Compose**
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**5. Verify**
+
+Open your browser and visit: `https://dichotienloi.com`
+
+- You will see a "Security Warning" (because it's a self-signed cert). Click "Advanced" -> "Proceed".
+- If you see the API response or Kong welcome page, SSL Termination is working correctly!
+
+> **Note:** The `certbot` service will fail in logs because it cannot connect to Let's Encrypt from localhost. This is expected and can be ignored during local testing.
+
+### AWS EC2 Deployment
+
+For a complete, step-by-step guide on deploying this system to production on AWS EC2, please refer to the [AWS EC2 Deployment Guide](docs/tutorial/aws_ec2_deployment.md).
+
+The guide covers:
+- Infrastructure Setup (RDS, EC2, Elastic IP).
+- Server Configuration (Docker, Swap, Firewall).
+- **Zero-Downtime SSL** setup with Let's Encrypt and Kong Gateway.
+- Continuous Deployment workflows.

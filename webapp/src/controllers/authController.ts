@@ -22,6 +22,10 @@ class AuthController {
     LocalStorage.inst.auth = auth
   }
 
+  public setLoggedIn(isLoggedIn: boolean) {
+    this._isLoggedIn = isLoggedIn
+  }
+
   public get isLoggedIn(): boolean {
     return this._isLoggedIn
   }

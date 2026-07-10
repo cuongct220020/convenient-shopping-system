@@ -40,7 +40,6 @@ export default function ForgotPasswordEmail() {
     setErrors(AuthService.validateEmail(email))
     setTouched(true)
     if (errors.isErr()) return
-    console.info('Password reset request for:', email)
     setIsVerifyingEmail(true)
     const response = await authService.sendOtpRequest('reset_password', email)
     if (!isMounted.current) return

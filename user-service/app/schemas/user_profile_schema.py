@@ -15,23 +15,27 @@ class AddressSchema(BaseSchema):
     ward: Optional[str] = Field(
         None,
         description="The ward of the user",
+        examples=["Ward 1"],
         min_length=1,
         max_length=100
     )
     district: Optional[str] = Field(
         None,
         description="The district of the user",
+        examples=["District 1"],
         min_length=1,
         max_length=100)
     city: Optional[str] = Field(
         None,
         description="The city of the user",
+        examples=["Ho Chi Minh City"],
         min_length=1,
         max_length=100
     )
     province: Optional[str] = Field(
         None,
         description="The province of the user",
+        examples=["Ho Chi Minh"],
         min_length=1,
         max_length=100
     )
@@ -43,18 +47,22 @@ class UserIdentityProfileSchema(BaseSchema):
     user_id: UUID = Field(
         ...,
         description="The ID of the user",
+        examples=["123e4567-e89b-12d3-a456-426614174000"]
     )
     gender: UserGender = Field(
         ...,
-        description="The gender of the user"
+        description="The gender of the user",
+        examples=["male", "female", "other"]
     )
     date_of_birth: Optional[date] = Field(
         None,
-        description="The date of birth of the user"
+        description="The date of birth of the user",
+        examples=["1990-01-01"]
     )
     occupation: Optional[str] = Field(
         None,
-        description="The occupation of the user"
+        description="The occupation of the user",
+        examples=["Software Engineer", "Doctor"]
     )
     address: Optional[AddressSchema] = Field(
         None,
@@ -64,14 +72,31 @@ class UserIdentityProfileSchema(BaseSchema):
 
 @openapi.component
 class UserIdentityProfileCreateSchema(UserIdentityProfileSchema):
-    user_id: Optional[UUID] = Field(None, description="The ID of the user")
+    user_id: Optional[UUID] = Field(
+        None,
+        description="The ID of the user",
+        examples=["123e4567-e89b-12d3-a456-426614174000"]
+    )
 
 
 @openapi.component
 class UserIdentityProfileUpdateSchema(BaseSchema):
-    gender: Optional[UserGender] = Field(None)
-    date_of_birth: Optional[date] = Field(None)
-    occupation: Optional[str] = Field(None, max_length=255)
+    gender: Optional[UserGender] = Field(
+        None,
+        description="The gender of the user",
+        examples=["male", "female", "other"]
+    )
+    date_of_birth: Optional[date] = Field(
+        None,
+        description="The date of birth of the user",
+        examples=["1990-01-01"]
+    )
+    occupation: Optional[str] = Field(
+        None,
+        description="The occupation of the user",
+        examples=["Software Engineer", "Doctor"],
+        max_length=255
+    )
     address: Optional[AddressSchema] = Field(None)
 
 
@@ -80,37 +105,47 @@ class UserIdentityProfileUpdateSchema(BaseSchema):
 class UserHealthProfileSchema(BaseSchema):
     user_id: UUID = Field(
         None,
-        description="The ID of the user"
+        description="The ID of the user",
+        examples=["123e4567-e89b-12d3-a456-426614174000"]
     )
     height_cm: Optional[int] = Field(
         None,
         description="The height of the user",
+        examples=[170],
         gt=0,
         lt=300
     )
     weight_kg: Optional[float] = Field(
         None,
         description="The weight of the user",
+        examples=[70.5],
         gt=0,
         lt=1000
     )
     activity_level: Optional[ActivityLevel] = Field(
         None,
-        description="The activity level of the user"
+        description="The activity level of the user",
+        examples=["sedentary", "light", "moderate", "active", "very_active"]
     )
     curr_condition: Optional[HealthCondition] = Field(
         None,
-        description="The current condition of the user"
+        description="The current condition of the user",
+        examples=["normal", "pregnant", "injured"]
     )
     health_goal: Optional[HealthGoal] = Field(
         None,
-        description="The health goal of the user"
+        description="The health goal of the user",
+        examples=["lose_weight", "maintain", "gain_weight"]
     )
 
 
 @openapi.component
 class UserHealthProfileCreateSchema(UserHealthProfileSchema):
-    user_id: Optional[UUID] = Field(None, description="The ID of the user")
+    user_id: Optional[UUID] = Field(
+        None,
+        description="The ID of the user",
+        examples=["123e4567-e89b-12d3-a456-426614174000"]
+    )
 
 
 @openapi.component
@@ -118,28 +153,31 @@ class UserHealthProfileUpdateSchema(BaseSchema):
     height_cm: Optional[int] = Field(
         None,
         description="The height of the user",
-        examples=["170"],
+        examples=[170],
         gt=0,
         lt=300
     )
     weight_kg: Optional[float] = Field(
         None,
         description="The weight of the user",
-        examples=["70"],
+        examples=[70.5],
         gt=0,
         lt=1000
     )
     activity_level: Optional[ActivityLevel] = Field(
         None,
-        description="The activity level of the user"
+        description="The activity level of the user",
+        examples=["sedentary", "light", "moderate", "active", "very_active"]
     )
     curr_condition: Optional[HealthCondition] = Field(
         None,
-        description="The current condition of the user"
+        description="The current condition of the user",
+        examples=["normal", "pregnant", "injured"]
     )
     health_goal: Optional[HealthGoal] = Field(
         None,
-        description="The health goal of the user"
+        description="The health goal of the user",
+        examples=["lose_weight", "maintain", "gain_weight"]
     )
 
 @openapi.component
@@ -147,9 +185,23 @@ class UserDetailedProfileSchema(UserCoreInfoSchema):
     """Full user profile including identity and health info."""
     identity_profile: Optional[UserIdentityProfileSchema] = Field(
         None,
-        description="The identity profile of the user"
+        description="The identity profile of the user",
+        examples=[{
+            "user_id": "123e4567-e89b-12d3-a456-426614174000",
+            "gender": "male",
+            "date_of_birth": "1990-01-01",
+            "occupation": "Software Engineer"
+        }]
     )
     health_profile: Optional[UserHealthProfileSchema] = Field(
         None,
-        description="The health profile of the user"
+        description="The health profile of the user",
+        examples=[{
+            "user_id": "123e4567-e89b-12d3-a456-426614174000",
+            "height_cm": 170,
+            "weight_kg": 70.5,
+            "activity_level": "moderate",
+            "curr_condition": "normal",
+            "health_goal": "maintain"
+        }]
     )

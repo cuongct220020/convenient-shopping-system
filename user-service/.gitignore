@@ -225,3 +225,6 @@ shopping_shared.egg-info
 .env/
 
 .secrets/jwt-private.pem
+
+CACHING_STRATEGY.md
+PROMETHEUS_MONITORING_STRATEGY.md

@@ -2,6 +2,7 @@
 from contextlib import asynccontextmanager
 from typing import TypeAlias, Any, AsyncGenerator
 
+from sqlalchemy import AsyncAdaptedQueuePool
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -28,20 +29,40 @@ class DatabaseManager:
         self.engine: AsyncEngine | None = None
         self.session_maker: AsyncSessionMaker | None = None
 
-    async def setup(self, database_uri: str, debug: bool = False) -> None:
+    async def setup(
+        self,
+        database_uri: str,
+        debug: bool = False,
+        pool_size: int = 5,
+        max_overflow: int = 10,
+        pool_timeout: int = 30,
+        pool_recycle: int = 3600,
+        pool_pre_ping: bool = True,
+    ) -> None:
         """
         Initializes the database engine and session maker.
         """
         if not database_uri:
             raise DatabaseError("Database URI is not provided. Cannot set up database.")
 
-        self.engine = create_async_engine(database_uri, echo=debug)
+        self.engine = create_async_engine(
+            database_uri,
+            echo=debug,
+            poolclass = AsyncAdaptedQueuePool,
+            pool_size=pool_size,
+            max_overflow=max_overflow,
+            pool_timeout=pool_timeout,
+            pool_recycle=pool_recycle,
+            pool_pre_ping=pool_pre_ping
+        )
+
         self.session_maker = async_sessionmaker(
             bind=self.engine,
             autoflush=False,
             autocommit=False,
             expire_on_commit=False,
         )
+
         logger.info(f"Database engine initialized: {database_uri.split('://')[0]}://****:****@{database_uri.split('@')[-1]}")
 
     async def create_tables(self, base: Any) -> None:

@@ -27,14 +27,14 @@ class RefreshView(BaseAPIView):
             Response(
                 content=get_openapi_body(AccessTokenResponseSchema),
                 status=200,
-                description="New access token generated successfully with token rotation applied."
+                description="New access token generated successfully with token rotation applied.",
             ),
             Response(
                 content=get_openapi_body(GenericResponse),
                 status=401,
-                description="Invalid, expired, or missing refresh token."
+                description="Invalid, expired, or missing refresh token.",
             ),
-        ]
+        ],
     )
     async def post(self, request: Request) -> HTTPResponse:
         """
@@ -60,13 +60,9 @@ class RefreshView(BaseAPIView):
         except (Unauthorized, Forbidden) as e:
             # --- QUAN TRỌNG: Xóa cookie hỏng/bị thu hồi ---
             # Use helper method from base class
-            response = self.fail_response(
-                message=str(e),
-                status_code=401
-            )
+            response = self.fail_response(message=str(e), status_code=401)
             response.delete_cookie(
-                "refresh_token",
-                path='/api/v1/user-service/auth/refresh-token'
+                "refresh_token", path="/api/v1/user-service/auth/refresh-token"
             )
             return response
 
@@ -75,14 +71,14 @@ class RefreshView(BaseAPIView):
             access_token=new_token_data.access_token,
             token_type="Bearer",
             expires_in_minutes=new_token_data.at_expires_in_minutes,
-            is_active=is_active
+            is_active=is_active,
         )
 
         # Use helper method from base class
         response = self.success_response(
             data=access_token_data,
             message="Tokens refreshed successfully",
-            status_code=200
+            status_code=200,
         )
 
         # 4. Đặt refresh token MỚI (đã được xoay vòng) vào cookie
@@ -94,9 +90,9 @@ class RefreshView(BaseAPIView):
             value=new_token_data.refresh_token,
             max_age=max_age,
             httponly=True,
-            secure=not config.get("DEBUG", False),
-            samesite="Strict",
-            path='/api/v1/user-service/auth/refresh-token'
+            secure=True,
+            samesite="None",
+            path="/api/v1/user-service/auth/refresh-token",
         )
 
         return response

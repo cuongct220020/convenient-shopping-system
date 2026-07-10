@@ -52,7 +52,6 @@ export default function ForgotPasswordAuthentication() {
     if (!AuthService.validateOtpFormat(otpCode)) {
       return
     }
-    console.info('Submitting OTP:', otpCode)
     setIsLoading(true)
     const response = await authService.verifyOtp({
       identification: email,

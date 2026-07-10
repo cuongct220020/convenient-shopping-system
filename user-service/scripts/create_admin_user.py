@@ -16,21 +16,15 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from app.utils.password_utils import hash_password
 from app.models.user import User
-from app.enums.user import SystemRole
+from app.enums import SystemRole
+from app.repositories.user_repository import UserRepository
 from shopping_shared.databases.database_manager import database_manager as postgres_db
 from app.config import Config
 
 
 async def create_admin_user(username: str, email: str, password: str, first_name: str, last_name: str):
     """
-    Create an admin user in the database.
-    
-    Args:
-        username: The admin username
-        email: The admin email
-        password: The admin password (will be hashed)
-        first_name: The admin's first name
-        last_name: The admin's last name
+    Create an admin user in the database using optimized repository methods.
     """
     # Get database URI from config
     db_uri = Config.POSTGRESQL.DATABASE_URI
@@ -39,41 +33,46 @@ async def create_admin_user(username: str, email: str, password: str, first_name
     await postgres_db.setup(database_uri=db_uri, debug=Config.RUN_SETTING.get('debug', True))
     
     async with postgres_db.get_session() as session:
-        # Check if admin user already exists
-        existing_user = await session.execute(
-            User.__table__.select().where(User.email == email)
-        )
-        existing_user = existing_user.fetchone()
+        user_repo = UserRepository(session)
         
-        if existing_user:
-            print(f"User with email {email} already exists!")
-            return existing_user[0]
+        # 1. Use the new optimized conflict check
+        conflicts = await user_repo.check_conflicts(username=username, email=email)
         
-        # Hash the password
+        if conflicts:
+            print(f"Cannot create admin: {conflicts[0]}")
+            return None
+        
+        # 2. Prepare data
         hashed_password = hash_password(password)
         
-        # Create new admin user
-        admin_user = User(
-            username=username,
-            email=email,
-            password_hash=hashed_password,
-            system_role=SystemRole.ADMIN,
-            first_name=first_name,
-            last_name=last_name,
-            is_active=True,  # Set to True so admin can login immediately
-            created_at=datetime.now()
-        )
+        admin_data = {
+            "username": username,
+            "email": email,
+            "password_hash": hashed_password,
+            "system_role": SystemRole.ADMIN,
+            "first_name": first_name,
+            "last_name": last_name,
+            "is_active": True,
+            "created_at": datetime.now()
+        }
         
-        session.add(admin_user)
-        await session.commit()
-        await session.refresh(admin_user)
-        
-        print(f"Admin user created successfully!")
-        print(f"Username: {admin_user.username}")
-        print(f"Email: {admin_user.email}")
-        print(f"Role: {admin_user.system_role}")
-        
-        return admin_user
+        try:
+            # 3. Create using the optimized repository method
+            admin_user = await user_repo.create_user_with_dict(admin_data)
+            
+            # Commit the transaction (since we're in a standalone script)
+            await session.commit()
+            
+            print(f"Admin user created successfully!")
+            print(f"Username: {admin_user.username}")
+            print(f"Email: {admin_user.email}")
+            print(f"Role: {admin_user.system_role}")
+            
+            return admin_user
+        except Exception as e:
+            await session.rollback()
+            print(f"Error creating admin user: {str(e)}")
+            return None
 
 
 def main():

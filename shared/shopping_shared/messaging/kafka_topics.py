@@ -9,5 +9,7 @@ EMAIL_CHANGE_EVENTS_TOPIC = "user_service.user.change_email"
 
 USER_UPDATE_TAG_EVENTS_TOPIC = "user_service.user.update_tags"
 
-# Group-related notification topics
-GROUP_USER_ADDED_EVENTS_TOPIC = "user_service.group.add_users"
+LOGOUT_EVENTS_TOPIC = "user_service.user.logout_account"
+
+# General notification topic - all non-OTP notifications go here
+NOTIFICATION_TOPIC = "service_notifications"

@@ -187,6 +187,57 @@ class RedisService:
         except Exception as e:
             logger.error(f"Failed to delete OTP for {email} from Redis: {str(e)}")
 
+    # --- General Caching Methods ---
+
+    @classmethod
+    async def get_cache(cls, key: str) -> dict | None:
+        """Retrieves a cached JSON object."""
+        try:
+            data_str = await redis_manager.client.get(key)
+            if data_str:
+                return json.loads(data_str)
+            return None
+        except Exception as e:
+            logger.error(f"Cache miss or error for {key}: {e}")
+            return None
+
+
+    @classmethod
+    async def set_cache(cls, key: str, data: dict, ttl: int):
+        """Stores a JSON object in cache with TTL."""
+        try:
+            await redis_manager.client.set(key, json.dumps(data), ex=ttl)
+        except Exception as e:
+            logger.error(f"Failed to set cache for {key}: {e}")
+
+
+    @classmethod
+    async def delete_key(cls, key: str):
+        """Deletes a specific key."""
+        try:
+            result = await redis_manager.client.delete(key)
+            if result > 0:
+                logger.info(f"Deleted key: {key}")
+            else:
+                logger.debug(f"Key not found for deletion: {key}")
+        except Exception as e:
+            logger.error(f"Failed to delete key {key}: {e}")
+
+    @classmethod
+    async def delete_pattern(cls, pattern: str):
+        """Deletes all keys matching the pattern."""
+        try:
+            # Use scan_iter for efficient iteration
+            keys = []
+            async for key in redis_manager.client.scan_iter(match=pattern):
+                keys.append(key)
+
+            if keys:
+                await redis_manager.client.delete(*keys)
+                logger.info(f"Deleted {len(keys)} keys matching {pattern}")
+        except Exception as e:
+            logger.error(f"Failed to delete pattern {pattern}: {e}")
+
 
 
 redis_service = RedisService()

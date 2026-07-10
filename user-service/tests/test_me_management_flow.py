@@ -25,7 +25,8 @@ import os
 import time
 
 # Configuration
-GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:8000")
+# GATEWAY_URL = os.getenv("GATEWAY_URL", "https://localhost:8000")
+GATEWAY_URL = os.getenv("GATEWAY_URL", "https://dichotienloi.com")
 BASE_URL = f"{GATEWAY_URL}/api/v1/user-service"
 
 # Colors for output
@@ -456,22 +457,8 @@ def test_me_endpoints_flow():
         print_status("Access with New Token", "FAILED", f"Status: {response['status_code']}, Error: {response.get('error', 'N/A')}")
         return False
 
-    # Step 17: Logout with new token
-    print(f"\n{Colors.INFO}Step 17: Logout from the system (/auth/logout){Colors.ENDC}")
-    response = make_request(
-        f"{BASE_URL}/auth/logout",
-        method="POST",
-        headers=new_auth_headers
-    )
-
-    if response["status_code"] == 200:
-        print_status("Logout", "SUCCESS", f"Status: {response['status_code']}")
-    else:
-        print_status("Logout", "FAILED", f"Status: {response['status_code']}, Error: {response.get('error', 'N/A')}")
-        return False
-
-    # Step 18: Test tag management endpoints
-    print(f"\n{Colors.INFO}Step 18: Test tag management endpoints (/me/tags){Colors.ENDC}")
+    # Step 17: Test tag management endpoints (/me/tags)
+    print(f"\n{Colors.INFO}Step 17: Test tag management endpoints (/me/tags){Colors.ENDC}")
 
     # Get user's tags (should be empty initially)
     response = make_request(
@@ -487,8 +474,9 @@ def test_me_endpoints_flow():
         return False
 
     # Add some tags to the user
+    # Using sample codes from schema: 0302 (Allergy), 0401 (Diet), 0501 (Taste)
     tags_data = {
-        "tags": ["allergy.gluten_free", "diet.keto", "goal.weight_loss"]
+        "tag_values": ["0302", "0401", "0501"]
     }
 
     response = make_request(
@@ -505,8 +493,10 @@ def test_me_endpoints_flow():
         return False
 
     # Update tags in a specific category
+    # Schema requires 'category' field in body as well
     category_tags_data = {
-        "tag_values": ["allergy.dairy_free", "allergy.nut_free"]
+        "category": "allergy",
+        "tag_values": ["0302"]
     }
 
     response = make_request(
@@ -524,7 +514,7 @@ def test_me_endpoints_flow():
 
     # Delete some tags
     delete_tags_data = {
-        "tags": ["diet.keto"]
+        "tag_values": ["0401"]
     }
 
     response = make_request(
@@ -538,6 +528,20 @@ def test_me_endpoints_flow():
         print_status("Delete User Tags", "SUCCESS", f"Status: {response['status_code']}")
     else:
         print_status("Delete User Tags", "FAILED", f"Status: {response['status_code']}, Error: {response.get('error', 'N/A')}")
+        return False
+
+    # Step 18: Logout with new token
+    print(f"\n{Colors.INFO}Step 18: Logout from the system (/auth/logout){Colors.ENDC}")
+    response = make_request(
+        f"{BASE_URL}/auth/logout",
+        method="POST",
+        headers=new_auth_headers
+    )
+
+    if response["status_code"] == 200:
+        print_status("Logout", "SUCCESS", f"Status: {response['status_code']}")
+    else:
+        print_status("Logout", "FAILED", f"Status: {response['status_code']}, Error: {response.get('error', 'N/A')}")
         return False
 
     # Step 19: Try to login with new email and new password (if email was changed)

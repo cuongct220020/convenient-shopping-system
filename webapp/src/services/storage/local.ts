@@ -15,13 +15,15 @@ type SavedUserAuthSchema = z.infer<typeof SavedUserAuthSchemaZ>
 const DefaultDataSchema = z.object({
   otpExpireTime: z.number(),
   emailRequestingOtp: z.string().or(z.undefined()),
-  auth: SavedUserAuthSchemaZ.or(z.undefined())
+  auth: SavedUserAuthSchemaZ.or(z.undefined()),
+  currentGroupId: z.string().or(z.undefined())
 })
 type DataType = z.infer<typeof DefaultDataSchema>
 const DEFAULT_DATA: DataType = {
   otpExpireTime: 0,
   emailRequestingOtp: undefined,
-  auth: undefined
+  auth: undefined,
+  currentGroupId: undefined
 } as const
 
 export class LocalStorage {
@@ -84,6 +86,15 @@ export class LocalStorage {
         token_last_refresh_timestamp: Time.now
       }
     }
+    this.save()
+  }
+
+  public get currentGroupId(): string | null {
+    return this.data.currentGroupId ?? null
+  }
+
+  public set currentGroupId(groupId: string | null) {
+    this.data.currentGroupId = groupId ?? undefined
     this.save()
   }
 
